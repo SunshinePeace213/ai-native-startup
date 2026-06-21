@@ -1,5 +1,6 @@
 ---
 name: prompt-architect
+disable-model-invocation: true
 description: |
   Design, draft, test, and iterate on Claude Code skills, slash commands, and subagents end-to-end. Use for "build me a /commit command", "create a skill for X", "make a code-reviewer agent", "my skill isn't triggering", "test/optimize my skill", "rewrite this prompt for 4.8".
 when_to_use: |

@@ -40,7 +40,7 @@ Build a new `meta-skill` whose value is **standards + a guided workflow**, kept 
 - **Testing apparatus ported from `skill-creator`** (which is skills-only already, so no parameterization needed), keeping the pure-compute pieces and the grader rubric; **dropping** the retired `claude -p` subprocess scripts. SKILL.md references the apparatus so it loads only during the test phase.
 - **Clean cutover:** old `meta-skill/` → `~/.Trash/`; new `meta-skill/` written at the same path with `name: meta-skill`.
 
-**Known transient overlap (flagged, not fixed here):** while `prompt-architect` still exists, both it and `meta-skill` can match "create a skill." The user asked not to refactor `prompt-architect`. Mitigation: give `meta-skill` a strong, specific, front-loaded description; since `prompt-architect` is slated for retirement, the collision is temporary. Optional later step: narrow `prompt-architect`'s description (out of scope for this plan).
+**Trigger collision — resolved in this change (per adversarial review):** `prompt-architect` brands itself "a meta-skill" and auto-triggers on "create a skill for X," so it competes with `meta-skill` for the exact prompts the new skill must own. A stronger description alone leaves skill selection non-deterministic (the Codex adversarial review flagged this as a high-severity no-ship). Instead, this plan sets **`disable-model-invocation: true`** on `prompt-architect`'s frontmatter — a one-line, surgical edit that stops it auto-firing while keeping it usable via `/prompt-architect`. `meta-skill` then cleanly owns the auto-trigger lane. This is the *only* edit to `prompt-architect`; its body is untouched, consistent with "don't refactor it." Full retirement of `prompt-architect` remains a later, separate step.
 
 ## Relevant Files
 
@@ -48,7 +48,7 @@ Use these files to complete the task:
 
 - `.claude/skills/meta-skill/SKILL.md` — **current skill to retire** (frontmatter `name: creating-new-skills`); read for any reusable framing, then move the whole directory to `~/.Trash/`.
 - `.claude/skills/meta-skill/docs/*.md` — 1,078 lines of scraped docs; **do not carry over** (drop with the Trash move). Live docs + fresh references replace them.
-- `.claude/skills/prompt-architect/SKILL.md` — the skill being retired; read for structure ideas only. **Do not** copy its references (Q3 = author fresh).
+- `.claude/skills/prompt-architect/SKILL.md` — the skill being retired; read for structure ideas only, and **make one surgical frontmatter edit**: add `disable-model-invocation: true` to stop it auto-competing for skill-creation triggers (body untouched). **Do not** copy its references (Q3 = author fresh).
 - `~/.claude/plugins/cache/claude-plugins-official/skill-creator/unknown/skills/skill-creator/` — **source of the test/iterate apparatus** to port:
   - `SKILL.md` — the loop this skill's workflow should follow.
   - `scripts/aggregate_benchmark.py`, `scripts/quick_validate.py`, `scripts/package_skill.py`, `scripts/utils.py`, `scripts/__init__.py` — **keep** (pure-compute, stdlib).
@@ -74,7 +74,7 @@ Use these files to complete the task:
 ## Implementation Phases
 
 ### Phase 1: Foundation
-Cutover and scaffold. Move the old `meta-skill/` (incl. `creating-new-skills` SKILL.md and scraped `docs/`) to `~/.Trash/`. Create the new directory skeleton (`references/`, `scripts/`, `eval-viewer/`, `agents/`, optional `assets/`). Author the four **fresh knowledge references** from the live docs, and port + prune the **apparatus** from skill-creator. These two streams are independent and run in parallel.
+Cutover and scaffold. **Resolve the trigger collision up front** by setting `disable-model-invocation: true` on `prompt-architect`'s frontmatter. Move the old `meta-skill/` (incl. `creating-new-skills` SKILL.md and scraped `docs/`) to `~/.Trash/`. Create the new directory skeleton (`references/`, `scripts/`, `eval-viewer/`, `agents/`, optional `assets/`). Author the four **fresh knowledge references** from the live docs, and port + prune the **apparatus** from skill-creator. These two streams are independent and run in parallel.
 
 ### Phase 2: Core Implementation
 Write the lean `SKILL.md`: frontmatter (`name: meta-skill`, pushy front-loaded description within the 1,536-char combined cap), then the workflow body (intent → interview/research → draft → test-and-iterate → optional description-optimize → package), with clear "read this when…" pointers into the references and apparatus. Keep body < 500 lines.
@@ -123,6 +123,7 @@ Validate the artifact: run the ported `quick_validate` on the new SKILL.md, conf
 - **Assigned To**: builder-core
 - **Agent Type**: general-purpose
 - **Parallel**: false
+- Resolve the trigger collision (Codex high-severity finding): add `disable-model-invocation: true` to `.claude/skills/prompt-architect/SKILL.md` frontmatter; leave its body untouched. *(Already applied during the review follow-up — verify it is present rather than re-adding.)*
 - Read the current `.claude/skills/meta-skill/SKILL.md` for any framing worth preserving (then discard the rest).
 - Move the entire old directory to Trash: `mv .claude/skills/meta-skill ~/.Trash/meta-skill-old-$(date +%s)` (per AGENTS.md — never `rm -rf`).
 - Create the new skeleton: `mkdir -p .claude/skills/meta-skill/{references,scripts,eval-viewer,agents}`.
@@ -171,7 +172,7 @@ Validate the artifact: run the ported `quick_validate` on the new SKILL.md, conf
 - Run the Validation Commands below; capture output.
 - Confirm `SKILL.md` body < 500 lines, references one level deep, and `description`+`when_to_use` ≤ 1,536 chars.
 - Confirm `references/frontmatter.md` covers every field listed in Task 2.
-- Smoke-test triggering: draft 2–3 realistic creation prompts and confirm `meta-skill` is the natural match; note any residual overlap with `prompt-architect`.
+- **Trigger smoke-test gate (hard pass/fail):** confirm `prompt-architect` carries `disable-model-invocation: true`, then for 2–3 realistic creation prompts verify `meta-skill` is the selected skill and `prompt-architect` does NOT auto-fire. This gate must pass while `prompt-architect` is still installed — it is the direct answer to the adversarial-review finding.
 - Confirm old skill is absent from `.claude/skills/` and present in `~/.Trash/`.
 - Report pass/fail per acceptance criterion; surface anything skipped (fail loud).
 
@@ -185,7 +186,8 @@ Validate the artifact: run the ported `quick_validate` on the new SKILL.md, conf
 - Test apparatus present and runnable: `scripts/quick_validate.py`, `scripts/aggregate_benchmark.py`, `scripts/package_skill.py`, `eval-viewer/generate_review.py`, `agents/grader.md`, `references/schemas.md`. Deprecated `claude -p` scripts are **absent**.
 - All references are exactly one level deep from `SKILL.md`.
 - Old skill (`creating-new-skills` + scraped `docs/`) is moved to `~/.Trash/` and no longer in `.claude/skills/`.
-- `meta-skill` triggers on the smoke-test creation prompts.
+- `prompt-architect`'s frontmatter contains `disable-model-invocation: true` (trigger collision resolved; its body is otherwise unchanged).
+- **Trigger smoke test passes:** for 2–3 realistic creation prompts, `meta-skill` is the selected skill and `prompt-architect` does not auto-fire (it stays invocable only via `/prompt-architect`) — verified while both are installed.
 
 ## Validation Commands
 
@@ -199,6 +201,7 @@ Execute these commands to validate the task is complete:
 - `find .claude/skills/meta-skill/references -maxdepth 1 -name '*.md'` — references exist and are one level deep.
 - `ls .claude/skills/meta-skill/references/frontmatter.md .claude/skills/meta-skill/references/structure.md .claude/skills/meta-skill/references/authoring-principles.md .claude/skills/meta-skill/references/anti-patterns.md` — all four knowledge refs present.
 - `ls .claude/skills/meta-skill/scripts/run_eval.py 2>&1` — must report "No such file" (deprecated apparatus dropped).
+- `grep -n "disable-model-invocation: true" .claude/skills/prompt-architect/SKILL.md` — confirm the trigger-collision fix is in place.
 - `ls .claude/skills/meta-skill/ | grep -v docs` and `ls ~/.Trash/ | grep meta-skill-old` — confirm cutover (no scraped `docs/` in new skill; old skill in Trash).
 - `awk 'NR>1 && /^---/{exit} NR>1{print}' .claude/skills/meta-skill/SKILL.md | wc -c` — sanity-check frontmatter size toward the 1,536-char listing budget.
 
@@ -206,6 +209,7 @@ Execute these commands to validate the task is complete:
 
 - **Tooling (AGENTS.md):** Python via `uv` only; never `python`/`pip`. JS via `bun`. Rich panels full width. Safe-delete via `mv … ~/.Trash/` — never `rm -rf`. No new dependencies expected; the ported scripts are Python-stdlib (optional `PyYAML` hardens frontmatter parsing — `uv run --with pyyaml …`).
 - **Maintainability watch (the whole point):** the bundled test apparatus is the heaviest part and the main future maintenance cost. It's included because the user chose "follow skill-creator" for testing; progressive disclosure keeps it out of the always-loaded path. If maintainability later outweighs in-skill evals, the apparatus can be slimmed to a "test with realistic prompts + `quick_validate`" inline step or delegated — flagged for a future decision, not done here.
-- **`prompt-architect` retirement is out of scope.** This plan does not modify or delete it. Expect transient trigger overlap until it's retired; `meta-skill`'s stronger, more specific description is the interim mitigation.
+- **`prompt-architect`: one surgical edit, not a refactor.** This plan sets `disable-model-invocation: true` on its frontmatter to end the auto-trigger collision (a high-severity finding in the Codex adversarial review); its body is otherwise untouched, and full retirement remains a separate, later step. Cosmetic follow-up (optional): its `description`/`when_to_use` still read as auto-trigger copy, which is now inaccurate since it can no longer auto-fire.
+- **Adversarial review (Codex, verdict `needs-attention`):** the single high-severity finding — the unresolved trigger collision — is now addressed by the `disable-model-invocation` edit plus the trigger smoke-test gate in Task 5 / Acceptance Criteria. The review also noted that the requested "ChatGPT feedback" material was not present in the repo, so that input could not be incorporated; supply it if a second review pass is wanted.
 - **Decisions locked during planning:** Scope = skills only (commands diverge, handled separately). Testing = follow skill-creator, enhanced (drop deprecated `claude -p` scripts). Knowledge refs = authored fresh from live docs, not salvaged from prompt-architect.
 - **Live source docs** (cite at the top of each reference): `code.claude.com/docs/en/skills`; `shanraisshan/claude-code-best-practice/best-practice/claude-skills.md`; `shanraisshan/claude-code-best-practice/tips/claude-thariq-tips-17-mar-26.md`; `platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8`.
