@@ -1,0 +1,7 @@
+{
+  "enabledPlugins": {
+    "commit-commands@claude-plugins-official": true,
+    "codex@openai-codex": true,
+    "skill-creator@claude-plugins-official": true
+  }
+}
