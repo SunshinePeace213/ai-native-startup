@@ -168,7 +168,9 @@ never inside `evals/`.
   so run them as `python -m scripts.<name>` **from the skill directory** (the
   one containing `scripts/`), not by absolute path to the `.py` file.
 - `run_loop` / `improve_description` shell out to the `claude -p` CLI — the
-  `claude` CLI must be installed and you must pass a `--model` id. Sonnet (`claude-sonnet-4-6`) is enough for this
+  `claude` CLI must be installed and you must pass a `--model`. Use an **alias**
+  (`sonnet`/`opus`/`haiku`) so it tracks the latest model; pin a dated id only
+  when you need reproducibility. The `sonnet` alias is enough for this
   high-volume loop; triggering is model-sensitive, so confirm the final
   `best_description` on your production model.
 - The `generate_review.py` viewer review happens **before** you self-evaluate or

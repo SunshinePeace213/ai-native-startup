@@ -3,7 +3,7 @@
 The mechanics behind SKILL.md phases 4–8. The body describes the loop at a high
 level; this file is the step-by-step. Every command runs with `uv run` from the
 **skill directory** (the one containing `scripts/`) so `scripts.` resolves as a
-package. All `claude -p` invocations pass `--model sonnet` (Sonnet is enough for the high-volume trigger loop).
+package. All `claude -p` invocations pass `--model sonnet` — use a model **alias** (`sonnet`/`opus`/`haiku`) so it tracks the latest, not a pinned dated id; `sonnet` is enough for the high-volume trigger loop.
 
 ## Output layout — definitions vs. results
 
@@ -147,8 +147,10 @@ subagent at the snapshot, and run a fresh `iteration-N`.
 When triggering accuracy is the bottleneck (skill fires when it shouldn't or
 won't fire when it should), run the scripted loop. It shells out to the `claude`
 CLI (`claude -p`), so the `claude` CLI must be installed and `--model` must be set.
-Sonnet (`claude-sonnet-4-6`) is enough for this high-volume loop; triggering is
-model-sensitive, so confirm the final `best_description` on your production model.
+Pass a model **alias** (`sonnet`/`opus`/`haiku`) so it tracks the latest, not a
+pinned dated id. The `sonnet` alias is enough for this high-volume loop;
+triggering is model-sensitive, so confirm the final `best_description` on your
+production model.
 
 **Sign off the trigger queries first.** Build ~20 realistic should- /
 should-not-trigger queries (concrete: file paths, column names, casual phrasing,
