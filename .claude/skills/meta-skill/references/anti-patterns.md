@@ -1,9 +1,5 @@
 # Anti-Patterns & Pre-Ship Review
 
-Live docs:
-- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8
-- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#anti-patterns-to-avoid
-
 Scan every draft for these and replace each before shipping. If the user explicitly wants one, explain the cost once and comply only if they confirm.
 
 ## Older-model holdovers to cut
@@ -78,3 +74,7 @@ Run before shipping. Any failure → fix, then re-read the whole draft fresh.
 - [ ] `allowed-tools` / `disallowed-tools` match what the skill actually needs
 - [ ] `context: fork` paired with an `agent`, and used only for skills with a real task
 - [ ] Hooks added only where determinism matters (and not for what the model does reliably)
+
+## Reference Docs
+- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8
+- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#anti-patterns-to-avoid

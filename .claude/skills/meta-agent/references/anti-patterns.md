@@ -1,10 +1,5 @@
 # Subagent Anti-Patterns & Pre-Ship Review
 
-Live docs:
-- https://code.claude.com/docs/en/sub-agents
-- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8
-- https://github.com/shanraisshan/claude-code-best-practice/blob/main/best-practice/claude-subagents.md
-
 Scan every draft for these before shipping. If the user explicitly wants one, explain the cost once and comply only if they confirm.
 
 ## Anti-patterns → why wrong on 4.8 → fix
@@ -63,3 +58,8 @@ Run before shipping. Any failure → fix, then re-read the whole draft fresh.
 **YAML hygiene**
 - [ ] Frontmatter is real YAML between `---` markers at the top of the file (NOT a fenced ```yaml block)
 - [ ] Only `name` and `description` are required; every other field is valid per `frontmatter.md`
+
+## Reference Docs
+- https://code.claude.com/docs/en/sub-agents
+- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8
+- https://github.com/shanraisshan/claude-code-best-practice/blob/main/best-practice/claude-subagents.md

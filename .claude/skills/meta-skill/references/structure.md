@@ -1,10 +1,5 @@
 # Skill Structure & Progressive Disclosure
 
-Live docs:
-- https://code.claude.com/docs/en/skills#add-supporting-files
-- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#progressive-disclosure-patterns
-- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview#how-skills-work
-
 A skill is a **folder**, not a file. The flexibility comes from bundled scripts, references, and assets — not from longer prose in `SKILL.md`.
 
 ## Directory layout
@@ -88,3 +83,8 @@ When the skill references MCP tools, use the **fully qualified** name `ServerNam
 ## File-path hygiene
 
 Always forward slashes, even on Windows: `scripts/helper.py`, not `scripts\helper.py`. Backslashes break on Unix. Name files for their content (`form_validation_rules.md`, not `doc2.md`) so Claude can navigate by name.
+
+## Reference Docs
+- https://code.claude.com/docs/en/skills#add-supporting-files
+- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#progressive-disclosure-patterns
+- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview#how-skills-work

@@ -1,10 +1,5 @@
 # Authoring Principles
 
-Live docs:
-- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8
-- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices
-- Thariq Shihipar (@trq212), "Lessons from Building Claude Code: How We Use Skills"
-
 One merged list. Where Thariq's craft advice and the Opus 4.8 model behavior point the same way, it's stated once. Apply these while drafting; the pre-ship checklist in `anti-patterns.md` re-checks them.
 
 ## 1. Don't state the obvious
@@ -77,3 +72,8 @@ Cut `$100 tip`, "I bet you can't," inflated personas ("10,000+ PRs reviewed"), a
 ## On output length and examples
 
 When output shape matters, specify it (word count, bullet count, sections, or a table schema) — 4.8 calibrates length to perceived complexity, so "thorough" leaves it unanchored. To *reduce* verbosity, a positive example of the right concision beats negative "don't over-explain" instructions.
+
+## Reference Docs
+- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8
+- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices
+- https://github.com/shanraisshan/claude-code-best-practice/blob/main/tips/claude-thariq-tips-17-mar-26.md, Thariq Shihipar (@trq212), "Lessons from Building Claude Code: How We Use Skills"

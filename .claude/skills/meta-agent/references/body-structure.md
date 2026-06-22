@@ -1,10 +1,5 @@
 # Subagent Body Structure
 
-Live docs:
-- https://code.claude.com/docs/en/sub-agents#write-subagent-files
-- https://code.claude.com/docs/en/sub-agents#example-subagents
-- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8
-
 ## The body IS the system prompt
 
 The markdown after the frontmatter becomes the subagent's system prompt. The subagent sees **only its own prompt plus the delegation message Claude writes when handing off** — plus appended environment details (cwd, and unless it's the built-in Explore/Plan, CLAUDE.md + git status). It does **not** see the main conversation's history, the files Claude already read, or the skills already invoked.
@@ -182,3 +177,8 @@ If the diff is clean, say so in one line. Do not restate the whole diff.
 ```
 
 Note what makes it valid: `name` is lowercase-hyphen; the `description` is third person, names real trigger contexts, says "use proactively", and routes adjacent work elsewhere with a NOT-boundary; `tools` is the least set that lets it read the diff (`Bash` for `git diff`, no Write/Edit because it's read-only); `effort: high` is a deliberate reasoning-sensitive default; the body restates the read-only constraint and the cwd-relative facts it can't assume from a shared history it doesn't have.
+
+## Reference Docs
+- https://code.claude.com/docs/en/sub-agents#write-subagent-files
+- https://code.claude.com/docs/en/sub-agents#example-subagents
+- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8

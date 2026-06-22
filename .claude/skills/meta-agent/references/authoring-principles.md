@@ -1,10 +1,5 @@
 # Subagent Authoring Principles (Opus 4.8)
 
-Live docs:
-- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8
-- https://code.claude.com/docs/en/sub-agents
-- https://github.com/shanraisshan/claude-code-best-practice/blob/main/best-practice/claude-subagents.md
-
 The subagent-relevant deltas only. Generic prompting craft lives in the model docs; this is what changes specifically when you author an agent on 4.8. The pre-ship checklist in `anti-patterns.md` re-checks these.
 
 ## 1. Effort is the dominant capability lever — set it in frontmatter
@@ -61,3 +56,8 @@ Set `memory` (`project` recommended) only when the agent genuinely benefits from
 ## 9. Remove forced progress-update scaffolding
 
 4.8 emits regular, well-calibrated progress updates on long agentic traces on its own. Delete "after every N tool calls, summarize progress" from agent bodies — it fights the model's native pacing. If the *content* of updates is wrong for your use case, describe what a good update looks like and give one example; don't mandate a cadence.
+
+## Reference Docs
+- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8
+- https://code.claude.com/docs/en/sub-agents
+- https://github.com/shanraisshan/claude-code-best-practice/blob/main/best-practice/claude-subagents.md

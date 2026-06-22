@@ -1,10 +1,5 @@
 # SKILL.md Frontmatter Reference
 
-Live docs (authoritative for fields/constraints):
-- https://code.claude.com/docs/en/skills#frontmatter-reference
-- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices
-- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview
-
 Every field is optional. Only `description` is recommended — without it Claude can't decide when to load the skill. Frontmatter is YAML between `---` markers at the top of `SKILL.md`.
 
 ## The two listing limits (read first)
@@ -79,3 +74,8 @@ Other confirmed substitutions (live docs): `$ARGUMENTS`, `$ARGUMENTS[N]` / `$N`,
 
 - **`${CLAUDE_PLUGIN_DATA}`** — used in the distilled Thariq material as the stable per-plugin folder for state that survives upgrades. It is **not** listed in any official string-substitution table I could reach (live skills doc lists only `${CLAUDE_SESSION_ID}`, `${CLAUDE_EFFORT}`, `${CLAUDE_SKILL_DIR}`; best-practices and overview docs don't mention it). Treat as plausible but unconfirmed; verify against current docs before relying on it in a shipped skill. Do not present it as official.
 - **1,024-char `description` limit in Claude Code specifically** — confirmed in the public Agent Skills best-practices spec, not restated verbatim in the live Claude Code skills page (which states the 1,536 *combined* cap). The 1,024 single-field limit and the no-XML rule are the cross-product validator rules; they hold for skills uploaded to claude.ai / the API. In Claude Code the binding practical limit is the 1,536 combined truncation. Both are documented; they govern different layers.
+
+## Reference Docs
+- https://code.claude.com/docs/en/skills#frontmatter-reference
+- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices
+- https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview

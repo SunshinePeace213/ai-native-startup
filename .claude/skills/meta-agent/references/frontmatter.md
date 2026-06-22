@@ -1,10 +1,5 @@
 # Subagent Frontmatter Reference
 
-Live docs (authoritative for fields/constraints):
-- https://code.claude.com/docs/en/sub-agents
-- https://github.com/shanraisshan/claude-code-best-practice/blob/main/best-practice/claude-subagents.md
-- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8
-
 A subagent is a Markdown file in an `agents/` directory: YAML frontmatter between `---` markers, then a body that becomes the system prompt. Only `name` and `description` are required. Everything else is optional. The same field set is accepted as JSON via the `--agents` CLI flag and the SDK `agents` option (there the markdown body is supplied as the `prompt` field).
 
 ## Read first — the load-bearing gotchas
@@ -159,3 +154,8 @@ description: >-
 | Plugin `agents/` directory | Where plugin is enabled | 5 (lowest) |
 
 Same `name` in two scopes → higher priority wins. Project scope is discovered by walking up from the cwd; the definition closest to the working directory wins among nested project dirs (v2.1.178+). Plugin subfolders become part of the scoped id (`plugin:subfolder:name`); project/user subfolders do **not** affect identity.
+
+## Reference Docs
+- https://code.claude.com/docs/en/sub-agents
+- https://github.com/shanraisshan/claude-code-best-practice/blob/main/best-practice/claude-subagents.md
+- https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-4-8
