@@ -16,7 +16,8 @@ when_to_use: >-
   all; when deciding directory-vs-single-file layout or how to split into
   references/; or when validating and packaging a skill for distribution. Also
   when the user describes a repeatable workflow and the right move is to capture
-  it as a reusable skill, even if they didn't use the word "skill".
+  it as a reusable skill, even if they didn't use the word "skill". Not for
+  authoring slash commands (use meta-commands) or subagents (use meta-agent).
 ---
 
 # Meta-Skill: Authoring Claude Code Agent Skills
