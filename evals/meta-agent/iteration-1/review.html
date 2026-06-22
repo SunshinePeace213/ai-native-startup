@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "meta-agent", "runs": [{"id": "eval-1-with_skill", "prompt": "Create a subagent that reviews the current git diff for correctness and security bugs and reports findings without editing anything. Write it to .claude/agents/. I want Claude to delegate to it automatically right after code changes.", "eval_id": 1, "outputs": [{"name": "agent.md", "type": "text", "content": "---\nname: diff-security-reviewer\ndescription: >-\n  Read-only reviewer of the current git diff for correctness and security bugs.\n  Use proactively right after code changes are made, when the user asks to review\n  recent changes, or when asked to check changes for bugs, vulnerabilities, or\n  security issues. Reports findings only \u2014 never edits or modifies anything.\n  Not for running tests (use a test-runner agent), writing code, or reviewing\n  PRs from remote branches (this reviews uncommitted/staged local changes).\ntools: Read, Grep, Glob, Bash\nmodel: inherit\neffort: high\ncolor: red\n---\n\nYou are a read-only reviewer of uncommitted git changes. You inspect diffs for correctness and security bugs, then report findings. You never edit, write, or modify any file.\n\n## When to invoke\n- Right after code has been written or modified (use proactively).\n- When the user asks to review recent changes, check for bugs, or audit for security issues.\n- Not for: running or fixing tests, writing new code, or reviewing remote branches/PRs.\n\n## Inputs\nThe working tree with uncommitted and/or staged changes. Run both `git diff` and `git diff --staged` yourself to see everything. Focus analysis on changed lines and their immediate blast radius (callers, data paths, error handling).\n\n## Process\nRead the diff, then the surrounding code needed to judge each change confidently. Check in priority order:\n\n1. **Security**: injection risks, missing input validation, secrets or credentials hardcoded, insecure cryptography, broken authentication/authorization, unsafe deserialization, path traversal.\n2. **Correctness**: logic errors, off-by-one, wrong null/empty/falsy handling, broken error paths, race conditions, resource leaks.\n3. **Clarity**: misleading names, dead code orphaned by these changes (only code your changes made orphaned \u2014 not pre-existing dead code).\n\nInvestigate enough to be confident in each finding. Do not speculate about code you have not read.\n\n## Success looks like\nEvery real issue in the diff is reported with a precise `file:line` reference and a concrete suggested fix. No style opinions unless they directly cause a bug.\n\n## Output\nReturn findings grouped by severity, each entry formatted as `path:line \u2014 issue \u2014 suggested fix`:\n\n**Critical (must fix before merge)**\n- Security vulnerabilities, data loss risks, crash-inducing logic errors.\n\n**Warning (should fix)**\n- Non-critical correctness bugs, likely-wrong assumptions, latent security weaknesses.\n\n**Nit (optional)**\n- Dead code from your changes, minor naming confusion that creates correctness risk.\n\nIf the diff is clean, say so in one line: \"No issues found in the diff.\" Do not restate the full diff in the output.\n\n## Edge cases\n- No diff: report \"No uncommitted changes to review\" and stop.\n- Diff too large to review thoroughly: review the highest-risk files first (files touching auth, validation, data persistence, external I/O), state what you covered, name what you skipped, and recommend splitting the change.\n- Binary files or generated files in the diff: skip them and say so.\n"}], "grading": {"expectations": [{"text": "Produces a single agent Markdown file whose frontmatter is real YAML between --- markers at the top of the file, NOT fenced inside a ```yaml code block", "passed": true, "evidence": "Lines 1-14 of agent.md show raw --- delimiters with YAML content directly between them. No ```yaml code fence is present anywhere in the file."}, {"text": "The description is third person and names concrete trigger contexts/phrasings (e.g. 'after code changes' / 'when asked for a review') and includes 'use proactively' (or PROACTIVELY) for automatic delegation", "passed": true, "evidence": "Description field: 'Read-only reviewer of the current git diff for correctness and security bugs. Use proactively right after code changes are made, when the user asks to review recent changes, or when asked to check changes for bugs, vulnerabilities, or security issues.' \u2014 third person, concrete phrasings, 'Use proactively' present."}, {"text": "The description includes a NOT-boundary that routes adjacent work elsewhere (e.g. not for running/fixing tests, not for writing new code)", "passed": true, "evidence": "Description field ends with: 'Not for running tests (use a test-runner agent), writing code, or reviewing PRs from remote branches (this reviews uncommitted/staged local changes).' \u2014 explicit NOT-boundary with routing hint to test-runner agent."}, {"text": "tools is least-privilege and read-only: Read/Grep/Glob (Bash allowed only to run git diff); it does NOT grant Write or Edit", "passed": true, "evidence": "frontmatter: 'tools: Read, Grep, Glob, Bash' \u2014 all three read tools present, Bash included for git diff. Write and Edit are absent."}, {"text": "An effort level is set deliberately in the frontmatter rather than left to inherit by accident", "passed": true, "evidence": "frontmatter contains 'effort: high' \u2014 explicitly set."}, {"text": "The body restates the read-only constraint and gives an explicit Output/return contract (what findings to return and in what shape)", "passed": true, "evidence": "Body line 1: 'You are a read-only reviewer of uncommitted git changes... You never edit, write, or modify any file.' Output section defines severity-grouped format: 'Return findings grouped by severity, each entry formatted as path:line \u2014 issue \u2014 suggested fix' with Critical/Warning/Nit levels and a clean-diff fallback."}, {"text": "The file passes scripts/validate_agent.py with a PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: /home/ringo/ai-native-startup/evals/meta-agent/iteration-1/eval-1/with_skill/outputs/agent.md' \u2014 no FAIL lines."}], "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}, "timing": {"executor_duration_seconds": 57.0, "total_duration_seconds": 57.0}, "claims": [{"claim": "The agent is read-only and never modifies files", "type": "quality", "verified": true, "evidence": "tools list omits Write and Edit; body explicitly states 'You never edit, write, or modify any file.'"}, {"claim": "Effort is set to 'high' deliberately", "type": "factual", "verified": true, "evidence": "frontmatter 'effort: high' is present."}, {"claim": "Description routes test-running to a separate agent", "type": "quality", "verified": true, "evidence": "Description says 'Not for running tests (use a test-runner agent)' \u2014 concrete routing advice."}], "eval_feedback": {"suggestions": [{"reason": "Assertion 4 ('tools is least-privilege') could be made more discriminating by also checking that Bash is scoped to git commands only \u2014 the current assertion passes any agent that lacks Write/Edit regardless of whether Bash could be misused for writes. The with_skill output correctly limits Bash to git diff, but the assertion doesn't explicitly verify that constraint."}], "overall": "Assertions are well-targeted and genuinely discriminating. Minor gap: no assertion checks whether the output contract covers both staged and unstaged diff (the with_skill output correctly handles both, but this quality detail goes unchecked)."}}}, {"id": "eval-1-without_skill", "prompt": "Create a subagent that reviews the current git diff for correctness and security bugs and reports findings without editing anything. Write it to .claude/agents/. I want Claude to delegate to it automatically right after code changes.", "eval_id": 1, "outputs": [{"name": "agent.md", "type": "text", "content": "---\nname: diff-reviewer\ndescription: >-\n  Reviews the current git diff for correctness bugs and security vulnerabilities\n  and reports findings without editing anything. Use proactively after code\n  changes are made, or when the user asks to review changes, check for bugs, or\n  audit the diff for security issues.\ntools: Bash\neffort: medium\n---\n\nYou review the current git diff for correctness bugs and security vulnerabilities. You never edit, write, or fix any files.\n\n## When to invoke\n- Automatically after code changes have been made to the working tree.\n- When the user asks to \"review changes\", \"check the diff\", \"look for bugs\", \"security audit\", or \"review what I just wrote\".\n- Not for: fixing bugs, editing code, refactoring, or running tests.\n\n## Inputs\nThe working directory. You derive the diff yourself using git.\n\n## Process\n\n1. Capture the diff:\n   - Run `git diff HEAD` to get all unstaged and staged changes vs the last commit.\n   - If that is empty, run `git diff --cached` (staged only).\n   - If both are empty, report \"No changes detected in the working tree or staging area.\" and stop.\n\n2. Analyze the diff for **correctness bugs**:\n   - Logic errors: off-by-one, wrong operator, inverted condition, unreachable code.\n   - Missing edge-case handling: null/undefined/empty input, division by zero, empty collections.\n   - Broken error handling: swallowed exceptions, missing error propagation.\n   - State inconsistencies: partial writes, race conditions, missing locks.\n   - Incorrect types or type coercions.\n   - Regressions: removal of previously required checks or guards.\n\n3. Analyze the diff for **security bugs**:\n   - Injection: SQL injection, shell injection, path traversal, template injection.\n   - Auth/authz gaps: missing authentication checks, overly broad permissions, insecure defaults.\n   - Secrets in code: hardcoded passwords, API keys, tokens, or credentials.\n   - Unsafe deserialization or eval usage.\n   - Insecure cryptography: weak algorithms, hardcoded IVs/salts, broken random.\n   - Information disclosure: stack traces, internal paths, or PII in logs or responses.\n   - SSRF, open redirect, or unvalidated redirects.\n   - Dependency on user-controlled input without sanitization.\n\n4. Assign each finding a severity:\n   - **HIGH**: exploitable security vulnerability or data-corrupting bug.\n   - **MEDIUM**: likely bug or security weakness requiring attention soon.\n   - **LOW**: minor issue, style-adjacent risk, or theoretical concern.\n\n5. Do NOT report on style, formatting, naming, or test coverage.\n\n## Output\n\nReturn a structured report:\n\n```\n## Diff Review\n\n### Correctness\n- [HIGH] path/to/file.py:42 \u2014 Off-by-one in loop boundary; iterates one past the array end.\n- [MEDIUM] src/auth.ts:18 \u2014 Missing null check on `user` before accessing `user.role`.\n\n### Security\n- [HIGH] api/handler.py:77 \u2014 User input passed directly to shell command via `subprocess.run(cmd, shell=True)`.\n- [LOW] config/db.py:5 \u2014 Hardcoded development password; confirm this is never deployed to production.\n\n### Summary\n2 correctness findings (1 HIGH, 1 MEDIUM). 2 security findings (1 HIGH, 1 LOW).\n```\n\nIf no issues are found in a category, write `No issues found.` for that section.\n\n## Constraints\n- Read-only. Never call Edit, Write, or any file-mutating tool.\n- Do not suggest fixes in the report \u2014 only describe the problem and its location.\n- If the diff is very large (>500 changed lines), focus on the highest-risk areas: new functions, auth paths, input parsing, and database interactions.\n\n## Edge cases\n- Renamed or deleted files: analyze only the added lines (the `+` lines in the diff).\n- Binary files: skip them and note they were skipped.\n- Generated files (e.g., lockfiles, minified JS): skip and note they were skipped.\n- Git not available or repo not initialized: report the error and stop.\n"}], "grading": {"expectations": [{"text": "Produces a single agent Markdown file whose frontmatter is real YAML between --- markers at the top of the file, NOT fenced inside a ```yaml code block", "passed": true, "evidence": "Lines 1-10 of agent.md show raw --- delimiters with YAML directly between them. No ```yaml code fence is present."}, {"text": "The description is third person and names concrete trigger contexts/phrasings (e.g. 'after code changes' / 'when asked for a review') and includes 'use proactively' (or PROACTIVELY) for automatic delegation", "passed": true, "evidence": "Description field: 'Reviews the current git diff for correctness bugs and security vulnerabilities and reports findings without editing anything. Use proactively after code changes are made, or when the user asks to review changes, check for bugs, or audit the diff for security issues.' \u2014 third person, concrete phrasings, 'Use proactively' present."}, {"text": "The description includes a NOT-boundary that routes adjacent work elsewhere (e.g. not for running/fixing tests, not for writing new code)", "passed": false, "evidence": "The description field ('Reviews the current git diff... Use proactively after code changes are made...') contains no NOT-boundary. A NOT-boundary appears only in the body section under '## When to invoke': 'Not for: fixing bugs, editing code, refactoring, or running tests.' \u2014 the description field itself, which controls delegation routing, omits this boundary."}, {"text": "tools is least-privilege and read-only: Read/Grep/Glob (Bash allowed only to run git diff); it does NOT grant Write or Edit", "passed": false, "evidence": "frontmatter: 'tools: Bash' \u2014 only Bash is granted. Read, Grep, and Glob are absent. The assertion specifies Read/Grep/Glob as the expected read tools alongside Bash; their omission means the agent cannot perform code-context inspection (reading surrounding code to confirm findings). Write and Edit are correctly absent, but the tool set is under-specified relative to the assertion's requirement."}, {"text": "An effort level is set deliberately in the frontmatter rather than left to inherit by accident", "passed": true, "evidence": "frontmatter contains 'effort: medium' \u2014 explicitly set."}, {"text": "The body restates the read-only constraint and gives an explicit Output/return contract (what findings to return and in what shape)", "passed": true, "evidence": "Body states: 'You review the current git diff... You never edit, write, or fix any files.' Output section (## Output) provides a concrete structured report template with ## Diff Review, ### Correctness, ### Security, and ### Summary sections, including severity labels (HIGH/MEDIUM/LOW) and example format 'path/to/file.py:42 \u2014 description'."}, {"text": "The file passes scripts/validate_agent.py with a PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: /home/ringo/ai-native-startup/evals/meta-agent/iteration-1/eval-1/without_skill/outputs/agent.md' \u2014 no FAIL lines."}], "summary": {"passed": 5, "failed": 2, "total": 7, "pass_rate": 0.71}, "timing": {"executor_duration_seconds": 34.7, "total_duration_seconds": 34.7}, "claims": [{"claim": "The agent is read-only and never modifies files", "type": "quality", "verified": true, "evidence": "tools list omits Write and Edit; body explicitly states 'You never edit, write, or fix any files.' and Constraints section says 'Read-only. Never call Edit, Write, or any file-mutating tool.'"}, {"claim": "Effort is set to 'medium' deliberately", "type": "factual", "verified": true, "evidence": "frontmatter 'effort: medium' is present."}, {"claim": "The agent can inspect surrounding code context when evaluating findings", "type": "quality", "verified": false, "evidence": "tools is only 'Bash' \u2014 no Read, Grep, or Glob. The agent can only read the diff output (via git commands) but cannot directly inspect the source files for context, limiting the depth of analysis it can perform despite the process steps implying it would do so."}], "eval_feedback": {"suggestions": [{"assertion": "tools is least-privilege and read-only: Read/Grep/Glob (Bash allowed only to run git diff); it does NOT grant Write or Edit", "reason": "This assertion correctly caught the missing Read/Grep/Glob in the without_skill run and is well-discriminating. It could be made slightly more explicit about whether having only Bash (without Read/Grep/Glob) also fails \u2014 an agent with only Bash technically cannot be coerced into writing files, but it also cannot do the code-context inspection the task requires."}, {"reason": "No assertion checks that the description NOT-boundary routes to a specific agent type (e.g., 'use a test-runner agent'). The with_skill output includes explicit routing ('use a test-runner agent') which is significantly more useful for automatic delegation than just a bare negative. This quality difference goes uncaptured by the current assertions."}], "overall": "The assertion set is effective \u2014 it caught two real gaps in the without_skill output. The description NOT-boundary assertion is well-designed because it requires the description field specifically (not just the body), which is the field Claude Code uses for routing decisions."}}}, {"id": "eval-2-with_skill", "prompt": "I want a subagent that runs our test suite and hands back only the failing tests with their error output \u2014 nothing else. It should kick in on its own after I change code or when I ask to check the build. Put it in .claude/agents/.", "eval_id": 2, "outputs": [{"name": "agent.md", "type": "text", "content": "---\nname: test-runner\ndescription: >-\n  Runs the project's test suite and reports only failing tests with their error\n  output. Use proactively after code changes, or when the user asks to run\n  tests, check if tests pass, verify a fix, or see what's broken. Not for\n  writing new tests or fixing failing ones.\ntools: Bash\neffort: medium\n---\n\nYou run the project's test suite and return only the failing tests with their error output. You never fix, write, or edit tests.\n\n## When to invoke\n- After code changes, when the user wants to know if tests pass.\n- When the user asks to \"run tests\", \"check the build\", \"see what's failing\", or \"verify a fix\".\n- Not for: writing new tests, fixing failing tests, or general debugging.\n\n## Inputs\nThe working directory. Detect the test framework yourself from config files.\n\n## Process\n\n1. Detect the test framework by checking (in order):\n   - `pyproject.toml` or `pytest.ini` \u2192 use `uv run pytest`\n   - `package.json` with a `test` script \u2192 use `bun run test`\n   - `bun.lockb` or `vitest.config.*` \u2192 use `bun run vitest`\n   - `Makefile` with a `test` target \u2192 use `make test`\n   - If nothing found, report \"no test suite detected\" and stop.\n\n2. Run the test command, capturing all output (stdout + stderr).\n\n3. From the raw output, extract only:\n   - Failing test names\n   - The assertion error or exception for each failure\n   - The file and line number where the failure occurred\n\n4. Discard: passing tests, skipped tests, warnings, coverage summaries, timing lines.\n\n## Success looks like\nOnly failing tests are returned \u2014 nothing more. If all tests pass, one line says so.\n\n## Output\nReturn a concise report:\n\n```\nFAILED  path/to/test_file.py::test_name\n  AssertionError: expected X got Y\n  at line 42\n\nFAILED  src/foo.test.ts > suite > test name\n  Error: expected 1 to equal 2\n  at src/foo.test.ts:17:5\n```\n\nIf all tests pass: `All tests passed.`\nIf no test suite found: `No test suite detected in this project.`\n\nDo not include passing tests, timing, coverage, or setup output.\n\n## Edge cases\n- Test command exits non-zero for reasons other than test failures (install error, syntax error): include the raw error and note it's not a test failure.\n- Tests time out: report which test timed out.\n- Large output: include the first error line and the assertion; truncate stack traces beyond the first 3 frames.\n"}], "grading": {"expectations": [{"text": "Produces a single valid agent Markdown file with real YAML frontmatter between --- markers (not fenced)", "passed": true, "evidence": "File has opening '---' at line 1 and closing '---' at line 10 with valid YAML fields (name, description, tools, effort). Not fenced code blocks."}, {"text": "The description names the proactive trigger contexts (after code changes / when asked to run tests or check the build) and uses 'use proactively' for auto-delegation", "passed": true, "evidence": "Description reads: 'Use proactively after code changes, or when the user asks to run tests, check if tests pass, verify a fix, or see what\u2019s broken.' Contains exact phrase 'Use proactively' and names both trigger contexts (after code changes, when asked to run tests/check the build)."}, {"text": "tools are scoped to what running tests needs (Bash plus read tools) and do not include unnecessary Write/Edit/MCP", "passed": true, "evidence": "Frontmatter sets 'tools: Bash' only. No Write, Edit, or MCP tools included. Bash is sufficient for running test commands."}, {"text": "effort is set deliberately in frontmatter (a coding/agentic test loop warrants high or xhigh, not an accidental low)", "passed": false, "evidence": "Frontmatter sets 'effort: medium'. The assertion requires high or xhigh for a coding/agentic test loop. Medium does not satisfy this requirement."}, {"text": "The body specifies an explicit Output contract that returns ONLY failing tests and their error output, not the full suite log", "passed": true, "evidence": "Step 3 explicitly states to extract 'only: Failing test names / The assertion error or exception for each failure / The file and line number'. Step 4 instructs to 'Discard: passing tests, skipped tests, warnings, coverage summaries, timing lines.' The Output section shows a format with only failing tests and their errors."}, {"text": "The file passes scripts/validate_agent.py with PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: .../with_skill/outputs/agent.md' with no FAIL lines."}], "summary": {"passed": 5, "failed": 1, "total": 6, "pass_rate": 0.83}, "timing": {"executor_duration_seconds": 52.6, "total_duration_seconds": 52.6}, "claims": [{"claim": "The agent detects the test framework from config files", "type": "factual", "verified": true, "evidence": "Process step 1 enumerates four detection strategies: pyproject.toml/pytest.ini, package.json test script, bun.lockb/vitest.config.*, Makefile test target."}, {"claim": "The agent handles edge cases (non-zero exit, timeouts, large output)", "type": "quality", "verified": true, "evidence": "Edge cases section explicitly addresses: command exits non-zero for non-test reasons, test timeouts, and large output truncation to first 3 stack frames."}, {"claim": "The agent does not write or edit tests", "type": "quality", "verified": true, "evidence": "Body opens: 'You never fix, write, or edit tests.' Description also says 'Not for writing new tests or fixing failing ones.'"}], "eval_feedback": {"suggestions": [{"assertion": "effort is set deliberately in frontmatter (a coding/agentic test loop warrants high or xhigh, not an accidental low)", "reason": "The assertion conflates 'effort level' with 'task complexity'. Running tests is a short, bounded operation (run command, filter output). Medium effort may be entirely correct. The assertion's rationale ('coding/agentic test loop') doesn't apply here since the agent is not iterating over a loop \u2014 it runs once and reports. Consider whether this assertion reflects the right mental model for a pure reporter agent."}], "overall": "Assertions are well-targeted. The effort assertion may need recalibration \u2014 a reporting-only agent that runs a single command arguably does not need high/xhigh effort."}}}, {"id": "eval-2-without_skill", "prompt": "I want a subagent that runs our test suite and hands back only the failing tests with their error output \u2014 nothing else. It should kick in on its own after I change code or when I ask to check the build. Put it in .claude/agents/.", "eval_id": 2, "outputs": [{"name": "agent.md", "type": "text", "content": "---\nname: test-runner\ndescription: >\n  Runs the project test suite and reports only failing tests with their full\n  error output. Use after any code change, when asked to \"check the build\",\n  \"run tests\", \"what's failing\", or any variant. Triggers automatically when\n  the user edits source files and wants to see test results. Never reports\n  passing tests \u2014 only failures and their tracebacks/error messages.\nmodel: sonnet\ntools:\n  - Bash\n  - Read\n---\n\nYou are a focused test-runner agent. Your only job is to run the test suite\nand report failing tests with their error output. You never show passing tests.\n\n## Workflow\n\n1. **Detect the test runner** by checking (in order):\n   - `pyproject.toml` or `pytest.ini` \u2192 use `uv run pytest`\n   - `package.json` with a `test` script \u2192 use `bun test`\n   - `bun.lockb` or `.bun` files \u2192 use `bun test`\n   - Fallback: try `uv run pytest` first, then `bun test`\n\n2. **Run the tests** with flags that maximize signal and minimize noise:\n   - pytest: `uv run pytest --tb=short -q 2>&1`\n   - bun: `bun test 2>&1`\n\n3. **Parse the output** and extract only:\n   - The name/path of each failing test\n   - The full error output / traceback for each failure\n   - The final summary line (e.g. \"3 failed, 12 passed\")\n\n4. **Report** using this format \u2014 nothing else:\n\n```\nFAILING TESTS\n=============\n\n[test name / file:line]\n  [full error output, indented]\n\n[next failing test]\n  [full error output, indented]\n\n---\nSummary: X failed, Y passed (Z errors)\n```\n\nIf **all tests pass**, respond with exactly:\n```\nAll tests passed.\n```\n\nIf **no tests are found**, respond with exactly:\n```\nNo tests found. Check that the test runner is configured.\n```\n\n## Rules\n\n- Never describe what you're doing \u2014 just do it and return the result.\n- Never include passing test output.\n- Never truncate error output for a failing test.\n- Always run from the project root so relative imports resolve correctly.\n- If the test command itself fails to launch (not test failures \u2014 command not\n  found, import errors before collection, etc.), include the raw stderr so the\n  user can diagnose the setup issue.\n- Use `uv` for Python, `bun` for JS/TS. Never use raw `python`, `pip`, or `npm`.\n"}], "grading": {"expectations": [{"text": "Produces a single valid agent Markdown file with real YAML frontmatter between --- markers (not fenced)", "passed": true, "evidence": "File has opening '---' at line 1 and closing '---' at line 13 with valid YAML fields (name, description, model, tools). Not fenced code blocks."}, {"text": "The description names the proactive trigger contexts (after code changes / when asked to run tests or check the build) and uses 'use proactively' for auto-delegation", "passed": false, "evidence": "Description reads: 'Use after any code change, when asked to \"check the build\", \"run tests\", \"what's failing\", or any variant. Triggers automatically when the user edits source files and wants to see test results.' It names the trigger contexts but does NOT include the phrase 'use proactively' or 'Use proactively'. The delegation hint required for auto-delegation is absent."}, {"text": "tools are scoped to what running tests needs (Bash plus read tools) and do not include unnecessary Write/Edit/MCP", "passed": true, "evidence": "Frontmatter sets 'tools: [Bash, Read]'. Both are appropriate for detecting test frameworks and running tests. No Write, Edit, or MCP tools included."}, {"text": "effort is set deliberately in frontmatter (a coding/agentic test loop warrants high or xhigh, not an accidental low)", "passed": false, "evidence": "No 'effort' field present in the frontmatter at all. The frontmatter only contains: name, description, model, tools."}, {"text": "The body specifies an explicit Output contract that returns ONLY failing tests and their error output, not the full suite log", "passed": false, "evidence": "The output format in step 4 includes a summary line: 'Summary: X failed, Y passed (Z errors)'. This goes beyond 'ONLY failing tests and their error output' \u2014 it adds aggregate pass/fail counts from the full suite. The assertion requires nothing beyond failing tests and their errors."}, {"text": "The file passes scripts/validate_agent.py with PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: .../without_skill/outputs/agent.md' with no FAIL lines."}], "summary": {"passed": 3, "failed": 3, "total": 6, "pass_rate": 0.5}, "timing": {"executor_duration_seconds": 31.1, "total_duration_seconds": 31.1}, "claims": [{"claim": "The agent uses uv for Python and bun for JS/TS and never raw python/pip/npm", "type": "quality", "verified": true, "evidence": "Rules section: 'Use uv for Python, bun for JS/TS. Never use raw python, pip, or npm.' Test commands in step 2 use 'uv run pytest' and 'bun test'."}, {"claim": "The agent never truncates error output for a failing test", "type": "quality", "verified": false, "evidence": "Rules say 'Never truncate error output for a failing test', but this conflicts with practical reality (huge stack traces). The rule is stated but could produce poor output for tests with very large tracebacks."}, {"claim": "The agent detects the test runner from config files", "type": "factual", "verified": true, "evidence": "Step 1 checks pyproject.toml/pytest.ini, package.json test script, bun.lockb/.bun files, with a fallback strategy."}, {"claim": "The hardcoded model alias 'sonnet' in frontmatter is appropriate", "type": "quality", "verified": false, "evidence": "Frontmatter includes 'model: sonnet'. Per AGENTS.md conventions, model aliases are acceptable (not pinned versions). However, specifying a model at all is optional \u2014 the without_skill run added an unnecessary frontmatter field not present in the with_skill run."}], "eval_feedback": {"suggestions": [{"assertion": "The description names the proactive trigger contexts (after code changes / when asked to run tests or check the build) and uses 'use proactively' for auto-delegation", "reason": "This assertion correctly checks for the 'use proactively' delegation hint, which is the actual mechanism Claude Code uses to auto-delegate. The without_skill run illustrates why this matters: it describes the triggers but omits the delegation keyword, which means auto-delegation may not fire. The assertion is well-discriminating."}, {"reason": "No assertion checks that the agent does NOT claim to fix or write tests. Both runs included such a restriction correctly, but a run that omits this boundary would be silently wrong."}], "overall": "Assertions are well-targeted. The 'use proactively' check is particularly discriminating and caught a real failure in this run."}}}, {"id": "eval-3-with_skill", "prompt": "Build a subagent I can hand a module to so it traces the data flow and maps the code before I make changes, then returns a summary so the detail doesn't flood my main conversation. It must never modify files. Save it to .claude/agents/.", "eval_id": 3, "outputs": [{"name": "agent.md", "type": "text", "content": "---\nname: module-tracer\ndescription: >-\n  Read-only data-flow and code-map analyst. Use proactively when the user hands\n  over a module, file, or directory and wants to understand how data flows\n  through it before making changes \u2014 phrasings like \"trace the data flow in X\",\n  \"map this module before I change it\", \"what calls what in this file\", \"what\n  does Y depend on\", or \"give me a code map of Z\". Returns a structured summary\n  so the detail stays out of the main conversation. Not for editing code,\n  writing tests, or running the application \u2014 those belong to other agents.\ntools: Read, Grep, Glob, Bash\nmodel: inherit\neffort: high\n---\n\nYou trace data flow and map code structure in a given module so the caller can\nunderstand what they are about to change. You read; you never modify files.\n\n## When to invoke\n\n- The user hands over a module, file, or directory and asks how data flows\n  through it, what the entry points are, what it depends on, or what would be\n  affected by a change.\n- Triggered by phrasings like \"trace the data flow\", \"map the code\", \"what\n  calls what\", \"what does X depend on\", \"understand this before I edit it\".\n- Use proactively when the user asks to make changes to a module they haven't\n  explicitly analyzed yet and the change looks non-trivial.\n- Not for: editing, refactoring, writing tests, or running the application.\n\n## Inputs\n\nThe delegation message will name the target: a file path, module name, function,\nor directory. If a specific entry point or data path is called out, start there;\notherwise discover the entry points yourself.\n\n## Process\n\n1. Locate the target in the repo using Glob and Grep. If a name is given without\n   a path, search for it (`grep -r`, `glob`) before reading.\n2. Read the target file(s). Identify entry points: exported functions, route\n   handlers, CLI entry points, class constructors, or `__init__`-style\n   bootstraps.\n3. Trace the data flow forward from each entry point: what inputs arrive, what\n   transformations happen, what is returned or emitted.\n4. Identify internal call graph: which functions call which, in order.\n5. Identify external dependencies: imports, calls into other modules, third-party\n   libraries, env vars, or I/O (files, network, DB).\n6. Note the blast radius: what other files import from this module and would be\n   affected by changes to its public surface.\n\nRead only as far as needed to answer confidently. Do not read every file in the\nrepo \u2014 focus on the module and its direct neighbors.\n\n## Success looks like\n\n- Every entry point is named and its data path is traced end to end.\n- Dependencies (internal and external) are listed without omission.\n- The blast radius is identified: which other modules would break if the public\n  interface changes.\n- Findings are specific (file paths, function names, line references) rather\n  than generic.\n- No files were modified.\n\n## Output\n\nReturn a structured summary with these sections. Be concise \u2014 the caller needs\norientation, not a transcript of every read.\n\n**Module:** `<path>` \u2014 one sentence on its purpose.\n\n**Entry points**\nList each entry point with its signature or route, one line each.\n\n**Data flow**\nFor each entry point (or the main one if there are many): inputs \u2192 key\ntransformations \u2192 outputs/side effects. A short prose paragraph or a\nstep-numbered sequence is fine; match the complexity of the flow.\n\n**Internal call graph**\nThe call chain within the module: `a() \u2192 b() \u2192 c()`. Flat list or tree as fits.\n\n**External dependencies**\nImports from other project modules, third-party packages, env vars, I/O\nsurfaces. One line each with the source path or package name.\n\n**Blast radius**\nFiles/modules that import from this one and would be affected by interface\nchanges. List them with their paths.\n\n**Notes for the change**\n2\u20134 bullets: anything the caller should know before editing \u2014 subtle invariants,\nshared state, non-obvious coupling, or a gotcha in the data path.\n\n## Edge cases\n\n- **Target not found**: report the search attempts and stop; don't guess.\n- **Very large module**: trace the entry point(s) the caller named; note what\n  was not traced and why.\n- **Multiple matching files**: list all candidates, pick the most likely one,\n  state the assumption.\n- **No clear entry point**: report all exported symbols as candidates and ask\n  the caller (in the output) which to trace \u2014 then stop, since the agent cannot\n  ask mid-run.\n"}], "grading": {"expectations": [{"text": "Produces a single valid agent Markdown file with real YAML frontmatter between --- markers (not fenced)", "passed": true, "evidence": "agent.md opens with '---' on line 1 and closes the frontmatter with '---' on line 14. The validator returned 'PASS: .../with_skill/outputs/agent.md'."}, {"text": "tools are strictly read-only least-privilege (Read, Grep, Glob) with no Write/Edit/Bash mutation capability", "passed": false, "evidence": "Frontmatter line 11: 'tools: Read, Grep, Glob, Bash'. Bash is present and is a latent mutation path \u2014 it can run shell commands that create, overwrite, or delete files even though the body text says 'you never modify files'. The eval prompt explicitly requires never modifying files; Bash violates the least-privilege constraint."}, {"text": "The description is third person, names research/mapping trigger contexts, says 'use proactively', and includes a NOT-boundary (not for editing)", "passed": true, "evidence": "Description (lines 4-10): 'Read-only data-flow and code-map analyst. Use proactively when the user hands over a module... Not for editing code, writing tests, or running the application \u2014 those belong to other agents.' All four sub-criteria are met: third person noun phrase, mapping trigger contexts listed, 'Use proactively' present, NOT-boundary explicit."}, {"text": "effort is set deliberately (a research/analysis agent warrants high)", "passed": true, "evidence": "Frontmatter line 13: 'effort: high'."}, {"text": "The body makes the context-isolation purpose explicit: it returns a summary to the caller and keeps verbose intermediate work out of the main context", "passed": true, "evidence": "Output section (lines 66-68): 'Return a structured summary with these sections. Be concise \u2014 the caller needs orientation, not a transcript of every read.' The structured output format with named sections reinforces that only the summary reaches the caller."}, {"text": "The file passes scripts/validate_agent.py with PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: /home/ringo/ai-native-startup/evals/meta-agent/iteration-1/eval-3/with_skill/outputs/agent.md' \u2014 no FAIL lines."}], "summary": {"passed": 5, "failed": 1, "total": 6, "pass_rate": 0.83}, "execution_metrics": null, "timing": {"executor_duration_seconds": 69.8, "grader_duration_seconds": null, "total_duration_seconds": 69.8}, "claims": [{"claim": "The agent never modifies files", "type": "quality", "verified": false, "evidence": "The body text states 'You read; you never modify files' and the success criterion includes 'No files were modified', but the tools list includes Bash, which provides shell execution capability and therefore the ability to mutate the filesystem. The claim is aspirational rather than enforced by the tool selection."}, {"claim": "The agent uses least-privilege tooling (Read, Grep, Glob)", "type": "process", "verified": false, "evidence": "Tools include Bash in addition to Read, Grep, Glob. Bash is not least-privilege for a read-only task."}], "user_notes_summary": null, "eval_feedback": {"suggestions": [{"assertion": "tools are strictly read-only least-privilege (Read, Grep, Glob) with no Write/Edit/Bash mutation capability", "reason": "This assertion is the right one to have, and it caught the Bash inclusion correctly. Worth noting that Grep/Glob are themselves safe read-only tools \u2014 the assertion could be tightened to say 'allowlist is exactly {Read, Grep, Glob} or a strict subset, and Bash/Write/Edit are absent' so partial compliance (e.g., Read+Bash) clearly fails."}], "overall": "Assertions are well-targeted. The Bash-as-mutation-path note in the eval prompt is correct and the tools assertion catches it. No major gaps."}}}, {"id": "eval-3-without_skill", "prompt": "Build a subagent I can hand a module to so it traces the data flow and maps the code before I make changes, then returns a summary so the detail doesn't flood my main conversation. It must never modify files. Save it to .claude/agents/.", "eval_id": 3, "outputs": [{"name": "agent.md", "type": "text", "content": "---\nname: code-mapper\ndescription: |\n  Read-only static analysis agent that traces data flow and maps the structure of a given module before changes are made. Use this agent when you want to understand how data moves through a module, which functions call which, what the entry/exit points are, and what side effects exist \u2014 all before touching any code. Returns a concise structured summary so the analysis detail stays out of the main conversation.\n\n  Triggers on requests like:\n  - \"map this module before I refactor it\"\n  - \"trace the data flow in <file>\"\n  - \"give me a pre-change analysis of <module>\"\n  - \"what does this code do before I change it\"\n  - \"analyze the structure of this file\"\ntools: Read, Bash\nmodel: sonnet\n---\n\nYou are a read-only code analysis agent. Your sole job is to trace data flow and map code structure. You MUST NOT create, edit, or delete any files under any circumstances.\n\n## What you produce\n\nGiven a module (file path or directory), return a structured summary covering:\n\n1. **Module purpose** \u2014 one sentence on what the module does.\n2. **Entry points** \u2014 public functions/classes/exports that callers use.\n3. **Data flow** \u2014 for each entry point, trace: input \u2192 transformation steps \u2192 output/side effects. Name the intermediate variables or objects that carry state.\n4. **Internal call graph** \u2014 which functions call which (depth-first, collapsed after 2 levels if large).\n5. **External dependencies** \u2014 imports from other modules/packages; note which are read-only vs. mutating.\n6. **Side effects** \u2014 I/O, network calls, global state mutations, file writes, DB calls. Flag each clearly.\n7. **Key invariants** \u2014 constraints the code appears to rely on (e.g., \"list is always sorted\", \"token is never None\").\n8. **Change risk areas** \u2014 functions or data paths that are tightly coupled, have no tests, or carry hidden state that a refactor could break.\n\n## How to work\n\n1. Read the target file(s) fully before drawing any conclusions.\n2. Follow imports into sibling files if understanding them is necessary to trace data flow. Do not go more than 2 hops away unless asked.\n3. Use `grep`/`find` via Bash (read-only) to locate usages or definitions when `Read` alone is insufficient.\n4. Never run the code. Never execute test runners. Never install packages.\n5. If the module is large (>500 lines), summarize at the function level; drill down only where data flow is non-obvious.\n\n## Output format\n\nReturn a single Markdown document with the sections listed above. Keep each section tight \u2014 bullet points over prose. The goal is a map the caller can scan in under two minutes.\n\nIf the path provided does not exist or is ambiguous, say so immediately and ask for clarification. Do not guess.\n"}], "grading": {"expectations": [{"text": "Produces a single valid agent Markdown file with real YAML frontmatter between --- markers (not fenced)", "passed": true, "evidence": "agent.md opens with '---' on line 1 and closes the frontmatter with '---' on line 14. The validator returned 'PASS: .../without_skill/outputs/agent.md'."}, {"text": "tools are strictly read-only least-privilege (Read, Grep, Glob) with no Write/Edit/Bash mutation capability", "passed": false, "evidence": "Frontmatter line 12: 'tools: Read, Bash'. Bash is present and provides shell execution capability \u2014 a latent mutation path. Additionally, Grep and Glob are absent, which are the natural read-only search tools for this type of agent. The body text says 'Use grep/find via Bash (read-only) to locate usages' but routing search through Bash instead of declarative tools defeats least-privilege."}, {"text": "The description is third person, names research/mapping trigger contexts, says 'use proactively', and includes a NOT-boundary (not for editing)", "passed": false, "evidence": "The description (lines 4-11) uses 'Use this agent when...' (second-person imperative), lists trigger phrases, and includes 'Returns a concise structured summary so the analysis detail stays out of the main conversation' but there is no 'use proactively' phrase anywhere in the description field. There is also no NOT-boundary (e.g., 'not for editing') in the description \u2014 the body says 'You MUST NOT create, edit, or delete any files' but that is not in the description where delegation logic lives."}, {"text": "effort is set deliberately (a research/analysis agent warrants high)", "passed": false, "evidence": "No 'effort' field appears anywhere in the frontmatter. The frontmatter contains only: name, description, tools, model."}, {"text": "The body makes the context-isolation purpose explicit: it returns a summary to the caller and keeps verbose intermediate work out of the main context", "passed": true, "evidence": "Description (line 4): 'Returns a concise structured summary so the analysis detail stays out of the main conversation.' Body Output format section: 'Return a single Markdown document... Keep each section tight \u2014 bullet points over prose. The goal is a map the caller can scan in under two minutes.' Context-isolation purpose is clearly stated."}, {"text": "The file passes scripts/validate_agent.py with PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: /home/ringo/ai-native-startup/evals/meta-agent/iteration-1/eval-3/without_skill/outputs/agent.md' \u2014 no FAIL lines."}], "summary": {"passed": 3, "failed": 3, "total": 6, "pass_rate": 0.5}, "execution_metrics": null, "timing": {"executor_duration_seconds": 28.1, "grader_duration_seconds": null, "total_duration_seconds": 28.1}, "claims": [{"claim": "The agent is read-only and will never modify files", "type": "quality", "verified": false, "evidence": "The body states 'You MUST NOT create, edit, or delete any files under any circumstances' but the tools list includes Bash, which provides the shell execution capability to do exactly that. Instructional text cannot prevent a capable tool from being invoked."}, {"claim": "model: sonnet is appropriate for this agent", "type": "quality", "verified": false, "evidence": "The frontmatter sets 'model: sonnet', which is a hardcoded alias rather than 'inherit'. Per AGENTS.md conventions, model aliases are acceptable, but 'sonnet' resolves to the current sonnet which may not be optimal for a high-effort research agent. More importantly, the AGENTS.md convention says to use aliases (not pinned versions), which is satisfied here \u2014 but 'inherit' would be the most flexible choice for a reusable subagent."}], "user_notes_summary": null, "eval_feedback": {"suggestions": [{"assertion": "The description is third person, names research/mapping trigger contexts, says 'use proactively', and includes a NOT-boundary (not for editing)", "reason": "This assertion is appropriately discriminating \u2014 it caught that 'use proactively' was absent and the NOT-boundary was missing from the description. The assertion correctly places the bar at the description field specifically (not the body), since delegation logic reads the description."}, {"reason": "No assertion checks that the model field uses 'inherit' or a valid alias (not a hardcoded version string). The without_skill run used 'model: sonnet' which is technically fine per current conventions but 'inherit' would be preferred for reusable subagents. Worth adding a soft assertion: 'model is inherit or a recognized alias, never a pinned version-string like claude-sonnet-4-6'."}], "overall": "Assertions are well-targeted and discriminating. The without_skill run failed 3 of 6, catching real deficiencies (missing effort, missing 'use proactively', Bash inclusion). The eval is doing its job."}}}, {"id": "eval-4-with_skill", "prompt": "This agent isn't working \u2014 Claude never delegates to it and when it does it wanders. Fix it. The current file is at evals/inputs/broken-reviewer.md (read it). Write the corrected agent to .claude/agents/code-helper-fixed.md and tell me what you changed and why.", "eval_id": 4, "outputs": [{"name": "agent.md", "type": "text", "content": "---\nname: code-reviewer\ndescription: >-\n  Read-only reviewer of the current git diff. Use proactively after code is\n  written or modified, or when the user asks for a review, a second opinion,\n  or to check recent changes for bugs or security issues. Reports findings\n  only \u2014 does not edit files. Not for running or fixing tests (use\n  test-runner), and not for writing new code.\ntools: Read, Grep, Glob, Bash\nmodel: opus\neffort: high\n---\n\nYou review uncommitted changes for correctness and security. You report; you never edit.\n\n## When to invoke\n- Right after code is written or modified.\n- When the user asks for a review, a second opinion, or to check recent changes.\n- Not for: running or fixing tests, writing new code, or refactoring.\n\n## Inputs\nThe working tree with uncommitted changes. Run `git diff` (and `git diff --staged`) yourself to see them; focus only on changed lines and their immediate blast radius.\n\n## Process\nRead the diff, then the surrounding code needed to judge each change. Check, in priority order:\n- Correctness: logic errors, off-by-one, wrong null/empty handling, broken error paths.\n- Security: injection, missing input validation, secrets or keys in code.\n- Clarity: misleading names, dead code your changes would orphan.\n\nInvestigate enough to be confident; do not speculate about code you haven't read.\n\n## Success looks like\nEvery real issue in the diff is reported with a file:line reference and a concrete fix suggestion. No style nitpicks unless they cause a bug.\n\n## Output\nReturn findings grouped by severity, each as `path:line \u2014 issue \u2014 fix`:\n- Critical (must fix before merge)\n- Warning (should fix)\n- Nit (optional)\n\nIf the diff is clean, say so in one line. Do not restate the whole diff.\n\n## Edge cases\n- No diff: report \"no uncommitted changes to review\" and stop.\n- Diff too large to review thoroughly: review the highest-risk files, name what you skipped, and recommend splitting the change.\n"}, {"name": "changes.md", "type": "text", "content": "# What Was Changed and Why\n\n## 1. Fixed frontmatter fencing (critical \u2014 caused non-delegation)\n\n**Before:** The YAML was inside a fenced ```` ```yaml ```` code block, not between `---` markers at the top of the file.\n\n**After:** Real YAML frontmatter between `---` markers.\n\n**Why it matters:** Claude Code only recognizes frontmatter that is actual YAML delimiters at the top of the file. A fenced block is treated as body markdown \u2014 the agent has no `name` or `description` in the eyes of the runtime, so it is never registered and never delegated to. This alone explains \"Claude never delegates to it.\"\n\n---\n\n## 2. Rewrote the description (critical \u2014 caused non-delegation)\n\n**Before:** `description: Helps with code.`\n\n**After:** A third-person, trigger-rich description naming real delegation contexts (\"after code is written or modified\", \"asks for a review, a second opinion, or to check recent changes\"), explicit \"Use proactively\" for auto-delegation, and a NOT-boundary routing adjacent work away.\n\n**Why it matters:** Claude routes to an agent based on `name` + `description`. A vague one-liner means the agent either never fires or fires on everything. The new description gives Claude concrete phrasings to match.\n\n---\n\n## 3. Removed `memory: project` (correctness)\n\n**Before:** `memory: project`\n\n**After:** Field removed.\n\n**Why it matters:** This is a stateless one-shot reviewer. `memory` auto-enables Read/Write/Edit for the memory directory and injects `MEMORY.md` on every run \u2014 adding context cost and write tools the agent doesn't need. Memory is only justified when knowledge genuinely compounds across runs.\n\n---\n\n## 4. Changed `model: claude-opus-4-8` to `model: opus` (correctness)\n\n**Before:** `model: claude-opus-4-8` (pinned dated ID)\n\n**After:** `model: opus` (alias)\n\n**Why it matters:** Per team convention (AGENTS.md) and the frontmatter reference: use aliases (`opus`, `sonnet`, `haiku`) so the agent always resolves to the latest version. Pinning a dated ID means the agent silently ages out when newer versions ship.\n\n---\n\n## 5. Added `tools: Read, Grep, Glob, Bash` (correctness + security)\n\n**Before:** No `tools` field \u2014 inherits everything including all connected MCP servers.\n\n**After:** Least-privilege allowlist of exactly what a read-only reviewer needs (`Bash` for `git diff`; `Read`, `Grep`, `Glob` for inspecting files).\n\n**Why it matters:** Inheriting all tools pulls in every MCP server and their context cost, and gives the agent write/edit capability it shouldn't have. A smaller tool pool means fewer ways to go off-script (the primary cause of \"wandering\").\n\n---\n\n## 6. Added `effort: high` (capability)\n\n**Before:** No `effort` \u2014 inherited from session.\n\n**After:** `effort: high`\n\n**Why it matters:** On Opus 4.8, `effort` is the dominant capability lever. Without it, reasoning depth is unpredictable. `high` is the right level for a reasoning-sensitive analysis/review task.\n\n---\n\n## 7. Removed bloated persona (body quality)\n\n**Before:** \"You are a 10x senior staff engineer with 15 years of experience and 10,000 merged PRs at a top FAANG company.\"\n\n**After:** \"You review uncommitted changes for correctness and security. You report; you never edit.\"\n\n**Why it matters:** The model reads persona prose literally \u2014 r\u00e9sum\u00e9 numbers and superlatives add tokens but no behavior. One sentence stating the relevant lens is sufficient.\n\n---\n\n## 8. Removed \"think harder\" / reasoning-permission prose (body quality)\n\n**Before:** \"Take a deep breath and reason carefully through every possible edge case before you respond.\"\n\n**After:** Removed entirely.\n\n**Why it matters:** Thinking is off by default unless `thinking: {type: \"adaptive\"}` is set. This kind of prose is a no-op at best. Depth comes from the `effort` field, not from granting permission to think.\n\n---\n\n## 9. Removed all-caps MUST/NEVER coercion (body quality)\n\n**Before:** \"You MUST review the code. You MUST ALWAYS find issues. You MUST NEVER miss a bug. NEVER skip anything.\"\n\n**After:** Removed. The agent's scope is stated clearly in the body structure instead.\n\n**Why it matters:** Aggressive all-caps language without a reason is an anti-pattern on 4.8 \u2014 it can over-trigger or over-filter. More importantly, \"MUST ALWAYS find issues\" is wrong: a clean diff should produce a clean report, not forced findings.\n\n---\n\n## 10. Removed forced progress-update cadence (body quality \u2014 caused wandering)\n\n**Before:** \"After every 3 tool calls, stop and summarize your progress so far.\"\n\n**After:** Removed entirely.\n\n**Why it matters:** Opus 4.8 emits well-calibrated progress updates natively. A forced cadence fights the model's native pacing and contributes to the \"wandering\" behavior \u2014 the agent interrupts its own workflow to generate summaries instead of completing the task.\n\n---\n\n## 11. Removed unbounded vague scope (body quality \u2014 caused wandering)\n\n**Before:** \"Review the code and help the user with whatever they need. You can edit files, run commands, search the web, and do anything else that helps.\"\n\n**After:** Structured body with explicit `When to invoke` (including NOT-boundary), `Inputs`, `Process`, `Success looks like`, `Output`, and `Edge cases` sections.\n\n**Why it matters:** \"Whatever they need\" is the definition of wandering. A scoped body with an explicit NOT-boundary and a defined return contract tells the agent exactly when to stop and what to return \u2014 which is what eliminates the aimless behavior.\n"}], "grading": {"expectations": [{"text": "The corrected file has real YAML frontmatter between --- markers at the top \u2014 the original ```yaml fenced block is converted to a proper frontmatter block", "passed": true, "evidence": "agent.md opens with `---` delimiters: lines 1 and 12 of agent.md are `---`, enclosing a valid YAML block with `name`, `description`, `tools`, `model`, and `effort`. The original fenced-block issue is fully resolved."}, {"text": "The vague description ('Helps with code.') is rewritten third person with concrete trigger contexts/phrasings, 'use proactively', and a NOT-boundary", "passed": true, "evidence": "agent.md description: 'Read-only reviewer of the current git diff. Use proactively after code is written or modified, or when the user asks for a review, a second opinion, or to check recent changes for bugs or security issues. Reports findings only \u2014 does not edit files. Not for running or fixing tests (use test-runner), and not for writing new code.' Contains third-person framing, explicit 'Use proactively', concrete trigger phrasings, and a NOT-boundary routing adjacent work away."}, {"text": "The inherit-all tool surface is replaced with a least-privilege read-only set appropriate to a reviewer (or the inherit is deliberately justified)", "passed": true, "evidence": "agent.md: `tools: Read, Grep, Glob, Bash`. changes.md explains: 'Least-privilege allowlist of exactly what a read-only reviewer needs (`Bash` for `git diff`; `Read`, `Grep`, `Glob` for inspecting files). Inheriting all tools pulls in every MCP server and their context cost, and gives the agent write/edit capability it shouldn't have.'"}, {"text": "An effort level is set deliberately in frontmatter", "passed": true, "evidence": "agent.md frontmatter contains `effort: high`. changes.md justifies: 'On Opus 4.8, `effort` is the dominant capability lever. Without it, reasoning depth is unpredictable. `high` is the right level for a reasoning-sensitive analysis/review task.'"}, {"text": "Anti-patterns are removed: the bloated persona, the all-caps MUST/NEVER without a reason, and the 'think harder' reasoning-permission prose are gone", "passed": true, "evidence": "agent.md body starts with 'You review uncommitted changes for correctness and security. You report; you never edit.' \u2014 no FAANG persona, no MUST/NEVER, no 'take a deep breath' prose. changes.md \u00a77, \u00a78, \u00a79 document each removal with explicit justification."}, {"text": "memory is removed (it was set for one-shot review work, where it is pure overhead) OR its retention is explicitly justified", "passed": true, "evidence": "agent.md has no `memory` field. changes.md \u00a73 explains: 'This is a stateless one-shot reviewer. `memory` auto-enables Read/Write/Edit for the memory directory and injects `MEMORY.md` on every run \u2014 adding context cost and write tools the agent doesn't need. Memory is only justified when knowledge genuinely compounds across runs.'"}, {"text": "The corrected file passes scripts/validate_agent.py with PASS, and the response explains the changes and the reasons", "passed": true, "evidence": "Validator output: 'PASS: .../with_skill/outputs/agent.md'. changes.md is 110 lines covering 11 distinct changes, each with a Before/After/Why-it-matters structure providing thorough rationale."}], "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}, "timing": {"executor_duration_seconds": 77.6, "total_duration_seconds": 77.6}, "claims": [{"claim": "The original fenced block is the sole cause of non-delegation", "type": "factual", "verified": false, "evidence": "changes.md \u00a71 states this 'alone explains Claude never delegates to it,' but the vague description ('Helps with code.') was also a delegation failure. Both were fixed. The 'alone' claim is overstated \u2014 the description fix was equally necessary for reliable triggering."}, {"claim": "The agent now uses a least-privilege tool set appropriate to a reviewer", "type": "quality", "verified": true, "evidence": "tools: Read, Grep, Glob, Bash \u2014 covers file reading and git diff inspection; excludes Edit, Write, and MCP servers."}, {"claim": "effort: high is appropriate for this review task", "type": "quality", "verified": true, "evidence": "High effort is well-calibrated for a code review task that benefits from deeper reasoning; consistent with meta-agent guidance for analysis work."}], "eval_feedback": {"suggestions": [{"reason": "No assertion checks whether the file was written to the correct output path (.claude/agents/code-helper-fixed.md as specified in the eval prompt). The executor wrote it as 'code-reviewer' \u2014 the name differs from what the prompt asked for. A path/name assertion would have caught this."}, {"assertion": "The corrected file passes scripts/validate_agent.py with PASS, and the response explains the changes and the reasons", "reason": "This bundles two distinct checks (validator pass + explanation quality) into one assertion. A file that passes validation trivially but has no explanation would also pass. Splitting these would give finer signal."}], "overall": "Assertions are well-targeted and genuinely discriminating \u2014 a carelessly patched agent would fail multiple checks. The missing path/name check is the clearest gap."}}}, {"id": "eval-4-without_skill", "prompt": "This agent isn't working \u2014 Claude never delegates to it and when it does it wanders. Fix it. The current file is at evals/inputs/broken-reviewer.md (read it). Write the corrected agent to .claude/agents/code-helper-fixed.md and tell me what you changed and why.", "eval_id": 4, "outputs": [{"name": "agent.md", "type": "text", "content": "---\nname: code-reviewer\ndescription: Reviews code for correctness bugs, logic errors, security issues, and style violations. Delegate to this agent when the user asks to review code, audit a file, check a diff, or find bugs in specific files or functions. Do NOT delegate general coding tasks or file edits.\nmodel: sonnet\ntools: Read, Bash\n---\n\nYou are an expert code reviewer. Your job is to read code and report findings clearly.\n\n## What you do\n\nGiven a file path, diff, or code snippet, you:\n1. Read the code thoroughly\n2. Identify correctness bugs, logic errors, security issues, and notable style violations\n3. Report findings grouped by severity: **Critical**, **Warning**, **Suggestion**\n\n## What you do NOT do\n\n- You do not edit files unless explicitly asked\n- You do not run the code unless a test or lint check is needed to confirm a finding\n- You do not speculate about issues you cannot verify from the code\n\n## Output format\n\nFor each finding:\n- **Location**: file and line number (or function name)\n- **Severity**: Critical / Warning / Suggestion\n- **Issue**: one sentence describing the problem\n- **Why it matters**: one sentence on impact\n- **Fix**: concrete suggestion\n\nEnd with a one-line summary: \"X critical, Y warnings, Z suggestions.\"\n"}, {"name": "changes.md", "type": "text", "content": "# Changes Made and Why\n\n## Problem 1: Agent never triggers (delegation failure)\n\n**Root cause:** The `description` field read \"Helps with code.\" \u2014 a vague, topic-based label with no signal about *when* the orchestrator should delegate to this agent.\n\nClaude Code's orchestrator matches tasks to agents by reading the description as a delegation trigger. A good description answers: \"Delegate to this agent when X.\" Without that pattern, the orchestrator has no reason to choose this agent over the catch-all.\n\n**Fix:** Rewrote the description to be an explicit delegation signal:\n> \"Reviews code for correctness bugs, logic errors, security issues, and style violations. Delegate to this agent when the user asks to review code, audit a file, check a diff, or find bugs in specific files or functions. Do NOT delegate general coding tasks or file edits.\"\n\nThis tells the orchestrator exactly which user intents should route here and which should not.\n\n---\n\n## Problem 2: Agent wanders (scope too broad, no constraints)\n\n**Root cause:** The system prompt said \"You can edit files, run commands, search the web, and do anything else that helps.\" That is the entire scope of a general-purpose agent, not a reviewer. With no bounded purpose, the agent wanders into editing, running arbitrary commands, and other tasks it was never meant to do.\n\nCompounding this: the `tools` field was absent, so the agent inherited every tool. Combined with the \"do anything\" instruction, it had both permission and encouragement to drift.\n\n**Fix:** \n- Removed the open-ended \"do anything\" instruction.\n- Scoped the system prompt to a single, well-defined job: read code, report findings.\n- Added an explicit \"What you do NOT do\" section to prevent editing and speculative findings.\n- Restricted `tools` to `Read, Bash` \u2014 sufficient for reading files and running lint/tests to confirm findings, but not for writing files or making network calls.\n\n---\n\n## Problem 3: Hardcoded model version\n\n**Root cause:** `model: claude-opus-4-8` is a pinned dated model ID. Per project conventions, simple reviewer work doesn't require reproducibility pinning, and pinned IDs become stale.\n\n**Fix:** Changed to `model: sonnet` (an alias) so it always resolves to the latest Sonnet, which is appropriate for a focused, structured review task.\n\n---\n\n## Problem 4: Persona bloat and counterproductive instructions\n\n**Root cause:** \"10x senior staff engineer at FAANG,\" \"take a deep breath,\" and \"You MUST ALWAYS find issues\" are well-known LLM anti-patterns:\n- The persona preamble consumes tokens without improving output quality.\n- \"MUST ALWAYS find issues\" incentivizes hallucinating bugs to comply.\n- \"After every 3 tool calls, stop and summarize\" is a meta-instruction that interrupts task flow and produces noise rather than value.\n\n**Fix:** Removed all of these. Replaced with a concise, action-oriented system prompt that defines inputs, outputs, and constraints \u2014 giving the model clear success criteria instead of emotional pressure.\n\n---\n\n## Problem 5: No structured output format\n\n**Root cause:** Without a defined output format, the agent produces inconsistent, free-form responses that are hard for callers to parse or act on.\n\n**Fix:** Added a simple structured format (Location / Severity / Issue / Why it matters / Fix) with a summary line. This keeps responses scannable and verifiable.\n"}], "grading": {"expectations": [{"text": "The corrected file has real YAML frontmatter between --- markers at the top \u2014 the original ```yaml fenced block is converted to a proper frontmatter block", "passed": true, "evidence": "agent.md opens with `---` delimiters on lines 1 and 7, enclosing a valid YAML block with `name`, `description`, `model`, and `tools`. The original fenced-block issue is resolved."}, {"text": "The vague description ('Helps with code.') is rewritten third person with concrete trigger contexts/phrasings, 'use proactively', and a NOT-boundary", "passed": false, "evidence": "agent.md description: 'Reviews code for correctness bugs, logic errors, security issues, and style violations. Delegate to this agent when the user asks to review code, audit a file, check a diff, or find bugs in specific files or functions. Do NOT delegate general coding tasks or file edits.' It is third-person, has concrete trigger phrasings, and has a NOT-boundary \u2014 but the literal phrase 'use proactively' (or equivalent auto-delegation signal) is absent. The assertion explicitly requires it. Confirmed: neither agent.md nor changes.md contains 'proactively'."}, {"text": "The inherit-all tool surface is replaced with a least-privilege read-only set appropriate to a reviewer (or the inherit is deliberately justified)", "passed": true, "evidence": "agent.md: `tools: Read, Bash`. changes.md \u00a72 justifies: 'Restricted `tools` to `Read, Bash` \u2014 sufficient for reading files and running lint/tests to confirm findings, but not for writing files or making network calls.' This is a deliberate, scoped allowlist."}, {"text": "An effort level is set deliberately in frontmatter", "passed": false, "evidence": "agent.md frontmatter contains only `name`, `description`, `model`, and `tools`. No `effort` field is present. changes.md does not mention effort at all. The field was not added."}, {"text": "Anti-patterns are removed: the bloated persona, the all-caps MUST/NEVER without a reason, and the 'think harder' reasoning-permission prose are gone", "passed": true, "evidence": "agent.md body: 'You are an expert code reviewer. Your job is to read code and report findings clearly.' \u2014 no FAANG persona, no MUST/NEVER/ALWAYS, no 'take a deep breath' prose. changes.md \u00a74 explicitly documents removing all three: persona, 'MUST ALWAYS find issues', and 'take a deep breath'."}, {"text": "memory is removed (it was set for one-shot review work, where it is pure overhead) OR its retention is explicitly justified", "passed": true, "evidence": "agent.md has no `memory` field \u2014 it was removed. Note: changes.md does not explicitly discuss the memory removal (no section addresses it), but removal is sufficient to satisfy the assertion per its own wording."}, {"text": "The corrected file passes scripts/validate_agent.py with PASS, and the response explains the changes and the reasons", "passed": true, "evidence": "Validator output: 'PASS: .../without_skill/outputs/agent.md'. changes.md covers 5 problems each with a root-cause analysis and explicit fix description."}], "summary": {"passed": 5, "failed": 2, "total": 7, "pass_rate": 0.71}, "timing": {"executor_duration_seconds": 45.0, "total_duration_seconds": 45.0}, "claims": [{"claim": "Switching to `model: sonnet` is appropriate for a focused, structured review task", "type": "quality", "verified": false, "evidence": "The original had Opus and the task involves reasoning-heavy code review. Sonnet may be adequate but the justification 'appropriate for a focused, structured review task' is debatable for review work that benefits from deeper reasoning. More importantly, the original assertion about effort level is missed \u2014 choosing sonnet without setting effort means reasoning depth is still unpredictable."}, {"claim": "The tool set `Read, Bash` is sufficient for a reviewer", "type": "quality", "verified": false, "evidence": "Read and Bash enable file reading and git diff, but Grep and Glob (present in the with_skill output) are practically useful for a reviewer navigating a codebase. The set is defensible but slightly under-equipped for thorough reviews."}, {"claim": "The description provides a delegation signal", "type": "quality", "verified": true, "evidence": "The description names concrete user intents ('asks to review code, audit a file, check a diff, or find bugs in specific files or functions') and a NOT-boundary. This is a meaningful improvement over the original."}], "eval_feedback": {"suggestions": [{"reason": "No assertion checks whether the file was written to the correct output path (.claude/agents/code-helper-fixed.md as specified in the eval prompt). The executor wrote it as 'code-reviewer' \u2014 the name differs from what the prompt asked for. A path/name assertion would have caught this."}, {"assertion": "memory is removed (it was set for one-shot review work, where it is pure overhead) OR its retention is explicitly justified", "reason": "The assertion passes on bare removal, but doesn't require the executor to demonstrate understanding of why memory was harmful. The with_skill run explained it; the without_skill run silently omitted it from changes.md. An assertion that also checks for an explanation in the changes doc would be more discriminating."}, {"assertion": "The corrected file passes scripts/validate_agent.py with PASS, and the response explains the changes and the reasons", "reason": "Same bundling issue as noted for with_skill: validation pass and explanation quality are two distinct checks. Splitting them improves signal."}], "overall": "The missing effort assertion and proactively signal are real skill-dependent gaps \u2014 the without_skill run fixed the most visible breakage but missed the less obvious best-practice fields. The evals are well-targeted; the path/name gap and memory-explanation gap are the clearest additions."}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "meta-agent", "skill_path": ".claude/skills/meta-agent", "executor_model": "sonnet", "analyzer_model": "sonnet", "timestamp": "2026-06-23T00:00:00Z", "evals_run": [1, 2, 3, 4], "runs_per_configuration": 1}, "runs": [{"eval_id": 1, "eval_name": "read-only-diff-reviewer", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 7, "failed": 0, "total": 7, "time_seconds": 57.0, "tokens": 29208, "errors": 0}, "expectations": [{"text": "Produces a single agent Markdown file whose frontmatter is real YAML between --- markers at the top of the file, NOT fenced inside a ```yaml code block", "passed": true, "evidence": "Lines 1-14 of agent.md show raw --- delimiters with YAML content directly between them. No ```yaml code fence is present anywhere in the file."}, {"text": "The description is third person and names concrete trigger contexts/phrasings (e.g. 'after code changes' / 'when asked for a review') and includes 'use proactively' (or PROACTIVELY) for automatic delegation", "passed": true, "evidence": "Description field: 'Read-only reviewer of the current git diff for correctness and security bugs. Use proactively right after code changes are made, when the user asks to review recent changes, or when asked to check changes for bugs, vulnerabilities, or security issues.' \u2014 third person, concrete phrasings, 'Use proactively' present."}, {"text": "The description includes a NOT-boundary that routes adjacent work elsewhere (e.g. not for running/fixing tests, not for writing new code)", "passed": true, "evidence": "Description field ends with: 'Not for running tests (use a test-runner agent), writing code, or reviewing PRs from remote branches (this reviews uncommitted/staged local changes).' \u2014 explicit NOT-boundary with routing hint to test-runner agent."}, {"text": "tools is least-privilege and read-only: Read/Grep/Glob (Bash allowed only to run git diff); it does NOT grant Write or Edit", "passed": true, "evidence": "frontmatter: 'tools: Read, Grep, Glob, Bash' \u2014 all three read tools present, Bash included for git diff. Write and Edit are absent."}, {"text": "An effort level is set deliberately in the frontmatter rather than left to inherit by accident", "passed": true, "evidence": "frontmatter contains 'effort: high' \u2014 explicitly set."}, {"text": "The body restates the read-only constraint and gives an explicit Output/return contract (what findings to return and in what shape)", "passed": true, "evidence": "Body line 1: 'You are a read-only reviewer of uncommitted git changes... You never edit, write, or modify any file.' Output section defines severity-grouped format: 'Return findings grouped by severity, each entry formatted as path:line \u2014 issue \u2014 suggested fix' with Critical/Warning/Nit levels and a clean-diff fallback."}, {"text": "The file passes scripts/validate_agent.py with a PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: /home/ringo/ai-native-startup/evals/meta-agent/iteration-1/eval-1/with_skill/outputs/agent.md' \u2014 no FAIL lines."}]}, {"eval_id": 1, "eval_name": "read-only-diff-reviewer", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.71, "passed": 5, "failed": 2, "total": 7, "time_seconds": 34.7, "tokens": 15979, "errors": 0}, "expectations": [{"text": "Produces a single agent Markdown file whose frontmatter is real YAML between --- markers at the top of the file, NOT fenced inside a ```yaml code block", "passed": true, "evidence": "Lines 1-10 of agent.md show raw --- delimiters with YAML directly between them. No ```yaml code fence is present."}, {"text": "The description is third person and names concrete trigger contexts/phrasings (e.g. 'after code changes' / 'when asked for a review') and includes 'use proactively' (or PROACTIVELY) for automatic delegation", "passed": true, "evidence": "Description field: 'Reviews the current git diff for correctness bugs and security vulnerabilities and reports findings without editing anything. Use proactively after code changes are made, or when the user asks to review changes, check for bugs, or audit the diff for security issues.' \u2014 third person, concrete phrasings, 'Use proactively' present."}, {"text": "The description includes a NOT-boundary that routes adjacent work elsewhere (e.g. not for running/fixing tests, not for writing new code)", "passed": false, "evidence": "The description field ('Reviews the current git diff... Use proactively after code changes are made...') contains no NOT-boundary. A NOT-boundary appears only in the body section under '## When to invoke': 'Not for: fixing bugs, editing code, refactoring, or running tests.' \u2014 the description field itself, which controls delegation routing, omits this boundary."}, {"text": "tools is least-privilege and read-only: Read/Grep/Glob (Bash allowed only to run git diff); it does NOT grant Write or Edit", "passed": false, "evidence": "frontmatter: 'tools: Bash' \u2014 only Bash is granted. Read, Grep, and Glob are absent. The assertion specifies Read/Grep/Glob as the expected read tools alongside Bash; their omission means the agent cannot perform code-context inspection (reading surrounding code to confirm findings). Write and Edit are correctly absent, but the tool set is under-specified relative to the assertion's requirement."}, {"text": "An effort level is set deliberately in the frontmatter rather than left to inherit by accident", "passed": true, "evidence": "frontmatter contains 'effort: medium' \u2014 explicitly set."}, {"text": "The body restates the read-only constraint and gives an explicit Output/return contract (what findings to return and in what shape)", "passed": true, "evidence": "Body states: 'You review the current git diff... You never edit, write, or fix any files.' Output section (## Output) provides a concrete structured report template with ## Diff Review, ### Correctness, ### Security, and ### Summary sections, including severity labels (HIGH/MEDIUM/LOW) and example format 'path/to/file.py:42 \u2014 description'."}, {"text": "The file passes scripts/validate_agent.py with a PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: /home/ringo/ai-native-startup/evals/meta-agent/iteration-1/eval-1/without_skill/outputs/agent.md' \u2014 no FAIL lines."}]}, {"eval_id": 2, "eval_name": "proactive-test-runner", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 0.83, "passed": 5, "failed": 1, "total": 6, "time_seconds": 52.6, "tokens": 30476, "errors": 0}, "expectations": [{"text": "Produces a single valid agent Markdown file with real YAML frontmatter between --- markers (not fenced)", "passed": true, "evidence": "File has opening '---' at line 1 and closing '---' at line 10 with valid YAML fields (name, description, tools, effort). Not fenced code blocks."}, {"text": "The description names the proactive trigger contexts (after code changes / when asked to run tests or check the build) and uses 'use proactively' for auto-delegation", "passed": true, "evidence": "Description reads: 'Use proactively after code changes, or when the user asks to run tests, check if tests pass, verify a fix, or see what\u2019s broken.' Contains exact phrase 'Use proactively' and names both trigger contexts (after code changes, when asked to run tests/check the build)."}, {"text": "tools are scoped to what running tests needs (Bash plus read tools) and do not include unnecessary Write/Edit/MCP", "passed": true, "evidence": "Frontmatter sets 'tools: Bash' only. No Write, Edit, or MCP tools included. Bash is sufficient for running test commands."}, {"text": "effort is set deliberately in frontmatter (a coding/agentic test loop warrants high or xhigh, not an accidental low)", "passed": false, "evidence": "Frontmatter sets 'effort: medium'. The assertion requires high or xhigh for a coding/agentic test loop. Medium does not satisfy this requirement."}, {"text": "The body specifies an explicit Output contract that returns ONLY failing tests and their error output, not the full suite log", "passed": true, "evidence": "Step 3 explicitly states to extract 'only: Failing test names / The assertion error or exception for each failure / The file and line number'. Step 4 instructs to 'Discard: passing tests, skipped tests, warnings, coverage summaries, timing lines.' The Output section shows a format with only failing tests and their errors."}, {"text": "The file passes scripts/validate_agent.py with PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: .../with_skill/outputs/agent.md' with no FAIL lines."}]}, {"eval_id": 2, "eval_name": "proactive-test-runner", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.5, "passed": 3, "failed": 3, "total": 6, "time_seconds": 31.1, "tokens": 15378, "errors": 0}, "expectations": [{"text": "Produces a single valid agent Markdown file with real YAML frontmatter between --- markers (not fenced)", "passed": true, "evidence": "File has opening '---' at line 1 and closing '---' at line 13 with valid YAML fields (name, description, model, tools). Not fenced code blocks."}, {"text": "The description names the proactive trigger contexts (after code changes / when asked to run tests or check the build) and uses 'use proactively' for auto-delegation", "passed": false, "evidence": "Description reads: 'Use after any code change, when asked to \"check the build\", \"run tests\", \"what's failing\", or any variant. Triggers automatically when the user edits source files and wants to see test results.' It names the trigger contexts but does NOT include the phrase 'use proactively' or 'Use proactively'. The delegation hint required for auto-delegation is absent."}, {"text": "tools are scoped to what running tests needs (Bash plus read tools) and do not include unnecessary Write/Edit/MCP", "passed": true, "evidence": "Frontmatter sets 'tools: [Bash, Read]'. Both are appropriate for detecting test frameworks and running tests. No Write, Edit, or MCP tools included."}, {"text": "effort is set deliberately in frontmatter (a coding/agentic test loop warrants high or xhigh, not an accidental low)", "passed": false, "evidence": "No 'effort' field present in the frontmatter at all. The frontmatter only contains: name, description, model, tools."}, {"text": "The body specifies an explicit Output contract that returns ONLY failing tests and their error output, not the full suite log", "passed": false, "evidence": "The output format in step 4 includes a summary line: 'Summary: X failed, Y passed (Z errors)'. This goes beyond 'ONLY failing tests and their error output' \u2014 it adds aggregate pass/fail counts from the full suite. The assertion requires nothing beyond failing tests and their errors."}, {"text": "The file passes scripts/validate_agent.py with PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: .../without_skill/outputs/agent.md' with no FAIL lines."}]}, {"eval_id": 3, "eval_name": "read-only-codebase-researcher", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 0.83, "passed": 5, "failed": 1, "total": 6, "time_seconds": 69.8, "tokens": 29841, "errors": 0}, "expectations": [{"text": "Produces a single valid agent Markdown file with real YAML frontmatter between --- markers (not fenced)", "passed": true, "evidence": "agent.md opens with '---' on line 1 and closes the frontmatter with '---' on line 14. The validator returned 'PASS: .../with_skill/outputs/agent.md'."}, {"text": "tools are strictly read-only least-privilege (Read, Grep, Glob) with no Write/Edit/Bash mutation capability", "passed": false, "evidence": "Frontmatter line 11: 'tools: Read, Grep, Glob, Bash'. Bash is present and is a latent mutation path \u2014 it can run shell commands that create, overwrite, or delete files even though the body text says 'you never modify files'. The eval prompt explicitly requires never modifying files; Bash violates the least-privilege constraint."}, {"text": "The description is third person, names research/mapping trigger contexts, says 'use proactively', and includes a NOT-boundary (not for editing)", "passed": true, "evidence": "Description (lines 4-10): 'Read-only data-flow and code-map analyst. Use proactively when the user hands over a module... Not for editing code, writing tests, or running the application \u2014 those belong to other agents.' All four sub-criteria are met: third person noun phrase, mapping trigger contexts listed, 'Use proactively' present, NOT-boundary explicit."}, {"text": "effort is set deliberately (a research/analysis agent warrants high)", "passed": true, "evidence": "Frontmatter line 13: 'effort: high'."}, {"text": "The body makes the context-isolation purpose explicit: it returns a summary to the caller and keeps verbose intermediate work out of the main context", "passed": true, "evidence": "Output section (lines 66-68): 'Return a structured summary with these sections. Be concise \u2014 the caller needs orientation, not a transcript of every read.' The structured output format with named sections reinforces that only the summary reaches the caller."}, {"text": "The file passes scripts/validate_agent.py with PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: /home/ringo/ai-native-startup/evals/meta-agent/iteration-1/eval-3/with_skill/outputs/agent.md' \u2014 no FAIL lines."}]}, {"eval_id": 3, "eval_name": "read-only-codebase-researcher", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.5, "passed": 3, "failed": 3, "total": 6, "time_seconds": 28.1, "tokens": 14913, "errors": 0}, "expectations": [{"text": "Produces a single valid agent Markdown file with real YAML frontmatter between --- markers (not fenced)", "passed": true, "evidence": "agent.md opens with '---' on line 1 and closes the frontmatter with '---' on line 14. The validator returned 'PASS: .../without_skill/outputs/agent.md'."}, {"text": "tools are strictly read-only least-privilege (Read, Grep, Glob) with no Write/Edit/Bash mutation capability", "passed": false, "evidence": "Frontmatter line 12: 'tools: Read, Bash'. Bash is present and provides shell execution capability \u2014 a latent mutation path. Additionally, Grep and Glob are absent, which are the natural read-only search tools for this type of agent. The body text says 'Use grep/find via Bash (read-only) to locate usages' but routing search through Bash instead of declarative tools defeats least-privilege."}, {"text": "The description is third person, names research/mapping trigger contexts, says 'use proactively', and includes a NOT-boundary (not for editing)", "passed": false, "evidence": "The description (lines 4-11) uses 'Use this agent when...' (second-person imperative), lists trigger phrases, and includes 'Returns a concise structured summary so the analysis detail stays out of the main conversation' but there is no 'use proactively' phrase anywhere in the description field. There is also no NOT-boundary (e.g., 'not for editing') in the description \u2014 the body says 'You MUST NOT create, edit, or delete any files' but that is not in the description where delegation logic lives."}, {"text": "effort is set deliberately (a research/analysis agent warrants high)", "passed": false, "evidence": "No 'effort' field appears anywhere in the frontmatter. The frontmatter contains only: name, description, tools, model."}, {"text": "The body makes the context-isolation purpose explicit: it returns a summary to the caller and keeps verbose intermediate work out of the main context", "passed": true, "evidence": "Description (line 4): 'Returns a concise structured summary so the analysis detail stays out of the main conversation.' Body Output format section: 'Return a single Markdown document... Keep each section tight \u2014 bullet points over prose. The goal is a map the caller can scan in under two minutes.' Context-isolation purpose is clearly stated."}, {"text": "The file passes scripts/validate_agent.py with PASS and no FAIL lines", "passed": true, "evidence": "Validator output: 'PASS: /home/ringo/ai-native-startup/evals/meta-agent/iteration-1/eval-3/without_skill/outputs/agent.md' \u2014 no FAIL lines."}]}, {"eval_id": 4, "eval_name": "fix-broken-agent", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 7, "failed": 0, "total": 7, "time_seconds": 77.6, "tokens": 31177, "errors": 0}, "expectations": [{"text": "The corrected file has real YAML frontmatter between --- markers at the top \u2014 the original ```yaml fenced block is converted to a proper frontmatter block", "passed": true, "evidence": "agent.md opens with `---` delimiters: lines 1 and 12 of agent.md are `---`, enclosing a valid YAML block with `name`, `description`, `tools`, `model`, and `effort`. The original fenced-block issue is fully resolved."}, {"text": "The vague description ('Helps with code.') is rewritten third person with concrete trigger contexts/phrasings, 'use proactively', and a NOT-boundary", "passed": true, "evidence": "agent.md description: 'Read-only reviewer of the current git diff. Use proactively after code is written or modified, or when the user asks for a review, a second opinion, or to check recent changes for bugs or security issues. Reports findings only \u2014 does not edit files. Not for running or fixing tests (use test-runner), and not for writing new code.' Contains third-person framing, explicit 'Use proactively', concrete trigger phrasings, and a NOT-boundary routing adjacent work away."}, {"text": "The inherit-all tool surface is replaced with a least-privilege read-only set appropriate to a reviewer (or the inherit is deliberately justified)", "passed": true, "evidence": "agent.md: `tools: Read, Grep, Glob, Bash`. changes.md explains: 'Least-privilege allowlist of exactly what a read-only reviewer needs (`Bash` for `git diff`; `Read`, `Grep`, `Glob` for inspecting files). Inheriting all tools pulls in every MCP server and their context cost, and gives the agent write/edit capability it shouldn't have.'"}, {"text": "An effort level is set deliberately in frontmatter", "passed": true, "evidence": "agent.md frontmatter contains `effort: high`. changes.md justifies: 'On Opus 4.8, `effort` is the dominant capability lever. Without it, reasoning depth is unpredictable. `high` is the right level for a reasoning-sensitive analysis/review task.'"}, {"text": "Anti-patterns are removed: the bloated persona, the all-caps MUST/NEVER without a reason, and the 'think harder' reasoning-permission prose are gone", "passed": true, "evidence": "agent.md body starts with 'You review uncommitted changes for correctness and security. You report; you never edit.' \u2014 no FAANG persona, no MUST/NEVER, no 'take a deep breath' prose. changes.md \u00a77, \u00a78, \u00a79 document each removal with explicit justification."}, {"text": "memory is removed (it was set for one-shot review work, where it is pure overhead) OR its retention is explicitly justified", "passed": true, "evidence": "agent.md has no `memory` field. changes.md \u00a73 explains: 'This is a stateless one-shot reviewer. `memory` auto-enables Read/Write/Edit for the memory directory and injects `MEMORY.md` on every run \u2014 adding context cost and write tools the agent doesn't need. Memory is only justified when knowledge genuinely compounds across runs.'"}, {"text": "The corrected file passes scripts/validate_agent.py with PASS, and the response explains the changes and the reasons", "passed": true, "evidence": "Validator output: 'PASS: .../with_skill/outputs/agent.md'. changes.md is 110 lines covering 11 distinct changes, each with a Before/After/Why-it-matters structure providing thorough rationale."}]}, {"eval_id": 4, "eval_name": "fix-broken-agent", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.71, "passed": 5, "failed": 2, "total": 7, "time_seconds": 45.0, "tokens": 15869, "errors": 0}, "expectations": [{"text": "The corrected file has real YAML frontmatter between --- markers at the top \u2014 the original ```yaml fenced block is converted to a proper frontmatter block", "passed": true, "evidence": "agent.md opens with `---` delimiters on lines 1 and 7, enclosing a valid YAML block with `name`, `description`, `model`, and `tools`. The original fenced-block issue is resolved."}, {"text": "The vague description ('Helps with code.') is rewritten third person with concrete trigger contexts/phrasings, 'use proactively', and a NOT-boundary", "passed": false, "evidence": "agent.md description: 'Reviews code for correctness bugs, logic errors, security issues, and style violations. Delegate to this agent when the user asks to review code, audit a file, check a diff, or find bugs in specific files or functions. Do NOT delegate general coding tasks or file edits.' It is third-person, has concrete trigger phrasings, and has a NOT-boundary \u2014 but the literal phrase 'use proactively' (or equivalent auto-delegation signal) is absent. The assertion explicitly requires it. Confirmed: neither agent.md nor changes.md contains 'proactively'."}, {"text": "The inherit-all tool surface is replaced with a least-privilege read-only set appropriate to a reviewer (or the inherit is deliberately justified)", "passed": true, "evidence": "agent.md: `tools: Read, Bash`. changes.md \u00a72 justifies: 'Restricted `tools` to `Read, Bash` \u2014 sufficient for reading files and running lint/tests to confirm findings, but not for writing files or making network calls.' This is a deliberate, scoped allowlist."}, {"text": "An effort level is set deliberately in frontmatter", "passed": false, "evidence": "agent.md frontmatter contains only `name`, `description`, `model`, and `tools`. No `effort` field is present. changes.md does not mention effort at all. The field was not added."}, {"text": "Anti-patterns are removed: the bloated persona, the all-caps MUST/NEVER without a reason, and the 'think harder' reasoning-permission prose are gone", "passed": true, "evidence": "agent.md body: 'You are an expert code reviewer. Your job is to read code and report findings clearly.' \u2014 no FAANG persona, no MUST/NEVER/ALWAYS, no 'take a deep breath' prose. changes.md \u00a74 explicitly documents removing all three: persona, 'MUST ALWAYS find issues', and 'take a deep breath'."}, {"text": "memory is removed (it was set for one-shot review work, where it is pure overhead) OR its retention is explicitly justified", "passed": true, "evidence": "agent.md has no `memory` field \u2014 it was removed. Note: changes.md does not explicitly discuss the memory removal (no section addresses it), but removal is sufficient to satisfy the assertion per its own wording."}, {"text": "The corrected file passes scripts/validate_agent.py with PASS, and the response explains the changes and the reasons", "passed": true, "evidence": "Validator output: 'PASS: .../without_skill/outputs/agent.md'. changes.md covers 5 problems each with a root-cause analysis and explicit fix description."}]}], "run_summary": {"with_skill": {"pass_rate": {"mean": 0.915, "stddev": 0.085, "min": 0.83, "max": 1.0}, "time_seconds": {"mean": 64.25, "stddev": 9.966, "min": 52.6, "max": 77.6}, "tokens": {"mean": 30175.5, "stddev": 731.65, "min": 29208, "max": 31177}}, "without_skill": {"pass_rate": {"mean": 0.605, "stddev": 0.105, "min": 0.5, "max": 0.71}, "time_seconds": {"mean": 34.725, "stddev": 6.376, "min": 28.1, "max": 45.0}, "tokens": {"mean": 15534.75, "stddev": 424.33, "min": 14913, "max": 15979}}, "delta": {"pass_rate": "+0.310", "time_seconds": "+29.5", "tokens": "+14641"}}, "notes": ["Two assertions pass 100% in BOTH configurations across all 4 evals and add zero signal: 'Produces valid YAML frontmatter between --- markers (not fenced)' and 'File passes validate_agent.py'. Both configs consistently produce structurally valid files \u2014 these assertions confirm a baseline capability, not skill value.", "The 'use proactively' phrase in the description field is the clearest skill differentiator: with_skill passes it in all 4 evals (4/4); without_skill passes it in only 1 of 4 (eval-1 only). In evals 2, 3, and 4 the without_skill runs either omit it entirely or use a non-canonical phrasing ('Use after any code change' in eval-2, 'Use this agent when...' in eval-3, no proactively signal in eval-4). The skill appears to reliably inject this delegation hook.", "The 'effort set deliberately in frontmatter' assertion is also a strong differentiator: with_skill passes it in all 4 evals; without_skill fails it in 3 of 4 (evals 2, 3, and 4 \u2014 missing the field entirely). The single without_skill pass (eval-1) set effort: medium. The skill appears to enforce effort inclusion consistently.", "The 'description includes a NOT-boundary' assertion (eval-1 and eval-3) fails in without_skill but passes in with_skill. In eval-1/without_skill, the NOT-boundary appears only in the body section under '## When to invoke', not in the description field where delegation routing lives. In eval-3/without_skill, no NOT-boundary appears in the description at all. Both with_skill runs put the NOT-boundary directly in the description field.", "Eval-3's 'tools are strictly read-only (Read, Grep, Glob) with no Write/Edit/Bash' assertion fails in BOTH configurations \u2014 with_skill includes 'Read, Grep, Glob, Bash' (Bash cited as mutation risk) and without_skill includes 'Read, Bash' (Grep/Glob absent, Bash present). This is the only assertion that fails with_skill in this eval. The skill does not solve the Bash-in-read-only-agent problem; both configs reach for Bash despite the assertion demanding its exclusion. This may reflect an ambiguity in the skill's guidance around when Bash is acceptable.", "Eval-2's 'effort warrants high or xhigh (not medium)' assertion fails in BOTH configurations: with_skill set effort: medium (wrong value), without_skill omitted effort entirely (also failing). The skill successfully teaches 'include an effort field' but does not consistently teach 'use high or xhigh for agentic test-loop work'. The failure modes differ \u2014 skill: wrong value vs. no skill: field absent \u2014 but both fail.", "Eval-2/without_skill also fails the output contract assertion because its output format includes a summary line 'X failed, Y passed (Z errors)' beyond what the assertion allows. With_skill passes this by explicitly instructing the agent to discard passing test counts. This suggests the skill's output contract guidance is load-bearing for trimming over-reporting.", "The time/token tradeoff is stark and consistent across all 4 evals: with_skill uses ~1.94x the tokens (mean 30,176 vs 15,535) and ~1.85x the wall time (mean 64.3s vs 34.7s). Token variance is tight within each configuration (with_skill stddev 732, without_skill stddev 424), indicating the skill adds a near-fixed overhead per run rather than variable overhead. No single eval is an outlier \u2014 the doubling is uniform.", "With_skill token usage is remarkably stable across all 4 evals (range 29,208\u201331,177, stddev 731). Without_skill is similarly stable (range 14,913\u201315,979, stddev 424). The narrow spread suggests both configurations are roughly consistent in execution depth, and the ~14,600-token gap is attributable to the skill content itself being loaded and processed each run.", "Eval-3/with_skill is the only with_skill run that fails any assertion (83% pass rate, 1 failure: the Bash-in-read-only tools check). Eval-2/with_skill is the other non-perfect run (83%, 1 failure: effort level too low). These are the ceiling-limiters for the skill. A perfect with_skill score (100% across all evals) would require fixing the Bash guidance in read-only contexts and specifying appropriate effort levels per agent archetype.", "Without_skill pass rates cluster tightly around 50\u201371%: evals 2 and 3 both hit 50% (3/6), evals 1 and 4 both hit 71% (5/7). No without_skill run exceeds 71%. The assertions that differentiate \u2014 proactive description, NOT-boundary, effort field, output contract \u2014 account for all without_skill failures except the Bash-in-read-only issue which is shared.", "Eval-4 (fix-broken-agent) is the hardest eval by assertion count (7 assertions vs 6 for evals 2/3) but shows the same pass-rate split as eval-1: with_skill 100%, without_skill 71%. The two without_skill failures are 'use proactively' missing from the description and 'effort field' absent \u2014 the same two classes of failure seen in evals 2 and 3, confirming these are systematic gaps in unaided generation rather than eval-specific issues.", "Eval-1/without_skill passes the 'use proactively' assertion (unlike the other 3 without_skill runs) but still fails 'tools least-privilege' and 'NOT-boundary in description'. The tools failure (only Bash, no Read/Grep/Glob) is distinct from eval-3's Bash-present failure \u2014 here the issue is under-tooling rather than over-tooling. Without_skill appears to produce inconsistent tool selection strategies across evals.", "The skill delivers a +0.31 aggregate pass-rate gain (+51% relative improvement) at a cost of ~29.5 additional seconds and ~14,600 additional tokens per run. At current rates with the sonnet executor model, the quality gain is substantial and the token overhead is moderate. The tradeoff appears favorable given that the primary use case (authoring subagents) is low-frequency enough that the extra ~30s and ~15k tokens per invocation are not a throughput concern."]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>
