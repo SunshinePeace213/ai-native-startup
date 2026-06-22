@@ -1,0 +1,6 @@
+# ignore heavy run artifacts; keep summaries + reports
+*/iteration-*/**
+!*/iteration-*/benchmark.md
+!*/iteration-*/*.html
+*/triggering/**
+!*/triggering/**/report.html

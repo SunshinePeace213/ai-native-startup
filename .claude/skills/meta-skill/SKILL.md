@@ -47,14 +47,22 @@ that is the dominant capability lever on Opus 4.8.
 | `references/structure.md` | Directory layout, the 500-line rule, when and how to split into `references/`, MCP tool naming |
 | `references/authoring-principles.md` | The merged Thariq + Opus 4.8 craft principles (don't-state-the-obvious, gotchas, goals-not-railroad, effort lever) |
 | `references/anti-patterns.md` | What to cut, BAD→GOOD descriptions, and the **pre-ship checklist** (run before packaging) |
-| `references/schemas.md` + `agents/grader.md` | The eval/grade/benchmark JSON shapes and grading rubric |
+| `references/eval-pipeline.md` | The full test/measure/optimize mechanics: output layout, same-turn eval, grade, benchmark, the HTML review report, iterate, triggering optimization, package |
+| `references/schemas.md` | The eval/grade/benchmark JSON shapes |
+| `agents/grader.md` | Grading rubric — assertions vs. outputs (eval step) |
+| `agents/analyzer.md` | Benchmark analyst pass, and the post-hoc "why did it win" analysis |
+| `agents/comparator.md` | Blind A/B comparison between two skill versions (advanced/optional) |
 
 Bundled scripts (invoke from the skill directory so `scripts.` resolves as a
-package):
+package; Python via `uv run`):
 - Validate: `uv run --with pyyaml python -m scripts.quick_validate <skill_dir>`
-- Aggregate benchmark runs: `uv run python -m scripts.aggregate_benchmark <benchmark_dir>`
+- Run a trigger eval: `uv run python -m scripts.run_eval --eval-set <trigger-eval.json> --skill-path <skill_dir> --model sonnet`
+- Improve a description: `uv run python -m scripts.improve_description --eval-results <results.json> --skill-path <skill_dir> --model sonnet`
+- Triggering-optimization loop: `uv run python -m scripts.run_loop --eval-set <trigger-eval.json> --skill-path <skill_dir> --model sonnet --results-dir evals/<skill-name>/triggering`
+- Render the loop's HTML report: `uv run python -m scripts.generate_report <results.json> -o report.html`
+- Aggregate benchmark runs: `uv run python -m scripts.aggregate_benchmark <iteration_dir>`
 - Package: `uv run python -m scripts.package_skill <skill_dir> [out_dir]`
-- Inspect eval results: `uv run python eval-viewer/generate_review.py <workspace_dir>`
+- User-review report: `uv run python eval-viewer/generate_review.py <iteration_dir> --benchmark <benchmark.json>`
 
 ## The workflow
 
@@ -104,53 +112,53 @@ Frontmatter first, then a lean body.
   `references/forms.md` when filling forms"). Reference bundled files with
   `${CLAUDE_SKILL_DIR}/...`; forward slashes only; MCP tools as `Server:tool`.
 - Match repo tooling in any examples: Python via `uv`, JS/TS via `bun`.
+- Save the reusable test suite **with the skill** in `{skill-dir}/evals/`:
+  `evals.json` (output-quality prompts + assertions) and `trigger-eval.json`
+  (should / should-not-trigger queries). These travel with the skill and become
+  the regression suite re-run on every edit.
 
-### 4. Test — candidate vs baseline
+### 4–8. Test, measure, optimize, package — the pipeline
 
-There is no automated runner here; the test step is semi-manual.
-- Author a handful of **realistic eval prompts** — a mix that *should* trigger
-  the skill and a few that should *not* (to catch over-triggering). Shape them
-  like `references/schemas.md` `evals.json` (prompt + expectations).
-- Run each prompt **with the candidate skill and against a no-skill baseline.**
-  Spawn the two as subagents in parallel when the work is independent, or judge
-  by reading the skill cold — the comparison is what reveals whether the skill
-  actually moves output, not the absolute score.
-- Save each run's transcript and any output files so the grader can read them.
+This is an automated loop, not a manual one. Drive it via the scripts above; the
+step-by-step mechanics, exact commands, and JSON shapes live in
+`references/eval-pipeline.md` — read it here. At a high level:
 
-### 5. Grade / benchmark
+- **Eval** — for each prompt, spawn a with-skill run and a no-skill baseline **in
+  the same turn**, save outputs, capture each task's `timing.json`, then grade
+  every run with `agents/grader.md` → `grading.json`.
+- **Benchmark** — `uv run python -m scripts.aggregate_benchmark <iteration_dir>`
+  produces `benchmark.json`/`benchmark.md` (pass-rate / time / tokens, mean ±
+  stddev, with-skill vs. baseline delta), then do an analyst pass with
+  `agents/analyzer.md`. A skill that doesn't beat baseline isn't pulling weight.
+- **Report for user review (first-class step)** — launch
+  `uv run python eval-viewer/generate_review.py <iteration_dir> --benchmark <benchmark.json>`
+  to produce the interactive HTML: an Outputs tab (inline outputs + auto-saving
+  feedback boxes + formal grades) and a Benchmark tab (stats + analyst notes).
+  Get the outputs in front of the user and **wait for their `feedback.json`
+  before you self-evaluate or rewrite the skill.**
+- **Iterate** — fix the highest-leverage gap (tighten `description` for
+  triggering; fix the body against `references/anti-patterns.md` for weak
+  output; raise `effort` instead of prompting around shallow reasoning), then
+  re-run into a fresh `iteration-N+1/` and re-report. On an **edit**, re-use the
+  skill's existing `{skill-dir}/evals/` suite as the regression baseline and
+  snapshot the prior version as the comparison baseline.
+- **Triggering optimization** — when triggering accuracy is the bottleneck, sign
+  off the trigger queries via `assets/eval_review.html`, then run the scripted
+  `scripts.run_loop` loop (`--results-dir evals/<skill-name>/triggering`). It
+  splits train/test via `claude -p`, emits its own HTML via `scripts.generate_report`,
+  and returns a held-out `best_description` to apply to the frontmatter.
+- **Blind compare (advanced/optional)** — `agents/comparator.md` +
+  `agents/analyzer.md` for a rigorous "is the new version actually better?".
+- **Package** — run the pre-ship checklist (bottom of
+  `references/anti-patterns.md`), then
+  `uv run --with pyyaml python -m scripts.quick_validate .` (must print "Skill is
+  valid!") and `uv run python -m scripts.package_skill <skill_dir> dist/`.
 
-- Grade each transcript with the rubric in `agents/grader.md` against the
-  expectations, producing `grading.json` per the shape in
-  `references/schemas.md`. Verdicts need cited evidence; a pass on a weak
-  assertion is worse than useless.
-- Aggregate with-skill vs without-skill runs:
-  `uv run python -m scripts.aggregate_benchmark <benchmark_dir>` → mean/stddev
-  and the delta. A skill that doesn't beat baseline isn't pulling its weight.
-- Inspect visually: `uv run python eval-viewer/generate_review.py <workspace_dir>`.
-
-### 6. Iterate
-
-Fix the highest-leverage gap and re-run the relevant evals:
-- **Not triggering / over-triggering** → tighten the `description` (phase 7).
-- **Right trigger, weak output** → fix the body against
-  `references/anti-patterns.md`: cut obvious-stating, de-railroad, split bloat
-  into references, raise `effort` instead of prompting around shallow reasoning.
-
-### 7. Description-optimize (optional)
-
-When triggering accuracy is the bottleneck, do this by hand:
-- Generate two prompt sets — ones that *should* fire and ones that *shouldn't*.
-- Test the current `description` against both; tighten until should-fire hits
-  and should-not stays quiet. Use the BAD→GOOD examples in
-  `references/anti-patterns.md` as the pattern. Front-load the primary use case;
-  trigger phrases past the 1,536 cap silently vanish.
-
-### 8. Package
-
-- Run the pre-ship checklist at the bottom of `references/anti-patterns.md`.
-- Validate: `uv run --with pyyaml python -m scripts.quick_validate <skill_dir>`
-  (must print "Skill is valid!").
-- Package: `uv run python -m scripts.package_skill <skill_dir> [out_dir]`.
+**Output layout** (full detail in `references/eval-pipeline.md`): eval
+*definitions* live with the skill in `{skill-dir}/evals/`; eval *results* go to a
+repo-root `evals/{skill-name}/iteration-N/` (sibling to `specs/`), never inside
+the packaged skill; the final `.skill` is a deliverable → write it to `dist/`,
+never inside `evals/`.
 
 ## Gotchas
 
@@ -159,6 +167,16 @@ When triggering accuracy is the bottleneck, do this by hand:
 - `package_skill` and `aggregate_benchmark` import from the `scripts` package,
   so run them as `python -m scripts.<name>` **from the skill directory** (the
   one containing `scripts/`), not by absolute path to the `.py` file.
+- `run_loop` / `improve_description` shell out to the `claude -p` CLI — the
+  `claude` CLI must be installed and you must pass a `--model` id. Sonnet (`claude-sonnet-4-6`) is enough for this
+  high-volume loop; triggering is model-sensitive, so confirm the final
+  `best_description` on your production model.
+- The `generate_review.py` viewer review happens **before** you self-evaluate or
+  rewrite. Launch it, then wait for the user's `feedback.json`; don't iterate the
+  skill ahead of their review.
+- In headless / background runs (no display), pass `--static <path>` to
+  `generate_review.py` so it writes a standalone HTML file instead of starting a
+  server; the user's "Submit All Reviews" then downloads `feedback.json`.
 - The validator **rejects angle brackets** anywhere in `description`. Use plain
   text and ellipses, never bracketed placeholders.
 - A skill's body **stays in context for the whole session** once loaded —

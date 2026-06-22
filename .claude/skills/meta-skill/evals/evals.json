@@ -1,0 +1,41 @@
+{
+  "skill_name": "meta-skill",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a skill that formats raw Python tracebacks into a concise summary highlighting the exception type, the failing line, and the most likely root cause.",
+      "expected_output": "A well-formed skill: a SKILL.md with valid front-loaded frontmatter (no angle brackets, within caps) and a lean goals/constraints body, with heavy reference material split into references/ when warranted.",
+      "files": [],
+      "expectations": [
+        "Produces a SKILL.md containing YAML frontmatter with a name and a description field",
+        "The description is written in the third person, front-loaded with the primary use case, and contains no angle bracket characters",
+        "The SKILL.md body is lean (well under 500 lines) and expresses goals and constraints rather than restating behavior Claude already does by default",
+        "Substantial or only-sometimes-needed material is pushed into references/ (one level deep) rather than inlined, or single-file layout is explicitly justified"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I just edited my 'pdf-filler' skill to handle non-fillable forms. Walk me through how to verify the edit actually makes it better than the previous version, and give me something concrete I can review before we ship.",
+      "expected_output": "Guidance that runs the edited skill against the prior version as a baseline, grades and benchmarks the runs (pass-rate/time/tokens with a delta), and produces an HTML review report the user reviews and leaves feedback in before iterating, i.e. an automated measure loop rather than a purely by-hand judgment.",
+      "files": [],
+      "expectations": [
+        "Recommends running the edited skill against the previous version as a baseline and comparing their outputs rather than judging the new version in isolation",
+        "Recommends aggregating the runs into a benchmark with pass-rate and timing and a with-skill-versus-baseline delta",
+        "Recommends generating an HTML review report and waiting for the user's feedback before rewriting or iterating the skill",
+        "Points to concrete scripts or commands (such as aggregate_benchmark or generate_review.py) rather than describing only a manual, by-hand process"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "My skill keeps firing on the wrong requests and missing some of the right ones. How do I systematically optimize its description so it triggers correctly?",
+      "expected_output": "Guidance to build a labeled should/should-not-trigger query set and run a scripted train/test optimization loop that selects the best description by held-out test score, rather than only hand-tweaking the description.",
+      "files": [],
+      "expectations": [
+        "Recommends building a labeled set of should-trigger and should-not-trigger queries to measure triggering",
+        "Recommends a scripted or automated optimization loop (such as run_loop) rather than only manual hand-tweaking of the description",
+        "Mentions a train/test or held-out split and choosing the description by held-out score to avoid overfitting",
+        "Notes that the optimization loop shells out to the claude CLI and requires a model id"
+      ]
+    }
+  ]
+}
