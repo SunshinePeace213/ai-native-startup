@@ -43,6 +43,7 @@ GENERAL_PURPOSE_AGENT: `general-purpose`
 - Include code examples or pseudo-code where appropriate to clarify complex concepts
 - Consider edge cases, error handling, and scalability concerns
 - Understand your role as the team lead and orchestrate the team accordingly.
+- The `## Codex Findings` section of `plan.md` is Codex-owned (written only by the `spec-review` skill). NEVER write to or edit that section. Claude refines only the rest of the plan body between Codex rounds.
 
 ## Grilling Protocol
 
@@ -85,7 +86,45 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 6. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments. Document in plan.
 7. Generate Plan Folder - Create a descriptive kebab-case `<plan-name>` and the per-plan folder `specs/<plan-name>/`
 8. Save Plan - Write the grilling decision log to `DECISION_LOG` and the implementation plan to `PLAN_FILE`
-9. Save & Report - Follow the `Report` section to summarize key components and emit the new file paths
+9. Codex Verification - Run the `Codex Verification Loop` to hand the saved spec to Codex for review (skips gracefully if the Codex CLI is unavailable)
+10. Save & Report - Follow the `Report` section to summarize key components and emit the new file paths
+
+## Codex Verification Loop
+
+After the plan and `decisions.md` are saved (Workflow step 9) and before the report, hand the drafted spec to Codex for an independent review. Codex writes its verdict + findings into the Codex-owned `## Codex Findings` section of `plan.md`; Claude reads the verdict, refines the rest of the plan body where warranted, and re-submits — capped at 2 Codex rounds.
+
+### Precondition / graceful skip
+
+- Check Codex availability with `command -v codex`. If Codex is unavailable, SKIP the loop: warn the user (point them to `/codex:setup`), record the skip as a note in `decisions.md`, and continue to the report normally. Never block planning on a missing Codex.
+
+### Scaffold
+
+- `plan.md` already contains the `## Codex Findings` section seeded with the `_Pending Codex review. …_` note (from the Plan Format template). Do NOT write into that section — it is Codex-owned. Claude refines only the rest of the plan body between rounds.
+
+### Invocation (verbatim)
+
+Run the following, substituting `<REPO_ROOT>` (the repo cwd that contains `.agents/skills/spec-review/`) and `<SPEC_PATH>` = `specs/<plan-name>/plan.md`:
+
+```
+codex exec -C "<REPO_ROOT>" -s workspace-write "Use the spec-review skill to review the plan-w-team implementation spec at <SPEC_PATH>. Follow the skill's output contract exactly: append your per-round verdict and findings ONLY under the '## Codex Findings' section of that file, and edit nothing else in the file."
+```
+
+- `codex exec` has NO `--skill` / `--full-auto` / `-a` flag — use `-s workspace-write` (the skill is auto-discovered and invoked by naming it in the prompt).
+- Give each review round a generous timeout (~5 minutes): a findings-heavy round can run past the default 2-minute window, and a round that times out writes no verdict block — re-run it rather than treating the empty result as approval.
+
+### Read the verdict from the FILE (not stdout)
+
+```
+grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<plan-name>/plan.md | tail -1
+```
+
+(The dash is a literal em-dash, U+2014.)
+
+### Loop control — max 2 Codex rounds
+
+- **Round 1** → if the verdict is `approved`, the loop is done. If `changes-requested`, Claude applies the warranted fixes to the plan BODY ONLY (never the `## Codex Findings` section); for any finding Claude rejects, it records the finding + its rationale in `decisions.md`. Then run **Round 2**.
+- **Round 2** → if still `changes-requested`, Claude applies a best-effort final pass and PROCEEDS anyway, recording "proceeded without full Codex approval after 2 rounds" + the outstanding findings in `decisions.md`.
+- Never exceed 2 Codex rounds.
 
 ## Plan Format
 
@@ -219,6 +258,10 @@ Execute these commands to validate the task is complete:
 ## Notes
 
 <optional additional context, considerations, or dependencies. If new libraries are needed, specify using `uv add`>
+
+## Codex Findings
+
+_Pending Codex review. Codex-owned (the spec-review skill); Claude must not edit this section._
 ```
 
 ## Decision Log Format
@@ -235,6 +278,8 @@ Write the full grilling record to `DECISION_LOG`. Use this structure:
 ## Assumptions — every deferred "you decide" / accept-all item, explicitly
 
 ## Open Questions / Out of Scope — deferred or excluded items (non-goals)
+
+## Codex Verification — outcome (one of: approved at round N / proceeded without approval after 2 rounds / skipped — Codex unavailable), plus any Codex findings Claude rejected with rationale
 ```
 
 ## Report
@@ -247,6 +292,7 @@ After creating and saving the implementation plan, provide a concise report with
 Plan: specs/<plan-name>/plan.md
 Decisions: specs/<plan-name>/decisions.md
 Topic: <brief description of what the plan covers>
+Codex Verification: <approved at round N | proceeded without approval after 2 rounds | skipped (Codex unavailable)>
 Key Components:
 - <main component 1>
 - <main component 2>
