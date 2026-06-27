@@ -59,6 +59,19 @@ When complete:
 - **Branch linkage (B)**: Option B — keep the mangled local worktree branch, push to
   `refs/heads/<type>/<N>-<slug>` with `-u` for tracking (current Worktree Rule;
   unchanged). The clean name shows on GitHub; the local name stays cosmetic.
+- **Link branch to the issue's Development section (B)**: `/plan-w-team` links the
+  convention branch to the GitHub issue via the `createLinkedBranch` GraphQL mutation,
+  so the branch shows under the issue's **Development** panel. IMPORTANT ordering:
+  `createLinkedBranch` only _creates_ a new branch — it cannot attach to an
+  already-pushed one. So the reworked flow must **create the branch from the issue
+  first, then push** the plan commits to it:
+  1. resolve the issue node id (`gh api repos/<owner>/<repo>/issues/<N> --jq .node_id`);
+  2. `createLinkedBranch(issueId, oid=<base SHA, e.g. origin/main>, name="<type>/<N>-<slug>")`;
+  3. `EnterWorktree`, write the plan, commit, and push to that now-linked branch.
+     For a branch that was already pushed unlinked (the only retrofit path), the link
+     requires deleting and recreating the remote branch at the same SHA — a destructive
+     op that needs explicit user approval. Graceful-skip the whole linking step if
+     `gh`/GraphQL is unavailable; never block planning.
 - **Skills (B)**: document `spec-review` + `implementation-review` contracts here and
   respect them; **no skill-file edits**.
 - **Commits**: follow `GIT-COMMIT-PR-MESSAGE.md`, carry **no `Co-Authored-By`** trailer
@@ -151,14 +164,24 @@ Edit `.claude/commands/plan-w-team.md`:
    and pushing the convention branch (alongside the existing issue-creation,
    EnterWorktree, and Codex-relay carve-outs). Still NO product code, NO agent
    deployment.
-2. **Initial publish** (new Workflow step, after `## Tracking` is recorded): commit
-   `plan.md` + `decisions.md` and push the convention branch:
+2. **Create the issue-linked branch, then initial publish** (new Workflow step, after
+   `## Tracking` is recorded). Create the branch FROM the issue so it shows in the
+   issue's **Development** panel, then push the plan commits to it:
 
    ```
+   ISSUE_ID=$(gh api repos/<owner>/<repo>/issues/<N> --jq .node_id)
+   BASE=$(git rev-parse origin/main)
+   gh api graphql -f query='mutation($i:ID!,$o:GitObjectID!,$n:String!){createLinkedBranch(input:{issueId:$i,oid:$o,name:$n}){linkedBranch{ref{name}}}}' \
+     -f i="$ISSUE_ID" -f o="$BASE" -f n="<type>/<N>-<slug>"   # creates + links the branch on origin
    git add specs/<plan-name>/
    git commit -m "📝 docs(plan): add plan for <plan-name>" -m "Refs #<N>"
-   git push -u origin HEAD:refs/heads/<type>/<N>-<slug>
+   git push -u origin HEAD:refs/heads/<type>/<N>-<slug>        # pushes plan commits onto the linked branch
    ```
+
+   `createLinkedBranch` can only CREATE the branch (it cannot attach to a pre-existing
+   one), so it MUST run before the first push. If the branch was already pushed
+   unlinked, linking requires a destructive delete+recreate at the same SHA — gate that
+   on explicit user approval.
 
 3. **Per-phase commit+push inside the Codex Verification Loop** — after each round and
    each fix, commit + push so the branch shows the plan's evolution:
@@ -170,7 +193,9 @@ Edit `.claude/commands/plan-w-team.md`:
    locally and SKIP the push (warn, continue) — never block planning. Mirrors the
    existing `gh`/Codex graceful-skip patterns.
 5. **Branch linkage** stays Option B (refspec push, mangled local kept) — the existing
-   Worktree Rule in `GIT-COMMIT-PR-MESSAGE.md` is unchanged.
+   Worktree Rule in `GIT-COMMIT-PR-MESSAGE.md` is unchanged. The branch is linked to the
+   issue's **Development** panel via `createLinkedBranch` (step 2), so the issue shows
+   the branch even before a PR exists.
 6. **No `Co-Authored-By`** on any of these commits (dogfoods workstream A).
 
 Edit `.claude/commands/build.md` (minimal):
@@ -347,12 +372,12 @@ branch; the published `chore/1-...` branch exists on origin with the plan commit
 - **Agent Type**: general-purpose
 - **Parallel**: true
 - Edit `.claude/commands/plan-w-team.md`: relax the PLANNING-ONLY carve-out to allow
-  committing plan artifacts + pushing the convention branch; add the initial publish
-  step (commit `specs/<plan-name>/` + refspec push) and the per-phase commit+push
-  through the Codex Verification Loop; add the `gh`/push graceful-skip; keep Option B
-  branch linkage; require no `Co-Authored-By` on plan commits; reference the
-  `spec-review` / `implementation-review` skill contracts (this plan's Skill Contracts
-  section).
+  committing plan artifacts + pushing the convention branch; add the create-linked-branch
+  step (`createLinkedBranch` from the issue, then push — so the branch shows in the
+  issue's Development panel) and the per-phase commit+push through the Codex Verification
+  Loop; add the `gh`/push/GraphQL graceful-skip; keep Option B branch linkage; require
+  no `Co-Authored-By` on plan commits; reference the `spec-review` /
+  `implementation-review` skill contracts (this plan's Skill Contracts section).
 
 ### 6. Update /build handoff note
 
@@ -389,9 +414,13 @@ branch; the published `chore/1-...` branch exists on origin with the plan commit
 - (A) `ai-docs/claude-code-hooks.md` exists and covers hook concepts, lifecycle, and
   the PreToolUse rationale.
 - (B) `.claude/commands/plan-w-team.md` documents: relaxed PLANNING-ONLY carve-out;
-  initial commit + refspec push of `specs/<plan-name>/`; per-phase commit+push through
-  the Codex loop; `gh`/push graceful-skip; no `Co-Authored-By` on plan commits; and the
-  two skill contracts.
+  create-linked-branch (`createLinkedBranch` from the issue) then initial commit + push
+  of `specs/<plan-name>/`; per-phase commit+push through the Codex loop;
+  `gh`/push/GraphQL graceful-skip; no `Co-Authored-By` on plan commits; and the two
+  skill contracts.
+- (B) The convention branch is linked to the issue's **Development** panel (visible via
+  `gh api graphql … issue.linkedBranches`); for a future run this happens at branch
+  creation; for this retrofit run it requires the user-approved delete+recreate.
 - (B) `.claude/commands/build.md` resumes the pre-existing convention branch and opens
   exactly one PR with `Closes #N` (no duplicate branch/PR).
 - (B) Skill files are unchanged; the plan documents both contracts.

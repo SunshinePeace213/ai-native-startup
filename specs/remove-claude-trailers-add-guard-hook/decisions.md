@@ -60,6 +60,16 @@ commit/push → fix → commit/push → Codex R2 → commit/push → fix → com
   toward Option A "rename for better management", then confirmed Option B after the
   trade-off analysis: same GitHub result, matches the repo's existing Worktree Rule,
   lowest risk, no doc churn. Worktree Rule docs unchanged.)
+- **Q: Link the branch to the issue's GitHub Development panel?** A: **Yes** — via the
+  `createLinkedBranch` GraphQL mutation. Discovered constraint: `createLinkedBranch`
+  can only _create_ a branch, not attach to a pre-existing one (our call returned
+  `linkedBranch: null` and `issue.linkedBranches` stayed empty). So the reworked
+  `/plan-w-team` must **create the branch from the issue first, then push** the plan
+  commits. Retrofitting an already-pushed branch needs a destructive delete+recreate at
+  the same SHA, which auto-mode blocked ("Git Destructive") absent explicit approval —
+  so for THIS run the link is pending the user's choice (approve delete+recreate, or
+  open a `Closes #1` PR). This doc change was made post-approval **without re-running
+  Codex**, per the user's instruction.
 - **Q: spec-review / implementation-review skills — modify or document?** A: **Document
   - sequence only** (Option 1). Capture both contracts in the plan; do NOT edit the
     skill files; sequence each push after the round that produced its findings.
