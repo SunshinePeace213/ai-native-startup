@@ -1,4 +1,4 @@
-# Plan: Trailer cleanup + guard hook + /plan-w-team publish-and-track workflow rework
+# Plan: Trailer cleanup + guard hook + /plan-w-team publish-and-track rework + /ship merge command
 
 ## Task Description
 
@@ -25,6 +25,12 @@ tracking). It also documents the `spec-review` and `implementation-review` skill
 contracts in this plan so the reworked flow respects them. The skill files themselves
 are NOT modified.
 
+**C — `/ship` finish-merge command.** `/build` opens the PR and stops, so nothing
+codifies the final merge. This workstream adds a new `/ship <PR#|branch>` command that
+guards, **squash-merges** the PR into `main` with a single summary commit (not all the
+per-phase logs), closes the linked issue (`Closes #N`), and cleans up the remote/local
+branch and the worktree.
+
 ## Objective
 
 When complete:
@@ -46,6 +52,10 @@ When complete:
   plan documents both Codex skill contracts. This very plan is published to
   `chore/1-remove-claude-trailers-add-guard-hook` with per-phase commits as the
   reference dogfood.
+- (C) A new `.claude/commands/ship.md` exists: `/ship <PR#|branch>` guards (open +
+  mergeable + CI not failing + no unpushed commits + explicit confirm; never `--admin`),
+  squash-merges with an explicit summary commit (`Closes #N`, no `Co-Authored-By`), and
+  cleans up the remote branch (`--delete-branch`), the local branch, and the worktree.
 
 ## Requirements & Decisions
 
@@ -109,6 +119,11 @@ When complete:
   respect them; **no skill-file edits**.
 - **Commits**: follow `GIT-COMMIT-PR-MESSAGE.md`, carry **no `Co-Authored-By`** trailer
   (dogfoods workstream A), `Refs #N` footer.
+- **/ship finish-merge (C)**: new `/ship <PR#|branch>` command — guarded (open +
+  mergeable + CI ok + no unpushed commits + confirm; never `--admin`), **squash-merges**
+  to one summary commit on `main` (`Closes #N`, no `Co-Authored-By`), and cleans up the
+  remote branch (`--delete-branch`), the local branch, and the worktree. Graceful-skip if
+  `gh` is unavailable.
 
 ## Tracking
 
@@ -291,6 +306,48 @@ file is edited.
   are auto-discovered from `.agents/skills/`, and are invoked by naming them in the
   prompt (no `--skill` flag). Claude is the only actor that calls `gh`.
 
+### Workstream C — `/ship` finish-merge command
+
+A new slash command `.claude/commands/ship.md` closes the lifecycle: `/build` opens the
+PR and **deliberately stops** (its guard: "never merge — the user merges"); `/ship` is
+that explicit, user-invoked merge+cleanup step.
+
+- **Invocation**: `/ship <PR#|branch>`. Resolve the target with `gh pr view <arg>`
+  (accepts a PR number, URL, or branch name); with **no arg**, infer the PR from the
+  current worktree's branch (`gh pr view --json …` on the upstream branch). Read the
+  PR's number `#N`, head branch, and the linked issue.
+- **Pre-merge guards (abort cleanly on any failure; never `--admin`/force-bypass)**:
+  1. PR exists and is **open**.
+  2. PR is **mergeable** (no conflicts) — `gh pr view --json mergeable,mergeStateStatus`.
+  3. **CI not failing** — `gh pr checks` shows no failing required checks (pending →
+     warn/ask; failing → abort).
+  4. **No unpushed commits** in the worktree (`git status -sb` / compare HEAD to
+     `@{upstream}`) — squash merges the _remote_ PR head, so unpushed local commits
+     would be lost and then destroyed by worktree removal. Abort and tell the user to
+     push (or discard) first.
+  5. Show a one-line summary (PR title, #N, commit count, target `main`) and require
+     **explicit confirmation** before proceeding.
+- **Squash merge** with an explicit summary message (NOT GitHub's commit-concatenating
+  default):
+
+  ```
+  gh pr merge <N> --squash --delete-branch \
+    --subject "<emoji> <type>(<scope>): <PR-title desc>" \
+    --body "$(printf '%s\n\n%s' '<concise 1–3 sentence summary from the plan Objective / PR Summary>' 'Closes #<N>')"
+  ```
+
+  The subject mirrors the PR title; the body is a short human summary + `Closes #<N>`;
+  **no `Co-Authored-By`** (the guard hook would block it anyway). `--delete-branch`
+  removes the remote branch; `Closes #N` closes the linked issue on merge.
+
+- **Cleanup (after a confirmed merge)**: switch out of the worktree first (you cannot
+  remove a worktree you're inside) → `git worktree remove <path>` → delete the mangled
+  local branch (`git branch -D worktree-…`) → `git fetch --prune`. The recorded
+  worktree path comes from the plan's `## Tracking` block.
+- **Graceful skips**: if `gh`/remote/auth is unavailable, or the PR isn't found, abort
+  with a clear message and change nothing. If the worktree was already removed, skip
+  that step. Never leave a half-merged state silently — report exactly what happened.
+
 ## Relevant Files
 
 Use these files to complete the task:
@@ -301,7 +358,10 @@ Use these files to complete the task:
 - `.claude/settings.local.json` — (A) add the `hooks.PreToolUse` block.
 - `.claude/commands/plan-w-team.md` — (B) add initial publish + per-phase commit/push
   - graceful skip; relax PLANNING-ONLY carve-out; reference the skill contracts.
-- `.claude/commands/build.md` — (B) note the pre-existing plan branch; keep single-PR.
+- `.claude/commands/build.md` — (B) note the pre-existing plan branch; keep single-PR;
+  add PR assignee/label/`Closes #N` config + on-demand label creation.
+- `.claude/commands/plan-w-team.md`, `.claude/commands/build.md` — (B) also referenced
+  by Workstream C: `/ship` reads the `## Tracking` block these write.
 - `.agents/skills/spec-review/SKILL.md`, `.agents/skills/implementation-review/SKILL.md`
   — read-only references for the contracts; **not edited**.
 - `specs/git-workflow-issue-pr-tracking/decisions.md` — historical audit log; **do NOT
@@ -311,6 +371,7 @@ Use these files to complete the task:
 
 - `.claude/hooks/block-coauthor-trailer.sh` — the PreToolUse guard script (chmod +x).
 - `ai-docs/claude-code-hooks.md` — deep Claude Code hooks reference (research output).
+- `.claude/commands/ship.md` — (C) the `/ship <PR#|branch>` finish-merge command.
 
 ## Implementation Phases
 
@@ -458,14 +519,29 @@ branch; the published `chore/1-...` branch exists on origin with the plan commit
   `gh label create … --force` (so build creates labels on demand). Use accessible GitHub
   URLs for any file path in the PR body. Leave graceful-skip/no-issue fallbacks intact.
 
-### 7. Validate all
+### 7. Create the /ship finish-merge command
+
+- **Task ID**: create-ship-command
+- **Depends On**: update-build-handoff
+- **Assigned To**: builder-workflow
+- **Agent Type**: general-purpose
+- **Parallel**: false
+- Create `.claude/commands/ship.md` per Workstream C: `/ship <PR#|branch>` (resolve via
+  `gh pr view`, infer from current worktree branch when no arg); pre-merge guards (open +
+  mergeable + CI not failing + no unpushed commits + explicit confirm; never `--admin`);
+  `gh pr merge --squash --delete-branch` with an explicit summary `--subject`/`--body`
+  (`Closes #N`, no `Co-Authored-By`); cleanup (switch out of worktree → `git worktree
+remove` → delete local branch → `git fetch --prune`); `gh` graceful-skip. Use proper
+  command frontmatter (description, argument-hint) per the repo's command house style.
+
+### 8. Validate all
 
 - **Task ID**: validate-all
-- **Depends On**: research-hooks, scrub-trailers, create-hook-script, wire-settings, rework-plan-w-team, update-build-handoff
+- **Depends On**: research-hooks, scrub-trailers, create-hook-script, wire-settings, rework-plan-w-team, update-build-handoff, create-ship-command
 - **Assigned To**: validator
 - **Agent Type**: general-purpose
 - **Parallel**: false
-- Run all Validation Commands below; confirm acceptance criteria for both workstreams.
+- Run all Validation Commands below; confirm acceptance criteria for all workstreams.
 - Simulate PreToolUse payloads (trailer present → exit 2; clean → exit 0; non-git → exit 0).
 
 ## Acceptance Criteria
@@ -509,6 +585,11 @@ branch; the published `chore/1-...` branch exists on origin with the plan commit
   Development panel) — graceful-skip when `gh` is unavailable.
 - (B) This plan is published to `chore/1-remove-claude-trailers-add-guard-hook` on
   origin with per-phase commits (dogfood).
+- (C) `.claude/commands/ship.md` exists with valid command frontmatter and documents:
+  `<PR#|branch>` resolution (+ no-arg inference); the pre-merge guards (open, mergeable,
+  CI not failing, no unpushed commits, explicit confirm, no `--admin`); squash merge with
+  an explicit summary subject/body + `Closes #N` + no `Co-Authored-By`; and full cleanup
+  (remote branch via `--delete-branch`, local branch, worktree) with `gh` graceful-skip.
 
 ## Validation Commands
 
@@ -524,6 +605,9 @@ Execute these commands to validate the task is complete:
 - `grep -nE 'git push -u origin HEAD:refs/heads|per-phase|graceful' .claude/commands/plan-w-team.md` — publish + per-phase + graceful-skip steps present.
 - `grep -nE 'spec-review|implementation-review' .claude/commands/plan-w-team.md` — skill contracts referenced.
 - `git rev-parse --abbrev-ref '@{upstream}'` — expect `origin/chore/1-remove-claude-trailers-add-guard-hook`; network-free confirmation that the worktree branch is published + tracking the convention ref. (The remote-existence check is an orchestrator/plan-time step in `/plan-w-team`, NOT a build-time Validation Command, since `implementation-review` runs these network-off.)
+- `test -f .claude/commands/ship.md && echo OK` — the /ship command file exists.
+- `grep -nE 'gh pr merge --squash|--delete-branch|git worktree remove|--admin' .claude/commands/ship.md` — squash + delete-branch + worktree cleanup present (and confirm `--admin` appears only in a "never use" context).
+- `grep -nE '<PR#\\|branch>|gh pr view|gh pr checks|unpushed|Closes #' .claude/commands/ship.md` — invocation, guards, and issue-close documented.
 
 ## Notes
 

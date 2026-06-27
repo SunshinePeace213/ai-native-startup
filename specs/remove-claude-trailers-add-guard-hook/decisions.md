@@ -11,7 +11,11 @@ carrying `Co-Authored-By: Claude`, research hooks → `ai-docs/`, and reduce
 plan is reviewable on GitHub, with **per-phase commit+push** through the spec-review
 loop (mirroring `/build`); document the `spec-review` and `implementation-review` skill
 contracts (skill files NOT modified); `/build` resumes the same branch and opens one
-PR. This plan is itself published to `chore/1-...` with per-phase commits as the dogfood.
+PR. **C — `/ship` finish-merge command**: a new `/ship <PR#|branch>` command that
+guards, squash-merges the PR into `main` with a single summary commit (`Closes #N`),
+and cleans up the remote/local branch + worktree — the explicit merge step `/build`
+deliberately omits. This plan is itself published to `chore/1-...` with per-phase commits
+as the dogfood.
 
 ## Tracking
 
@@ -112,6 +116,30 @@ commit/push → fix → commit/push → Codex R2 → commit/push → fix → com
     skill files; sequence each push after the round that produced its findings.
 - **Q: Apply per-phase publish to THIS run now?** A: **Yes** — commit+push each phase
   to `chore/1-...` so the plan is reviewable on GitHub immediately (dogfood).
+
+### Workstream C — `/ship` finish-merge command
+
+- **Q: Add a finish/merge command?** A: **Yes** — `/ship`. `/build` deliberately stops
+  at "PR open"; `/ship` is the explicit user-invoked merge+cleanup step that closes the
+  lifecycle. Folded into this plan as Workstream C (new file `.claude/commands/ship.md`).
+- **Q: Invocation?** A: `/ship <PR#|branch>` — resolve via `gh pr view <arg>` (PR number,
+  URL, or branch); no arg → infer the PR from the current worktree's branch.
+- **Q: Merge strategy / history on main?** A: **Squash merge** — one summary commit on
+  `main`, not all per-phase logs (the per-phase history stays visible in the PR).
+- **Q: Squash commit message?** A: **Conventional subject (PR title) + concise summary
+  body** (from the plan Objective / PR Summary) + `Closes #N`; **no `Co-Authored-By`**.
+  Set explicitly via `--subject`/`--body` (GitHub's default squash message concatenates
+  every commit — the "all logs" we're avoiding).
+- **Q: Cleanup scope?** A: **Full** — `--delete-branch` (remote) + remove the worktree
+  (switch out first) + delete the mangled local branch + `git fetch --prune`. Issue
+  auto-closes via `Closes #N`.
+- **Q: Safety guards?** A: **Checks + confirm.** Verify PR open + mergeable (no
+  conflicts) + CI not failing + **no unpushed commits in the worktree** (squash merges
+  the remote head; unpushed local commits would be lost then destroyed by worktree
+  removal); require explicit confirmation; **never `--admin`/force-bypass**; abort
+  cleanly on any failure; `gh` graceful-skip.
+- **Q: Codex on this addition?** A: **Run one Codex spec-review round** (user choice),
+  unlike the recent doc-only changes.
 
 ## Assumptions
 
