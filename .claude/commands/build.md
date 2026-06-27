@@ -35,7 +35,9 @@ When implementation completes, surface the build as **one** GitHub PR opened fro
 
 When `## Tracking` carries an issue number `#N`:
 
-1. **Push the convention-named remote branch.** The local worktree branch name is cosmetic, so the convention is enforced on the remote ref:
+> **Handoff from `/plan-w-team`.** The convention branch `<type>/<N>-<slug>` ALREADY exists on `origin` carrying the plan commits (`/plan-w-team` created + pushed it). The push below adds the implementation commits ON TOP (a fast-forward) — `/build` MUST NOT create a second branch, and it opens exactly ONE PR (`Closes #N`) whose diff therefore includes BOTH the plan and the implementation. Any file path `/build` writes into the PR body or an issue comment MUST be an accessible GitHub URL (a blob URL on the head branch, or a commit-pinned permalink), NEVER a bare repo-relative path (those resolve against `main` and 404 pre-merge) — the same rule as the issue's "Link to plan".
+
+1. **Push onto the pre-existing convention branch.** The branch already exists on `origin` with the plan commits, so this push fast-forwards the implementation commits onto it (do NOT create a new branch). The local worktree branch name is cosmetic, so the convention is enforced on the remote ref:
 
    ```
    git push -u origin HEAD:refs/heads/<type>/<N>-<slug>
@@ -43,14 +45,16 @@ When `## Tracking` carries an issue number `#N`:
 
    `<type>` / `<N>` / `<slug>` come from the recorded branch name in `## Tracking`.
 
-2. **Open exactly ONE PR** with the type-matched template:
+2. **Open exactly ONE PR** with the type-matched template, mirroring the issue's metadata config:
 
    ```
-   gh pr create --template <type>.md --base main --head <type>/<N>-<slug> --title "[PR] <emoji> <type>(<scope>): <description>"
+   gh label create <type-label> --color … --description … --force   # ensure the label exists first (idempotent; build self-heals)
+   gh pr create --template <type>.md --base main --head <type>/<N>-<slug> --assignee @me --label <type-label> --title "[PR] <emoji> <type>(<scope>): <description>"
    ```
 
    - `<emoji>` is the gitmoji for `<type>` (✨ feat, 🐛 fix, 📝 docs, 🎨 style, ♻️ refactor, ⚡️ perf, ✅ test, 🔧 chore) — e.g. `[PR] ✨ feat(api): add login endpoint`.
-   - Fill the template body: the `Closes #N` line under **Linked Issue**, and the **Agent Task Manifest** copied from `TaskList` (one line per task: `- [ ] #<taskId> <subject> — <owner> — <status>`).
+   - **Mirror the issue's metadata on the PR.** Using the SAME `<type>`→label mapping as `/plan-w-team` (`feat→enhancement`, `fix→bug`, `docs→documentation`; `chore`/`refactor`/`perf`/`style`/`test` same-named), set `--assignee @me` + `--label <type-label>`. Create the type label on demand FIRST with the idempotent `gh label create <type-label> --color … --description … --force` so build self-heals a missing/deleted label. `epic` stays on the tracking issue, NOT the PR. `Closes #N` (in the body) links the PR in the issue's **Development** panel and closes the issue on merge — no `createLinkedBranch` is needed for the PR.
+   - Fill the template body: the `Closes #N` line under **Linked Issue**, and the **Agent Task Manifest** copied from `TaskList` (one line per task: `- [ ] #<taskId> <subject> — <owner> — <status>`). Any file path in the body must be an accessible GitHub URL (head-branch blob URL or commit-pinned permalink), not a bare repo-relative path.
    - Open the PR **ready** (not draft).
 
 ### Build Status checklist (live, in the PR body)

@@ -28,7 +28,7 @@ GENERAL_PURPOSE_AGENT: `general-purpose`
 ## Instructions
 
 - **PLANNING ONLY**: Do NOT build, write code, or deploy agents. Your only output is a plan document saved to `PLAN_OUTPUT_DIRECTORY`.
-- The PLANNING ONLY rule still permits the tracking/setup this plan explicitly calls for: creating the single Epic/Plan tracking issue (`gh issue create`), entering the shared worktree (`EnterWorktree`), and relaying Codex spec-review verdicts to that issue (`gh issue comment`). These record and stage the plan — they are NOT building, writing product code, or deploying agents. See `GitHub Issue Tracking`.
+- The PLANNING ONLY rule still permits the tracking/setup this plan explicitly calls for: creating the single Epic/Plan tracking issue (`gh issue create`), entering the shared worktree (`EnterWorktree`), committing the plan artifacts (`specs/<plan-name>/plan.md` + `decisions.md`) and pushing the convention branch, and relaying Codex spec-review verdicts to that issue (`gh issue comment`). These record, publish, and stage the plan — they are NOT building, writing product code, or deploying agents. See `GitHub Issue Tracking` and `Publish & Per-Phase Tracking`.
 - If no `USER_PROMPT` is provided, stop and ask the user to provide it.
 - If `ORCHESTRATION_PROMPT` is provided, use it to guide team composition, task granularity, dependency structure, and parallel/sequential decisions.
 - Carefully analyze the user's requirements provided in the USER_PROMPT variable
@@ -89,9 +89,10 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 8. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments. Document in plan.
 9. Generate Plan Folder - Create a descriptive kebab-case `<plan-name>` and the per-plan folder `specs/<plan-name>/`
 10. Save Plan - Write the grilling decision log to `DECISION_LOG` and the implementation plan to `PLAN_FILE`
-11. Record Tracking - Record the `## Tracking` block in BOTH `plan.md` and `decisions.md` (issue number, intended convention branch name, worktree path) per `GitHub Issue Tracking`, then update the issue body to link the saved `plan.md` (only when an issue exists).
-12. Codex Verification - Run the `Codex Verification Loop` to hand the saved spec to Codex for review (skips gracefully if the Codex CLI is unavailable)
-13. Save & Report - Follow the `Report` section to summarize key components and emit the new file paths
+11. Record Tracking - Record the `## Tracking` block in BOTH `plan.md` and `decisions.md` (issue number, intended convention branch name, worktree path) per `GitHub Issue Tracking`.
+12. Publish Plan Branch - Create the issue-linked convention branch (`createLinkedBranch`), commit `specs/<plan-name>/`, push the plan commits, then update the issue's "Link to plan" to accessible blob URLs — see `Publish & Per-Phase Tracking`. Skips the push gracefully when `gh`/remote/GraphQL is unavailable.
+13. Codex Verification - Run the `Codex Verification Loop` to hand the saved spec to Codex for review, committing + pushing the plan after each round/fix (per-phase tracking); skips gracefully if the Codex CLI is unavailable.
+14. Save & Report - Follow the `Report` section to summarize key components and emit the new file paths
 
 ## GitHub Issue Tracking
 
@@ -99,14 +100,24 @@ The plan→build lifecycle is threaded by a single GitHub issue. `/plan-w-team` 
 
 ### Create the Epic/Plan issue (Workflow step 5)
 
-After the Grilling Protocol sign-off, once the plan title and objective are known and BEFORE entering the worktree (so the intended branch can carry `#N`), create ONE Epic/Plan issue with `gh issue create`:
+After the Grilling Protocol sign-off, once the plan title and objective are known and BEFORE entering the worktree (so the intended branch can carry `#N`), create ONE Epic/Plan issue with `gh issue create`, then assign + label it idempotently so a missing label can never abort creation:
 
 ```
+# 1. ensure every label exists FIRST (idempotent; self-heals a fresh clone / deleted label)
+gh label create epic         --color … --description … --force
+gh label create <type-label> --color … --description … --force
+# 2. create the issue
 gh issue create --template epic-plan.md --title "<plan title>" --body "<objective + a placeholder link to specs/<plan-name>/plan.md>"
+# 3. apply assignee + labels AFTER create, so a missing label can't abort the create
+gh issue edit <N> --add-assignee @me --add-label epic --add-label <type-label>
 ```
 
-- Title = the plan title. Body = the objective plus a placeholder link to `specs/<plan-name>/plan.md`; the link is updated to the real path once `plan.md` is written (Workflow step 11).
+- Title = the plan title. Body = the objective plus a placeholder link to `specs/<plan-name>/plan.md`; the link is updated to accessible blob URLs once `plan.md` is pushed (see `Publish & Per-Phase Tracking`).
 - Create exactly one issue per plan — its number `#N` is the durable join key for the whole workflow.
+- **Assignee + labels**: every epic issue is assigned to the human owner (`--assignee @me`) and labelled `epic` + the branch-`<type>` label.
+- **`<type>`→label mapping**: `feat→enhancement`, `fix→bug`, `docs→documentation`; `chore`/`refactor`/`perf`/`style`/`test` are same-named; plus `epic` for plan issues.
+- **Labels are created on demand**: run the idempotent `gh label create <name> --color … --description … --force` for each label BEFORE applying it, so a fresh clone or a deleted label self-heals and never aborts the run.
+- Graceful-skip the entire label/assignee/issue step if `gh` is unavailable (see `Graceful gh skip`).
 
 ### Enter the worktree (Workflow step 6)
 
@@ -124,11 +135,66 @@ IMPORTANT: the recorded **Issue** field is the SINGLE SOURCE OF TRUTH that `/bui
 
 ### Graceful `gh` skip
 
-If `gh`/remote/auth is unavailable (gh not installed, not authenticated, or no remote), SKIP issue creation and ALL issue comments: record `Issue: none — gh unavailable` in the `## Tracking` block (so the branch falls back to `<type>/<slug>`), warn the user, and continue local-only. A missing `gh` must NEVER block planning. (Mirrors the Codex graceful-skip pattern in the Codex Verification Loop below.)
+If `gh`/remote/auth is unavailable (gh not installed, not authenticated, or no remote), SKIP issue creation, label creation, assignee/label application, the `createLinkedBranch` linkage, all branch pushes, the issue-body link update, and ALL issue comments: record `Issue: none — gh unavailable` in the `## Tracking` block (so the branch falls back to `<type>/<slug>`), warn the user, commit the plan locally, and continue local-only. A missing `gh` must NEVER block planning. (Mirrors the Codex graceful-skip pattern in the Codex Verification Loop below.)
+
+## Publish & Per-Phase Tracking
+
+`/plan-w-team` is publish-and-track: once the `## Tracking` block is recorded it creates the issue-linked convention branch, pushes the plan artifacts so the plan is reviewable on GitHub immediately, and then commits + pushes again after every spec-review round (per-phase tracking) so the branch shows the plan's evolution. Claude is the only actor that calls `gh`/`git` here; product code is still NEVER written and agents are NEVER deployed (this is the relaxed PLANNING-ONLY carve-out).
+
+### Commit conventions for every plan commit
+
+- **No `Co-Authored-By` trailer** on ANY plan commit (dogfoods the repo's no-trailer policy).
+- Plan-doc commits use the `📝 docs` type even though the branch type is `chore` — e.g. `📝 docs(plan): …`, with a `Refs #<N>` footer.
+- **Scope each commit to `specs/<plan-name>/` only** (`git add specs/<plan-name>/`), NEVER `git add -A`, so unrelated working-tree changes (e.g. pending build work) are never swept in.
+
+### Create the issue-linked branch, then initial publish (Workflow step 12)
+
+`createLinkedBranch` can only CREATE a branch — it cannot attach to a branch that was already pushed — so it MUST run BEFORE the first push. Create the branch FROM the issue (so it shows under the issue's **Development** panel), then push the plan commits onto it:
+
+```
+ISSUE_ID=$(gh api repos/<owner>/<repo>/issues/<N> --jq .node_id)
+BASE=$(git rev-parse origin/main)
+gh api graphql -f query='mutation($i:ID!,$o:GitObjectID!,$n:String!){createLinkedBranch(input:{issueId:$i,oid:$o,name:$n}){linkedBranch{ref{name}}}}' \
+  -f i="$ISSUE_ID" -f o="$BASE" -f n="<type>/<N>-<slug>"   # creates + links the branch on origin
+git add specs/<plan-name>/
+git commit -m "📝 docs(plan): add plan for <plan-name>" -m "Refs #<N>"
+git push -u origin HEAD:refs/heads/<type>/<N>-<slug>        # pushes plan commits onto the linked branch
+```
+
+- **Branch linkage stays Option B**: the mangled local worktree branch is kept; the clean convention name is enforced only on the remote ref via `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>`. The Worktree Rule docs are unchanged.
+- If the branch was already pushed UNLINKED, the only retrofit is a destructive delete+recreate of the remote branch at the same SHA — gate that on EXPLICIT user approval.
+
+### Update the issue's "Link to plan" with accessible URLs (right after the first push)
+
+Once the branch + files exist on origin, rewrite the issue body's plan/decisions references to full, clickable blob URLs on the convention branch — NEVER bare repo-relative paths (those resolve against `main`, where the plan files don't exist until merge, so they 404):
+
+```
+gh issue edit <N> --body-file <updated-body>
+# links like:
+#   https://github.com/<owner>/<repo>/blob/<type>/<N>-<slug>/specs/<plan-name>/plan.md
+#   https://github.com/<owner>/<repo>/blob/<type>/<N>-<slug>/specs/<plan-name>/decisions.md
+```
+
+A commit-pinned permalink (`/blob/<commit-sha>/…`) is acceptable for post-merge durability; a branch URL is preferred while the work is in review because it always shows the latest.
+
+### Per-phase commit + push through the Codex loop
+
+After the initial publish, commit + push again after EACH spec-review round and EACH fix, so the published branch reflects the gated plan. The push always happens AFTER the round that produced the appended `## Codex Findings`:
+
+- after Codex Round 1 appends its verdict → `git commit -m "📝 docs(plan): record Codex spec-review round 1" -m "Refs #<N>"` → push
+- after Claude applies round-1 fixes → `git commit -m "📝 docs(plan): apply Codex round 1 fixes" -m "Refs #<N>"` → push
+- after Codex Round 2 → commit → push
+- after any final fix → commit → push
+
+Each push is `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>` (Option B refspec). See `Codex Verification Loop` for where each round happens.
+
+### Graceful skip
+
+If `command -v gh` fails, there is no remote, a push errors, or GraphQL is unavailable: commit LOCALLY and SKIP the push (warn, continue). The `createLinkedBranch` and `gh issue edit` steps skip the same way. A missing `gh`/remote MUST NEVER block planning — mirrors the graceful `gh` skip in `GitHub Issue Tracking`.
 
 ## Codex Verification Loop
 
-After the plan and `decisions.md` are saved (Workflow step 12) and before the report, hand the drafted spec to Codex for an independent review. Codex writes its verdict + findings into the Codex-owned `## Codex Findings` section of `plan.md`; Claude reads the verdict, refines the rest of the plan body where warranted, and re-submits — capped at 2 Codex rounds.
+After the plan and `decisions.md` are saved (Workflow step 13) and before the report, hand the drafted spec to Codex for an independent review. Codex writes its verdict + findings into the Codex-owned `## Codex Findings` section of `plan.md`; Claude reads the verdict, refines the rest of the plan body where warranted, and re-submits — capped at 2 Codex rounds.
 
 ### Precondition / graceful skip
 
@@ -168,11 +234,23 @@ gh issue comment <N> --body "<the round verdict + Codex findings + the fixes Cla
 - This builds a single chronological spec-review audit trail on the issue.
 - Never block the loop on a failed or unavailable `gh` call — warn and continue (mirrors the graceful `gh` skip in `GitHub Issue Tracking`).
 
+### Commit + push after each round (per-phase tracking)
+
+After each round's verdict is appended to `## Codex Findings`, and after each fix Claude applies, commit + push the plan per `Publish & Per-Phase Tracking` so the published branch reflects the gated plan: Round 1 verdict → commit/push; round-1 fixes → commit/push; Round 2 verdict → commit/push; final fix → commit/push. The push always happens AFTER the round that produced the appended findings. Graceful-skip the push if `gh`/remote is unavailable.
+
 ### Loop control — max 2 Codex rounds
 
 - **Round 1** → if the verdict is `approved`, the loop is done. If `changes-requested`, Claude applies the warranted fixes to the plan BODY ONLY (never the `## Codex Findings` section); for any finding Claude rejects, it records the finding + its rationale in `decisions.md`. Then run **Round 2**.
 - **Round 2** → if still `changes-requested`, Claude applies a best-effort final pass and PROCEEDS anyway, recording "proceeded without full Codex approval after 2 rounds" + the outstanding findings in `decisions.md`.
 - Never exceed 2 Codex rounds.
+
+## Skill Contracts (spec-review / implementation-review)
+
+The reworked flow respects two Codex skills; this is documentation only — **do NOT edit the skill files**.
+
+- **`spec-review` (plan phase)** — invoked via `codex exec -s workspace-write` (network-off; `workspace-write` disables network by default), auto-discovered from `.agents/skills/` and invoked by NAMING it in the prompt (no `--skill` flag). It appends a per-round `### Round N — Verdict: approved|changes-requested` block ONLY under the `## Codex Findings` heading and edits nothing else; that section is Codex-owned (Claude never writes there). It **MUST NOT call `gh`** — Claude relays each verdict to the issue. Max 2 rounds. Each per-phase push happens AFTER the round that produced the appended findings.
+- **`implementation-review` (build phase)** — invoked via `codex exec -s workspace-write` (same network-off, auto-discovery, name-to-invoke rules). It reads `plan.md` + `decisions.md` + the working-tree diff, RUNS the plan's Validation Commands and reports real PASS/FAIL, emitting its per-round verdict as its FINAL CLI message only (writes no files, edits no source). Claude's builders apply fixes; Claude relays each verdict to the PR. Max 2 rounds.
+- **Shared**: both run network-off, are auto-discovered from `.agents/skills/`, and are invoked by naming them (no `--skill` flag); Claude is the only actor that calls `gh`.
 
 ## Plan Format
 

@@ -11,7 +11,7 @@
 ## Commit Message Rules
 
 - Format: `<emoji> <type>(<scope>): <description>` — keep BOTH the gitmoji AND the Conventional-Commits `type:` word so commitlint/changelog tooling keeps parsing the type.
-- The issue link goes in the **footer** as `Refs #N` — **never** in the subject line (keeps the subject ≤72 chars and groups the link with the existing trailers).
+- The issue link goes in the **footer** as `Refs #N` — **never** in the subject line (keeps the subject ≤72 chars and groups the link in the footer).
 - Subject rules:
   - Imperative mood (`add`, not `added`/`adds`).
   - Lowercase `type` and `scope`.
@@ -19,7 +19,7 @@
   - First line ≤72 characters.
   - Use a **literal unicode emoji**, not a `:shortcode:` (write `✨`, not `:sparkles:`).
   - **Never** append a `Signed-off-by:` line on automated commits.
-- The global Claude trailers (`Co-Authored-By` / `Claude-Session`) stay in the footer, unaffected.
+- Do **not** add a `Co-Authored-By: Claude …` trailer to commits or PRs — a message without it is correct as-is.
 
 Emoji ↔ type table (all 8 allowed types — use exactly these):
 
@@ -44,9 +44,6 @@ Example commit:
 Implements JWT-based login with refresh-token rotation.
 
 Refs #42
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_<id>
 ```
 
 ## Pull Request Requirements
