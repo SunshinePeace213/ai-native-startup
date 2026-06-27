@@ -138,8 +138,14 @@ commit/push → fix → commit/push → Codex R2 → commit/push → fix → com
   the remote head; unpushed local commits would be lost then destroyed by worktree
   removal); require explicit confirmation; **never `--admin`/force-bypass**; abort
   cleanly on any failure; `gh` graceful-skip.
-- **Q: Codex on this addition?** A: **Run one Codex spec-review round** (user choice),
-  unlike the recent doc-only changes.
+- **Q: Codex on this addition?** A: User chose to run one Codex spec-review round.
+  **Outcome: skipped — Codex unresponsive.** The round was attempted twice (a ~16-min
+  background run produced no output and no verdict, then a foreground run was hard-killed
+  at `timeout 300`), with no Round 5 written. Codex ran fine for rounds 1–4 earlier, so
+  this is a transient environmental hang, not a plan problem. Per the loop's
+  "never block on Codex" rule, the round is skipped; the `/ship` workstream can be
+  re-reviewed later (re-run the round when Codex recovers) or covered by `/build`'s
+  `implementation-review` gate. Workstream C docs are committed/pushed regardless.
 
 ## Assumptions
 
@@ -185,4 +191,7 @@ commit/push → fix → commit/push → Codex R2 → commit/push → fix → com
     Objective contradicted the acceptance criteria on allowed trailer references →
     Objective reworded to list the allowed references. Both accepted and fixed.
   - Round 4 (`approved`): no findings remaining.
-- No Codex findings were rejected across all four rounds.
+- **Workstream C (`/ship`) round**: **skipped — Codex unresponsive** (round attempted
+  twice; ~16-min background hang then a `timeout 300` foreground kill, no Round 5
+  written). Re-run when Codex recovers, or rely on `/build`'s `implementation-review`.
+- No Codex findings were rejected across rounds 1–4.
