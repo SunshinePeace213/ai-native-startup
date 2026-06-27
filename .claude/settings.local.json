@@ -3,7 +3,6 @@
     "commit-commands@claude-plugins-official": true,
     "codex@openai-codex": true
   },
-  "outputStyle": "default",
   "hooks": {
     "PreToolUse": [
       {
