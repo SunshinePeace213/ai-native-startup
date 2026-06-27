@@ -1,0 +1,433 @@
+# Plan: Trailer cleanup + guard hook + /plan-w-team publish-and-track workflow rework
+
+## Task Description
+
+Two folded-together workstreams:
+
+**A — Trailer cleanup + guard hook.** The repo's Git issue/commit/PR system carries two
+Claude attribution schemas:
+
+1. `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
+2. `Claude-Session: https://claude.ai/code/session_<id>`
+
+The harness/global instruction injects the `Co-Authored-By` trailer by default. This
+workstream removes both schemas from the repo's message standard, researches Claude
+Code hooks (→ `ai-docs/`), adds a `PreToolUse` hook that blocks `git`/`gh` commands
+carrying `Co-Authored-By: Claude` (wired into `.claude/settings.local.json`), and
+reduces `GIT-COMMIT-PR-MESSAGE.md` to a single policy line.
+
+**B — `/plan-w-team` publish-and-track workflow rework.** Today `/plan-w-team` is
+planning-only and pushes nothing, so a plan is invisible on GitHub until `/build`
+runs. This workstream makes `/plan-w-team` commit `plan.md`/`decisions.md` and push
+the convention branch so the plan is reviewable on GitHub immediately, and adds
+**per-phase commit+push** through the spec-review loop (mirroring `/build`'s per-phase
+tracking). It also documents the `spec-review` and `implementation-review` skill
+contracts in this plan so the reworked flow respects them. The skill files themselves
+are NOT modified.
+
+## Objective
+
+When complete:
+
+- (A) No repo file (except the frozen historical decision log) references the two
+  trailers; `GIT-COMMIT-PR-MESSAGE.md` states the no-trailer policy in one line; a
+  `PreToolUse` hook in `.claude/settings.local.json` blocks `git`/`gh` commands
+  carrying `Co-Authored-By: Claude`; `ai-docs/claude-code-hooks.md` documents hooks.
+- (B) `.claude/commands/plan-w-team.md` commits + pushes the plan artifacts on the
+  convention branch and commits+pushes after each spec-review round/fix (graceful-skip
+  when `gh`/push is unavailable); `.claude/commands/build.md` resumes that same branch
+  (already carrying the plan commits) and opens exactly one PR with `Closes #N`; this
+  plan documents both Codex skill contracts. This very plan is published to
+  `chore/1-remove-claude-trailers-add-guard-hook` with per-phase commits as the
+  reference dogfood.
+
+## Requirements & Decisions
+
+<!-- Full record in decisions.md. -->
+
+- **Hook (A)**: lifecycle `PreToolUse` (only event that prevents the commit pre-run);
+  block & instruct (exit 2 + stderr); blocks only `Co-Authored-By: Claude …`; external
+  script `.claude/hooks/block-coauthor-trailer.sh` wired via `.claude/settings.local.json`.
+- **Publish (B)**: `/plan-w-team` commits `plan.md`/`decisions.md` and pushes the
+  convention branch — **no PR at plan time**; `/build` opens the single PR later.
+- **Per-phase commit+push (B)**: `initial plan → commit/push → Codex R1 → commit/push
+→ fix → commit/push → Codex R2 → commit/push → fix → commit/push`. Push happens
+  AFTER each spec-review round so the published branch reflects the gated plan.
+- **Branch linkage (B)**: Option B — keep the mangled local worktree branch, push to
+  `refs/heads/<type>/<N>-<slug>` with `-u` for tracking (current Worktree Rule;
+  unchanged). The clean name shows on GitHub; the local name stays cosmetic.
+- **Skills (B)**: document `spec-review` + `implementation-review` contracts here and
+  respect them; **no skill-file edits**.
+- **Commits**: follow `GIT-COMMIT-PR-MESSAGE.md`, carry **no `Co-Authored-By`** trailer
+  (dogfoods workstream A), `Refs #N` footer.
+
+## Tracking
+
+<!-- Recorded by /plan-w-team. The Issue field is the SINGLE SOURCE OF TRUTH /build reads — /build NEVER re-derives #N (e.g. by parsing the mangled local branch name). -->
+
+- Issue: `#1` (https://github.com/SunshinePeace213/ai-native-startup/issues/1)
+- Branch: `chore/1-remove-claude-trailers-add-guard-hook`
+- Worktree: `/home/ringo/ai-native-startup/.claude/worktrees/remove-claude-trailers-add-guard-hook`
+
+## Problem Statement
+
+- (A) The harness default appends `Co-Authored-By: Claude …` to commits and the repo
+  standard documents both Claude trailers as expected footer content. The user wants
+  attribution-free commits/PRs; removing the doc lines isn't enough because the harness
+  keeps injecting the trailer, so an automated guard is needed at commit time.
+- (B) `/plan-w-team` produces only local plan docs in a worktree and pushes nothing, so
+  there is no GitHub-visible artifact to review between planning and `/build`, and no
+  incremental history of how the plan evolved through the Codex gate. The plan should be
+  reviewable on GitHub the moment it is drafted and at every spec-review phase.
+
+## Solution Approach
+
+### Workstream A — docs cleanup + enforcement + research
+
+1. **Docs cleanup** — remove the trailer references from `GIT-COMMIT-PR-MESSAGE.md`
+   (prose + example block); add one policy line.
+2. **Enforcement** — a `PreToolUse` hook (external script + `settings.local.json`
+   entry) that blocks `git`/`gh` Bash commands containing `Co-Authored-By: Claude`
+   (exit 2 + corrective stderr). `PreToolUse` is the only stage that can stop the
+   command before it runs.
+3. **Knowledge capture** — a `claude-code-guide` subagent writes a deep hooks
+   reference to `ai-docs/claude-code-hooks.md`.
+
+#### Hook script (target shape — `.claude/hooks/block-coauthor-trailer.sh`)
+
+```bash
+#!/usr/bin/env bash
+# PreToolUse guard: block git/gh commands that carry the Claude Co-Authored-By trailer.
+# Exit 2 => deny the tool call; stderr is fed back to Claude so it retries clean.
+set -euo pipefail
+payload="$(cat)"
+
+# Act only on Bash tool calls that invoke git or gh.
+printf '%s' "$payload" | grep -Eq '"tool_name"[[:space:]]*:[[:space:]]*"Bash"' || exit 0
+printf '%s' "$payload" | grep -Eq '\b(git|gh)\b' || exit 0
+
+# Block when the forbidden trailer is present.
+if printf '%s' "$payload" | grep -q 'Co-Authored-By: Claude'; then
+  {
+    echo "Blocked: this git/gh command includes a 'Co-Authored-By: Claude ...' trailer."
+    echo "Repo policy (GIT-COMMIT-PR-MESSAGE.md): commit/PR messages must NOT carry the Claude attribution trailer."
+    echo "Remove the 'Co-Authored-By: Claude ...' line from the message and run the command again."
+  } >&2
+  exit 2
+fi
+exit 0
+```
+
+#### settings.local.json hooks block (merge into existing JSON)
+
+```json
+{
+  "enabledPlugins": { "commit-commands@claude-plugins-official": true, "codex@openai-codex": true },
+  "outputStyle": "default",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-coauthor-trailer.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Workstream B — publish + per-phase tracking in /plan-w-team
+
+Edit `.claude/commands/plan-w-team.md`:
+
+1. **Relax the PLANNING-ONLY carve-out** to also permit committing the plan artifacts
+   and pushing the convention branch (alongside the existing issue-creation,
+   EnterWorktree, and Codex-relay carve-outs). Still NO product code, NO agent
+   deployment.
+2. **Initial publish** (new Workflow step, after `## Tracking` is recorded): commit
+   `plan.md` + `decisions.md` and push the convention branch:
+
+   ```
+   git add specs/<plan-name>/
+   git commit -m "📝 docs(plan): add plan for <plan-name>" -m "Refs #<N>"
+   git push -u origin HEAD:refs/heads/<type>/<N>-<slug>
+   ```
+
+3. **Per-phase commit+push inside the Codex Verification Loop** — after each round and
+   each fix, commit + push so the branch shows the plan's evolution:
+   - after Codex Round 1 appends its verdict → `git commit -m "📝 docs(plan): record Codex spec-review round 1" -m "Refs #<N>"` → push
+   - after Claude applies round-1 fixes → `git commit -m "📝 docs(plan): apply Codex round 1 fixes" -m "Refs #<N>"` → push
+   - after Codex Round 2 → commit → push
+   - after any final fix → commit → push
+4. **Graceful skip**: if `command -v gh` fails / no remote / push errors, commit
+   locally and SKIP the push (warn, continue) — never block planning. Mirrors the
+   existing `gh`/Codex graceful-skip patterns.
+5. **Branch linkage** stays Option B (refspec push, mangled local kept) — the existing
+   Worktree Rule in `GIT-COMMIT-PR-MESSAGE.md` is unchanged.
+6. **No `Co-Authored-By`** on any of these commits (dogfoods workstream A).
+
+Edit `.claude/commands/build.md` (minimal):
+
+- Note that the convention branch already exists on `origin` carrying the plan commits;
+  `/build`'s `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>` adds implementation
+  commits on top (fast-forward) — it MUST NOT create a second branch and MUST open
+  exactly ONE PR (`Closes #N`) whose diff therefore includes both the plan and the
+  implementation. The graceful-skip / no-issue fallbacks are unchanged.
+
+### Skill Contracts (requirements about both Codex skills)
+
+This plan documents the contracts the reworked workflow must respect. Neither skill
+file is edited.
+
+- **`spec-review` (plan phase)**: invoked via `codex exec -s workspace-write`; reads
+  `plan.md` + sibling `decisions.md`; judges against a blocking-only bar; appends a
+  per-round `### Round N — Verdict: approved|changes-requested` block **ONLY** under
+  the `## Codex Findings` heading and edits nothing else. It **MUST NOT call `gh`** —
+  the orchestrator (Claude) relays each verdict to the issue. Max 2 rounds. The
+  `## Codex Findings` section is **Codex-owned**: Claude never writes there.
+  Requirement: each per-phase push happens **after** the round that produced the
+  appended findings, so the published branch reflects the gated plan.
+- **`implementation-review` (build phase)**: invoked via `codex exec -s workspace-write`;
+  reads `plan.md` + `decisions.md` + the working-tree diff (`git status --porcelain
+--untracked-files=all`, `git diff`); **runs the plan's Validation Commands** and
+  reports real PASS/FAIL; emits its per-round verdict as its **final CLI message only**
+  — it writes no files and edits no source. Claude's builders apply fixes; Claude
+  relays each verdict to the PR. Max 2 rounds.
+- **Shared**: both run network-off (`workspace-write` disables network by default),
+  are auto-discovered from `.agents/skills/`, and are invoked by naming them in the
+  prompt (no `--skill` flag). Claude is the only actor that calls `gh`.
+
+## Relevant Files
+
+Use these files to complete the task:
+
+- `GIT-COMMIT-PR-MESSAGE.md` — (A) remove prose trailer line + the two example-block
+  trailer lines; add one policy line. Optionally reword line 14's "...existing
+  trailers". (B) Worktree Rule is unchanged (Option B retained).
+- `.claude/settings.local.json` — (A) add the `hooks.PreToolUse` block.
+- `.claude/commands/plan-w-team.md` — (B) add initial publish + per-phase commit/push
+  - graceful skip; relax PLANNING-ONLY carve-out; reference the skill contracts.
+- `.claude/commands/build.md` — (B) note the pre-existing plan branch; keep single-PR.
+- `.agents/skills/spec-review/SKILL.md`, `.agents/skills/implementation-review/SKILL.md`
+  — read-only references for the contracts; **not edited**.
+- `specs/git-workflow-issue-pr-tracking/decisions.md` — historical audit log; **do NOT
+  edit** (Option-A trailer mentions left untouched by decision).
+
+### New Files
+
+- `.claude/hooks/block-coauthor-trailer.sh` — the PreToolUse guard script (chmod +x).
+- `ai-docs/claude-code-hooks.md` — deep Claude Code hooks reference (research output).
+
+## Implementation Phases
+
+### Phase 1: Foundation
+
+(A) Research Claude Code hooks via `claude-code-guide` → `ai-docs/claude-code-hooks.md`.
+In parallel, scrub `GIT-COMMIT-PR-MESSAGE.md`. (B) Draft the `plan-w-team.md` edits
+(publish + per-phase loop + graceful skip) against the documented skill contracts.
+
+### Phase 2: Core Implementation
+
+(A) Create the executable hook script; wire `hooks.PreToolUse` into
+`.claude/settings.local.json` (merge, don't replace). (B) Apply the `plan-w-team.md`
+rework and the minimal `build.md` handoff note.
+
+### Phase 3: Integration & Polish
+
+Validate: hook payload simulations; `settings.local.json` valid JSON; repo grep clean;
+policy line present; `plan-w-team.md` contains the publish + per-phase + graceful-skip
+steps and references the skill contracts; `build.md` keeps a single PR on the existing
+branch; the published `chore/1-...` branch exists on origin with the plan commits.
+
+## Team Orchestration
+
+- You operate as the team lead and orchestrate the team to execute the plan.
+- You're responsible for deploying the right team members with the right context.
+- IMPORTANT: You NEVER operate directly on the codebase. You use `Task` and `Task*`
+  tools to deploy team members to do the building, validating, and testing.
+- Communication is paramount; use the Task* tools to coordinate and track progress.
+- Take note of the session id of each team member to reference them.
+
+> Note: `.claude/agents/team/` does not exist in this repo, so team members map to
+> built-in agent types (`claude-code-guide`, `general-purpose`).
+
+### Team Members
+
+- Builder
+  - Name: `researcher-hooks`
+  - Role: deep-research Claude Code hooks and write `ai-docs/claude-code-hooks.md`.
+  - Agent Type: `claude-code-guide`
+  - Resume: false
+- Builder
+  - Name: `builder-hook`
+  - Role: scrub trailers from `GIT-COMMIT-PR-MESSAGE.md`, create the hook script, wire
+    `.claude/settings.local.json`.
+  - Agent Type: `general-purpose`
+  - Resume: true
+- Builder
+  - Name: `builder-workflow`
+  - Role: rework `.claude/commands/plan-w-team.md` (publish + per-phase commit/push +
+    graceful skip + skill-contract references) and the `build.md` handoff note.
+  - Agent Type: `general-purpose`
+  - Resume: true
+- Builder
+  - Name: `validator`
+  - Role: test the hook and verify all acceptance criteria + validation commands for
+    both workstreams.
+  - Agent Type: `general-purpose`
+  - Resume: false
+
+## Step by Step Tasks
+
+- IMPORTANT: Execute every step in order, top to bottom. Each task maps directly to a
+  `TaskCreate` call.
+- Before you start, run `TaskCreate` to create the initial task list that all team
+  members can see and execute.
+
+### 1. Research Claude Code hooks → ai-docs
+
+- **Task ID**: research-hooks
+- **Depends On**: none
+- **Assigned To**: researcher-hooks
+- **Agent Type**: claude-code-guide
+- **Parallel**: true
+- Fetch authoritative Claude Code hooks docs: lifecycle (PreToolUse, PostToolUse,
+  UserPromptSubmit, Notification, Stop, SubagentStop, PreCompact, SessionStart,
+  SessionEnd), matchers, the stdin JSON payload schema (incl. `tool_name` /
+  `tool_input.command` for Bash), output semantics (exit 0 / exit 2 / other; JSON
+  `decision` / `permissionDecision`), `$CLAUDE_PROJECT_DIR`, settings precedence.
+- Write `ai-docs/claude-code-hooks.md` incl. a section justifying `PreToolUse`.
+
+### 2. Scrub trailers from GIT-COMMIT-PR-MESSAGE.md
+
+- **Task ID**: scrub-trailers
+- **Depends On**: none
+- **Assigned To**: builder-hook
+- **Agent Type**: general-purpose
+- **Parallel**: true
+- Remove the prose trailer line + the two trailer lines in the example commit block.
+- Add ONE policy line (no hook internals), e.g.:
+  `- Do **not** add a \`Co-Authored-By: Claude …\` trailer to commits or PRs — a message without it is correct as-is.`
+- Optionally reword line 14's "groups the link with the existing trailers" → "groups
+  the link in the footer". Leave the historical decision log untouched.
+
+### 3. Create the PreToolUse hook script
+
+- **Task ID**: create-hook-script
+- **Depends On**: research-hooks
+- **Assigned To**: builder-hook
+- **Agent Type**: general-purpose
+- **Parallel**: false
+- Create `.claude/hooks/block-coauthor-trailer.sh` matching the "Hook script" shape;
+  `chmod +x`. Confirm exit 2 blocks a PreToolUse call (per the research).
+
+### 4. Wire the hook into settings.local.json
+
+- **Task ID**: wire-settings
+- **Depends On**: create-hook-script
+- **Assigned To**: builder-hook
+- **Agent Type**: general-purpose
+- **Parallel**: false
+- Merge the `hooks.PreToolUse` block (matcher `Bash`, command via `$CLAUDE_PROJECT_DIR`)
+  into `.claude/settings.local.json` WITHOUT dropping `enabledPlugins` / `outputStyle`
+  (or any `autoMode` block the user added). Verify valid JSON.
+
+### 5. Rework /plan-w-team for publish + per-phase tracking
+
+- **Task ID**: rework-plan-w-team
+- **Depends On**: none
+- **Assigned To**: builder-workflow
+- **Agent Type**: general-purpose
+- **Parallel**: true
+- Edit `.claude/commands/plan-w-team.md`: relax the PLANNING-ONLY carve-out to allow
+  committing plan artifacts + pushing the convention branch; add the initial publish
+  step (commit `specs/<plan-name>/` + refspec push) and the per-phase commit+push
+  through the Codex Verification Loop; add the `gh`/push graceful-skip; keep Option B
+  branch linkage; require no `Co-Authored-By` on plan commits; reference the
+  `spec-review` / `implementation-review` skill contracts (this plan's Skill Contracts
+  section).
+
+### 6. Update /build handoff note
+
+- **Task ID**: update-build-handoff
+- **Depends On**: rework-plan-w-team
+- **Assigned To**: builder-workflow
+- **Agent Type**: general-purpose
+- **Parallel**: false
+- Edit `.claude/commands/build.md`: note the convention branch already exists on origin
+  with the plan commits; `/build` pushes implementation on top of it and opens exactly
+  ONE PR (`Closes #N`) — no duplicate branch/PR. Leave graceful-skip/no-issue fallbacks
+  intact.
+
+### 7. Validate all
+
+- **Task ID**: validate-all
+- **Depends On**: research-hooks, scrub-trailers, create-hook-script, wire-settings, rework-plan-w-team, update-build-handoff
+- **Assigned To**: validator
+- **Agent Type**: general-purpose
+- **Parallel**: false
+- Run all Validation Commands below; confirm acceptance criteria for both workstreams.
+- Simulate PreToolUse payloads (trailer present → exit 2; clean → exit 0; non-git → exit 0).
+
+## Acceptance Criteria
+
+- (A) `GIT-COMMIT-PR-MESSAGE.md` has no example/prose trailers beyond the single policy
+  line; a repo-wide grep for the two trailers matches ONLY
+  `specs/git-workflow-issue-pr-tracking/decisions.md` and this plan's specs.
+- (A) `.claude/hooks/block-coauthor-trailer.sh` exists, is executable, exits 2 for a
+  `git`/`gh` payload containing `Co-Authored-By: Claude`, exits 0 for a clean payload,
+  exits 0 for a non-git command.
+- (A) `.claude/settings.local.json` is valid JSON, retains existing keys, and contains
+  the `hooks.PreToolUse` entry pointing at the script.
+- (A) `ai-docs/claude-code-hooks.md` exists and covers hook concepts, lifecycle, and
+  the PreToolUse rationale.
+- (B) `.claude/commands/plan-w-team.md` documents: relaxed PLANNING-ONLY carve-out;
+  initial commit + refspec push of `specs/<plan-name>/`; per-phase commit+push through
+  the Codex loop; `gh`/push graceful-skip; no `Co-Authored-By` on plan commits; and the
+  two skill contracts.
+- (B) `.claude/commands/build.md` resumes the pre-existing convention branch and opens
+  exactly one PR with `Closes #N` (no duplicate branch/PR).
+- (B) Skill files are unchanged; the plan documents both contracts.
+- (B) This plan is published to `chore/1-remove-claude-trailers-add-guard-hook` on
+  origin with per-phase commits (dogfood).
+
+## Validation Commands
+
+Execute these commands to validate the task is complete:
+
+- `grep -nE 'Co-Authored-By|Claude-Session' GIT-COMMIT-PR-MESSAGE.md` — expect at most the single policy line.
+- `test -x .claude/hooks/block-coauthor-trailer.sh && echo OK` — script exists and is executable.
+- `printf '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"x\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>\""}}' | .claude/hooks/block-coauthor-trailer.sh; echo "exit=$?"` — expect `exit=2`.
+- `printf '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"clean message\""}}' | .claude/hooks/block-coauthor-trailer.sh; echo "exit=$?"` — expect `exit=0`.
+- `printf '{"tool_name":"Bash","tool_input":{"command":"echo Co-Authored-By: Claude"}}' | .claude/hooks/block-coauthor-trailer.sh; echo "exit=$?"` — non-git → expect `exit=0`.
+- `uv run python -c "import json,sys; json.load(open('.claude/settings.local.json')); print('valid json')"` — settings parses (use `uv`, never raw `python`, per AGENTS.md).
+- `test -f ai-docs/claude-code-hooks.md && echo OK` — research doc exists.
+- `grep -nE 'git push -u origin HEAD:refs/heads|per-phase|graceful' .claude/commands/plan-w-team.md` — publish + per-phase + graceful-skip steps present.
+- `grep -nE 'spec-review|implementation-review' .claude/commands/plan-w-team.md` — skill contracts referenced.
+- `git ls-remote --heads origin 'chore/1-remove-claude-trailers-add-guard-hook'` — published branch exists on origin.
+
+## Notes
+
+- The hook counters the harness default that injects `Co-Authored-By`; it does NOT
+  touch the harness PR-body note `🤖 Generated with Claude Code` (out of scope).
+- The hook's literal-string check covers the dominant `-m`/heredoc commit form; it does
+  not cover editor-based or `-F <file>` message bodies (out of scope).
+- No new libraries are required; the hook is dependency-free bash.
+- Workstream B intentionally keeps Option B branch linkage; the Worktree Rule docs are
+  NOT changed. The skill files are NOT modified — only documented.
+
+## Codex Findings
+
+_Pending Codex review. Codex-owned (the spec-review skill); Claude must not edit this section._
+
+### Round 1 — Verdict: changes-requested
+
+- **The settings JSON validation command violates the repo's Python runtime rule.** The `Validation Commands` section tells `/build` to run raw `python3 -c ...`, while the project instructions require Python commands to use `uv`. Recommend: change that validation command to `uv run python -c "import json,sys; json.load(open('.claude/settings.local.json')); print('valid json')"` in `Validation Commands`.
+
+### Round 2 — Verdict: approved
+
+The spec meets the blocking-issue bar with no findings remaining this round.
