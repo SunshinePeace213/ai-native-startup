@@ -1,19 +1,27 @@
 ---
-description: Creates a concise engineering implementation plan based on user requirements and saves it to specs directory
+description: Grills the user to lock requirements, then creates a concise engineering implementation plan and a decision log, saved to a per-plan specs folder
 argument-hint: [user prompt] [orchestration prompt]
 model: opus
 disallowed-tools: Task, EnterPlanMode
+hooks:
+  PostToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "jq -r '.tool_input.file_path' | xargs bunx prettier --write"
 ---
 
 # Plan With Team
 
-Create a detailed implementation plan based on the user's requirements provided through the `USER_PROMPT` variable. Analyze the request, think through the implementation approach, and save a comprehensive specification document to `PLAN_OUTPUT_DIRECTORY/<name-of-plan>.md` that can be used as a blueprint for actual development work. Follow the `Instructions` and work through the `Workflow` to create the plan.
+First grill the user to lock requirements via the `Grilling Protocol`, then create a detailed implementation plan based on those locked requirements provided through the `USER_PROMPT` variable. Analyze the request, think through the implementation approach, and save two files to the per-plan folder `specs/<plan-name>/`: the implementation plan (`plan.md`) and a decision log (`decisions.md`) recording the grilling outcome. Follow the `Instructions` and work through the `Workflow` to create the plan.
 
 ## Variables
 
 USER_PROMPT: $1
 ORCHESTRATION_PROMPT: $2 - (Optional) Guidance for team assembly, task structure, and execution strategy
-PLAN_OUTPUT_DIRECTORY: `specs/`
+PLAN_OUTPUT_DIRECTORY: `specs/<plan-name>/` - per-plan folder; `<plan-name>` is the descriptive kebab-case topic
+PLAN_FILE: `specs/<plan-name>/plan.md` - the implementation plan
+DECISION_LOG: `specs/<plan-name>/decisions.md` - grilling decision log + assumptions
 TEAM_MEMBERS: `.claude/agents/team/*.md`
 GENERAL_PURPOSE_AGENT: `general-purpose`
 
@@ -23,13 +31,14 @@ GENERAL_PURPOSE_AGENT: `general-purpose`
 - If no `USER_PROMPT` is provided, stop and ask the user to provide it.
 - If `ORCHESTRATION_PROMPT` is provided, use it to guide team composition, task granularity, dependency structure, and parallel/sequential decisions.
 - Carefully analyze the user's requirements provided in the USER_PROMPT variable
+- Before designing or writing any files, run the `Grilling Protocol` to lock requirements. Explore the codebase to self-answer questions; ask the user only what the code cannot answer.
 - Determine the task type (chore|feature|refactor|fix|enhancement) and complexity (simple|medium|complex)
 - Think deeply (ultrathink) about the best approach to implement the requested functionality or solve the problem
 - Understand the codebase directly without subagents to understand existing patterns and architecture
 - Follow the Plan Format below to create a comprehensive implementation plan
 - Include all required sections and conditional sections based on task type and complexity
-- Generate a descriptive, kebab-case filename based on the main topic of the plan
-- Save the complete implementation plan to `PLAN_OUTPUT_DIRECTORY/<descriptive-name>.md`
+- Generate a descriptive kebab-case `<plan-name>` and create the per-plan folder `specs/<plan-name>/`.
+- Save the implementation plan to `PLAN_FILE` and the grilling decision log to `DECISION_LOG`.
 - Ensure the plan is detailed enough that another developer could follow it to implement the solution
 - Include code examples or pseudo-code where appropriate to clarify complex concepts
 - Consider edge cases, error handling, and scalability concerns
@@ -200,18 +209,48 @@ TaskOutput({
 6. **Resume agents** with `Task` + `resume` for follow-up work
 7. **Mark complete** with `TaskUpdate` + `status: "completed"`
 
+## Grilling Protocol
+
+Before designing the plan, interview the user relentlessly until every decision
+needed to build is resolved. The goal is a shared, written understanding, not a guess.
+
+- **Explore first.** If a question can be answered by reading the codebase, answer
+  it yourself. Ask the user only what the code cannot tell you.
+- **One question at a time.** Ask exactly one question per turn using the
+  AskUserQuestion tool. Provide 2-4 concrete options, put your recommended answer
+  first and append " (Recommended)" to its label; the tool's automatic "Other"
+  choice lets the user type a free-form answer. Wait for the answer before the
+  next question.
+- **Coverage ledger.** Track a checklist of decision dimensions as resolved or
+  open; keep grilling until none are open. Cover, as applicable: scope & non-goals,
+  target users, success criteria & acceptance tests, data model, interfaces/APIs,
+  edge cases & error handling, performance & scale, security & authz,
+  observability, rollout/migration, dependencies, testing strategy. Mark
+  genuinely-irrelevant dimensions N/A.
+- **Adaptive depth.** Grill in proportion to complexity: a light pass for simple
+  chores, a deep pass for complex features. Do not interrogate trivial tasks.
+- **Accept-all escape hatch.** Offer a standing way to stop early. If the user
+  chooses "Accept all recommendations", close every open item with your
+  recommended answers, record them as assumptions, and move on.
+- **Record every decision.** Capture each answer, and every deferred "you decide"
+  as an explicit assumption, for the decision log (see `Decision Log Format`).
+- **Final confirmation.** When the ledger is clear, replay all decisions in a
+  single AskUserQuestion for sign-off (Approve / revise a specific decision / add
+  more). Proceed to design only after approval.
+
 ## Workflow
 
 IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a plan document.
 
 1. Analyze Requirements - Parse the USER_PROMPT to understand the core problem and desired outcome
 2. Understand Codebase - Without subagents, directly understand existing patterns, architecture, and relevant files
-3. Design Solution - Develop technical approach including architecture decisions and implementation strategy
-4. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `.claude/agents/team/*.md` or use `general-purpose`. Document in plan.
-5. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments. Document in plan.
-6. Generate Filename - Create a descriptive kebab-case filename based on the plan's main topic
-7. Save Plan - Write the plan to `PLAN_OUTPUT_DIRECTORY/<filename>.md`
-8. Save & Report - Follow the `Report` section to write the plan to `PLAN_OUTPUT_DIRECTORY/<filename>.md` and provide a summary of key components
+3. Grill Requirements - Run the `Grilling Protocol`: interview the user one question at a time via AskUserQuestion until the coverage ledger is clear, then get final sign-off. Do NOT design or write files before this completes.
+4. Design Solution - Develop technical approach including architecture decisions and implementation strategy
+5. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `.claude/agents/team/*.md` or use `general-purpose`. Document in plan.
+6. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments. Document in plan.
+7. Generate Plan Folder - Create a descriptive kebab-case `<plan-name>` and the per-plan folder `specs/<plan-name>/`
+8. Save Plan - Write the grilling decision log to `DECISION_LOG` and the implementation plan to `PLAN_FILE`
+9. Save & Report - Follow the `Report` section to summarize key components and emit the new file paths
 
 ## Plan Format
 
@@ -227,6 +266,9 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 
 ## Objective
 <clearly state what will be accomplished when this plan is complete>
+
+## Requirements & Decisions
+<2-4 most important locked decisions and assumptions; full record in decisions.md>
 
 <if task_type is feature or complexity is medium/complex, include these sections:>
 ## Problem Statement
@@ -325,6 +367,18 @@ Execute these commands to validate the task is complete:
 <optional additional context, considerations, or dependencies. If new libraries are needed, specify using `uv add`>
 ```
 
+## Decision Log Format
+
+Write the full grilling record to `DECISION_LOG`. Use this structure:
+
+```md
+# Decisions: <task name>
+## Summary — one paragraph: agreed scope + key choices
+## Resolved Decisions — per decision: Question / Answer / Rationale
+## Assumptions — every deferred "you decide" / accept-all item, explicitly
+## Open Questions / Out of Scope — deferred or excluded items (non-goals)
+```
+
 ## Report
 
 After creating and saving the implementation plan, provide a concise report with the following format:
@@ -332,12 +386,18 @@ After creating and saving the implementation plan, provide a concise report with
 ```
 ✅ Implementation Plan Created
 
-File: PLAN_OUTPUT_DIRECTORY/<filename>.md
+Plan: specs/<plan-name>/plan.md
+Decisions: specs/<plan-name>/decisions.md
 Topic: <brief description of what the plan covers>
 Key Components:
 - <main component 1>
 - <main component 2>
 - <main component 3>
+
+Key Decisions (from grilling):
+- <most important locked decision or assumption 1>
+- <decision 2>
+- <decision 3>
 
 Team Task List:
 - <list of tasks, and owner (concise)>
@@ -346,5 +406,5 @@ Team members:
 - <list of team members and their roles (concise)>
 
 When you're ready, you can execute the plan in a new agent by running:
-/build <replace with path to plan>
+/build <plan-name>
 ```
