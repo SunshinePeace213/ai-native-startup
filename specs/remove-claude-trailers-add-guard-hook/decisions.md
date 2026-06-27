@@ -94,6 +94,19 @@ commit/push → fix → commit/push → Codex R2 → commit/push → fix → com
   idempotently so a missing label can't abort creation; graceful-skip if `gh` is
   unavailable. (Label setup + assignee changes were made post-approval **without
   re-running Codex**, per the user's standing instruction for doc/metadata changes.)
+- **Q: Are labels created during the build (or only one-time setup)?** A: **Created on
+  demand by the workflow.** Both `/plan-w-team` and `/build` run an idempotent
+  `gh label create <name> --color … --description … --force` for each label they apply,
+  **before** applying it — so a fresh clone or a deleted label self-heals and no run
+  aborts on a missing label. The six labels created now are the setup baseline; the
+  workflow no longer _assumes_ they exist.
+- **Q: Should the PR carry the same config as the issue?** A: **Yes — mirror it.** The
+  single PR `/build` opens uses the SAME `<type>`→label mapping variable and sets
+  `--assignee @me` + the branch-`<type>` label (ensure-exists first), with `Closes #N`
+  in the body. `Closes #N` links the PR in the issue's Development panel and closes the
+  issue on merge, so no separate `createLinkedBranch` is needed for the PR. `epic` stays
+  on the tracking issue, not the PR. Graceful-skip if `gh` is unavailable. (Documented
+  post-approval **without re-running Codex**, per the user's standing instruction.)
 - **Q: spec-review / implementation-review skills — modify or document?** A: **Document
   - sequence only** (Option 1). Capture both contracts in the plan; do NOT edit the
     skill files; sequence each push after the round that produced its findings.

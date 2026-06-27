@@ -84,15 +84,24 @@ When complete:
   durability a commit-pinned permalink (`/blob/<commit-sha>/…`) is acceptable; a branch
   URL is preferred while the work is in review because it always shows the latest. If
   `gh` is unavailable, skip the body update gracefully.
-- **Issue assignee + labels (B)**: every epic issue `/plan-w-team` creates is
-  **assigned to the human owner** (`--assignee @me`) and **labelled** `epic` + the label
-  matching the plan's branch `<type>`, via this mapping:
-  `feat→enhancement`, `fix→bug`, `docs→documentation`, and `chore`/`refactor`/`perf`/
-  `style`/`test` use their same-named labels. The repo's label set is established as
-  setup (existing defaults `enhancement`/`bug`/`documentation` reused; `epic`, `chore`,
-  `refactor`, `perf`, `style`, `test` created). To avoid a missing label aborting
-  creation, apply labels/assignee idempotently (e.g. `gh issue edit … --add-label … --add-assignee @me`
-  after create, or ensure the label exists first); graceful-skip if `gh` is unavailable.
+- **Label set + creation responsibility (B)**: the type→label mapping is `feat→enhancement`,
+  `fix→bug`, `docs→documentation`, and `chore`/`refactor`/`perf`/`style`/`test` =
+  same-named, plus `epic` for plan issues. Defaults `enhancement`/`bug`/`documentation`
+  are reused; `epic`, `chore`, `refactor`, `perf`, `style`, `test` were created as repo
+  setup. **Labels are created on demand by the workflow, not assumed**: both
+  `/plan-w-team` AND `/build` run an idempotent `gh label create <name> --color … --description … --force`
+  for each label they're about to apply, **before** applying it — so a fresh clone or a
+  deleted label self-heals and never aborts a run. Graceful-skip if `gh` is unavailable.
+- **Issue metadata (B)**: every epic issue `/plan-w-team` creates is **assigned to the
+  human owner** (`--assignee @me`) and **labelled** `epic` + the branch-`<type>` label
+  (ensure-exists first). Applied idempotently (`gh issue edit … --add-label … --add-assignee @me`
+  after create) so nothing aborts creation; graceful-skip if `gh` is unavailable.
+- **PR metadata (B) — mirror the issue config**: the single PR `/build` opens carries the
+  **same config shape**: `--assignee @me`, the branch-`<type>` label (derived with the
+  SAME `<type>`→label mapping variable as `/plan-w-team`; ensure-exists first), and
+  `Closes #N` in the body. `Closes #N` makes the PR appear under the issue's **Development**
+  panel and close it on merge, so no separate `createLinkedBranch` is needed for the PR.
+  (`epic` stays on the tracking issue, not the PR.) Graceful-skip if `gh` is unavailable.
 - **Skills (B)**: document `spec-review` + `implementation-review` contracts here and
   respect them; **no skill-file edits**.
 - **Commits**: follow `GIT-COMMIT-PR-MESSAGE.md`, carry **no `Co-Authored-By`** trailer
@@ -247,6 +256,14 @@ Edit `.claude/commands/build.md` (minimal):
 - Any file path `/build` writes into the PR body (or issue comments) must likewise be an
   **accessible GitHub URL** (blob URL on the head branch, or a commit-pinned permalink),
   not a bare repo-relative path — same rule as the issue "Link to plan".
+- **Mirror the issue's metadata config on the PR.** Using the SAME `<type>`→label
+  mapping variable as `/plan-w-team`, the `gh pr create` must set `--assignee @me` and
+  `--label <type-label>`, and the body must carry `Closes #N`. **Ensure the label exists
+  first** (idempotent `gh label create <type-label> --force`) so build self-heals on a
+  fresh repo — answering "are labels created during build?": yes, build creates the
+  type label if missing before applying it. `Closes #N` links the PR in the issue's
+  Development panel and closes it on merge (no `createLinkedBranch` needed for the PR).
+  All of this rides the existing graceful-skip when `gh`/remote/auth is unavailable.
 
 ### Skill Contracts (requirements about both Codex skills)
 
@@ -432,8 +449,11 @@ branch; the published `chore/1-...` branch exists on origin with the plan commit
 - **Parallel**: false
 - Edit `.claude/commands/build.md`: note the convention branch already exists on origin
   with the plan commits; `/build` pushes implementation on top of it and opens exactly
-  ONE PR (`Closes #N`) — no duplicate branch/PR. Leave graceful-skip/no-issue fallbacks
-  intact.
+  ONE PR (`Closes #N`) — no duplicate branch/PR. The PR mirrors the issue's metadata
+  config: `--assignee @me` + the branch-`<type>` label (using the same `<type>`→label
+  mapping as `/plan-w-team`), ensuring the label exists first via idempotent
+  `gh label create … --force` (so build creates labels on demand). Use accessible GitHub
+  URLs for any file path in the PR body. Leave graceful-skip/no-issue fallbacks intact.
 
 ### 7. Validate all
 
@@ -475,6 +495,11 @@ branch; the published `chore/1-...` branch exists on origin with the plan commit
   `perf`, `style`, `test` created); issue #1 is assigned to the owner and carries
   `epic` + `chore`; `/plan-w-team` docs require `--assignee @me` + `epic` + branch-type
   label on every epic it creates.
+- (B) Both `/plan-w-team` and `/build` docs create labels on demand (idempotent
+  `gh label create … --force`) before applying them, so a missing label never aborts.
+- (B) `/build` docs require the PR to mirror the issue config: `--assignee @me`, the
+  branch-`<type>` label (same mapping), and `Closes #N` (which links it in the
+  Development panel) — graceful-skip when `gh` is unavailable.
 - (B) This plan is published to `chore/1-remove-claude-trailers-add-guard-hook` on
   origin with per-phase commits (dogfood).
 
