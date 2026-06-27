@@ -1,8 +1,8 @@
 <!--
 PR title convention (carry the gitmoji to match the commit):
-  [PR] 🔧 chore(<scope>): <short description in imperative mood>
+  🔧 chore(<scope>): <short description in imperative mood>
 Chores (deps, config, tooling) often need no CI run — append a bypass token when warranted:
-  [PR] 🔧 chore(<scope>): <desc> [skip-ci]   or   [skip-drift-check]
+  🔧 chore(<scope>): <desc> [skip-ci]   or   [skip-drift-check]
 -->
 
 ## Summary

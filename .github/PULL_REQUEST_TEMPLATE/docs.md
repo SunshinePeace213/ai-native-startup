@@ -1,8 +1,8 @@
 <!--
 PR title convention (carry the gitmoji to match the commit):
-  [PR] 📝 docs(<scope>): <short description in imperative mood>
+  📝 docs(<scope>): <short description in imperative mood>
 Docs-only changes rarely affect runtime — append [skip-ci] to the title when no build is needed:
-  [PR] 📝 docs(<scope>): <desc> [skip-ci]
+  📝 docs(<scope>): <desc> [skip-ci]
 -->
 
 ## Summary

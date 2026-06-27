@@ -1,8 +1,8 @@
 <!--
 PR title convention (carry the gitmoji to match the commit):
-  [PR] 🎨 style(<scope>): <short description in imperative mood>
+  🎨 style(<scope>): <short description in imperative mood>
 Formatting-only changes don't alter behavior — append [skip-ci] to the title when no build is needed:
-  [PR] 🎨 style(<scope>): <desc> [skip-ci]
+  🎨 style(<scope>): <desc> [skip-ci]
 -->
 
 ## Summary

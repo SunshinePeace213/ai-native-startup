@@ -1,8 +1,8 @@
 <!--
 PR title convention (carry the gitmoji to match the commit):
-  [PR] ✅ test(<scope>): <short description in imperative mood>
+  ✅ test(<scope>): <short description in imperative mood>
 Test-only changes may skip downstream gates — append [skip-drift-check] to the title when warranted:
-  [PR] ✅ test(<scope>): <desc> [skip-drift-check]
+  ✅ test(<scope>): <desc> [skip-drift-check]
 -->
 
 ## Summary

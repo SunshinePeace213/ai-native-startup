@@ -2,5 +2,19 @@
   "enabledPlugins": {
     "commit-commands@claude-plugins-official": true,
     "codex@openai-codex": true
+  },
+  "outputStyle": "default",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-coauthor-trailer.sh"
+          }
+        ]
+      }
+    ]
   }
 }
