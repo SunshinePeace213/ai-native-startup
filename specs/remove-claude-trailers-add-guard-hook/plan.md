@@ -31,8 +31,11 @@ When complete:
 
 - (A) The only repo references to the two trailers are the **allowed** ones: the single
   `GIT-COMMIT-PR-MESSAGE.md` policy line (which names `Co-Authored-By` as forbidden),
-  this plan's own spec files (`specs/remove-claude-trailers-add-guard-hook/`), and the
-  frozen historical decision log (`specs/git-workflow-issue-pr-tracking/decisions.md`).
+  the guard hook script `.claude/hooks/block-coauthor-trailer.sh` (which must contain
+  the literal `Co-Authored-By: Claude` string in order to match and block it) and its
+  documentation `ai-docs/claude-code-hooks.md`, this plan's own spec files
+  (`specs/remove-claude-trailers-add-guard-hook/`), and the frozen historical decision
+  log (`specs/git-workflow-issue-pr-tracking/decisions.md`).
   `GIT-COMMIT-PR-MESSAGE.md` states the no-trailer policy in one line; a `PreToolUse`
   hook in `.claude/settings.local.json` blocks `git`/`gh` commands carrying
   `Co-Authored-By: Claude`; `ai-docs/claude-code-hooks.md` documents hooks.
@@ -468,8 +471,12 @@ branch; the published `chore/1-...` branch exists on origin with the plan commit
 ## Acceptance Criteria
 
 - (A) `GIT-COMMIT-PR-MESSAGE.md` has no example/prose trailers beyond the single policy
-  line; a repo-wide grep for the two trailers matches ONLY
-  `specs/git-workflow-issue-pr-tracking/decisions.md` and this plan's specs.
+  line; a repo-wide grep for the two trailers matches ONLY the allowed files: the
+  `GIT-COMMIT-PR-MESSAGE.md` policy line, the guard hook script
+  `.claude/hooks/block-coauthor-trailer.sh` and its documentation
+  `ai-docs/claude-code-hooks.md` (both of which necessarily reference the trailer in
+  order to block / explain it), `specs/git-workflow-issue-pr-tracking/decisions.md`, and
+  this plan's specs.
 - (A) `.claude/hooks/block-coauthor-trailer.sh` exists, is executable, exits 2 for a
   `git`/`gh` payload containing `Co-Authored-By: Claude`, exits 0 for a clean payload,
   exits 0 for a non-git command.
@@ -512,7 +519,7 @@ Execute these commands to validate the task is complete:
 - `printf '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"x\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>\""}}' | .claude/hooks/block-coauthor-trailer.sh; echo "exit=$?"` — expect `exit=2`.
 - `printf '{"tool_name":"Bash","tool_input":{"command":"git commit -m \"clean message\""}}' | .claude/hooks/block-coauthor-trailer.sh; echo "exit=$?"` — expect `exit=0`.
 - `printf '{"tool_name":"Bash","tool_input":{"command":"echo Co-Authored-By: Claude"}}' | .claude/hooks/block-coauthor-trailer.sh; echo "exit=$?"` — non-git → expect `exit=0`.
-- `uv run python -c "import json,sys; json.load(open('.claude/settings.local.json')); print('valid json')"` — settings parses (use `uv`, never raw `python`, per AGENTS.md).
+- `uv run --no-cache python -c "import json,sys; json.load(open('.claude/settings.local.json')); print('valid json')"` — settings parses (use `uv`, never raw `python`, per AGENTS.md; `--no-cache` keeps it runnable under the implementation-review sandbox, where `~/.cache` is read-only).
 - `test -f ai-docs/claude-code-hooks.md && echo OK` — research doc exists.
 - `grep -nE 'git push -u origin HEAD:refs/heads|per-phase|graceful' .claude/commands/plan-w-team.md` — publish + per-phase + graceful-skip steps present.
 - `grep -nE 'spec-review|implementation-review' .claude/commands/plan-w-team.md` — skill contracts referenced.
