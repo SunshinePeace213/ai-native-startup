@@ -1,8 +1,8 @@
 <!--
 PR title convention (carry the gitmoji to match the commit):
-  [PR] 🐛 fix(<scope>): <short description in imperative mood>
+  🐛 fix(<scope>): <short description in imperative mood>
 Append a bypass token to the title only when warranted, e.g.
-  [PR] 🐛 fix(<scope>): <desc> [skip-ci]   or   [skip-drift-check]
+  🐛 fix(<scope>): <desc> [skip-ci]   or   [skip-drift-check]
 -->
 
 ## Summary

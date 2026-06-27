@@ -50,7 +50,7 @@ Refs #42
 
 - Use **one PR template per commit type**. The 8 templates live under `.github/PULL_REQUEST_TEMPLATE/`: `feat.md`, `fix.md`, `docs.md`, `style.md`, `refactor.md`, `perf.md`, `test.md`, `chore.md`. Each is tailored to its type (e.g. `feat` carries Breaking-changes + Screenshots; `fix` carries Root-cause + Regression-test; `docs` is minimal).
 - `/build` selects the matching template with `gh pr create --template <type>.md`.
-- PR title carries the emoji to mirror the commit, e.g. `[PR] ✨ feat(api): user login`.
+- PR title carries the emoji to mirror the commit, e.g. `✨ feat(api): user login`.
 - The PR body carries `Closes #N` — the PR is the **only** artifact that closes an issue.
 - Fill out the Summary and Test Plan, and keep the linked-issue line accurate.
 - The PR body carries the **Agent Task Manifest** checklist (copied from `TaskList`) — the single durable audit point for the ephemeral Agent Tasks.

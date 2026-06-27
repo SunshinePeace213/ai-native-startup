@@ -1,8 +1,8 @@
 <!--
 PR title convention (carry the gitmoji to match the commit):
-  [PR] ♻️ refactor(<scope>): <short description in imperative mood>
+  ♻️ refactor(<scope>): <short description in imperative mood>
 Append a bypass token to the title only when warranted, e.g.
-  [PR] ♻️ refactor(<scope>): <desc> [skip-drift-check]
+  ♻️ refactor(<scope>): <desc> [skip-drift-check]
 -->
 
 ## Summary
