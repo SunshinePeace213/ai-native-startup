@@ -84,6 +84,15 @@ When complete:
   durability a commit-pinned permalink (`/blob/<commit-sha>/…`) is acceptable; a branch
   URL is preferred while the work is in review because it always shows the latest. If
   `gh` is unavailable, skip the body update gracefully.
+- **Issue assignee + labels (B)**: every epic issue `/plan-w-team` creates is
+  **assigned to the human owner** (`--assignee @me`) and **labelled** `epic` + the label
+  matching the plan's branch `<type>`, via this mapping:
+  `feat→enhancement`, `fix→bug`, `docs→documentation`, and `chore`/`refactor`/`perf`/
+  `style`/`test` use their same-named labels. The repo's label set is established as
+  setup (existing defaults `enhancement`/`bug`/`documentation` reused; `epic`, `chore`,
+  `refactor`, `perf`, `style`, `test` created). To avoid a missing label aborting
+  creation, apply labels/assignee idempotently (e.g. `gh issue edit … --add-label … --add-assignee @me`
+  after create, or ensure the label exists first); graceful-skip if `gh` is unavailable.
 - **Skills (B)**: document `spec-review` + `implementation-review` contracts here and
   respect them; **no skill-file edits**.
 - **Commits**: follow `GIT-COMMIT-PR-MESSAGE.md`, carry **no `Co-Authored-By`** trailer
@@ -172,6 +181,13 @@ exit 0
 
 Edit `.claude/commands/plan-w-team.md`:
 
+0. **Assignee + labels at issue creation** (extend the GitHub Issue Tracking step):
+   create the epic issue assigned to the human owner and labelled, e.g.
+   `gh issue create … --assignee @me --label epic --label <type-label>` (or create then
+   `gh issue edit … --add-assignee @me --add-label epic --add-label <type-label>` so a
+   missing label can't abort creation). `<type-label>` is mapped from the branch
+   `<type>` (`feat→enhancement`, `fix→bug`, `docs→documentation`; others same-named).
+   Graceful-skip if `gh` is unavailable.
 1. **Relax the PLANNING-ONLY carve-out** to also permit committing the plan artifacts
    and pushing the convention branch (alongside the existing issue-creation,
    EnterWorktree, and Codex-relay carve-outs). Still NO product code, NO agent
@@ -398,11 +414,13 @@ branch; the published `chore/1-...` branch exists on origin with the plan commit
 - **Agent Type**: general-purpose
 - **Parallel**: true
 - Edit `.claude/commands/plan-w-team.md`: relax the PLANNING-ONLY carve-out to allow
-  committing plan artifacts + pushing the convention branch; add the create-linked-branch
-  step (`createLinkedBranch` from the issue, then push — so the branch shows in the
-  issue's Development panel) and the per-phase commit+push through the Codex Verification
-  Loop; add the `gh`/push/GraphQL graceful-skip; keep Option B branch linkage; require
-  no `Co-Authored-By` on plan commits; reference the `spec-review` /
+  committing plan artifacts + pushing the convention branch; add issue assignee
+  (`--assignee @me`) + labels (`epic` + branch-`<type>` label) at issue creation; add the
+  create-linked-branch step (`createLinkedBranch` from the issue, then push — so the
+  branch shows in the issue's Development panel); update the issue "Link to plan" to
+  accessible blob URLs after the first push; add the per-phase commit+push through the
+  Codex Verification Loop; add the `gh`/push/GraphQL graceful-skip; keep Option B branch
+  linkage; require no `Co-Authored-By` on plan commits; reference the `spec-review` /
   `implementation-review` skill contracts (this plan's Skill Contracts section).
 
 ### 6. Update /build handoff note
@@ -453,6 +471,10 @@ branch; the published `chore/1-...` branch exists on origin with the plan commit
 - (B) The issue's **Link to plan** uses accessible blob URLs on the convention branch
   (clickable; resolve to the real files), not bare repo-relative paths; the workflow
   docs require accessible GitHub URLs for any file path written into an issue/PR body.
+- (B) The repo label set is complete (defaults reused + `epic`, `chore`, `refactor`,
+  `perf`, `style`, `test` created); issue #1 is assigned to the owner and carries
+  `epic` + `chore`; `/plan-w-team` docs require `--assignee @me` + `epic` + branch-type
+  label on every epic it creates.
 - (B) This plan is published to `chore/1-remove-claude-trailers-add-guard-hook` on
   origin with per-phase commits (dogfood).
 

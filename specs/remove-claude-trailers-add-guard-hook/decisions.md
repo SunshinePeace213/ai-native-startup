@@ -79,6 +79,21 @@ commit/push → fix → commit/push → Codex R2 → commit/push → fix → com
   requirement for `/plan-w-team` (update the issue body right after the first push) and
   `/build` (PR body). Branch blob URL while in review (shows latest); commit-pinned
   permalink acceptable for post-merge durability.
+- **Q: Issue assignee?** A: **Assign the human owner** (`@me`) on every epic. Applied to
+  issue #1 (assignee `SunshinePeace213`).
+- **Q: Label taxonomy?** A: **Type-complete + epic.** Reuse the GitHub defaults
+  (`enhancement`=feat, `bug`=fix, `documentation`=docs); **create** `epic`, `chore`,
+  `refactor`, `perf`, `style`, `test` (the latter five plus `epic` were missing — the
+  reason `--label epic` failed at first issue creation). No status/priority labels (kept
+  out to avoid maintenance overhead; can add later). All six labels created.
+- **Q: Labels on issue #1?** A: **`epic` + `chore`** (epic-plan whose branch type is
+  `chore`). Applied.
+- **Q: /plan-w-team labeling convention?** A: every epic gets **`epic` + the label
+  matching the branch `<type>`** via `feat→enhancement`, `fix→bug`, `docs→documentation`,
+  and `chore`/`refactor`/`perf`/`style`/`test` same-named. Apply assignee+labels
+  idempotently so a missing label can't abort creation; graceful-skip if `gh` is
+  unavailable. (Label setup + assignee changes were made post-approval **without
+  re-running Codex**, per the user's standing instruction for doc/metadata changes.)
 - **Q: spec-review / implementation-review skills — modify or document?** A: **Document
   - sequence only** (Option 1). Capture both contracts in the plan; do NOT edit the
     skill files; sequence each push after the round that produced its findings.
