@@ -72,6 +72,18 @@ When complete:
      requires deleting and recreating the remote branch at the same SHA — a destructive
      op that needs explicit user approval. Graceful-skip the whole linking step if
      `gh`/GraphQL is unavailable; never block planning.
+- **Accessible file-path links in issue/PR bodies (B)**: whenever `/plan-w-team` (or
+  `/build`) writes a file path into the GitHub issue or PR body, it MUST be an
+  **accessible, clickable GitHub URL**, not a bare repo-relative path. Bare paths and
+  relative Markdown links resolve against the **default branch (`main`)**, where the
+  plan files don't exist until merge, so they 404. Use a full blob URL on the
+  convention branch:
+  `https://github.com/<owner>/<repo>/blob/<type>/<N>-<slug>/specs/<plan-name>/plan.md`
+  (and the same for `decisions.md`). Update the issue's **Link to plan** to these URLs
+  right after the initial push (the branch + files then exist). For post-merge
+  durability a commit-pinned permalink (`/blob/<commit-sha>/…`) is acceptable; a branch
+  URL is preferred while the work is in review because it always shows the latest. If
+  `gh` is unavailable, skip the body update gracefully.
 - **Skills (B)**: document `spec-review` + `implementation-review` contracts here and
   respect them; **no skill-file edits**.
 - **Commits**: follow `GIT-COMMIT-PR-MESSAGE.md`, carry **no `Co-Authored-By`** trailer
@@ -183,20 +195,31 @@ Edit `.claude/commands/plan-w-team.md`:
    unlinked, linking requires a destructive delete+recreate at the same SHA — gate that
    on explicit user approval.
 
-3. **Per-phase commit+push inside the Codex Verification Loop** — after each round and
+3. **Update the issue's "Link to plan" with accessible URLs** (right after the first
+   push, when the branch + files exist on origin): rewrite the issue body's plan and
+   decisions references to full blob URLs on the convention branch so reviewers can
+   click straight through — NEVER bare repo-relative paths (those resolve against `main`
+   and 404 pre-merge):
+
+   ```
+   gh issue edit <N> --body-file <updated-body>
+   # links like https://github.com/<owner>/<repo>/blob/<type>/<N>-<slug>/specs/<plan-name>/plan.md
+   ```
+
+4. **Per-phase commit+push inside the Codex Verification Loop** — after each round and
    each fix, commit + push so the branch shows the plan's evolution:
    - after Codex Round 1 appends its verdict → `git commit -m "📝 docs(plan): record Codex spec-review round 1" -m "Refs #<N>"` → push
    - after Claude applies round-1 fixes → `git commit -m "📝 docs(plan): apply Codex round 1 fixes" -m "Refs #<N>"` → push
    - after Codex Round 2 → commit → push
    - after any final fix → commit → push
-4. **Graceful skip**: if `command -v gh` fails / no remote / push errors, commit
+5. **Graceful skip**: if `command -v gh` fails / no remote / push errors, commit
    locally and SKIP the push (warn, continue) — never block planning. Mirrors the
    existing `gh`/Codex graceful-skip patterns.
-5. **Branch linkage** stays Option B (refspec push, mangled local kept) — the existing
+6. **Branch linkage** stays Option B (refspec push, mangled local kept) — the existing
    Worktree Rule in `GIT-COMMIT-PR-MESSAGE.md` is unchanged. The branch is linked to the
    issue's **Development** panel via `createLinkedBranch` (step 2), so the issue shows
    the branch even before a PR exists.
-6. **No `Co-Authored-By`** on any of these commits (dogfoods workstream A).
+7. **No `Co-Authored-By`** on any of these commits (dogfoods workstream A).
 
 Edit `.claude/commands/build.md` (minimal):
 
@@ -205,6 +228,9 @@ Edit `.claude/commands/build.md` (minimal):
   commits on top (fast-forward) — it MUST NOT create a second branch and MUST open
   exactly ONE PR (`Closes #N`) whose diff therefore includes both the plan and the
   implementation. The graceful-skip / no-issue fallbacks are unchanged.
+- Any file path `/build` writes into the PR body (or issue comments) must likewise be an
+  **accessible GitHub URL** (blob URL on the head branch, or a commit-pinned permalink),
+  not a bare repo-relative path — same rule as the issue "Link to plan".
 
 ### Skill Contracts (requirements about both Codex skills)
 
@@ -424,6 +450,9 @@ branch; the published `chore/1-...` branch exists on origin with the plan commit
 - (B) `.claude/commands/build.md` resumes the pre-existing convention branch and opens
   exactly one PR with `Closes #N` (no duplicate branch/PR).
 - (B) Skill files are unchanged; the plan documents both contracts.
+- (B) The issue's **Link to plan** uses accessible blob URLs on the convention branch
+  (clickable; resolve to the real files), not bare repo-relative paths; the workflow
+  docs require accessible GitHub URLs for any file path written into an issue/PR body.
 - (B) This plan is published to `chore/1-remove-claude-trailers-add-guard-hook` on
   origin with per-phase commits (dogfood).
 

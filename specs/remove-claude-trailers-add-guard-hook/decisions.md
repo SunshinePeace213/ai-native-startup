@@ -66,10 +66,19 @@ commit/push → fix → commit/push → Codex R2 → commit/push → fix → com
   `linkedBranch: null` and `issue.linkedBranches` stayed empty). So the reworked
   `/plan-w-team` must **create the branch from the issue first, then push** the plan
   commits. Retrofitting an already-pushed branch needs a destructive delete+recreate at
-  the same SHA, which auto-mode blocked ("Git Destructive") absent explicit approval —
-  so for THIS run the link is pending the user's choice (approve delete+recreate, or
-  open a `Closes #1` PR). This doc change was made post-approval **without re-running
-  Codex**, per the user's instruction.
+  the same SHA, which auto-mode blocked ("Git Destructive") absent explicit approval.
+  **Resolved**: the user approved the lossless delete+recreate; the branch was deleted
+  and recreated at the same SHA (`1b954c5`) via `createLinkedBranch`, and
+  `issue.linkedBranches` now lists it. This doc change was made post-approval **without
+  re-running Codex**, per the user's instruction.
+- **Q: How are file paths written into the issue/PR body?** A: **Accessible GitHub URLs**,
+  never bare repo-relative paths. Reason: GitHub resolves bare paths / relative Markdown
+  links against the default branch (`main`), where the plan files don't exist until
+  merge, so they 404. Fix applied to issue #1: the **Link to plan** now uses full blob
+  URLs on `chore/1-…` (verified the files resolve at that ref). Documented as a workflow
+  requirement for `/plan-w-team` (update the issue body right after the first push) and
+  `/build` (PR body). Branch blob URL while in review (shows latest); commit-pinned
+  permalink acceptable for post-merge durability.
 - **Q: spec-review / implementation-review skills — modify or document?** A: **Document
   - sequence only** (Option 1). Capture both contracts in the plan; do NOT edit the
     skill files; sequence each push after the round that produced its findings.
