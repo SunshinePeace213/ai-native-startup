@@ -29,10 +29,13 @@ are NOT modified.
 
 When complete:
 
-- (A) No repo file (except the frozen historical decision log) references the two
-  trailers; `GIT-COMMIT-PR-MESSAGE.md` states the no-trailer policy in one line; a
-  `PreToolUse` hook in `.claude/settings.local.json` blocks `git`/`gh` commands
-  carrying `Co-Authored-By: Claude`; `ai-docs/claude-code-hooks.md` documents hooks.
+- (A) The only repo references to the two trailers are the **allowed** ones: the single
+  `GIT-COMMIT-PR-MESSAGE.md` policy line (which names `Co-Authored-By` as forbidden),
+  this plan's own spec files (`specs/remove-claude-trailers-add-guard-hook/`), and the
+  frozen historical decision log (`specs/git-workflow-issue-pr-tracking/decisions.md`).
+  `GIT-COMMIT-PR-MESSAGE.md` states the no-trailer policy in one line; a `PreToolUse`
+  hook in `.claude/settings.local.json` blocks `git`/`gh` commands carrying
+  `Co-Authored-By: Claude`; `ai-docs/claude-code-hooks.md` documents hooks.
 - (B) `.claude/commands/plan-w-team.md` commits + pushes the plan artifacts on the
   convention branch and commits+pushes after each spec-review round/fix (graceful-skip
   when `gh`/push is unavailable); `.claude/commands/build.md` resumes that same branch
@@ -408,7 +411,7 @@ Execute these commands to validate the task is complete:
 - `test -f ai-docs/claude-code-hooks.md && echo OK` — research doc exists.
 - `grep -nE 'git push -u origin HEAD:refs/heads|per-phase|graceful' .claude/commands/plan-w-team.md` — publish + per-phase + graceful-skip steps present.
 - `grep -nE 'spec-review|implementation-review' .claude/commands/plan-w-team.md` — skill contracts referenced.
-- `git ls-remote --heads origin 'chore/1-remove-claude-trailers-add-guard-hook'` — published branch exists on origin.
+- `git rev-parse --abbrev-ref '@{upstream}'` — expect `origin/chore/1-remove-claude-trailers-add-guard-hook`; network-free confirmation that the worktree branch is published + tracking the convention ref. (The remote-existence check is an orchestrator/plan-time step in `/plan-w-team`, NOT a build-time Validation Command, since `implementation-review` runs these network-off.)
 
 ## Notes
 
@@ -431,3 +434,8 @@ _Pending Codex review. Codex-owned (the spec-review skill); Claude must not edit
 ### Round 2 — Verdict: approved
 
 The spec meets the blocking-issue bar with no findings remaining this round.
+
+### Round 3 — Verdict: changes-requested
+
+- **The validation commands conflict with the documented implementation-review contract.** The `Skill Contracts` section says `implementation-review` runs network-off and runs the plan's Validation Commands, but `Validation Commands` includes `git ls-remote --heads origin 'chore/1-remove-claude-trailers-add-guard-hook'`, which requires network access to the remote. Recommend: move the remote branch publication check out of the implementation-review Validation Commands into an orchestrator/manual publish check, or replace it with a network-free local check in `Validation Commands`.
+- **The trailer cleanup objective contradicts the acceptance criteria.** The `Objective` says no repo file except the frozen historical decision log references the two trailers, but the acceptance criteria allow this plan's specs and `GIT-COMMIT-PR-MESSAGE.md` is required to retain a single `Co-Authored-By: Claude` policy line. Recommend: update the `Objective` to match the intended allowed references (`GIT-COMMIT-PR-MESSAGE.md` policy line, this plan's spec files, and the frozen historical decision log), or tighten the acceptance criteria to match the objective.
