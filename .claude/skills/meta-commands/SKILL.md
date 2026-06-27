@@ -48,7 +48,7 @@ body with prose — that is the dominant capability lever on Opus 4.8.
 | Read | When |
 |---|---|
 | `references/frontmatter.md` | Choosing/validating frontmatter fields; char caps; the angle-bracket ban; substitutions; command-name resolution; the commands-are-skills note |
-| `references/command-format.md` | Drafting the body in the house template; the flat-file-vs-skill-dir decision tree; dynamic `!`cmd`` + `@file` injection |
+| `references/command-format.md` | Drafting the body in the house template; the flat-file-vs-skill-dir decision tree; dynamic bang-backtick command injection and @file injection |
 | `references/anti-patterns.md` | What to cut; BAD→GOOD descriptions; over/under-trigger fixes; the pre-ship checklist |
 
 Validate any command file or `SKILL.md` (needs PyYAML):
@@ -125,10 +125,11 @@ Read `references/command-format.md`. Use the five-section house format:
 
 ### 6. Add dynamic context / args if needed
 
-Inline `` !`cmd` `` injects a shell command's output into the prompt before
-Claude sees it; a ```` ```! ```` fenced block does the same for multi-line; `@file`
+Inline bang-backtick injection (a bang immediately before a backtick-quoted command)
+runs a shell command and injects its output into the prompt before Claude sees it; a
+fenced block whose info string is a single bang does the same for multi-line; `@file`
 injects file contents. These require the relevant tools be allowed (e.g.
-`allowed-tools: Bash(git *)` for a `` !`git ...` `` injection). See
+`allowed-tools: Bash(git *)` for a bang-backtick git injection). See
 `references/command-format.md`.
 
 ### 7. Validate
