@@ -110,3 +110,10 @@ yourself. If it is absent from `plan.md`, make NO edits to the file. Instead, re
 in your response that the `## Codex Findings` section is missing and must be
 scaffolded before a verdict can be recorded — that absence is itself a blocking
 condition. Do not write a verdict block anywhere else in the file.
+
+## Verdict relay (orchestrator-only)
+
+The orchestrator (Claude) — not this skill — relays each round's verdict and
+findings to the tracking GitHub issue via `gh`. This skill MUST NOT call `gh` or
+otherwise touch GitHub; it only appends its verdict to the `## Codex Findings`
+section per the output contract above. Claude reads that verdict and does the relay.

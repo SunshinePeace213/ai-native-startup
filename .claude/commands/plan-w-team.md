@@ -28,6 +28,7 @@ GENERAL_PURPOSE_AGENT: `general-purpose`
 ## Instructions
 
 - **PLANNING ONLY**: Do NOT build, write code, or deploy agents. Your only output is a plan document saved to `PLAN_OUTPUT_DIRECTORY`.
+- The PLANNING ONLY rule still permits the tracking/setup this plan explicitly calls for: creating the single Epic/Plan tracking issue (`gh issue create`), entering the shared worktree (`EnterWorktree`), and relaying Codex spec-review verdicts to that issue (`gh issue comment`). These record and stage the plan — they are NOT building, writing product code, or deploying agents. See `GitHub Issue Tracking`.
 - If no `USER_PROMPT` is provided, stop and ask the user to provide it.
 - If `ORCHESTRATION_PROMPT` is provided, use it to guide team composition, task granularity, dependency structure, and parallel/sequential decisions.
 - Carefully analyze the user's requirements provided in the USER_PROMPT variable
@@ -82,16 +83,52 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 2. Understand Codebase - Without subagents, directly understand existing patterns, architecture, and relevant files
 3. Grill Requirements - Run the `Grilling Protocol`: interview the user one question at a time via AskUserQuestion until the coverage ledger is clear, then get final sign-off. Do NOT design or write files before this completes.
 4. Design Solution - Develop technical approach including architecture decisions and implementation strategy
-5. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `.claude/agents/team/*.md` or use `general-purpose`. Document in plan.
-6. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments. Document in plan.
-7. Generate Plan Folder - Create a descriptive kebab-case `<plan-name>` and the per-plan folder `specs/<plan-name>/`
-8. Save Plan - Write the grilling decision log to `DECISION_LOG` and the implementation plan to `PLAN_FILE`
-9. Codex Verification - Run the `Codex Verification Loop` to hand the saved spec to Codex for review (skips gracefully if the Codex CLI is unavailable)
-10. Save & Report - Follow the `Report` section to summarize key components and emit the new file paths
+5. Create Tracking Issue - After sign-off, with the plan title and objective known and BEFORE entering the worktree (so the intended branch carries `#N`), create ONE Epic/Plan GitHub issue via `gh issue create` (see `GitHub Issue Tracking`). Skips gracefully if `gh`/remote/auth is unavailable.
+6. Enter Worktree - `EnterWorktree` by default so the plan→build lifecycle shares one worktree; the plan folder, `plan.md`, and `decisions.md` are all written INSIDE the worktree.
+7. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `.claude/agents/team/*.md` or use `general-purpose`. Document in plan.
+8. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments. Document in plan.
+9. Generate Plan Folder - Create a descriptive kebab-case `<plan-name>` and the per-plan folder `specs/<plan-name>/`
+10. Save Plan - Write the grilling decision log to `DECISION_LOG` and the implementation plan to `PLAN_FILE`
+11. Record Tracking - Record the `## Tracking` block in BOTH `plan.md` and `decisions.md` (issue number, intended convention branch name, worktree path) per `GitHub Issue Tracking`, then update the issue body to link the saved `plan.md` (only when an issue exists).
+12. Codex Verification - Run the `Codex Verification Loop` to hand the saved spec to Codex for review (skips gracefully if the Codex CLI is unavailable)
+13. Save & Report - Follow the `Report` section to summarize key components and emit the new file paths
+
+## GitHub Issue Tracking
+
+The plan→build lifecycle is threaded by a single GitHub issue. `/plan-w-team` opens that issue, enters a shared worktree, and records both in a `## Tracking` block that `/build` later reads to resume. Codex stays verdict-only — Claude is the only actor that calls `gh`.
+
+### Create the Epic/Plan issue (Workflow step 5)
+
+After the Grilling Protocol sign-off, once the plan title and objective are known and BEFORE entering the worktree (so the intended branch can carry `#N`), create ONE Epic/Plan issue with `gh issue create`:
+
+```
+gh issue create --template epic-plan.md --title "<plan title>" --body "<objective + a placeholder link to specs/<plan-name>/plan.md>"
+```
+
+- Title = the plan title. Body = the objective plus a placeholder link to `specs/<plan-name>/plan.md`; the link is updated to the real path once `plan.md` is written (Workflow step 11).
+- Create exactly one issue per plan — its number `#N` is the durable join key for the whole workflow.
+
+### Enter the worktree (Workflow step 6)
+
+After issue creation, `EnterWorktree` by default. Write the per-plan folder, `plan.md`, and `decisions.md` INSIDE the worktree so `/build` can resume the same working directory.
+
+### Record the `## Tracking` block (Workflow step 11)
+
+Record into BOTH `plan.md` (the `## Tracking` section of the Plan Format) and `decisions.md` (the `## Tracking` note of the Decision Log Format):
+
+- **Issue**: the issue number `#N`, or the literal `none — gh unavailable` when no issue was created.
+- **Branch**: the intended convention branch name `<type>/<N>-<slug>`, or `<type>/<slug>` (no `#N`) when there is no issue.
+- **Worktree**: the worktree path.
+
+IMPORTANT: the recorded **Issue** field is the SINGLE SOURCE OF TRUTH that `/build` reads — `/build` NEVER re-derives `#N` (e.g. by parsing the mangled local branch name).
+
+### Graceful `gh` skip
+
+If `gh`/remote/auth is unavailable (gh not installed, not authenticated, or no remote), SKIP issue creation and ALL issue comments: record `Issue: none — gh unavailable` in the `## Tracking` block (so the branch falls back to `<type>/<slug>`), warn the user, and continue local-only. A missing `gh` must NEVER block planning. (Mirrors the Codex graceful-skip pattern in the Codex Verification Loop below.)
 
 ## Codex Verification Loop
 
-After the plan and `decisions.md` are saved (Workflow step 9) and before the report, hand the drafted spec to Codex for an independent review. Codex writes its verdict + findings into the Codex-owned `## Codex Findings` section of `plan.md`; Claude reads the verdict, refines the rest of the plan body where warranted, and re-submits — capped at 2 Codex rounds.
+After the plan and `decisions.md` are saved (Workflow step 12) and before the report, hand the drafted spec to Codex for an independent review. Codex writes its verdict + findings into the Codex-owned `## Codex Findings` section of `plan.md`; Claude reads the verdict, refines the rest of the plan body where warranted, and re-submits — capped at 2 Codex rounds.
 
 ### Precondition / graceful skip
 
@@ -120,6 +157,17 @@ grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<pl
 
 (The dash is a literal em-dash, U+2014.)
 
+### Relay the verdict to the issue
+
+After reading each round's verdict, relay it to the tracking issue with `gh issue comment` — ONLY when an issue number exists in the `## Tracking` block (skip entirely when it reads `Issue: none — gh unavailable`):
+
+```
+gh issue comment <N> --body "<the round verdict + Codex findings + the fixes Claude applied this round>"
+```
+
+- This builds a single chronological spec-review audit trail on the issue.
+- Never block the loop on a failed or unavailable `gh` call — warn and continue (mirrors the graceful `gh` skip in `GitHub Issue Tracking`).
+
 ### Loop control — max 2 Codex rounds
 
 - **Round 1** → if the verdict is `approved`, the loop is done. If `changes-requested`, Claude applies the warranted fixes to the plan BODY ONLY (never the `## Codex Findings` section); for any finding Claude rejects, it records the finding + its rationale in `decisions.md`. Then run **Round 2**.
@@ -146,6 +194,14 @@ grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<pl
 ## Requirements & Decisions
 
 <2-4 most important locked decisions and assumptions; full record in decisions.md>
+
+## Tracking
+
+<!-- Recorded by /plan-w-team. The Issue field is the SINGLE SOURCE OF TRUTH /build reads — /build NEVER re-derives #N (e.g. by parsing the mangled local branch name). -->
+
+- Issue: <#N, or the literal `none — gh unavailable` when no issue was created>
+- Branch: <intended convention branch `<type>/<N>-<slug>`, or `<type>/<slug>` with no #N when there is no issue>
+- Worktree: <absolute worktree path>
 
 <if task_type is feature or complexity is medium/complex, include these sections:>
 
@@ -272,6 +328,8 @@ Write the full grilling record to `DECISION_LOG`. Use this structure:
 # Decisions: <task name>
 
 ## Summary — one paragraph: agreed scope + key choices
+
+## Tracking — issue (#N, or `none — gh unavailable`), intended convention branch name (`<type>/<N>-<slug>`, or `<type>/<slug>` with no #N), and worktree path. Mirrors `plan.md`'s `## Tracking`; the issue field is the single source of truth /build reads.
 
 ## Resolved Decisions — per decision: Question / Answer / Rationale
 

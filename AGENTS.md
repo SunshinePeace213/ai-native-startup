@@ -9,8 +9,13 @@
 
 - **Model selection**: Always pass **alias** (`opus`, `sonnet`, `haiku`, `fable`). Never hardcode a dated id like `claude-sonnet-4-6` or `claude-opus-4-8`
 
+## Git Workflow & Pull Requests
+
+- **Standard**: Follow the commit, PR, and issue standards in [GIT-COMMIT-PR-MESSAGE.md](./GIT-COMMIT-PR-MESSAGE.md)
+
 ## Project Structure
 
+- `.agents/` -- Codex Skills Confiugration
 - `ai-docs/` — research output from Internet
-- `specs/` — planning files
 - `evals/` — Claude Code skills evaluations
+- `specs/` — planning files

@@ -23,8 +23,77 @@ TARGET: $ARGUMENTS
 ## Workflow
 
 - If DECISIONS exists, read it first: it holds the requirements, locked decisions, assumptions, and out-of-scope items that constrain the build. Treat it as binding context.
+- **Resume the shared worktree.** Read the `## Tracking` block from PLAN — `/plan-w-team` records there the issue number (or `none — gh unavailable`), the intended convention branch name (`<type>/<N>-<slug>`), and the worktree path. Resume that worktree with `EnterWorktree(path=<recorded path>)` and run the ENTIRE build inside it. The recorded **issue number is the single source of truth**; never re-derive it from the local branch (`EnterWorktree` mangles `feat/x` into `worktree-feat+x`). If PLAN has no `## Tracking` block (a legacy / local-only plan), build in the current working tree and treat the run as issue-less (see **PR Lifecycle Tracking → No-issue / graceful-skip fallback**).
 - Read PLAN, think hard about it, and implement it into the codebase, honoring the decision log. If PLAN and DECISIONS conflict, STOP and surface the conflict instead of guessing.
-- When implementation completes, run the **Codex Implementation Review Loop** (below) before reporting.
+- When implementation completes, open the tracking PR per **PR Lifecycle Tracking** (below), then run the **Codex Implementation Review Loop** (below) before reporting.
+
+## PR Lifecycle Tracking
+
+When implementation completes, surface the build as **one** GitHub PR opened from the recorded `## Tracking` block. Claude is the only actor that calls `gh`. The PR is opened **after** implementation and is tracked live through the Codex review phases below.
+
+### Open the single PR (issue number present)
+
+When `## Tracking` carries an issue number `#N`:
+
+1. **Push the convention-named remote branch.** The local worktree branch name is cosmetic, so the convention is enforced on the remote ref:
+
+   ```
+   git push -u origin HEAD:refs/heads/<type>/<N>-<slug>
+   ```
+
+   `<type>` / `<N>` / `<slug>` come from the recorded branch name in `## Tracking`.
+
+2. **Open exactly ONE PR** with the type-matched template:
+
+   ```
+   gh pr create --template <type>.md --base main --head <type>/<N>-<slug> --title "[PR] <emoji> <type>(<scope>): <description>"
+   ```
+
+   - `<emoji>` is the gitmoji for `<type>` (✨ feat, 🐛 fix, 📝 docs, 🎨 style, ♻️ refactor, ⚡️ perf, ✅ test, 🔧 chore) — e.g. `[PR] ✨ feat(api): add login endpoint`.
+   - Fill the template body: the `Closes #N` line under **Linked Issue**, and the **Agent Task Manifest** copied from `TaskList` (one line per task: `- [ ] #<taskId> <subject> — <owner> — <status>`).
+   - Open the PR **ready** (not draft).
+
+### Build Status checklist (live, in the PR body)
+
+The PR body carries a **Build Status** checklist that you tick as each phase completes:
+
+- [ ] Implementation
+- [ ] Codex review R1
+- [ ] Fixes
+- [ ] Codex review R2
+- [ ] Result
+
+Edit the PR body (`gh pr edit --body`) to check each item as you reach it, and post one comment per phase via `gh pr comment` (the round comments are woven into the Codex Implementation Review Loop below). Immediately after opening the PR, tick **Implementation** and post a `gh pr comment` noting implementation is done.
+
+### No-issue / graceful-skip fallback
+
+If `## Tracking` has **no issue number** (a local-only plan, recorded as `none — gh unavailable`) OR `gh` / the remote / auth is unavailable (`command -v gh` fails, or `gh auth status` / the push errors):
+
+- **SKIP** PR creation, every `gh pr comment`, all Build-Status updates, and the `Closes #N` line.
+- **STILL** implement the plan and **STILL** run the Codex Implementation Review Loop locally.
+- Leave the branch in the worktree untouched.
+- Print the exact commands the user can run later to open the PR by hand. **Use the branch name recorded VERBATIM in `## Tracking`** (the single source of truth) — do not re-derive it — and pick the matching sub-case:
+
+  **(a) No issue number** (local-only plan; branch recorded as `<type>/<slug>`, no `#N`). Omit any `Closes #N` line — there is no issue to close:
+
+  ```
+  git push -u origin HEAD:refs/heads/<type>/<slug>
+  gh pr create --template <type>.md --base main --head <type>/<slug> --title "[PR] <emoji> <type>(<scope>): <description>"
+  ```
+
+  **(b) Issue exists but `gh` / remote / auth / push failed** (branch recorded as `<type>/<N>-<slug>`). Keep the `<N>` segment and keep the `Closes #N` line in the PR body:
+
+  ```
+  git push -u origin HEAD:refs/heads/<type>/<N>-<slug>
+  gh pr create --template <type>.md --base main --head <type>/<N>-<slug> --title "[PR] <emoji> <type>(<scope>): <description>"
+  ```
+
+A missing issue number or a missing `gh` MUST NEVER block the build — mirror the existing Codex graceful-skip pattern, warn the user, and continue local-only.
+
+### Guards — leave the PR OPEN for the user
+
+- **Never merge the PR.** `/build` opens the PR and stops; the user reviews and merges it themselves. Do not run any merge command against the PR via `gh`.
+- **Never push to the `main` branch** and never commit on top of `main`. The ONLY branch `/build` pushes is the feature ref `refs/heads/<type>/<N>-<slug>` shown above.
 
 ## Codex Implementation Review Loop
 
@@ -60,8 +129,15 @@ grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' "<SCRATCH
 - **Round 2** → if still `changes-requested`, Claude applies a best-effort final pass and PROCEEDS anyway, recording "proceeded without full Codex approval after 2 rounds" + the outstanding findings in the Report.
 - Never exceed 2 Codex rounds.
 - **Codex never edits source** — it reports only; Claude's builders apply every fix (`-s workspace-write` is granted solely so Codex can run the plan's Validation Commands).
+- **Relay each phase to the tracking PR (when one was opened).** After reading each round's verdict, post one `gh pr comment` relaying it and tick the matching **Build Status** item via `gh pr edit --body`:
+  - Round 1 verdict → comment + tick **Codex review R1**.
+  - Fixes applied after a `changes-requested` round → comment listing the builders' fixes + tick **Fixes**.
+  - Round 2 verdict → comment + tick **Codex review R2**.
+  - Final outcome (approved at round N / proceeded after 2 rounds) → comment + tick **Result**.
+  Each comment is relayed from the implementation-review verdict + findings; Claude is the only actor that calls `gh`. When no tracking PR exists (no issue number, or graceful `gh` skip), run the loop exactly as above and skip every `gh pr comment` / Build-Status update.
 
 ## Report
 
 - Present the `## Report` section of the plan.
 - Report the Codex Implementation Review outcome: the per-round verdict (approved at round N / proceeded without full approval after 2 rounds / skipped — Codex unavailable), the per-round Validation pass/fail summary, and any outstanding or Claude-rejected findings (with rationale).
+- Report the PR lifecycle outcome: the opened PR's URL (with `Closes #N`) and its final Build Status — or, when PR creation was skipped (no issue number / `gh` unavailable), say so and include the exact `gh pr create` command the user can run to open it manually. The PR is left OPEN for the user to merge.

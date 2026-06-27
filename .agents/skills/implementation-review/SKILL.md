@@ -128,3 +128,10 @@ No blocking findings remain this round.
 - `decisions.md` is read-only — never edit it.
 - You report; Claude's builders apply every fix. Do not attempt to fix findings
   yourself.
+
+## Verdict relay (orchestrator-only)
+
+The orchestrator (Claude) — not this skill — relays each round's verdict and
+findings to the tracking pull request via `gh`. This skill MUST NOT call `gh` or
+otherwise touch GitHub; it only emits its verdict as its final CLI message per the
+output contract above (it writes no files). Claude reads that verdict and does the relay.

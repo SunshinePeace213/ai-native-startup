@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Feature request
+    url: https://github.com/SunshinePeace213/ai-native-startup/issues/new?template=feature.md
+    about: Propose a new capability or enhancement.
+  - name: Bug report
+    url: https://github.com/SunshinePeace213/ai-native-startup/issues/new?template=bug.md
+    about: Report something that is broken or behaving incorrectly.
+  - name: Repository conventions
+    url: https://github.com/SunshinePeace213/ai-native-startup/blob/main/AGENTS.md
+    about: Read the Git workflow, commit, and PR conventions before filing.
