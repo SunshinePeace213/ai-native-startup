@@ -102,5 +102,12 @@ commit/push → fix → commit/push → Codex R2 → commit/push → fix → com
 
 - **Prior (pre-expansion) outcome**: approved at round 2 (R1 flagged a raw-`python3`
   validation command → fixed to `uv run python`). No findings rejected.
-- **Post-expansion**: re-running spec-review on the expanded plan; outcome recorded here
-  after the loop completes.
+- **Post-expansion outcome**: **approved at round 4.**
+  - Round 3 (`changes-requested`): two findings — (1) the `git ls-remote` Validation
+    Command needs network but `implementation-review` runs Validation Commands
+    network-off → replaced with a network-free `git rev-parse --abbrev-ref '@{upstream}'`
+    check + a note that remote-existence is an orchestrator/plan-time step; (2) the
+    Objective contradicted the acceptance criteria on allowed trailer references →
+    Objective reworded to list the allowed references. Both accepted and fixed.
+  - Round 4 (`approved`): no findings remaining.
+- No Codex findings were rejected across all four rounds.
