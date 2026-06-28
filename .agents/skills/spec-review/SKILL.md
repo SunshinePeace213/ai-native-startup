@@ -15,7 +15,11 @@ blocking-only bar, and record a per-round verdict in the spec's own
 1. Read the inputs (below) in full.
 2. Judge the spec against the finding bar — blocking issues only, grounded in the text.
 3. Determine the round number N (scan existing `### Round K` headers).
-4. Write the verdict block under `## Codex Findings`, appending to the end of the file.
+4. Insert the verdict block INSIDE the `## Codex Findings` section, immediately before
+   the next `##` heading (e.g. `## Codex Verification`) — never below that heading. On
+   round 1, replace the `_Pending Codex review._` placeholder with the block; on later
+   rounds, add the new `### Round N` block after the previous round's, still above the
+   next `##` heading.
 5. Touch nothing else.
 
 ## Inputs
@@ -86,8 +90,11 @@ none, **N = 1**. Each invocation appends the next round; never overwrite a prior
 
 ## Output contract — reproduce exactly
 
-Append your review to the END of the spec file, under its existing
-`## Codex Findings` heading. The block's first line MUST be exactly one of the
+Append your review within the `## Codex Findings` section, immediately before the
+following `##` heading (e.g. `## Codex Verification`) — never below it. On round 1,
+replace the section's `_Pending Codex review._` placeholder with your block; on later
+rounds, add the new block after the previous round's, still above that `##` heading.
+The block's first line MUST be exactly one of the
 following (the dash is a literal em-dash "—", U+2014, with one space on each side;
 substitute the integer N from above):
 
@@ -132,8 +139,9 @@ Example of an appended block:
 - Edit NOTHING in `spec.md` except appending your block within / after the
   `## Codex Findings` section.
 - The rest of the file is Claude-owned. Do not reorder, reword, reformat, or
-  "improve" any other line. Leave any existing scaffolding (e.g. a
-  `_Pending Codex review._` placeholder) in place and append after it.
+  "improve" any other line. Within `## Codex Findings`, replace the
+  `_Pending Codex review._` placeholder with your round-1 block; disturb no
+  scaffolding or content outside that section.
 - `decisions.md`, `tasks.md`, and `acceptance-criteria.md` are read-only — never edit them.
 
 ## Missing Codex Findings section
