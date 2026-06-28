@@ -17,7 +17,7 @@ operate on it. Each schema below lists every field.
 ```typescript
 TaskCreate({
   subject: "Implement user authentication", // required: brief imperative title
-  description: "Create login/logout endpoints with JWT. See specs/auth/plan.md.", // required: full context for the owner
+  description: "Create login/logout endpoints with JWT. See specs/auth/spec.md.", // required: full context for the owner
   activeForm: "Implementing authentication", // optional: present-continuous, shown in the spinner while in_progress
   metadata: { phase: "core", priority: "high" }, // optional: arbitrary key/value bag
 })

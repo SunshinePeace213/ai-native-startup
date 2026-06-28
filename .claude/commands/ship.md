@@ -24,7 +24,7 @@ TARGET: $ARGUMENTS
   PR's number `#N`, head branch, title, body, and the linked issue. If no open PR resolves →
   STOP and report.
 - The **worktree path** for cleanup comes from the plan's `## Tracking` block (the
-  `specs/<name>/plan.md` whose `## Tracking` records this worktree/branch). The recorded
+  `specs/<name>/spec.md` whose `## Tracking` records this worktree/branch). The recorded
   **issue number is the single source of truth** — never re-derive it from the mangled local
   branch (`EnterWorktree` turns `chore/x` into `worktree-chore+x`).
 - **Claude is the only actor that calls `gh`.**

@@ -15,10 +15,11 @@ TARGET: $ARGUMENTS
 ## Instructions
 
 - If no `TARGET` is provided, STOP immediately and ask the user to provide it (AskUserQuestion).
-- Resolve `TARGET` to a plan file (PLAN) and an optional decision log (DECISIONS), in order:
-  1. If `specs/<TARGET>/plan.md` exists → PLAN = `specs/<TARGET>/plan.md`, DECISIONS = `specs/<TARGET>/decisions.md` (feature-name form).
-  2. Else if `<TARGET>` is an existing file → PLAN = `<TARGET>`, DECISIONS = a `decisions.md` sibling in the same folder if present (direct path / legacy flat spec).
-  3. Else STOP and report which paths were searched.
+- Resolve `TARGET` to a spec file (PLAN) and an optional decision log (DECISIONS), in order:
+  1. If `specs/<TARGET>/spec.md` exists → PLAN = `specs/<TARGET>/spec.md`, DECISIONS = `specs/<TARGET>/decisions.md` (feature-name form).
+  2. Else if `specs/<TARGET>/plan.md` exists → PLAN = `specs/<TARGET>/plan.md`, DECISIONS = `specs/<TARGET>/decisions.md` (LEGACY FALLBACK — a pre-rename folder that still uses the old `plan.md` name; its `## Tracking` block is read from this legacy `plan.md`).
+  3. Else if `<TARGET>` is an existing file → PLAN = `<TARGET>`, DECISIONS = a `decisions.md` sibling in the same folder if present (direct path / legacy flat spec).
+  4. Else STOP and report which paths were searched.
 
 ## Workflow
 
