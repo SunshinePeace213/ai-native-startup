@@ -99,4 +99,13 @@ record. The plan-w-team Codex loop also flips `spec.md`'s `Status:` to `Approved
 
 ## Codex Verification — outcome (one of: approved at round N / proceeded without approval after 2 rounds / skipped — Codex unavailable), plus any Codex findings Claude rejected with rationale
 
-_Pending — recorded after the Codex Verification Loop runs below._
+**Outcome: approved at round 2.**
+
+- **Round 1 — changes-requested.** Two findings, both applied (none rejected):
+  1. `refactor-command` depended on the later `add-stop-hook`, violating top-to-bottom execution
+     → physically reordered so the Stop hook is Task 2 and the command refactor is Task 3.
+  2. No acceptance criterion verified the Stop-hook frontmatter wiring or the Status-flip logic
+     → added **AC10** (hook wired in `plan-w-team.md` frontmatter) and **AC11** (Status flips to
+     Approved / Needs Human Review), each with a validation command.
+- **Round 2 — approved.** No blocking findings; the spec meets the bar.
+- **Rejected findings:** none.
