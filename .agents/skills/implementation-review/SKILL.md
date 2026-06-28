@@ -1,6 +1,6 @@
 ---
 name: implementation-review
-description: "Review a /build implementation against its saved plan during the build phase, then emit a per-round verdict plus blocking findings as your final CLI message only. Use when asked to review, verify, or gate the implemented code of a /build run against its plan.md before the final report or hand-off; typically invoked non-interactively via codex exec once per review round. Judges the implemented working-tree changes (git status/diff, including untracked files) against the plan's acceptance criteria, step-by-step tasks, locked decisions, and Validation Commands, which it runs and reports as real PASS/FAIL. Reports only blocking issues (unmet acceptance criteria, incomplete or missing tasks, failing or not-run validation commands, plan or decision violations and build-time scope drift, real bugs, regressions, security or data-loss risks) and emits a per-round approved or changes-requested verdict; it writes no files and edits no source."
+description: "Review a /build implementation against its saved plan during the build phase, then emit a per-round verdict plus blocking findings as your final CLI message only. Use when asked to review, verify, or gate the implemented code of a /build run against its spec.md before the final report or hand-off; typically invoked non-interactively via codex exec once per review round. Judges the implemented working-tree changes (git status/diff, including untracked files) against the plan's acceptance criteria, step-by-step tasks, locked decisions, and Validation Commands, which it runs and reports as real PASS/FAIL. Reports only blocking issues (unmet acceptance criteria, incomplete or missing tasks, failing or not-run validation commands, plan or decision violations and build-time scope drift, real bugs, regressions, security or data-loss risks) and emits a per-round approved or changes-requested verdict; it writes no files and edits no source."
 ---
 
 # Implementation Review
@@ -14,10 +14,10 @@ every fix; you report.
 
 ## Inputs
 
-- The plan's `plan.md` path is given in the prompt. Read it in full — especially its
+- The plan's `spec.md` path is given in the prompt. Read it in full — especially its
   **Acceptance Criteria**, **Step-by-Step Tasks**, and **Validation Commands**.
 - Read the sibling `decisions.md` in the same folder (the planning run writes both
-  next to each other, e.g. `specs/<plan-name>/plan.md` and
+  next to each other, e.g. `specs/<plan-name>/spec.md` and
   `specs/<plan-name>/decisions.md`). It holds the locked decisions, assumptions, and
   out-of-scope / non-goal items. Judge the build against these: code that
   contradicts a locked decision, or work the decisions ruled out of scope, is a
