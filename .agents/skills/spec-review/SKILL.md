@@ -1,6 +1,6 @@
 ---
 name: spec-review
-description: "Review a plan-w-team implementation spec — the four files (entry spec.md, plus decisions.md, tasks.md, acceptance-criteria.md) a planning run drafts under specs — before execution and append a Codex Findings verdict plus blocking findings to spec.md. Use when asked to review, verify, or gate a plan-w-team spec before /build or hand-off; typically invoked non-interactively via codex exec once per review round. Judges the spec against a blocking-issue bar only (missing or contradictory requirements, infeasible or mis-ordered steps, untestable acceptance criteria, security or data risks, scope drift past the locked decisions) and appends a per-round approved or changes-requested verdict block ONLY inside the existing '## Codex Findings' section of spec.md, editing nothing else."
+description: "Review a plan-w-team implementation spec — the four files (entry spec.md, plus decisions.md, tasks.md, acceptance-criteria.md) a planning run drafts under specs — before execution and append a Codex Findings verdict plus blocking findings to spec.md. Use when asked to review, verify, or gate a plan-w-team spec before /build or hand-off; typically invoked non-interactively via codex exec once per review round. Judges the spec against a blocking-issue bar only (missing or contradictory requirements, infeasible or mis-ordered steps, untestable acceptance criteria, security or data risks, scope drift past the locked decisions) and appends a per-round approved or changes-requested verdict block ONLY inside the existing '## Codex Findings' section of spec.md, editing nothing else. Writes the full findings into '## Codex Findings' and returns only a terse verdict summary to the caller, so Claude reads detail from spec.md rather than from stdout."
 ---
 
 # Spec Review
@@ -133,6 +133,23 @@ Example of an appended block:
 
 - Consider noting the rollback command in tasks.md so a failed migration is reversible.
 ```
+
+## Return to the caller (keep it short)
+
+The full verdict + findings you wrote above ARE the durable record — they live in
+`spec.md`'s `## Codex Findings` section. Your FINAL CLI message back to the
+orchestrator (Claude) MUST be short, so a findings-heavy round never floods the
+orchestrator's context:
+
+- **Line 1** — the verdict line, verbatim: `### Round N — Verdict: approved` or
+  `### Round N — Verdict: changes-requested`.
+- **Line 2** — a one-line summary: for `changes-requested`, the count of blocking
+  findings plus a pointer, e.g. `3 blocking findings — full detail in spec.md
+  ## Codex Findings`; for `approved`, `no blocking findings`.
+
+Do NOT repeat the finding bullets, recommendations, or any validation output in the
+return message — the orchestrator reads those from `spec.md`'s `## Codex Findings`
+section, not from your stdout.
 
 ## Never-touch rule
 

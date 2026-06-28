@@ -224,6 +224,8 @@ codex exec -C "<REPO_ROOT>" -s workspace-write "Use the spec-review skill to rev
 
 ### Read the verdict from the FILE (not stdout)
 
+The `spec-review` skill writes its full verdict + findings into `spec.md`'s Codex-owned `## Codex Findings` section and returns only a TERSE summary (the verdict line + a finding count) to the caller. Therefore Claude reads BOTH the verdict AND the detailed findings from `spec.md`'s `## Codex Findings` via the file — never from the `codex exec` stdout — when applying fixes and relaying to the issue. Do NOT pipe or expand the codex stdout; the terse return is intentional.
+
 ```
 grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<plan-name>/spec.md | tail -1
 ```
@@ -263,7 +265,7 @@ Once the loop settles, Claude writes the result into `spec.md`'s Claude-owned `#
 
 The reworked flow respects two Codex skills; this is documentation only — **do NOT edit the skill files**.
 
-- **`spec-review` (plan phase)** — invoked via `codex exec -s workspace-write` (network-off; `workspace-write` disables network by default), auto-discovered from `.agents/skills/` and invoked by NAMING it in the prompt (no `--skill` flag). It appends a per-round `### Round N — Verdict: approved|changes-requested` block ONLY under the `## Codex Findings` heading and edits nothing else; that section is Codex-owned (Claude never writes there). It **MUST NOT call `gh`** — Claude relays each verdict to the issue. Max 2 rounds. Each per-phase push happens AFTER the round that produced the appended findings.
+- **`spec-review` (plan phase)** — invoked via `codex exec -s workspace-write` (network-off; `workspace-write` disables network by default), auto-discovered from `.agents/skills/` and invoked by NAMING it in the prompt (no `--skill` flag). It appends a per-round `### Round N — Verdict: approved|changes-requested` block ONLY under the `## Codex Findings` heading and edits nothing else; that section is Codex-owned (Claude never writes there). It writes its full findings into `## Codex Findings` and returns only a terse verdict summary (verdict line + finding count) to the caller, so Claude reads the detail from the file rather than from stdout. It **MUST NOT call `gh`** — Claude relays each verdict to the issue. Max 2 rounds. Each per-phase push happens AFTER the round that produced the appended findings.
 - **`implementation-review` (build phase)** — invoked via `codex exec -s workspace-write` (same network-off, auto-discovery, name-to-invoke rules). It reads `spec.md` + `decisions.md` + the working-tree diff, RUNS the plan's Validation Commands and reports real PASS/FAIL, emitting its per-round verdict as its FINAL CLI message only (writes no files, edits no source). Claude's builders apply fixes; Claude relays each verdict to the PR. Max 2 rounds.
 - **Shared**: both run network-off, are auto-discovered from `.agents/skills/`, and are invoked by naming them (no `--skill` flag); Claude is the only actor that calls `gh`.
 
