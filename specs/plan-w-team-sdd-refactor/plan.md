@@ -108,7 +108,7 @@ Use these files to complete the task:
 ### New Files
 
 - `.claude/hooks/check-spec-completeness.sh` — the blocking Stop hook (bash, exit 2). Full
-  content in Task 3.
+  content in Task 2.
 - `specs/_templates/acceptance-criteria.md` — created via `git mv` from the typo'd file.
 
 ## Implementation Phases
@@ -120,9 +120,9 @@ section names, so they are locked first.
 
 ### Phase 2: Core Implementation
 
-Refactor the command (Task 2), add the Stop hook (Task 3), enhance `spec-review` (Task 4) — the
-three behavioral changes — and rename downstream consumers (Task 5). Tasks 3/4/5 are independent
-and parallel; Task 2 wires the hook so it waits on Task 3.
+Add the Stop hook (Task 2), refactor the command (Task 3), enhance `spec-review` (Task 4) — the
+three behavioral changes — and rename downstream consumers (Task 5). Tasks 2/4/5 are independent
+and parallel; Task 3 wires the hook so it waits on Task 2.
 
 ### Phase 3: Integration & Polish
 
@@ -440,53 +440,7 @@ Run these to prove the criteria above. Map each command to the criteria it verif
 - **Open question:** <unresolved item to revisit, and who owns it>
 ```
 
-### 2. Refactor the /plan-w-team command
-
-- **Task ID**: refactor-command
-- **Depends On**: finalize-templates, add-stop-hook
-- **Assigned To**: builder-command
-- **Agent Type**: general-purpose
-- **Parallel**: false
-- **Satisfies**: AC3, AC4, AC7
-- **Variables**: replace the two output variables with four, keeping `<plan-name>` kebab-case:
-  - `SPEC_FILE: specs/<plan-name>/spec.md`
-  - `DECISION_LOG: specs/<plan-name>/decisions.md`
-  - `TASKS_FILE: specs/<plan-name>/tasks.md`
-  - `ACCEPTANCE_FILE: specs/<plan-name>/acceptance-criteria.md`
-  - add `TEMPLATES_DIR: specs/_templates/`
-- **Delete the hard-coded formats**: remove the entire `## Plan Format` fenced block and the
-  `## Decision Log Format` fenced block. Replace with a short `## Output Files` section that
-  instructs: "Copy each template from `TEMPLATES_DIR`, fill every `<…>` micro-prompt and the
-  required `##` sections, and save to the matching per-plan path. Do not invent structure — the
-  templates are the single source of truth for section layout."
-- **Map content to files** (so the planner knows what goes where): spec.md = what/why + Tracking
-  - Codex records; tasks.md = phases/team/step-by-step tasks; acceptance-criteria.md = criteria +
-    validation commands; decisions.md = grilling record only.
-- **Retarget the Codex loop at `spec.md`**: in the `Codex Verification Loop` section, change
-  `<SPEC_PATH>` from `specs/<plan-name>/plan.md` to `specs/<plan-name>/spec.md`; update the
-  verdict grep to read `specs/<plan-name>/spec.md`; update the spec-review invocation prompt to
-  say "review the four-file plan-w-team spec under `specs/<plan-name>/` (spec.md is the entry
-  point)". The `## Codex Findings` section it appends to now lives in `spec.md`.
-- **Add the Status flip**: after a Codex `approved` verdict, edit `spec.md`'s `Status:` line to
-  `Approved`; if still `changes-requested` after 2 rounds, set it to `Needs Human Review`. Record
-  this as a step in the loop. This honors the "update the status to approved" requirement.
-- **Move the Codex Verification outcome to spec.md**: the loop writes the outcome summary +
-  rejected findings into spec.md's Claude-owned `## Codex Verification` section (NOT decisions.md,
-  NOT the Codex-owned `## Codex Findings`).
-- **Wire the Stop hook** in the command frontmatter `hooks:` block (alongside the existing
-  `PostToolUse` prettier hook):
-  ```yaml
-  Stop:
-    - hooks:
-        - type: command
-          command: '"$CLAUDE_PROJECT_DIR"/.claude/hooks/check-spec-completeness.sh'
-  ```
-- **Update Workflow step 10** ("Save Plan") to write all four files, and update the `Report`
-  block to list all four paths.
-- Leave the Grilling Protocol, GitHub Issue Tracking, Publish & Per-Phase Tracking, and Skill
-  Contracts sections intact except where they name `plan.md` (→ `spec.md`).
-
-### 3. Add the blocking Stop hook
+### 2. Add the blocking Stop hook
 
 - **Task ID**: add-stop-hook
 - **Depends On**: finalize-templates
@@ -574,6 +528,52 @@ exit 0
 > Linux is ever needed, swap to `stat -c '%Y %n'`. The builder should keep the macOS form to match
 > the environment unless told otherwise.
 
+### 3. Refactor the /plan-w-team command
+
+- **Task ID**: refactor-command
+- **Depends On**: finalize-templates, add-stop-hook
+- **Assigned To**: builder-command
+- **Agent Type**: general-purpose
+- **Parallel**: false
+- **Satisfies**: AC3, AC4, AC7, AC10, AC11
+- **Variables**: replace the two output variables with four, keeping `<plan-name>` kebab-case:
+  - `SPEC_FILE: specs/<plan-name>/spec.md`
+  - `DECISION_LOG: specs/<plan-name>/decisions.md`
+  - `TASKS_FILE: specs/<plan-name>/tasks.md`
+  - `ACCEPTANCE_FILE: specs/<plan-name>/acceptance-criteria.md`
+  - add `TEMPLATES_DIR: specs/_templates/`
+- **Delete the hard-coded formats**: remove the entire `## Plan Format` fenced block and the
+  `## Decision Log Format` fenced block. Replace with a short `## Output Files` section that
+  instructs: "Copy each template from `TEMPLATES_DIR`, fill every `<…>` micro-prompt and the
+  required `##` sections, and save to the matching per-plan path. Do not invent structure — the
+  templates are the single source of truth for section layout."
+- **Map content to files** (so the planner knows what goes where): spec.md = what/why + Tracking
+  - Codex records; tasks.md = phases/team/step-by-step tasks; acceptance-criteria.md = criteria +
+    validation commands; decisions.md = grilling record only.
+- **Retarget the Codex loop at `spec.md`**: in the `Codex Verification Loop` section, change
+  `<SPEC_PATH>` from `specs/<plan-name>/plan.md` to `specs/<plan-name>/spec.md`; update the
+  verdict grep to read `specs/<plan-name>/spec.md`; update the spec-review invocation prompt to
+  say "review the four-file plan-w-team spec under `specs/<plan-name>/` (spec.md is the entry
+  point)". The `## Codex Findings` section it appends to now lives in `spec.md`.
+- **Add the Status flip**: after a Codex `approved` verdict, edit `spec.md`'s `Status:` line to
+  `Approved`; if still `changes-requested` after 2 rounds, set it to `Needs Human Review`. Record
+  this as a step in the loop. This honors the "update the status to approved" requirement.
+- **Move the Codex Verification outcome to spec.md**: the loop writes the outcome summary +
+  rejected findings into spec.md's Claude-owned `## Codex Verification` section (NOT decisions.md,
+  NOT the Codex-owned `## Codex Findings`).
+- **Wire the Stop hook** in the command frontmatter `hooks:` block (alongside the existing
+  `PostToolUse` prettier hook):
+  ```yaml
+  Stop:
+    - hooks:
+        - type: command
+          command: '"$CLAUDE_PROJECT_DIR"/.claude/hooks/check-spec-completeness.sh'
+  ```
+- **Update Workflow step 10** ("Save Plan") to write all four files, and update the `Report`
+  block to list all four paths.
+- Leave the Grilling Protocol, GitHub Issue Tracking, Publish & Per-Phase Tracking, and Skill
+  Contracts sections intact except where they name `plan.md` (→ `spec.md`).
+
 ### 4. Enhance the spec-review skill
 
 - **Task ID**: enhance-spec-review
@@ -636,7 +636,7 @@ exit 0
 - **Agent Type**: general-purpose
 - **Parallel**: false
 - Run every command in the `Validation Commands` section below.
-- Verify each acceptance criterion (AC1–AC9) is met; report any failure loudly (do not mark
+- Verify each acceptance criterion (AC1–AC11) is met; report any failure loudly (do not mark
   complete on a partial pass).
 
 ## Acceptance Criteria
@@ -650,6 +650,8 @@ exit 0
 - **AC7** — No `plan.md` reference remains in `plan-w-team.md`, `build.md`, `ship.md`, `spec-review/SKILL.md`, `implementation-review/SKILL.md`, or `task-tools.md` (legacy fallback string in build.md excepted and explicitly commented).
 - **AC8** — `spec-review/SKILL.md` reads all four files (mentions `tasks.md` and `acceptance-criteria.md`) and includes the five-category lens table.
 - **AC9** — `spec-review/SKILL.md` still defines the `### Round N — Verdict: approved|changes-requested` contract under `## Codex Findings`.
+- **AC10** — `plan-w-team.md` frontmatter actually **wires** the Stop hook: it references `.claude/hooks/check-spec-completeness.sh` under a `Stop:` hook entry (not just describes it in prose).
+- **AC11** — `plan-w-team.md`'s Codex Verification Loop contains the **Status-flip** logic: it sets `spec.md`'s `Status:` to `Approved` on a Codex `approved` verdict and to `Needs Human Review` when still `changes-requested` after 2 rounds.
 
 ## Validation Commands
 
@@ -670,6 +672,8 @@ Execute these commands to validate the task is complete (run from the repo/workt
 - `for f in plan-w-team build ship; do grep -n 'plan\.md' ".claude/commands/$f.md"; done; grep -n 'plan\.md' .agents/skills/spec-review/SKILL.md .agents/skills/implementation-review/SKILL.md .claude/rules/task-tools.md` — AC7: should print nothing except any explicitly-commented legacy fallback in build.md.
 - `grep -q 'tasks.md' .agents/skills/spec-review/SKILL.md && grep -q 'acceptance-criteria.md' .agents/skills/spec-review/SKILL.md && grep -qi 'YAGNI' .agents/skills/spec-review/SKILL.md && echo OK` — AC8.
 - `grep -q 'Round N — Verdict' .agents/skills/spec-review/SKILL.md && echo OK` — AC9.
+- `grep -q 'check-spec-completeness.sh' .claude/commands/plan-w-team.md && grep -qE '^\s*Stop:' .claude/commands/plan-w-team.md && echo OK` — AC10: hook is wired in frontmatter, not just described.
+- `grep -q 'Needs Human Review' .claude/commands/plan-w-team.md && grep -qE 'Status:.*Approved|flip .*Status|Status.* to .*Approved' .claude/commands/plan-w-team.md && echo OK` — AC11: Status-flip logic present in the Codex loop.
 
 ## Notes
 
@@ -688,3 +692,8 @@ Execute these commands to validate the task is complete (run from the repo/workt
 ## Codex Findings
 
 _Pending Codex review. Codex-owned (the spec-review skill); Claude must not edit this section._
+
+### Round 1 — Verdict: changes-requested
+
+- **Task 2 is blocked by a later step while the plan requires top-to-bottom execution.** The Step by Step Tasks section says to execute every step in order, but Task 2 (`refactor-command`) depends on `add-stop-hook`, which is Task 3. A builder following the written order cannot start Task 2 before Task 3 exists. Recommend: move "Add the blocking Stop hook" before "Refactor the /plan-w-team command", or change the task execution instructions so execution follows dependencies after all `TaskCreate` calls are created.
+- **Acceptance criteria do not verify two load-bearing command behaviors.** The Objective and Task 2 require the Stop hook to be wired in `plan-w-team.md` frontmatter and require the Codex loop to flip `spec.md` Status to `Approved` or `Needs Human Review`, but AC4-AC6 only check variables, standalone hook behavior, and `spec.md` targeting. A build could pass the listed validation commands with the hook unwired or the Status flip omitted. Recommend: add or extend acceptance criteria and validation commands to grep `plan-w-team.md` for the `Stop:` hook wiring to `.claude/hooks/check-spec-completeness.sh` and for the Status update logic in the Codex loop.
