@@ -58,18 +58,25 @@ Run these to prove the criteria above. Map each command to the criteria it verif
 - Count the Codex subagents — verifies **AC5**. A pass prints `6`:
   - `ls .codex/agents/*.toml | wc -l | tr -d ' '`
 
-- Validate every subagent TOML + required keys — verifies **AC5, AC9**. A pass prints
-  `all TOMLs valid with required keys`:
+- Validate every subagent TOML + required keys + read-only sandbox — verifies
+  **AC5, AC9**. A pass prints `all TOMLs valid with required keys + read-only`:
   ```
   uv run python - <<'PY'
   import tomllib, glob
   req = {"name", "description", "developer_instructions"}
   files = sorted(glob.glob(".codex/agents/*.toml"))
   assert len(files) == 6, f"expected 6, found {len(files)}"
-  bad = [(f, req - tomllib.load(open(f, "rb")).keys()) for f in files
-         if req - tomllib.load(open(f, "rb")).keys()]
-  assert not bad, f"missing keys: {bad}"
-  print("all TOMLs valid with required keys")
+  problems = []
+  for f in files:
+      with open(f, "rb") as fh:
+          data = tomllib.load(fh)          # load each TOML once
+      missing = req - data.keys()
+      if missing:
+          problems.append((f, f"missing keys: {sorted(missing)}"))
+      if data.get("sandbox_mode") != "read-only":
+          problems.append((f, f'sandbox_mode={data.get("sandbox_mode")!r} (want "read-only")'))
+  assert not problems, f"invalid TOMLs: {problems}"
+  print("all TOMLs valid with required keys + read-only")
   PY
   ```
 
@@ -110,18 +117,38 @@ Run these to prove the criteria above. Map each command to the criteria it verif
     && echo "impl-review OK"
   ```
 
+- Every committed review target pins the base diff — verifies **AC5, AC6**. The
+  `implementation-review` orchestrator skill and all 6 review-subagent TOMLs must name
+  `git diff origin/main...HEAD` as the primary review target. A pass prints
+  `review-target OK`:
+  ```
+  target='origin/main...HEAD'
+  files=(.agents/skills/implementation-review/SKILL.md .codex/agents/*.toml)
+  n=${#files[@]}
+  [ "$n" -eq 7 ] || { echo "FAIL: expected 7 review-target files (1 skill + 6 TOMLs), found $n"; exit 1; }
+  ok=0
+  for f in "${files[@]}"; do
+    grep -qF "$target" "$f" && ok=$((ok+1)) || echo "FAIL: $target missing in $f"
+  done
+  [ "$ok" -eq "$n" ] && echo "review-target OK ($ok/$n pin $target)" || { echo "review-target FAIL"; exit 1; }
+  ```
+
 - `build.md` enters the worktree before resolving the spec — verifies **AC1, AC8**. A
   pass prints `worktree-first OK …`:
   ```
   uv run python - <<'PY'
   import re
   lines = open(".claude/commands/build.md").read().splitlines()
-  first = lambda pat: next((i for i, l in enumerate(lines) if re.search(pat, l, re.I)), None)
-  wt = first(r"EnterWorktree|\.claude/worktrees/\*|autodiscover")
-  spec = first(r"resolve.*spec\.md|specs/<[^>]+>/spec\.md|read .*\bspec\.md")
-  assert wt is not None and spec is not None, f"missing markers wt={wt} spec={spec}"
-  assert wt < spec, f"worktree step (line {wt}) must precede spec resolution (line {spec})"
-  print(f"worktree-first OK (worktree@{wt} < spec@{spec})")
+  first = lambda pat: next((i for i, l in enumerate(lines) if re.search(pat, l)), None)
+  # Anchor to the ACTUAL bootstrap step: the real EnterWorktree(...) call that enters the
+  # worktree, and the line that resolves spec.md AS the plan (PLAN = ...spec.md) — NOT the
+  # Variables/prose mentions of "worktree"/"autodiscover" or the autodiscover glob.
+  wt = first(r"EnterWorktree\(")
+  spec = first(r"PLAN\s*=.*spec\.md")
+  assert wt is not None, "no real EnterWorktree( call found in build.md"
+  assert spec is not None, "no 'PLAN = ...spec.md' resolution step found in build.md"
+  assert wt < spec, f"EnterWorktree step (line {wt}) must precede spec resolution (line {spec})"
+  print(f"worktree-first OK (EnterWorktree@{wt} < spec-resolution@{spec})")
   PY
   ```
 
