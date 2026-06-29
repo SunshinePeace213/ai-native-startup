@@ -1,0 +1,9 @@
+# Project-local Codex config for the /build multi-layer review pipeline.
+# The implementation-review orchestrator spawns the 6 read-only review subagents
+# defined in .codex/agents/*.toml.
+
+[agents]
+# These are the Codex defaults, pinned here explicitly because they already fit
+# this design exactly: 6 review subagents, no nested spawning.
+max_threads = 6
+max_depth = 1
