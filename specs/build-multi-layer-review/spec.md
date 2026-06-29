@@ -1,7 +1,7 @@
 # Spec: Multi-Layer Review Pipeline for /build
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
   <!-- Lifecycle, set by /plan-w-team: Drafted for Review → Approved (after a Codex `approved`
        verdict) → Needs Human Review (still changes-requested after 2 Codex rounds). One value only. -->
 
@@ -238,14 +238,16 @@ Use these files to complete the task:
 <!-- CODEX-OWNED. Written only by the spec-review skill (one `### Round N — Verdict: …` block per
      round). Claude must NEVER edit this section. -->
 
-_Pending Codex review._
+### Round 1 — Verdict: approved
+
+The spec meets the blocking-issue bar with no blocking findings this round.
 
 ## Codex Verification
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** _pending Codex spec-review_
-- **Rejected findings:** _none yet_
+- **Outcome:** approved at round 1
+- **Rejected findings:** none — Codex approved with no blocking findings
 
 ## References
 
@@ -265,4 +267,4 @@ specs/build-multi-layer-review/
 - [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
 - [x] Acceptance criteria are specific and testable
 - [x] All four files exist under specs/build-multi-layer-review/ and are saved in the repository
-- [ ] Codex has reviewed the spec and Status reflects the outcome
+- [x] Codex has reviewed the spec and Status reflects the outcome
