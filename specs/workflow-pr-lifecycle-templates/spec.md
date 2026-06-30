@@ -1,7 +1,7 @@
 # Spec: Unify the lifecycle on one PR + standardize workflow templates
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Needs Human Review
   <!-- Lifecycle, set by /plan-w-team: Drafted for Review → Approved (after a Codex `approved`
        verdict) → Needs Human Review (still changes-requested after 2 Codex rounds). One value only. -->
 
@@ -196,8 +196,16 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** <approved at round N | proceeded without full approval after 2 rounds | skipped — Codex unavailable>
-- **Rejected findings:** <any Codex finding Claude chose not to act on, each with a one-line rationale; "none" if all warranted findings were applied>
+- **Outcome:** proceeded without full approval after 2 rounds. Codex returned
+  `changes-requested` both rounds; every finding concerned the **strength of the
+  validation commands** (AC2/AC4/AC5), not the plan's substance. Claude applied all of
+  them: round 1 hardened AC2 (require the **Ship** transition in `build.md`), AC4 (widen
+  scope to `GIT-COMMIT-PR-MESSAGE.md` + the catalog), and AC5 (resume + fallback). The
+  round-2 best-effort final pass hardened them further — AC4 now flags any `#<digit>`
+  except the allowed `Closes/Refs/Part of #N`, and AC5 now awk-inspects **every**
+  `gh pr create` in `build.md` for a fallback marker. The residual round-2 findings are
+  addressed by that final pass; human review only needs to confirm the two hardened checks.
+- **Rejected findings:** none — all warranted findings were applied across both rounds.
 
 ## References
 
