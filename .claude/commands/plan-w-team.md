@@ -174,7 +174,11 @@ git push -u origin HEAD:refs/heads/<type>/<N>-<slug>        # pushes plan commit
 
 ### Update the issue's "Link to plan" with accessible URLs (right after the first push) — body-sync touchpoint (1)
 
-Once the branch + files exist on origin, this `gh issue edit --body-file <updated-body>` writes the COMPLETE `epic-spec.md` body skeleton — ALL sections (Objective, Non-Goals, `## Lifecycle` with ▲ at **Plan**, `## Link to plan` filled with the four path-as-text links, `## Spec-review status` seeded at `_pending_` / `Drafted for Review`, `## Acceptance criteria` pointer, Open Questions, How to act) — not just the two link sections. (The `gh issue create --body "<objective + placeholder>"` at create time seeds only a minimal body and `--body` overrides `--template`, so the created issue has none of these sections yet.) This PUBLISH-time edit seeds the full structured skeleton, which the per-round body-sync touchpoints (2)/(3) then overwrite in place — so it establishes the precondition those touchpoints depend on. For the `## Link to plan` and `## Acceptance criteria` sections specifically, use **path-as-text markdown links** — the **display text is the repo path** (`specs/<plan-name>/spec.md`) and the **href is the blob URL on the convention branch** so it resolves pre-merge (never against `main`, where the plan files don't exist until merge, so a bare repo-relative path 404s). Never show a bare repo-relative path and never show the raw URL as the display text. Link all four plan files; point Acceptance criteria at `acceptance-criteria.md`. This is **body-sync touchpoint (1)**; graceful-skip the `gh issue edit` if `gh`/remote is unavailable (see `Graceful skip`).
+Once the branch + files exist on origin, this `gh issue edit --body-file <updated-body>` is **body-sync touchpoint (1)** — the PUBLISH-time seed of the issue body:
+
+- **Seed the full skeleton.** Write the COMPLETE `epic-spec.md` body skeleton — ALL sections (Objective, Non-Goals, `## Lifecycle` with ▲ at **Plan**, `## Link to plan` filled with the four links, `## Spec-review status` seeded at `_pending_` / `Drafted for Review`, `## Acceptance criteria` pointer, Open Questions, How to act) — not just the two link sections. (`gh issue create --body "<objective + placeholder>"` at create time seeds only a minimal body and `--body` overrides `--template`, so the created issue has none of these sections yet.) This establishes the precondition the per-round touchpoints (2)/(3) depend on — they overwrite these sections in place.
+- **Path-as-text link rules.** For the `## Link to plan` and `## Acceptance criteria` sections, use **path-as-text markdown links** — the **display text is the repo path** (`specs/<plan-name>/spec.md`) and the **href is the blob URL on the convention branch** so it resolves pre-merge (never against `main`, where the plan files don't exist until merge, so a bare repo-relative path 404s). Never show a bare repo-relative path and never show the raw URL as the display text. Link all four plan files; point Acceptance criteria at `acceptance-criteria.md`.
+- **Graceful-`gh` skip.** Skip the `gh issue edit` if `gh`/remote is unavailable (see `Graceful skip`).
 
 ```
 gh issue edit <N> --body-file <updated-body>
@@ -254,7 +258,6 @@ gh issue edit <N> --body-file <updated-body>   # overwrite ONLY the `## Spec-rev
 
 - This is **body-sync touchpoint (2)**.
 - The split is explicit: **comment = history (appended)**, **body `## Spec-review status` = state (overwritten)**. The comment thread grows one entry per round; the body block is replaced **in place / idempotently** so re-running a round never appends a duplicate `## Spec-review status` block.
-- The `gh issue comment` builds a single chronological spec-review audit trail on the issue; the `gh issue edit` keeps the body's state mirror current.
 - Never block the loop on a failed or unavailable `gh` call — warn and continue, graceful-skipping the `gh issue edit` the same way (mirrors the graceful `gh` skip in `GitHub Issue Tracking`).
 
 ### Canonical issue snippets (reproduce exactly)
