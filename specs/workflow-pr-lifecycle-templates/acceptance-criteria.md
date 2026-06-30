@@ -11,9 +11,9 @@
   Codex relay (spec→issue **and** impl→PR), Claude→Codex invocation prompts, Codex→Claude
   verdict format, and the `/build` + `/ship` report layouts.
 - **AC2** — The issue Lifecycle marker advances end-to-end: `plan-w-team.md` advances it to
-  **Approved** on a Codex `approved` settle (as today), `build.md` instructs advancing it to
-  **Build**, and `ship.md` instructs advancing it to **Done**. No command leaves the spine
-  frozen at "Approved" through build/ship.
+  **Approved** on a Codex `approved` settle (as today); `build.md` instructs advancing it to
+  **Build** at build start **and** to **Ship** at hand-off (Phase 6); and `ship.md` instructs
+  advancing it to **Done**. No command leaves the spine frozen at "Approved" through build/ship.
 - **AC3** — `plan-w-team.md` opens a **draft PR at plan time** (a `gh pr create --draft`
   step after the first plan push) seeded with the unified body skeleton, and writes the
   spec-review verdict into the PR body's `## Spec-review status` block while keeping the
@@ -22,8 +22,9 @@
   IDs, each `satisfies AC#`) and contains **no bare `#<number>`** in any PR template or in
   the manifest description; `Closes #N` remains the only GitHub reference.
 - **AC5** — `build.md` Phase 1 **resumes** the existing draft PR (with a documented
-  fallback-create when absent) and **never opens a second PR**; its per-phase comments
-  reference the catalog rather than inlining ad-hoc bodies.
+  fallback-create when absent) and **never opens a second PR** — Phase 1 no longer defaults
+  to `gh pr create`; its per-phase comments reference the catalog rather than inlining
+  ad-hoc bodies.
 - **AC6** — The Codex `implementation-review` relay to the PR uses a canonical comment
   defined in the catalog, at parity with the spec-review issue snippet (verdict line +
   blocking-finding count + fixes-this-round + a clickable Full-detail pointer).
@@ -41,10 +42,10 @@ from the repo/worktree root.
 
 - `test -f WORKFLOW-TEMPLATES.md && grep -q 'WORKFLOW-TEMPLATES.md' AGENTS.md && echo PASS` — verifies **AC1** (catalog exists + cited). Pass = prints `PASS`.
 - `for s in "PR body" "Lifecycle" "Spec-review status" "Build Status" "Agent Task Manifest" "invocation" "Verdict"; do grep -qi "$s" WORKFLOW-TEMPLATES.md || echo "MISSING: $s"; done` — verifies **AC1** (catalog section coverage). Pass = no `MISSING:` lines.
-- `grep -Eqi 'Build\b' .claude/commands/build.md && grep -Eqi 'Done\b' .claude/commands/ship.md && grep -qi 'Approved' .claude/commands/plan-w-team.md && echo PASS` — verifies **AC2** (each command advances its lifecycle node). Pass = `PASS`.
+- `grep -qF '**Build**' .claude/commands/build.md && grep -qF '**Ship**' .claude/commands/build.md && grep -qF '**Done**' .claude/commands/ship.md && grep -qi 'Approved' .claude/commands/plan-w-team.md && echo PASS` — verifies **AC2** (`build.md` advances the issue to **Build** at start **and** **Ship** at hand-off; `ship.md` to **Done**; `plan-w-team.md` to Approved). Pass = `PASS`.
 - `grep -q 'gh pr create --draft' .claude/commands/plan-w-team.md && grep -qi 'Spec-review status' .claude/commands/plan-w-team.md && echo PASS` — verifies **AC3** (PR opened at plan time + PR spec-review mirror). Pass = `PASS`.
-- `! grep -rEn '#<taskId>|#[0-9]+ <subject>' .github/PULL_REQUEST_TEMPLATE/ && echo PASS` — verifies **AC4** (no false-link manifest format in PR templates). Pass = `PASS` with no matches.
-- `grep -Eqi 'resume( the| the existing)? .*draft PR|resume the existing' .claude/commands/build.md && echo PASS` — verifies **AC5** (build resumes the PR). Pass = `PASS`.
+- `! grep -rEn '^- \[[ x]\] .*#[0-9]|#<taskId>' .github/PULL_REQUEST_TEMPLATE/ GIT-COMMIT-PR-MESSAGE.md WORKFLOW-TEMPLATES.md && echo PASS` — verifies **AC4** (no manifest checklist line carries a bare `#<number>` in any PR template, the manifest description in `GIT-COMMIT-PR-MESSAGE.md`, or the catalog; the non-checklist `Closes #N` / `Refs #N` lines are preserved). Pass = `PASS` with no matches.
+- `grep -qi 'resume' .claude/commands/build.md && ! grep -qi 'Open exactly ONE draft PR' .claude/commands/build.md && grep -Eqi 'fallback-create|fallback[ -].*create|create.*fallback' .claude/commands/build.md && echo PASS` — verifies **AC5** (Phase 1 resumes the existing PR, the old unconditional "Open exactly ONE draft PR" default is gone, and any `gh pr create` is documented as fallback-only). Pass = `PASS`.
 - `grep -qi 'implementation-review' WORKFLOW-TEMPLATES.md && grep -qi 'parity\|impl-review relay\|Codex review R' WORKFLOW-TEMPLATES.md && echo PASS` — verifies **AC6** (impl-review relay canonicalized). Pass = `PASS`.
 - `! grep -n 'epic-plan' GIT-COMMIT-PR-MESSAGE.md && ! grep -n 'specs/<feature>/plan.md' GIT-COMMIT-PR-MESSAGE.md && ! grep -n 'Workstream C' .claude/commands/ship.md && grep -q "plan.md" .claude/commands/build.md && echo PASS` — verifies **AC7** (stale refs gone, legacy fallback retained). Pass = `PASS`.
 - `for f in .claude/commands/plan-w-team.md .claude/commands/build.md .claude/commands/ship.md .agents/skills/spec-review/SKILL.md .agents/skills/implementation-review/SKILL.md; do grep -q 'WORKFLOW-TEMPLATES.md' "$f" || echo "NO REF: $f"; done` — verifies **AC8** (all five reference the catalog). Pass = no `NO REF:` lines.
