@@ -108,7 +108,9 @@ Use these files to complete the task:
 <!-- CODEX-OWNED. Written only by the spec-review skill (one `### Round N — Verdict: …` block per
      round). Claude must NEVER edit this section. -->
 
-_Pending Codex review._
+### Round 1 — Verdict: changes-requested
+
+- **AC6 cannot pass as written because its grep includes the plan docs that intentionally mention `epic-plan.md`.** Acceptance criteria AC6 says no file under `.github/`, `.claude/`, `.agents/`, or `specs/` may reference the old filename, and its validation command runs `grep -rn 'epic-plan.md' .github .claude .agents specs`; however `spec.md`, `tasks.md`, and `acceptance-criteria.md` themselves use `epic-plan.md` to describe the required rename and old-filename cleanup. `/build` would either fail validation or have to edit the plan artifacts beyond the implementation scope. Recommend: in `acceptance-criteria.md` AC6 and its validation command, scope the stale-reference check to implementation/runtime files only (for example `.github`, `.claude`, and `.agents`, or explicitly exclude this plan folder), while allowing the plan documents to mention the source filename as historical context.
 
 ## Codex Verification
 
