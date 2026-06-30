@@ -1,7 +1,7 @@
 # Spec: Standardize /plan-w-team issue tracking
 
 - **Owner:** @ringo
-- **Status:** Drafted for Review
+- **Status:** Approved
   <!-- Lifecycle, set by /plan-w-team: Drafted for Review → Approved (after a Codex `approved`
        verdict) → Needs Human Review (still changes-requested after 2 Codex rounds). One value only. -->
 
@@ -112,12 +112,16 @@ Use these files to complete the task:
 
 - **AC6 cannot pass as written because its grep includes the plan docs that intentionally mention `epic-plan.md`.** Acceptance criteria AC6 says no file under `.github/`, `.claude/`, `.agents/`, or `specs/` may reference the old filename, and its validation command runs `grep -rn 'epic-plan.md' .github .claude .agents specs`; however `spec.md`, `tasks.md`, and `acceptance-criteria.md` themselves use `epic-plan.md` to describe the required rename and old-filename cleanup. `/build` would either fail validation or have to edit the plan artifacts beyond the implementation scope. Recommend: in `acceptance-criteria.md` AC6 and its validation command, scope the stale-reference check to implementation/runtime files only (for example `.github`, `.claude`, and `.agents`, or explicitly exclude this plan folder), while allowing the plan documents to mention the source filename as historical context.
 
+### Round 2 — Verdict: approved
+
+The spec meets the blocking-review bar with no blocking findings this round.
+
 ## Codex Verification
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** <approved at round N | proceeded without full approval after 2 rounds | skipped — Codex unavailable>
-- **Rejected findings:** <any Codex finding Claude chose not to act on, each with a one-line rationale; "none" if all warranted findings were applied>
+- **Outcome:** approved at round 2 (round 1 raised 1 blocking finding; applied; round 2 clean).
+- **Rejected findings:** none — the single round-1 finding (AC6's stale-reference grep included the plan folder, which legitimately documents the rename) was applied by scoping AC6 + its validation command to the runtime surfaces `.github` / `.claude` / `.agents`.
 
 ## References
 
