@@ -10,7 +10,7 @@
 - **AC3** — `.claude/commands/plan-w-team.md` references `epic-spec.md` (and no longer `epic-plan.md`), standardizes the issue title as `📋 epic: <…>`, instructs path-as-text markdown plan links (not bare URLs / not `plan.md`), and documents all three body-sync touchpoints (publish-fill, per-round Spec-review-status update, loop-settle Status + Lifecycle), each with a graceful-`gh` skip.
 - **AC4** — `.claude/commands/plan-w-team.md` contains both canonical snippets: the verdict relay-comment block (header `### 🔍 Codex spec-review — Round N`) and the `## Spec-review status` state-mirror block (the `Latest verdict` / `Status` / `History` lines).
 - **AC5** — All eight `.github/PULL_REQUEST_TEMPLATE/*.md` seed the identical 7-item Build Status — `Implementation`, `Internal check`, `Claude code review`, `Codex review R1`, `Fixes`, `Codex review R2`, `Result` — with no 5-item list remaining.
-- **AC6** — No file under `.github/`, `.claude/`, `.agents/`, or `specs/` references the old filename `epic-plan.md`; `config.yml` is unchanged and still references only `feature.md`/`bug.md`.
+- **AC6** — No **runtime/implementation** file references the old filename `epic-plan.md`: the stale-reference check covers `.github/`, `.claude/`, and `.agents/` only (the plan folder `specs/plan-w-team-issue-tracking/` legitimately mentions `epic-plan.md` as historical context describing the rename, so it is excluded by design). `config.yml` is unchanged and still references only `feature.md`/`bug.md`.
 
 ## Validation Commands
 
@@ -26,5 +26,5 @@ Run these from the worktree root. Map each command to the criteria it verifies.
 - `grep -qiE 'Spec-review status' .claude/commands/plan-w-team.md && grep -qiE 'path-as-text|display text' .claude/commands/plan-w-team.md && echo "AC3 touchpoints OK"` — verifies **AC3** the body-sync + link instructions are present.
 - `grep -q '### 🔍 Codex spec-review — Round' .claude/commands/plan-w-team.md && echo "AC4 relay-comment OK"` — verifies **AC4** the relay-comment snippet.
 - `for f in .github/PULL_REQUEST_TEMPLATE/chore.md docs.md feat.md fix.md perf.md refactor.md style.md test.md; do c=$(grep -cE '^- \[ \] (Implementation|Internal check|Claude code review|Codex review R1|Fixes|Codex review R2|Result)$' ".github/PULL_REQUEST_TEMPLATE/$(basename $f)"); echo "$f=$c"; done` — verifies **AC5**: every file must print `=7`.
-- `! grep -rn 'epic-plan.md' .github .claude .agents specs 2>/dev/null && echo "AC6 no-dangling-ref OK"` — verifies **AC6** no stale filename reference anywhere.
+- `! grep -rn 'epic-plan.md' .github .claude .agents 2>/dev/null && echo "AC6 no-dangling-ref OK"` — verifies **AC6** no stale filename reference in the runtime surfaces (the plan folder is intentionally excluded — it documents the rename).
 - `grep -q 'feature.md' .github/ISSUE_TEMPLATE/config.yml && ! grep -q 'epic-plan' .github/ISSUE_TEMPLATE/config.yml && echo "AC6 config OK"` — verifies **AC6** `config.yml` untouched/clean.
