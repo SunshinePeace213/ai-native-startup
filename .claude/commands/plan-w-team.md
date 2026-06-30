@@ -114,12 +114,13 @@ After the Grilling Protocol sign-off, once the plan title and objective are know
 gh label create epic         --color … --description … --force
 gh label create <type-label> --color … --description … --force
 # 2. create the issue
-gh issue create --template "Epic / Plan" --title "<plan title>" --body "<objective + a placeholder link to specs/<plan-name>/spec.md>"
+gh issue create --template "Epic / Plan" --title "📋 epic: <descriptive core title>" --body "<objective + a placeholder link to specs/<plan-name>/spec.md>"
 # 3. apply assignee + labels AFTER create, so a missing label can't abort the create
 gh issue edit <N> --add-assignee @me --add-label epic --add-label <type-label>
 ```
 
-- Title = the plan title. Body = the objective plus a placeholder link to `specs/<plan-name>/spec.md`; the link is updated to accessible blob URLs once `spec.md` is pushed (see `Publish & Per-Phase Tracking`).
+- Title = `📋 epic: <descriptive core title>` — the `📋 epic:` prefix is standardized here in the create step (the frontmatter `title:` prefix only auto-applies in the web UI, not via `gh issue create --title`). Body = the objective plus a placeholder link to `specs/<plan-name>/spec.md`; the link is updated to accessible blob URLs once `spec.md` is pushed (see `Publish & Per-Phase Tracking`).
+- The template lives at `.github/ISSUE_TEMPLATE/epic-spec.md`; `--template "Epic / Plan"` is matched by the frontmatter `name:` field, so the file rename does not change the flag.
 - Create exactly one issue per plan — its number `#N` is the durable join key for the whole workflow.
 - **Assignee + labels**: every epic issue is assigned to the human owner (`--assignee @me`) and labelled `epic` + the branch-`<type>` label.
 - **`<type>`→label mapping**: `feat→enhancement`, `fix→bug`, `docs→documentation`; `chore`/`refactor`/`perf`/`style`/`test` are same-named; plus `epic` for plan issues.
@@ -171,15 +172,22 @@ git push -u origin HEAD:refs/heads/<type>/<N>-<slug>        # pushes plan commit
 - **Branch linkage stays Option B**: the mangled local worktree branch is kept; the clean convention name is enforced only on the remote ref via `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>`. The Worktree Rule docs are unchanged.
 - If the branch was already pushed UNLINKED, the only retrofit is a destructive delete+recreate of the remote branch at the same SHA — gate that on EXPLICIT user approval.
 
-### Update the issue's "Link to plan" with accessible URLs (right after the first push)
+### Update the issue's "Link to plan" with accessible URLs (right after the first push) — body-sync touchpoint (1)
 
-Once the branch + files exist on origin, rewrite the issue body's plan/decisions references to full, clickable blob URLs on the convention branch — NEVER bare repo-relative paths (those resolve against `main`, where the plan files don't exist until merge, so they 404):
+Once the branch + files exist on origin, this `gh issue edit --body-file <updated-body>` is **body-sync touchpoint (1)** — the PUBLISH-time seed of the issue body:
+
+- **Seed the full skeleton.** Write the COMPLETE `epic-spec.md` body skeleton — ALL sections (Objective, Non-Goals, `## Lifecycle` with ▲ at **Plan**, `## Link to plan` filled with the four links, `## Spec-review status` seeded at `_pending_` / `Drafted for Review`, `## Acceptance criteria` pointer, Open Questions, How to act) — not just the two link sections. (`gh issue create --body "<objective + placeholder>"` at create time seeds only a minimal body and `--body` overrides `--template`, so the created issue has none of these sections yet.) This establishes the precondition the per-round touchpoints (2)/(3) depend on — they overwrite these sections in place.
+- **Path-as-text link rules.** For the `## Link to plan` and `## Acceptance criteria` sections, use **path-as-text markdown links** — the **display text is the repo path** (`specs/<plan-name>/spec.md`) and the **href is the blob URL on the convention branch** so it resolves pre-merge (never against `main`, where the plan files don't exist until merge, so a bare repo-relative path 404s). Never show a bare repo-relative path and never show the raw URL as the display text. Link all four plan files; point Acceptance criteria at `acceptance-criteria.md`.
+- **Graceful-`gh` skip.** Skip the `gh issue edit` if `gh`/remote is unavailable (see `Graceful skip`).
 
 ```
 gh issue edit <N> --body-file <updated-body>
-# links like:
-#   https://github.com/<owner>/<repo>/blob/<type>/<N>-<slug>/specs/<plan-name>/spec.md
-#   https://github.com/<owner>/<repo>/blob/<type>/<N>-<slug>/specs/<plan-name>/decisions.md
+# ## Link to plan — one path-as-text link per plan file:
+#   - Spec: [specs/<plan-name>/spec.md](https://github.com/<owner>/<repo>/blob/<type>/<N>-<slug>/specs/<plan-name>/spec.md)
+#   - Tasks: [specs/<plan-name>/tasks.md](https://github.com/<owner>/<repo>/blob/<type>/<N>-<slug>/specs/<plan-name>/tasks.md)
+#   - Acceptance: [specs/<plan-name>/acceptance-criteria.md](https://github.com/<owner>/<repo>/blob/<type>/<N>-<slug>/specs/<plan-name>/acceptance-criteria.md)
+#   - Decisions: [specs/<plan-name>/decisions.md](https://github.com/<owner>/<repo>/blob/<type>/<N>-<slug>/specs/<plan-name>/decisions.md)
+# ## Acceptance criteria — a pointer to acceptance-criteria.md (NOT a mirrored checklist)
 ```
 
 A commit-pinned permalink (`/blob/<commit-sha>/…`) is acceptable for post-merge durability; a branch URL is preferred while the work is in review because it always shows the latest.
@@ -232,16 +240,55 @@ grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<pl
 
 (The dash is a literal em-dash, U+2014.)
 
-### Relay the verdict to the issue
+### Relay the verdict to the issue — body-sync touchpoint (2)
 
-After reading each round's verdict, relay it to the tracking issue with `gh issue comment` — ONLY when an issue number exists in the `## Tracking` block (skip entirely when it reads `Issue: none — gh unavailable`):
+After reading each round's verdict, do TWO things — ONLY when an issue number exists in the `## Tracking` block (skip both entirely when it reads `Issue: none — gh unavailable`):
+
+1. **Append the HISTORY** — relay the round to the tracking issue with `gh issue comment`, using the canonical Verdict relay-comment from `Canonical issue snippets` below:
 
 ```
-gh issue comment <N> --body "<the round verdict + Codex findings + the fixes Claude applied this round>"
+gh issue comment <N> --body "<the canonical Verdict relay-comment for this round>"
 ```
 
-- This builds a single chronological spec-review audit trail on the issue.
-- Never block the loop on a failed or unavailable `gh` call — warn and continue (mirrors the graceful `gh` skip in `GitHub Issue Tracking`).
+2. **Overwrite the STATE** — then `gh issue edit <N> --body-file <updated-body>` to overwrite the issue body's `## Spec-review status` block with the canonical `## Spec-review status` state-mirror snippet from `Canonical issue snippets` below:
+
+```
+gh issue edit <N> --body-file <updated-body>   # overwrite ONLY the `## Spec-review status` block in place
+```
+
+- This is **body-sync touchpoint (2)**.
+- The split is explicit: **comment = history (appended)**, **body `## Spec-review status` = state (overwritten)**. The comment thread grows one entry per round; the body block is replaced **in place / idempotently** so re-running a round never appends a duplicate `## Spec-review status` block.
+- Never block the loop on a failed or unavailable `gh` call — warn and continue, graceful-skipping the `gh issue edit` the same way (mirrors the graceful `gh` skip in `GitHub Issue Tracking`).
+
+### Canonical issue snippets (reproduce exactly)
+
+Reproduce BOTH blocks exactly — the first is the per-round `gh issue comment` body (HISTORY, appended once per round), the second is the issue-body `## Spec-review status` block (STATE, overwritten in place each round).
+
+**(a) Verdict relay-comment** — the per-round `gh issue comment` body (HISTORY):
+
+```
+### 🔍 Codex spec-review — Round <N> · <approved | changes-requested>
+
+**Blocking findings:** <count, or "none">
+
+- <one bullet per blocking finding — title + one-line summary, or "—">
+
+**Claude this round:** <the fixes Claude applied this round, or "no changes — approved">
+
+Full detail: [spec.md › ## Codex Findings](https://github.com/<owner>/<repo>/blob/<type>/<N>-<slug>/specs/<plan-name>/spec.md#codex-findings)
+```
+
+**(b) `## Spec-review status` state-mirror** — the issue-body block overwritten each round (STATE):
+
+```
+## Spec-review status
+
+- Latest verdict: <approved | changes-requested> (round <N>)
+- Status: <Drafted for Review | Approved ✅ | Needs Human Review ⚠️>
+- History: see thread ↓
+```
+
+- The relay-comment's `Full detail` pointer is a **clickable markdown link** to `spec.md`'s Codex Findings section via the `#codex-findings` heading anchor on the convention branch — NOT plain text.
 
 ### Commit + push after each round (per-phase tracking)
 
@@ -260,6 +307,16 @@ Once the loop settles, Claude writes the result into `spec.md`'s Claude-owned `#
 - Codex returned `approved` → set the `Status:` line to `Approved`.
 - still `changes-requested` after 2 rounds → set the `Status:` line to `Needs Human Review`.
 - Codex was skipped (unavailable) → leave the `Status:` line at `Drafted for Review`.
+
+Then — **body-sync touchpoint (3)** — once the loop settles, in addition to flipping `spec.md`'s `Status:` line, also `gh issue edit <N> --body-file <updated-body>` the issue body to (a) set the `## Spec-review status` `Status` line and (b) advance the `## Lifecycle` ▲ marker to the settled phase:
+
+- Codex returned `approved` → `## Spec-review status` Status `Approved ✅` and `## Lifecycle` ▲ advanced to **Approved**.
+- still `changes-requested` after 2 rounds → Status `Needs Human Review ⚠️`, but the `## Lifecycle` ▲ marker STAYS at **Spec-review** (the phase the plan is stuck in).
+- Codex was skipped (unavailable) → leave the ▲ marker at **Plan**/Drafted for Review (no advance).
+
+The `## Lifecycle` ▲ marker only ever points at one of the six real Lifecycle nodes (`Plan ▸ Spec-review ▸ Approved ▸ Build ▸ Ship ▸ Done`) — "Needs Human Review" is a Status, not a Lifecycle phase, so it never appears under the ▲.
+
+Graceful-skip this `gh issue edit` if `gh`/remote is unavailable (mirrors the graceful `gh` skip in `GitHub Issue Tracking`).
 
 ## Skill Contracts (spec-review / implementation-review)
 

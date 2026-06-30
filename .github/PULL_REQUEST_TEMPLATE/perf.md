@@ -50,6 +50,8 @@ Closes #<issue>
 <!-- Checked off live by /build as each phase completes. -->
 
 - [ ] Implementation
+- [ ] Internal check
+- [ ] Claude code review
 - [ ] Codex review R1
 - [ ] Fixes
 - [ ] Codex review R2
