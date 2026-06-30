@@ -26,8 +26,12 @@ We discussed how to maximize GitHub Issue tracking across the `/plan-w-team` lif
   - **Why:** User preference; noted that the `epic` label also carries type, but the prefix stays.
 
 - **Q:** How should the "Link to plan" render?
-  - **A:** Path-as-text markdown links — display text is the repo path (`specs/<name>/spec.md`), href is the blob URL on the convention branch. Two links (spec.md + decisions.md); spec.md's `## References` tree covers tasks/acceptance.
-  - **Why:** Readable (no raw URL shown) but clickable; convention-branch href avoids a pre-merge 404 against `main`.
+  - **A:** Path-as-text markdown links — display text is the repo path (`specs/<name>/spec.md`), href is the blob URL on the convention branch. Link **all four** plan files (spec.md, tasks.md, acceptance-criteria.md, decisions.md), each its own entry.
+  - **Why:** Readable (no raw URL shown) but clickable; convention-branch href avoids a pre-merge 404 against `main`. (Revised from an earlier "two links + rely on spec.md's References tree" — the user asked that the issue surface all four files directly, so a reader needn't open spec.md to reach tasks/acceptance.)
+
+- **Q:** Should the relay-comment's `Full detail` pointer be plain text or a link?
+  - **A:** A clickable markdown link to `spec.md`'s Codex Findings section via the heading anchor on the convention branch (`[spec.md › ## Codex Findings](<blob-url>/spec.md#codex-findings)`).
+  - **Why:** A reader jumps straight from the issue comment to the verdict detail; a bare `spec.md › ## Codex Findings` string forces a manual hunt.
 
 - **Q:** What is the Epic template file renamed to?
   - **A:** `.github/ISSUE_TEMPLATE/epic-plan.md` → `epic-spec.md` (via `git mv`; `name: Epic / Plan` and the title prefix preserved).

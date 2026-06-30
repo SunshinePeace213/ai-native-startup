@@ -61,7 +61,7 @@ Validate the whole change: rename integrity, body structure, harness instruction
 - **Satisfies:** AC1, AC2
 - `git mv .github/ISSUE_TEMPLATE/epic-plan.md .github/ISSUE_TEMPLATE/epic-spec.md` (preserve history).
 - Preserve the frontmatter `name: Epic / Plan` and `title: "📋 epic: "`; update `about:` to mention the plan→build→ship lifecycle.
-- Rewrite the body to exactly these sections, in order: `## Objective`, `## Non-Goals`, `## Lifecycle` (the `Plan ▸ Spec-review ▸ Approved ▸ Build ▸ Ship ▸ Done` line + a "▲ current" marker), `## Link to plan` (path-as-text markdown links to `spec.md` + `decisions.md`, NOT bare blob URLs and NOT the stale `plan.md`), `## Spec-review status` (the three lines: `Latest verdict`, `Status`, `History: see thread ↓`), `## Acceptance criteria` (a pointer to `acceptance-criteria.md`), `## Open Questions`, `## How to act` (`/build <plan-name>` then `/ship`).
+- Rewrite the body to exactly these sections, in order: `## Objective`, `## Non-Goals`, `## Lifecycle` (the `Plan ▸ Spec-review ▸ Approved ▸ Build ▸ Ship ▸ Done` line + a "▲ current" marker), `## Link to plan` (path-as-text markdown links to **all four** plan files — `spec.md`, `tasks.md`, `acceptance-criteria.md`, `decisions.md` — NOT bare blob URLs and NOT the stale `plan.md`), `## Spec-review status` (the three lines: `Latest verdict`, `Status`, `History: see thread ↓`), `## Acceptance criteria` (a pointer to `acceptance-criteria.md`), `## Open Questions`, `## How to act` (`/build <plan-name>` then `/ship`).
 - DROP the `## Child task checklist` section entirely.
 - Keep all body prose as HTML-comment guidance where the original used it, so the template stays self-documenting.
 
@@ -86,9 +86,9 @@ Validate the whole change: rename integrity, body structure, harness instruction
 - **Satisfies:** AC3, AC4, AC6
 - Update every `epic-plan.md` reference to `epic-spec.md` (the `--template` name `"Epic / Plan"` stays).
 - Standardize the issue title in the create step: `📋 epic: <descriptive core title>` (replace the vague "Title = the plan title").
-- Change the "Update the issue's Link to plan" guidance to produce **path-as-text markdown links** (`[specs/<name>/spec.md](<convention-branch blob url>)`), explicitly NOT bare repo-relative paths and NOT bare URLs.
+- Change the "Update the issue's Link to plan" guidance to produce **path-as-text markdown links** (`[specs/<name>/spec.md](<convention-branch blob url>)`) for **all four** plan files (`spec.md`, `tasks.md`, `acceptance-criteria.md`, `decisions.md`), explicitly NOT bare repo-relative paths and NOT bare URLs.
 - Add the **three body-sync touchpoints** (each with a graceful-`gh` skip): (1) at publish, fill the issue body's `## Link to plan` + `## Acceptance criteria` pointer; (2) after each Codex round, `gh issue edit` the `## Spec-review status` block (state) in addition to the relay comment (history); (3) at loop settle, set the `Status` line and advance the `## Lifecycle` marker to `Approved` / `Needs Human Review`.
-- Add the **two canonical snippets** as reproduce-exactly blocks: the verdict **relay-comment** (`### 🔍 Codex spec-review — Round N · <verdict>` + blocking findings + "Claude this round" + the `_Full detail → spec.md › ## Codex Findings_` pointer) and the `## Spec-review status` **state-mirror** block.
+- Add the **two canonical snippets** as reproduce-exactly blocks: the verdict **relay-comment** (`### 🔍 Codex spec-review — Round N · <verdict>` + blocking findings + "Claude this round" + a clickable `Full detail` pointer — a markdown link `[spec.md › ## Codex Findings](<convention-branch blob url>/spec.md#codex-findings)`, NOT plain text) and the `## Spec-review status` **state-mirror** block.
 - Keep the change additive/consistent with the existing graceful-skip and per-phase commit cadence; do NOT edit `build.md` or any skill file.
 
 ### 4. Validate Everything

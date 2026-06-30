@@ -38,7 +38,7 @@ Separately, the multi-layer-review rework of `/build` added two review layers (`
 
 Adopt the conventional **body = state / comments = history** split, scoped to the plan phase:
 
-- **Rework the Epic issue template** (`git mv .github/ISSUE_TEMPLATE/epic-plan.md` → `epic-spec.md`; `name:` and `title: "📋 epic: "` preserved). New body: `Objective`, `Non-Goals` (scope fence), `Lifecycle` (macro phase line), `Link to plan` (path-as-text markdown links → `spec.md` + `decisions.md`), `Spec-review status` (live), `Acceptance criteria` (pointer to `acceptance-criteria.md`), `Open Questions`, `How to act`. Drop `Child task checklist` (PR territory).
+- **Rework the Epic issue template** (`git mv .github/ISSUE_TEMPLATE/epic-plan.md` → `epic-spec.md`; `name:` and `title: "📋 epic: "` preserved). New body: `Objective`, `Non-Goals` (scope fence), `Lifecycle` (macro phase line), `Link to plan` (path-as-text markdown links to **all four** plan files — `spec.md`, `tasks.md`, `acceptance-criteria.md`, `decisions.md`), `Spec-review status` (live), `Acceptance criteria` (pointer to `acceptance-criteria.md`), `Open Questions`, `How to act`. Drop `Child task checklist` (PR territory).
 - **Wire three body-sync touchpoints into `/plan-w-team`:** (1) at publish, fill the body's plan links + AC pointer; (2) after each Codex round, update `## Spec-review status` (state) in addition to the relay comment (history); (3) at loop settle, set the Status line + advance the Lifecycle marker to `Approved` / `Needs Human Review`.
 - **Standardize two artifacts in `/plan-w-team`:** the relay-comment format and the `## Spec-review status` state-mirror block, both derived from the skill's existing `### Round N — Verdict:` line.
 - **Standardize the issue title** in the create step: `📋 epic: <descriptive core title>`.
@@ -51,7 +51,8 @@ Alternative considered: drive the issue checklist live from the in-session `Task
 - **Body = state, comments = history.** Body fields are overwritten idempotently; the relay comment is append-only. A re-run of a round overwrites the same `## Spec-review status` block, never duplicating it.
 - **Issue is plan-primary; PR is build-primary; nothing is mirrored across the line.** The Child-task checklist is dropped from the issue (it lives on the PR); the issue carries plan-phase state only.
 - **Claude is the sole `git`/`gh` writer** (unchanged); every new body-sync step graceful-skips when `gh`/remote/auth is unavailable, mirroring the existing graceful-`gh` skip.
-- **Plan links are path-as-text markdown links** (`[specs/<name>/spec.md](<blob-url-on-convention-branch>)`) — the raw blob URL is the href, never the display text, and resolves against the convention branch so it does not 404 pre-merge.
+- **Plan links are path-as-text markdown links** (`[specs/<name>/spec.md](<blob-url-on-convention-branch>)`) — the raw blob URL is the href, never the display text, and resolves against the convention branch so it does not 404 pre-merge. The `## Link to plan` section lists **all four** plan files (`spec.md`, `tasks.md`, `acceptance-criteria.md`, `decisions.md`), each as its own path-as-text link.
+- **The relay-comment `Full detail` pointer is a clickable link**, not plain text — it targets `spec.md`'s Codex Findings section via the heading anchor on the convention branch (`[spec.md › ## Codex Findings](<blob-url>/spec.md#codex-findings)`), so a reader jumps straight from the issue comment to the verdict detail.
 
 ## Tracking
 
