@@ -174,7 +174,7 @@ git push -u origin HEAD:refs/heads/<type>/<N>-<slug>        # pushes plan commit
 
 ### Update the issue's "Link to plan" with accessible URLs (right after the first push) — body-sync touchpoint (1)
 
-Once the branch + files exist on origin, rewrite the issue body's `## Link to plan` and `## Acceptance criteria` sections. Use **path-as-text markdown links** — the **display text is the repo path** (`specs/<plan-name>/spec.md`) and the **href is the blob URL on the convention branch** so it resolves pre-merge (never against `main`, where the plan files don't exist until merge, so a bare repo-relative path 404s). Never show a bare repo-relative path and never show the raw URL as the display text. Link all four plan files; point Acceptance criteria at `acceptance-criteria.md`. This is **body-sync touchpoint (1)**; graceful-skip the `gh issue edit` if `gh`/remote is unavailable (see `Graceful skip`).
+Once the branch + files exist on origin, this `gh issue edit --body-file <updated-body>` writes the COMPLETE `epic-spec.md` body skeleton — ALL sections (Objective, Non-Goals, `## Lifecycle` with ▲ at **Plan**, `## Link to plan` filled with the four path-as-text links, `## Spec-review status` seeded at `_pending_` / `Drafted for Review`, `## Acceptance criteria` pointer, Open Questions, How to act) — not just the two link sections. (The `gh issue create --body "<objective + placeholder>"` at create time seeds only a minimal body and `--body` overrides `--template`, so the created issue has none of these sections yet.) This PUBLISH-time edit seeds the full structured skeleton, which the per-round body-sync touchpoints (2)/(3) then overwrite in place — so it establishes the precondition those touchpoints depend on. For the `## Link to plan` and `## Acceptance criteria` sections specifically, use **path-as-text markdown links** — the **display text is the repo path** (`specs/<plan-name>/spec.md`) and the **href is the blob URL on the convention branch** so it resolves pre-merge (never against `main`, where the plan files don't exist until merge, so a bare repo-relative path 404s). Never show a bare repo-relative path and never show the raw URL as the display text. Link all four plan files; point Acceptance criteria at `acceptance-criteria.md`. This is **body-sync touchpoint (1)**; graceful-skip the `gh issue edit` if `gh`/remote is unavailable (see `Graceful skip`).
 
 ```
 gh issue edit <N> --body-file <updated-body>
@@ -308,8 +308,10 @@ Once the loop settles, Claude writes the result into `spec.md`'s Claude-owned `#
 Then — **body-sync touchpoint (3)** — once the loop settles, in addition to flipping `spec.md`'s `Status:` line, also `gh issue edit <N> --body-file <updated-body>` the issue body to (a) set the `## Spec-review status` `Status` line and (b) advance the `## Lifecycle` ▲ marker to the settled phase:
 
 - Codex returned `approved` → `## Spec-review status` Status `Approved ✅` and `## Lifecycle` ▲ advanced to **Approved**.
-- still `changes-requested` after 2 rounds → Status `Needs Human Review ⚠️` and ▲ advanced to **Needs Human Review**.
+- still `changes-requested` after 2 rounds → Status `Needs Human Review ⚠️`, but the `## Lifecycle` ▲ marker STAYS at **Spec-review** (the phase the plan is stuck in).
 - Codex was skipped (unavailable) → leave the ▲ marker at **Plan**/Drafted for Review (no advance).
+
+The `## Lifecycle` ▲ marker only ever points at one of the six real Lifecycle nodes (`Plan ▸ Spec-review ▸ Approved ▸ Build ▸ Ship ▸ Done`) — "Needs Human Review" is a Status, not a Lifecycle phase, so it never appears under the ▲.
 
 Graceful-skip this `gh issue edit` if `gh`/remote is unavailable (mirrors the graceful `gh` skip in `GitHub Issue Tracking`).
 

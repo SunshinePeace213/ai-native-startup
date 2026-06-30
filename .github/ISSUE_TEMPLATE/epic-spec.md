@@ -48,7 +48,7 @@ pre-merge, never against main). Filled by /plan-w-team after the first push. -->
 round (never appended). The per-round detail is the append-only comment thread. -->
 
 - Latest verdict: _pending_ <!-- approved | changes-requested -->
-- Status: _Drafted for Review_ <!-- Drafted for Review | Approved | Needs Human Review -->
+- Status: _Drafted for Review_ <!-- Drafted for Review | Approved ✅ | Needs Human Review ⚠️ -->
 - History: see thread ↓
 
 ## Acceptance criteria
