@@ -181,7 +181,11 @@ Use these files to complete the task:
 <!-- CODEX-OWNED. Written only by the spec-review skill (one `### Round N — Verdict: …` block per
      round). Claude must NEVER edit this section. -->
 
-_Pending Codex review._
+### Round 1 — Verdict: changes-requested
+
+- **AC2 does not verify the stated Ship lifecycle step.** The spec says the issue lifecycle must advance through `Build→Ship→Done`, and `tasks.md` Step 3 explicitly requires `/build` Phase 6 to advance the issue to **Ship**, but `acceptance-criteria.md` AC2 and its validation command only check `Build` in `build.md` and `Done` in `ship.md`. A build could omit the Ship transition and still pass. Recommend: update `acceptance-criteria.md` AC2 to require `/build` to advance to **Build** at start and **Ship** at handoff, and update the AC2 validation command to grep for `Ship` in `.claude/commands/build.md`.
+- **AC4's validation does not prove the no-false-link manifest requirement.** AC4 requires the Agent Task Manifest to contain no bare `#<number>` in any PR template or manifest description, but its validation command checks only `.github/PULL_REQUEST_TEMPLATE/` and only the narrow patterns `#<taskId>` or `#[0-9]+ <subject>`. It would miss bare task links such as `#1` or `#12 - build`, and it does not inspect the manifest description in `GIT-COMMIT-PR-MESSAGE.md` or the new catalog. Recommend: broaden the AC4 validation command in `acceptance-criteria.md` to check the PR templates plus `GIT-COMMIT-PR-MESSAGE.md` and `WORKFLOW-TEMPLATES.md` for bare numbered task references in manifest examples/descriptions, while preserving the allowed `Closes #N` issue reference.
+- **AC5's validation does not prove `/build` never opens a second PR.** AC5 requires `build.md` to resume the existing draft PR, fallback-create only when absent, and never open a second PR, but the validation command only greps for a resume phrase. A command file could still contain an unconditional `gh pr create --draft` path and pass. Recommend: strengthen the AC5 validation in `acceptance-criteria.md` to also check that any `gh pr create` in `.claude/commands/build.md` is documented as fallback-only when no existing PR is found, and that Phase 1 no longer instructs opening a new PR by default.
 
 ## Codex Verification
 
