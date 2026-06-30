@@ -87,7 +87,7 @@ Validate the whole change: rename integrity, body structure, harness instruction
 - Update every `epic-plan.md` reference to `epic-spec.md` (the `--template` name `"Epic / Plan"` stays).
 - Standardize the issue title in the create step: `📋 epic: <descriptive core title>` (replace the vague "Title = the plan title").
 - Change the "Update the issue's Link to plan" guidance to produce **path-as-text markdown links** (`[specs/<name>/spec.md](<convention-branch blob url>)`) for **all four** plan files (`spec.md`, `tasks.md`, `acceptance-criteria.md`, `decisions.md`), explicitly NOT bare repo-relative paths and NOT bare URLs.
-- Add the **three body-sync touchpoints** (each with a graceful-`gh` skip): (1) at publish, fill the issue body's `## Link to plan` + `## Acceptance criteria` pointer; (2) after each Codex round, `gh issue edit` the `## Spec-review status` block (state) in addition to the relay comment (history); (3) at loop settle, set the `Status` line and advance the `## Lifecycle` marker to `Approved` / `Needs Human Review`.
+- Add the **three body-sync touchpoints** (each with a graceful-`gh` skip): (1) at publish, fill the issue body's `## Link to plan` + `## Acceptance criteria` pointer; (2) after each Codex round, `gh issue edit` the `## Spec-review status` block (state) in addition to the relay comment (history); (3) at loop settle, set the `Status` line and advance the `## Lifecycle` ▲ marker to `Approved` on approval, otherwise leave it at `Spec-review` (`Needs Human Review` is a Status value, never a Lifecycle node).
 - Add the **two canonical snippets** as reproduce-exactly blocks: the verdict **relay-comment** (`### 🔍 Codex spec-review — Round N · <verdict>` + blocking findings + "Claude this round" + a clickable `Full detail` pointer — a markdown link `[spec.md › ## Codex Findings](<convention-branch blob url>/spec.md#codex-findings)`, NOT plain text) and the `## Spec-review status` **state-mirror** block.
 - Keep the change additive/consistent with the existing graceful-skip and per-phase commit cadence; do NOT edit `build.md` or any skill file.
 
@@ -99,4 +99,4 @@ Validate the whole change: rename integrity, body structure, harness instruction
 - **Agent Type:** general-purpose
 - **Parallel:** false
 - Run every command in acceptance-criteria.md → `## Validation Commands`.
-- Verify each acceptance criterion (AC1–AC6) is met, and that `git status` shows the rename as a rename (R) not add+delete.
+- Verify each acceptance criterion (AC1–AC6) is met, and that the rename is committed/tracked per AC1's committed-state check (epic-spec.md tracked, epic-plan.md no longer tracked) — not that `git status` shows `R`, since the worktree is clean post-commit and the heavy body rework records the move as delete+add.
