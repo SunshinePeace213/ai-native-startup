@@ -21,5 +21,4 @@
 
 - `.agents/` -- Codex Skills Confiugration
 - `ai-docs/` — research output from Internet
-- `evals/` — Claude Code skills evaluations
 - `specs/` — planning files

@@ -13,8 +13,8 @@ when_to_use: >-
   Reach for this when choosing subagent frontmatter (tools, model, effort,
   memory, hooks, permissionMode), writing the description that controls
   delegation, structuring the agent body/system prompt, or debugging why an
-  agent over- or under-triggers. Not for authoring Skills (use meta-skill) or
-  slash commands (use meta-commands).
+  agent over- or under-triggers. Not for authoring Skills or slash commands
+  (use meta-skills).
 ---
 
 # Meta-Agent: Authoring Claude Code Subagents
@@ -73,9 +73,9 @@ Pin down before writing:
 
 Confirm a subagent is even the right artifact. A subagent is for **delegated,
 context-isolating work** (research that would flood the main thread, a scoped
-executor, a fan-out worker). If the need is a reusable prompt/knowledge in the
-main conversation, that's a **skill** (use meta-skill); a repeatable command is
-a **slash command** (use meta-commands). If unclear, ask — don't guess.
+executor, a fan-out worker). If the need is a reusable prompt, knowledge, or a
+repeatable slash command in the main conversation, that's the **meta-skills**
+skill. If unclear, ask — don't guess.
 
 ### 2. Choose form & frontmatter
 

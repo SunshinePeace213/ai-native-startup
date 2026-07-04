@@ -347,3 +347,9 @@ dist
 
 # TernJS port file
 .tern-port
+
+# =============================================================================
+# Claude Code skill-authoring eval workspaces (meta-skills) — results are
+# never committed; they live in a sibling <skill-name>-workspace/ directory
+# =============================================================================
+*-workspace/
