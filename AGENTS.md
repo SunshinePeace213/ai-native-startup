@@ -20,5 +20,10 @@
 ## Project Structure
 
 - `.agents/` -- Codex Skills Confiugration
-- `ai-docs/` — research output from Internet
+- `ai-docs/` — cached official docs KB managed by `/kb` (catalog: `ai-docs/index.md`), plus hand-written project notes
 - `specs/` — planning files
+
+## Harness-Layer Pipeline
+
+- **Harness development** — files under `.claude/` and `.agents/`: `/harness-layer:harness-plan` → `/harness-layer:harness-build` → `/ship`. Keep the `ai-docs/` KB fresh with `/harness-layer:kb`.
+- **Coding task** — application code: `/plan-w-team` → `/build` → `/ship`.

@@ -353,3 +353,11 @@ dist
 # never committed; they live in a sibling <skill-name>-workspace/ directory
 # =============================================================================
 *-workspace/
+
+# =============================================================================
+# ai-docs/ knowledge base (managed by /kb) — the cached doc mirrors and the
+# generated index.md are regenerable from the manifest, so track only
+# sources.yaml (the source of truth) and let /kb rebuild the rest.
+# =============================================================================
+# ai-docs/*
+# !ai-docs/sources.yaml
