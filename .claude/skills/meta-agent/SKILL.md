@@ -1,159 +1,103 @@
 ---
 name: meta-agent
 description: >-
-  The team's canonical standard and guided workflow for authoring Claude Code
-  subagents (the .claude/agents/*.md files). Use whenever the user wants to
-  "create a new subagent", says "make an agent that ..." or "build a subagent
-  for ...", asks to update or fix an agent's frontmatter, tools, or model,
-  reports "my agent isn't triggering" / "isn't being delegated to", or wants to
-  turn a repeated delegation into a reusable subagent. Fires even when the
-  build-an-agent intent is buried inside a longer request. This is THE authority
-  for subagent authoring — prefer it over ad-hoc advice.
+  The team's canonical standard and guided workflow for authoring subagents —
+  Claude Code subagents (.claude/agents/*.md) and Codex agents
+  (.agents/skills/*/SKILL.md). Use whenever the user wants to "create a new
+  subagent", says "make an agent that ..." or "build a subagent for ...", asks to
+  update or fix an agent's frontmatter, tools, or model, reports "my agent isn't
+  triggering" / "isn't being delegated to", or wants to turn a repeated
+  delegation into a reusable subagent. Fires even when the build-an-agent intent
+  is buried inside a longer request. This is THE authority for subagent authoring
+  — prefer it over ad-hoc advice.
 when_to_use: >-
   Reach for this when choosing subagent frontmatter (tools, model, effort,
   memory, hooks, permissionMode), writing the description that controls
-  delegation, structuring the agent body/system prompt, or debugging why an
-  agent over- or under-triggers. Not for authoring Skills (use meta-skill) or
-  slash commands (use meta-commands).
+  delegation, structuring the agent body/system prompt, deciding Claude subagent
+  vs Codex agent, or debugging why an agent over- or under-triggers. Not for
+  authoring Skills (use meta-skill) or slash commands (use meta-commands).
 ---
 
-# Meta-Agent: Authoring Claude Code Subagents
+# Meta-Agent: Authoring Subagents
 
-This skill is both the **standard** for what a good subagent looks like and a
-**workflow** for producing one. The standard lives in `references/`; this body
-is the loop that applies it. Read each reference at the phase that needs it —
-don't preload them all.
+The **standard** for what a good subagent looks like and the **workflow** for
+producing one. The standard lives in `references/`; this body is the loop that
+applies it. Read each reference at the phase that needs it — don't preload them.
 
 ## Operating principle
 
-A subagent is one Markdown file: YAML frontmatter (the trigger + capabilities)
-and a body that **becomes its system prompt**. A non-fork subagent sees only
-that prompt plus the delegation message Claude writes when handing off — not the
-main conversation, not the files already read. Its power comes from a tight
-trigger (`description`), least-privilege `tools`, a deliberately chosen `effort`,
-and a lean body that restates the context the agent actually needs.
-
-Apply these principles to the agent you build **and to your own conduct here.**
-No fake incentives, no "think harder," no forced progress cadence. If quality
-needs depth, raise `effort` (`high`/`xhigh`) rather than adding prose — that is
-the dominant capability lever on Opus 4.8, and a subagent is the one artifact
-where you set it in frontmatter.
+A subagent does one scoped, context-isolating job and hands a result back. Its
+power comes from a tight trigger (`description`), least-privilege tools, and a
+lean body that **restates the context the agent actually needs** — a non-fork
+subagent sees only its prompt plus the delegation message, not the main
+conversation. Apply this to the agent you build **and to your own conduct here.**
+No fake incentives, no "think harder." Depth comes from `effort`, not prose — but
+omit `effort` by default (the shipped team agents do) and set it only when the
+job needs it.
 
 ## References — load each when its phase arrives
 
 | Read | When |
 |---|---|
-| `references/frontmatter.md` | Choosing/validating fields; tool-inheritance order; tools unavailable to subagents; model resolution; the `effort` lever; memory; the plugin-ignored fields; writing the `description` |
-| `references/body-structure.md` | Writing the body/system prompt: the skeleton, the five common shapes, and one fuller worked example |
-| `references/authoring-principles.md` | The subagent-scoped Opus 4.8 deltas (effort, literal instruction-following, conservative fan-out, lean body, least privilege) |
-| `references/anti-patterns.md` | What to cut, BAD→GOOD descriptions, and the **pre-ship checklist** (run before finishing) |
+| `references/claude-agents.md` | Deciding Claude subagent vs skill/command/Codex; how delegation works; where the file lives (scopes & precedence) |
+| `references/codex-agents.md` | Building a Codex agent (`.agents/skills/*/SKILL.md`, `codex exec`) instead of a Claude subagent |
+| `references/frontmatter.md` | Choosing/validating Claude frontmatter fields; tool resolution; the load-bearing gotchas; writing the `description` |
+| `references/body-structure.md` | Writing the body/system prompt: the skeleton, common shapes, body anti-patterns |
+| `examples/claude-subagent.md`, `examples/codex-subagent.md` | A full worked agent in each ecosystem |
 
-Validate any agent file (needs PyYAML):
+Validate a **Claude** agent file (checks its frontmatter; not for Codex):
 
 ```
 cd ${CLAUDE_SKILL_DIR} && uv run --with pyyaml python scripts/validate_agent.py <path-to-agent.md>
 ```
 
-It checks the frontmatter against the documented surface, prints `WARN:`/`FAIL:`
-lines and a final `PASS`, and exits non-zero on any hard failure.
+It prints `WARN:`/`FAIL:` lines and a final `PASS`, exiting non-zero on failure.
 
 ## The workflow
 
 Phases, not a railroad. Skip what doesn't apply; loop back when a later phase
-exposes a gap. The goal: an agent that delegates on the right requests and does
-its scoped job better than no agent would.
+exposes a gap.
 
-### 1. Capture intent
+1. **Capture intent** — the one **job** and its lens, the real **triggers** (the
+   contexts/phrasings that should route here), and the **return contract**.
+   Confirm a subagent is even the right artifact — if the need is main-thread
+   knowledge it's a skill; a repeatable prompt is a command. If unclear, ask.
+2. **Route Claude vs Codex** — read `references/claude-agents.md`. Claude
+   subagent for in-session auto-delegation with a tool/effort/memory surface;
+   Codex agent (`references/codex-agents.md`) for a separate `codex exec` process
+   or a second non-Claude reviewer.
+3. **Choose frontmatter** — read `references/frontmatter.md`. Only `name` +
+   `description` are required. Least-privilege `tools`; `model` an alias, not a
+   dated id; omit `effort` unless the job needs it; `memory` only when knowledge
+   compounds across runs.
+4. **Draft the body** — read `references/body-structure.md`. The body is the
+   system prompt, so restate every rule/path the agent depends on. Use the
+   skeleton (Role → What it does → Process → Success looks like → Output → Edge
+   cases → Boundaries), collapsing what doesn't apply. Match repo tooling in
+   examples (`uv`, `bun`).
+5. **Write the file** — `.claude/agents/<name>.md` (Claude) or
+   `.agents/skills/<name>/SKILL.md` (Codex). Frontmatter is real YAML between
+   `---` markers at the top — never fenced in a code block.
+6. **Validate** (Claude only) — run `scripts/validate_agent.py`; fix every
+   `FAIL`, sanity-check `WARN`s.
+7. **Test vs baseline** — write 2–3 realistic delegation prompts plus one that
+   should NOT route here, and judge whether Claude would delegate on each. The
+   agent earns its place only if its output beats doing the same work with no
+   agent.
+8. **Iterate** — not triggering / over-triggering → tighten the `description`;
+   right trigger but shallow work → raise `effort`; wandering → tighten `tools`
+   and the body's scope.
 
-Pin down before writing:
-- **Job** — the one thing this agent does, and the lens it works through.
-- **Triggers** — the actual contexts/phrasings that should route to it
-  (including when the user doesn't name it). These become the `description`.
-- **Return contract** — what the agent hands back to the caller, in what shape.
+## Pre-ship checklist
 
-Confirm a subagent is even the right artifact. A subagent is for **delegated,
-context-isolating work** (research that would flood the main thread, a scoped
-executor, a fan-out worker). If the need is a reusable prompt/knowledge in the
-main conversation, that's a **skill** (use meta-skill); a repeatable command is
-a **slash command** (use meta-commands). If unclear, ask — don't guess.
-
-### 2. Choose form & frontmatter
-
-Read `references/frontmatter.md`. Only `name` and `description` are required.
-- **`name`** — lowercase-hyphen, descriptive of the job, unique across the whole
-  agents tree (project + user + plugins).
-- **`description`** — the trigger document. Third person, front-loaded, names the
-  real contexts/phrasings, "use proactively" for auto-delegation, a `Not for: …`
-  boundary that routes adjacent work to a sibling.
-- **`tools`** — least privilege; list only what the job needs (omitting `tools`
-  inherits everything, including all MCP tools). `disallowedTools` is applied
-  first, then `tools`.
-- **`effort`** — set it deliberately: `xhigh` for hard coding/agentic work,
-  `high` as the reasoning-sensitive default, `low`/`medium` for cheap scoped
-  helpers.
-- **`model`** — `inherit` unless the job wants a specific tier.
-- **`memory`** — only when knowledge compounds across runs. Other fields
-  (`permissionMode`, `hooks`, `skills`, `isolation`, `background`, `maxTurns`,
-  `color`) only when the job needs them — see the reference.
-
-### 3. Draft the body
-
-Read `references/body-structure.md`. The body is the system prompt, so **restate
-every rule, path, and convention the agent depends on** — it has no shared
-history. Use the skeleton (role line → `When to invoke` with a `Not for`
-boundary → `Inputs` → `Process` → `Success looks like` → `Output` → `Edge
-cases`), pick the closest of the five shapes, and keep it lean: cut anything
-that wouldn't change the output if deleted. Match repo tooling in examples
-(`uv`, `bun`).
-
-### 4. Write the file
-
-Write to `.claude/agents/<name>.md` (project) or `~/.claude/agents/<name>.md`
-(personal). Frontmatter is **real YAML between `---` markers at the top** — never
-fenced in a ```` ``` ```` block. Use comma-separated tool lists, not the old
-`prompt` field (the body is the prompt).
-
-### 5. Validate
-
-Run `scripts/validate_agent.py` on the file (invocation above). Fix every
-`FAIL`; treat `WARN`s (unknown tool names, plugin-ignored fields) as prompts to
-double-check intent.
-
-### 6. Test vs baseline
-
-There's no automated runner; the test is a comparison.
-- Write 2–3 **realistic delegation prompts** the agent should handle, plus one
-  that should NOT route to it (to catch over-triggering).
-- Judge whether Claude would delegate to this agent on each — read the
-  `description` cold, or spawn the agent on a real prompt and compare its output
-  to doing the same work with no agent. The delta is what proves the agent earns
-  its place.
-
-### 7. Iterate
-
-Fix the highest-leverage gap and re-check:
-- **Not triggering / over-triggering** → tighten the `description` (real
-  phrasings, "use proactively", a `Not for` boundary). See `anti-patterns.md`.
-- **Right trigger, shallow work** → raise `effort`; don't add "think harder".
-- **Wrong scope / wandering** → tighten `tools` and the body's scope statements.
-
-Before finishing, run the pre-ship checklist at the bottom of
-`references/anti-patterns.md`.
-
-## Gotchas
-
-- **The body is the system prompt.** A non-fork subagent sees only its prompt +
-  the delegation message. Restate needed context; don't rely on shared history.
-- **Tool resolution: `disallowedTools` first, then `tools`.** Omitting `tools`
-  inherits every tool incl. all connected MCP servers (and their context cost).
-- **Five tools never work in a subagent:** `AskUserQuestion`, `EnterPlanMode`,
-  `ExitPlanMode` (unless `permissionMode: plan`), `ScheduleWakeup`,
-  `WaitForMcpServers`. Don't design an agent that needs to ask the user mid-run.
-- **Plugin agents silently ignore `hooks`, `mcpServers`, `permissionMode`.** Put
-  the agent in `.claude/agents/` if it needs them.
-- **`name` must be unique tree-wide** — a duplicate is silently discarded or
-  loses on priority.
-- **`skills:` preloads skill content; `tools: Skill` does not.** Use `skills:`
-  to inject conventions at startup.
-- **`validate_agent.py` needs PyYAML** (`--with pyyaml`) and takes the agent
-  **file** path, not a directory.
+- [ ] `name` lowercase-hyphen, unique across the whole agents tree
+- [ ] `description` is the trigger: third person, real contexts/phrasings, "use
+      proactively" where wanted, a Not-for boundary
+- [ ] Least-privilege `tools` (or a deliberate inherit / `disallowedTools`)
+- [ ] No dependency on the five unavailable tools; no plugin-ignored fields
+      (`hooks`, `mcpServers`, `permissionMode`) on a plugin agent
+- [ ] `model` an alias; `effort` omitted unless the job needs it; `memory` only
+      if knowledge compounds
+- [ ] Body restates needed context; explicit `Output`; no persona bloat, no
+      "think harder", no forced progress cadence
+- [ ] Frontmatter is real YAML between `---` markers, not a fenced block
