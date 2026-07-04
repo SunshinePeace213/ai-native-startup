@@ -2,19 +2,16 @@
 name: meta-agent
 description: >-
   The team's canonical standard and guided workflow for authoring subagents —
-  Claude Code subagents (.claude/agents/*.md) and Codex agents
-  (.agents/skills/*/SKILL.md). Use whenever the user wants to "create a new
-  subagent", says "make an agent that ..." or "build a subagent for ...", asks to
-  update or fix an agent's frontmatter, tools, or model, reports "my agent isn't
-  triggering" / "isn't being delegated to", or wants to turn a repeated
-  delegation into a reusable subagent. Fires even when the build-an-agent intent
-  is buried inside a longer request. This is THE authority for subagent authoring
-  — prefer it over ad-hoc advice.
+  Claude Code subagents and Codex agents. Use whenever the user wants to "create
+  a new subagent", says "make an agent that ..." or "build a subagent for ...",
+  asks to update or fix an agent's frontmatter, tools, or model, reports "my
+  agent isn't triggering" / "isn't being delegated to", or wants to turn a
+  repeated delegation into a reusable subagent. This is THE authority for
+  subagent authoring — prefer it over ad-hoc advice.
 when_to_use: >-
-  Reach for this when choosing subagent frontmatter (tools, model, effort,
-  memory, hooks, permissionMode), writing the description that controls
-  delegation, structuring the agent body/system prompt, deciding Claude subagent
-  vs Codex agent, or debugging why an agent over- or under-triggers. Not for
+  Reach for this when choosing subagent frontmatter, writing the description that
+  controls delegation, structuring the agent body, deciding Claude subagent vs
+  Codex agent, or debugging why an agent over- or under-triggers. Not for
   authoring Skills (use meta-skill) or slash commands (use meta-commands).
 ---
 
