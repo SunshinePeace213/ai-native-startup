@@ -9,8 +9,8 @@ The team wants Claude-edited code auto-formatted at the harness layer: Prettier 
 JS/TS, Ruff (uv) for Python, markdownlint (bun) for Markdown, each installed as a project
 dev dependency. After grilling, the design is a single **PostToolUse** dispatcher
 (`lint.py`) that routes by file extension and auto-fixes in place, never blocking; a
-separate installer (`install_deps.py`) that a `WorktreeCreate` hook and a `/meta-install`
-command both reuse to `bun install` + `uv sync`; and scaffolded manifests/config so the
+separate installer (`install_deps.py`) that the `/meta-install` command runs
+(`bun install` + `uv sync`); and scaffolded manifests/config so the
 linters are declared and pinned. Both scripts are stdlib-only Python run via
 `uv run --script`. The owner overrode the Bash recommendation in favor of Python for
 readability, accepting the per-edit cold-start.
@@ -34,11 +34,14 @@ readability, accepting the per-edit cold-start.
   - **Why:** No stalls or retry loops; the edit loop is never denied.
 
 - **Q:** How do the linters get installed, given they must live in the repo?
-  - **A:** A `WorktreeCreate` hook auto-installs into new worktrees, and a `/meta-install`
-    command installs on first contributor checkout — both via `install_deps.py`. The linter
-    itself does NOT self-heal; it warns-and-skips when a tool is absent.
-  - **Why:** Keeps manifest mutation off the per-edit hot path; worktrees start empty
-    (`node_modules`/`.venv` gitignored) so they need an explicit install trigger.
+  - **A:** Installed via the `/meta-install` command (`bun install` + `uv sync`) on a fresh
+    clone or a fresh worktree. NO `WorktreeCreate` hook: per `ai-docs/anthropic/worktrees.md`
+    a `WorktreeCreate` hook *replaces* git's default worktree creation (it must create the
+    worktree and return its path), so it is unsafe as a setup hook. The linter itself does
+    not self-heal; it warns-and-skips when a tool is absent.
+  - **Why:** Keeps the install off the per-edit hot path and out of git-worktree creation;
+    `/meta-install` + warn-and-skip make the flow reliable without a footgun. Worktrees start
+    empty (`node_modules`/`.venv` gitignored) so they need an explicit install trigger.
 
 - **Q:** What does the install step run?
   - **A:** Sync from lockfile (`bun install`, `uv sync`); warn (do not mutate) if a tool is
@@ -73,10 +76,11 @@ tabWidth 2`; Ruff `line-length 100, target py312, select E/F/I/UP/B/SIM` + `ruff
 - **This plan scaffolds the dev tooling** (`package.json`, `pyproject.toml`, lockfiles,
   config files) because the repo has none today. Invalidated if the owner intends to add
   these separately — then Phase 1 collapses to config-only.
-- **`WorktreeCreate` fires for the harness's internal `EnterWorktree`** and its stdin payload
-  carries the new worktree path. Unverified; the build must confirm the event and field name.
-  Invalidated if the event does not fire — then `/meta-install` + warn-and-skip are the only
-  install paths (still functional, just not automatic on worktree creation).
+- **`WorktreeCreate` as a post-create install trigger** — assumed at planning time, but
+  **invalidated at build time**: per `ai-docs/anthropic/worktrees.md` a `WorktreeCreate` hook
+  *replaces* git's worktree creation entirely, so it cannot serve as a passive installer.
+  `/meta-install` + warn-and-skip are the install paths (still functional, just not automatic
+  on worktree creation).
 - **`uv` and `bun` are on PATH** in the hook execution environment. Invalidated if not — the
   scripts warn-and-skip.
 - **Prettier extension set** = `.ts/.tsx/.js/.jsx/.json/.css`; **Ruff** = `.py/.pyi`;
@@ -99,8 +103,9 @@ tabWidth 2`; Ruff `line-length 100, target py312, select E/F/I/UP/B/SIM` + `ruff
 
 Docs the design stands on (path — fetched date):
 
-- `ai-docs/anthropic/hooks.md` — 2026-07-05 — PostToolUse & WorktreeCreate events, matcher
-  syntax, command-hook stdin/exit-code semantics, `WorktreeCreate` being async (cannot block).
+- `ai-docs/anthropic/hooks.md` — 2026-07-05 — PostToolUse event, matcher syntax, and
+  command-hook stdin/exit-code semantics. (Note: `WorktreeCreate` is a synchronous
+  creation-replacer per `worktrees.md`, not an async notification.)
 - `ai-docs/anthropic/hooks-guide.md` — 2026-07-05 — the **classic `settings.json` hook shape**
   this repo actually uses (`"hooks": { "PostToolUse": [{ "matcher": "Edit|Write", "hooks": [...] }] }`)
   with snake_case `.tool_input.file_path`; includes a worked PostToolUse Prettier-formatter

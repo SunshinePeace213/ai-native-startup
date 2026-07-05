@@ -68,6 +68,14 @@ def run(cmd: list[str], root: Path) -> subprocess.CompletedProcess | None:
         return None
 
 
+def note_failure(tool: str, file_path: str, proc: subprocess.CompletedProcess) -> None:
+    """Non-blocking note that echoes the formatter's own diagnostics (last lines)."""
+    text = (proc.stderr or proc.stdout or "").strip()
+    tail = " | ".join(text.splitlines()[-3:]) if text else ""
+    detail = f": {tail}" if tail else ""
+    note(f"{tool} exited {proc.returncode} on {file_path}{detail}")
+
+
 def format_prettier(file_path: str, root: Path) -> None:
     binary = root / "node_modules" / ".bin" / "prettier"
     if not binary.exists():
@@ -75,7 +83,7 @@ def format_prettier(file_path: str, root: Path) -> None:
         return
     proc = run([str(binary), "--write", file_path], root)
     if proc is not None and proc.returncode != 0:
-        note(f"prettier could not format {file_path}")
+        note_failure("prettier", file_path, proc)
 
 
 def format_ruff(file_path: str, root: Path) -> None:
@@ -83,11 +91,11 @@ def format_ruff(file_path: str, root: Path) -> None:
     if fmt is None:
         return
     if fmt.returncode != 0:
-        note("ruff unavailable or format failed; skipping (run /meta-install)")
+        note_failure("ruff format", file_path, fmt)
         return
     check = run(["uv", "run", "--no-sync", "ruff", "check", "--fix", file_path], root)
     if check is not None and check.returncode != 0:
-        note(f"ruff: unfixable lint remains in {file_path}")
+        note_failure("ruff check", file_path, check)
 
 
 def format_markdown(file_path: str, root: Path) -> None:
@@ -97,7 +105,7 @@ def format_markdown(file_path: str, root: Path) -> None:
         return
     proc = run([str(binary), "--fix", file_path], root)
     if proc is not None and proc.returncode != 0:
-        note(f"markdownlint: unfixable issues remain in {file_path}")
+        note_failure("markdownlint", file_path, proc)
 
 
 def dispatch(file_path: str, root: Path) -> None:
