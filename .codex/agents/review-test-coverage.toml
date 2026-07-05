@@ -1,3 +1,4 @@
+# Concept ported from pr-review-toolkit/pr-test-analyzer.md — re-sync when that plugin updates.
 name = "review-test-coverage"
 description = "Reviews the branch diff (git diff origin/main...HEAD) for test-coverage gaps — untested critical paths, error handling, edge cases, and missing negative cases — favoring behavioral coverage over line coverage. Read-only; reports grounded findings only."
 sandbox_mode = "read-only"
