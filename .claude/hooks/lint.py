@@ -102,7 +102,13 @@ def format_markdown(file_path: str, root: Path) -> None:
 
 def dispatch(file_path: str, root: Path) -> None:
     path = Path(file_path)
-    if SKIP_SEGMENTS.intersection(path.parts):
+    # Only skip vendored dirs INSIDE the project. Match on the path relative to
+    # root so an ancestor of the repo named e.g. "dist" can't skip every file.
+    try:
+        rel_parts = path.resolve().relative_to(root).parts
+    except ValueError:
+        rel_parts = ()  # outside the project root (e.g. a temp file): don't skip
+    if SKIP_SEGMENTS.intersection(rel_parts):
         return
     ext = path.suffix.lower()
     if ext in PRETTIER_EXTS:
