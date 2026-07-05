@@ -8,8 +8,9 @@ root="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}
 specs="$root/specs"
 [ -d "$specs" ] || exit 0   # no specs dir at all → nothing to gate
 
-# Newest-modified plan folder, excluding the templates dir.
-folder="$(find "$specs" -mindepth 1 -maxdepth 1 -type d ! -name '_templates' -exec stat -f '%m %N' {} + \
+# Newest-modified plan folder, excluding the templates dir. (stat -c is GNU/Linux, stat -f the BSD/macOS fallback.)
+folder="$(find "$specs" -mindepth 1 -maxdepth 1 -type d ! -name '_templates' \
+  -exec sh -c 'for d; do printf "%s %s\n" "$(stat -c %Y "$d" 2>/dev/null || stat -f %m "$d")" "$d"; done' _ {} + \
   | sort -rn | head -1 | cut -d' ' -f2-)"
 [ -n "$folder" ] || { echo "Stop blocked: no plan folder found under specs/." >&2; exit 2; }
 
