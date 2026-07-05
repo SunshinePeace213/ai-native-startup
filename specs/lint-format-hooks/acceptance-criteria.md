@@ -20,15 +20,18 @@
   a `.py` file is `ruff format` + `ruff check --fix`ed; a `.md` file is markdownlint-fixed
   under the lenient config; an unknown extension is a silent no-op; a missing tool yields a
   stderr note; **every** invocation exits 0 (never 2).
-- **AC4** — Hooks are registered and the existing one is preserved: `.claude/settings.local.json`
+- **AC4** — The lint hook is registered and the existing one is preserved: `.claude/settings.local.json`
   is valid JSON, contains a `PostToolUse` entry with matcher `Write|Edit|MultiEdit` invoking
-  `lint.py` and a `WorktreeCreate` entry invoking `install_deps.py`, and still contains the
-  original `PreToolUse` Bash `block-coauthor-trailer.sh` hook and `enabledPlugins`.
+  `lint.py`, and still contains the original `PreToolUse` Bash `block-coauthor-trailer.sh` hook
+  and `enabledPlugins`. No `WorktreeCreate` hook is registered: the official worktrees doc
+  (`ai-docs/anthropic/worktrees.md`) states a `WorktreeCreate` hook **replaces** git's default
+  worktree creation, so install is owned by `/meta-install` (+ warn-and-skip), not a hook.
 - **AC5** — `/meta-install` exists as `.claude/commands/meta-install.md` with YAML frontmatter
-  (a `description`) and a body that runs the installer / `bun install` + `uv sync`.
+  (a `description`) and a body that runs the installer / `bun install` + `uv sync`. This is the
+  install path for both a first contributor checkout and a fresh worktree.
 - **AC6** — End to end: editing a `.ts`, `.py`, and `.md` file via Write/Edit in a session
   rooted at this repo results in each being auto-formatted with no turn blocked; the linter's
-  behavior on a fresh worktree without installed tools is warn-and-skip (edit still succeeds).
+  behavior on a fresh worktree before `/meta-install` has run is warn-and-skip (edit still succeeds).
 
 ## Validation Commands
 
@@ -45,6 +48,6 @@ Run these to prove the criteria above. Map each command to the criteria it verif
 - `printf '{"tool_name":"Edit","tool_input":{"file_path":"/tmp/acc.py"}}' > /tmp/inpy.json; printf "x = {'a':1}\n" > /tmp/acc.py; uv run --script .claude/hooks/lint.py < /tmp/inpy.json; echo "exit=$?"; cat /tmp/acc.py` — verifies **AC3** (Python ruff-formatted, exit 0). Pass = double-quoted/normalized, `exit=0`.
 - `printf '{"tool_name":"Write","tool_input":{"file_path":"/tmp/acc.md"}}' > /tmp/inmd.json; printf '#   Title  \n\n\n- a\n' > /tmp/acc.md; uv run --script .claude/hooks/lint.py < /tmp/inmd.json; echo "exit=$?"` — verifies **AC3** (Markdown fixed, exit 0). Pass = `exit=0`, trailing spaces/blank lines fixed.
 - `printf '{"tool_name":"Write","tool_input":{"file_path":"/tmp/acc.xyz"}}' | uv run --script .claude/hooks/lint.py; echo "exit=$?"` — verifies **AC3** (unknown ext no-op). Pass = `exit=0`, no error.
-- `uv run --no-project python -c "import json; h=json.load(open('.claude/settings.local.json'))['hooks']; assert any(e.get('matcher')=='Write|Edit|MultiEdit' and any('lint.py' in x['command'] for x in e['hooks']) for e in h['PostToolUse']); assert any('install_deps.py' in x['command'] for e in h['WorktreeCreate'] for x in e['hooks']); assert any('block-coauthor' in x['command'] for e in h['PreToolUse'] for x in e['hooks']); print('HOOKS_OK')"` — verifies **AC4** (PostToolUse matcher + lint.py, WorktreeCreate + install_deps.py, and the original PreToolUse hook preserved). Pass = prints `HOOKS_OK`.
+- `uv run --no-project python -c "import json; h=json.load(open('.claude/settings.local.json'))['hooks']; assert any(e.get('matcher')=='Write|Edit|MultiEdit' and any('lint.py' in x['command'] for x in e['hooks']) for e in h['PostToolUse']); assert 'WorktreeCreate' not in h, 'WorktreeCreate must not be registered (it replaces git worktree creation)'; assert any('block-coauthor' in x['command'] for e in h['PreToolUse'] for x in e['hooks']); print('HOOKS_OK')"` — verifies **AC4** (PostToolUse matcher + lint.py, no WorktreeCreate hook, and the original PreToolUse hook preserved). Pass = prints `HOOKS_OK`.
 - `test -f .claude/commands/meta-install.md && grep -q 'description:' .claude/commands/meta-install.md && grep -Eq 'install|uv sync|bun install' .claude/commands/meta-install.md && echo META_OK` — verifies **AC5**. Pass = prints `META_OK`.
 - Manual **AC6**: in a session rooted at this repo, edit a `.ts`, `.py`, and `.md` file and confirm each is auto-formatted and no turn is blocked; in a fresh worktree with no install, confirm an edit still completes (warn-and-skip). Pass = formatting applied where tools exist; edits never blocked.

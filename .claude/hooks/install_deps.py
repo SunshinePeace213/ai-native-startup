@@ -6,15 +6,13 @@
 """Install this repo's dev linters (Prettier, markdownlint-cli2, Ruff) from the
 committed manifests + lockfiles.
 
-Reused by the ``WorktreeCreate`` hook (fresh worktree) and the ``/meta-install``
-command (first contributor checkout). Runs ``bun install`` + ``uv sync`` in the
-project root, then warns (never mutates a manifest) if a declared tool is absent.
-Always exits 0 so it can never break the caller.
+Invoked by the ``/meta-install`` command (first contributor checkout, or a fresh
+worktree). Runs ``bun install`` + ``uv sync`` in the project root, then warns
+(never mutates a manifest) if a declared tool is absent. Always exits 0 so it can
+never break the caller.
 """
 
-import json
 import os
-import select
 import subprocess
 import sys
 from pathlib import Path
@@ -24,42 +22,12 @@ def warn(msg: str) -> None:
     print(f"[install_deps] {msg}", file=sys.stderr)
 
 
-def read_payload() -> dict:
-    """Read the hook's stdin JSON without ever hanging.
-
-    WorktreeCreate delivers a JSON payload on stdin; /meta-install does not.
-    A TTY or an empty/unreadable stdin is treated as "no payload".
-    """
-    try:
-        stdin = sys.stdin
-        if stdin is None or stdin.closed or stdin.isatty():
-            return {}
-        ready, _, _ = select.select([stdin], [], [], 0.5)
-        if not ready:
-            return {}
-        raw = stdin.read()
-        if not raw or not raw.strip():
-            return {}
-        data = json.loads(raw)
-        return data if isinstance(data, dict) else {}
-    except Exception:
-        return {}
-
-
-def resolve_root(payload: dict) -> Path:
+def resolve_root() -> Path:
     """Resolve the install target / project root.
 
-    Order: WorktreeCreate payload path (snake_case then camelCase, since the
-    classic-schema field name is unverified) -> $CLAUDE_PROJECT_DIR -> the
-    script location (``.claude/hooks/install_deps.py`` -> repo root).
+    Order: $CLAUDE_PROJECT_DIR -> the script location
+    (``.claude/hooks/install_deps.py`` -> repo root).
     """
-    for key in ("worktree_path", "worktreePath"):
-        val = payload.get(key)
-        if isinstance(val, str) and val.strip():
-            path = Path(val).expanduser()
-            if path.is_dir():
-                return path.resolve()
-
     env_dir = os.environ.get("CLAUDE_PROJECT_DIR", "").strip()
     if env_dir:
         path = Path(env_dir).expanduser()
@@ -112,7 +80,7 @@ def install(root: Path) -> None:
 
 
 def main() -> int:
-    root = resolve_root(read_payload())
+    root = resolve_root()
     print(f"[install_deps] installing dev linters in {root}", file=sys.stderr)
     install(root)
     return 0

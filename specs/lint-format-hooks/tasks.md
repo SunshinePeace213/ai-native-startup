@@ -18,9 +18,8 @@ dispatcher) — and the `/meta-install` command that reuses the installer.
 
 ### Phase 3: Integration & Polish
 
-Register the `PostToolUse` and `WorktreeCreate` hooks in `.claude/settings.local.json`
-(preserving the existing `PreToolUse` hook), then validate every acceptance criterion
-end to end.
+Register the `PostToolUse` lint hook in `.claude/settings.local.json` (preserving the
+existing `PreToolUse` hook), then validate every acceptance criterion end to end.
 
 ## Team Orchestration
 
@@ -82,8 +81,7 @@ trailingComma "all", tabWidth 2`.
 - **Satisfies:** AC2
 - Create `.claude/hooks/install_deps.py` with a PEP 723 header
   (`requires-python`, `dependencies = []`), stdlib-only.
-- On run: `bun install` then `uv sync` in the target directory (the new worktree path from
-  the `WorktreeCreate` stdin payload if present, else cwd / `$CLAUDE_PROJECT_DIR`).
+- On run: `bun install` then `uv sync` in the target directory (cwd / `$CLAUDE_PROJECT_DIR`).
 - After install, verify `prettier`, `markdownlint-cli2`, and `ruff` resolve; **warn** (do
   not mutate manifests) if any declared tool is missing. Never crash the caller.
 - Make it importable/callable so `/meta-install` reuses the same logic.
@@ -119,7 +117,7 @@ trailingComma "all", tabWidth 2`.
 - Body instructs running the installer (`uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/install_deps.py`,
   or `bun install` + `uv sync`) so a new contributor installs all dev libraries on first checkout.
 
-### 5. Register the hooks
+### 5. Register the lint hook
 
 - **Task ID:** register-hooks
 - **Depends On:** write-installer, write-dispatcher
@@ -131,8 +129,6 @@ trailingComma "all", tabWidth 2`.
   `enabledPlugins`.
 - Add `PostToolUse`: matcher `Write|Edit|MultiEdit` →
   `uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/lint.py`.
-- Add `WorktreeCreate` →
-  `uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/install_deps.py`.
 - Confirm the file is valid JSON.
 
 ### 6. Validate Everything
@@ -146,4 +142,5 @@ trailingComma "all", tabWidth 2`.
 - Run every command in acceptance-criteria.md → `## Validation Commands`.
 - Verify each acceptance criterion is met, including the per-extension stdin dispatcher
   tests, the warn-and-skip path, and install idempotency.
-- Verify whether `WorktreeCreate` fires for an internal `EnterWorktree`; record the finding.
+- Note: the `WorktreeCreate` auto-install approach was dropped — per the KB it replaces
+  git's default worktree creation entirely. Install is verified via `/meta-install` instead.

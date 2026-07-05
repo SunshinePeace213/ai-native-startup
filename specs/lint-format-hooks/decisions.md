@@ -92,6 +92,8 @@ tabWidth 2`; Ruff `line-length 100, target py312, select E/F/I/UP/B/SIM` + `ruff
 - **Out of scope:** lazy self-heal install inside the linter hook.
 - **Open question:** does internal `EnterWorktree` emit `WorktreeCreate`, and with which
   path field? Owner: build/validation step to determine empirically.
+  Resolved at build time: a `WorktreeCreate` hook replaces git's worktree creation entirely
+  (per `ai-docs/anthropic/worktrees.md`), so the auto-install approach was dropped.
 
 ## KB References
 
@@ -110,6 +112,10 @@ Docs the design stands on (path — fetched date):
 - `ai-docs/astral/uv-scripts.md` — 2026-07-05 — `uv run --script`, PEP 723 inline metadata
   (`# /// script … # ///`, empty `dependencies` required), `--no-project`, project deps
   ignored under inline metadata.
+- `ai-docs/anthropic/worktrees.md` — 2026-07-05 — registering a `WorktreeCreate` hook
+  **replaces git's default worktree creation entirely** (the hook must create the worktree
+  and print its path). This invalidated the planned `WorktreeCreate` auto-install, which is
+  why install is owned by `/meta-install` (with the linter warn-and-skipping until deps exist).
 
-All four were fetched 2026-07-05 (one day old at planning time) — within the 30-day
+All five were fetched 2026-07-05 (one day old at planning time) — within the 30-day
 freshness window; no stale warning and no gap-fill needed.
