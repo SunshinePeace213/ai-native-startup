@@ -101,9 +101,10 @@ def format_markdown(file_path: str, root: Path) -> None:
 
 
 def dispatch(file_path: str, root: Path) -> None:
-    if SKIP_SEGMENTS.intersection(Path(file_path).parts):
+    path = Path(file_path)
+    if SKIP_SEGMENTS.intersection(path.parts):
         return
-    ext = Path(file_path).suffix.lower()
+    ext = path.suffix.lower()
     if ext in PRETTIER_EXTS:
         format_prettier(file_path, root)
     elif ext in RUFF_EXTS:

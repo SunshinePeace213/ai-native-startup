@@ -5,13 +5,12 @@ allowed-tools: Bash
 
 # Meta Install
 
-Install the project's dev linters so the format-on-save hook can run.
-
-Run the shared installer:
+Set up the project's dev linters by running the shared installer:
 
 ```bash
 uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/install_deps.py
 ```
 
-It runs `bun install` + `uv sync` from the committed lockfiles, then warns (without
-mutating any manifest) if a declared tool is still unresolvable. Safe to run twice.
+It runs `bun install` + `uv sync` from the committed lockfiles and is safe to
+re-run, warning (without mutating any manifest) if a declared tool is still
+unresolvable.
