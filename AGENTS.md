@@ -4,6 +4,7 @@
 - **JavaScript/TypeScript**: Always use `bun`, never raw `npm` or `npx`
 - **Python rich panels**: Always full width panels
 - **Safe delete**: NEVER use `rm -rf` directly. Use `mv <target> ~/.Trash/` instead of permanent deletion to prevent accidental data loss
+- **Auto-format on save**: files Claude edits are auto-formatted in place by a project hook (Prettier / Ruff / markdownlint); a fresh checkout installs the linters on SessionStart or via `/meta-install`. See [HARNESS-LAYER.md](./HARNESS-LAYER.md)
 
 ## Harness Development
 
@@ -22,6 +23,7 @@
 - `.agents/` -- Codex Skills Confiugration
 - `ai-docs/` — cached official docs KB managed by `/kb` (catalog: `ai-docs/index.md`), plus hand-written project notes
 - `specs/` — planning files
+- `HARNESS-LAYER.md` — how the project's auto-format/lint hooks work (format-on-save, linter install)
 
 ## Harness-Layer Pipeline
 
