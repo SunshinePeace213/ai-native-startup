@@ -169,7 +169,13 @@ Use these files to complete the task:
 <!-- CODEX-OWNED. Written only by the spec-review skill (one `### Round N — Verdict: …` block per
      round). Claude must NEVER edit this section. -->
 
-_Pending Codex review._
+### Round 1 — Verdict: changes-requested
+
+- **AC1 validation can pass without proving AC1, and one validation command violates the repo runtime rule.** In `acceptance-criteria.md` `## Validation Commands`, replace the current manifest/config checks with assertions that parse `package.json`, `pyproject.toml`, `.prettierrc.json`, `.prettierignore`, and `.markdownlint.jsonc` and verify the exact dev dependencies and configured values named in AC1. Also replace the raw `python3 -c` hooks-registration check with a `uv run --no-project python ...` form, or a non-Python parser, so validation follows `AGENTS.md`'s "Python via uv" rule. As written, `bun pm ls | grep ...` plus `grep -q '\[tool.ruff\]'` does not prove `package.json` declares the required devDependencies, that `ruff` is a dev dependency, or that the Ruff/Prettier/markdownlint options match the spec.
+
+**Recommendations (advisory, non-blocking):**
+
+- Add `ai-docs/anthropic/hooks-guide.md` and/or `ai-docs/anthropic/agent-sdk/claude-code-features.md` to `decisions.md` `## KB References` for the classic `.claude/settings*.json` hook shape and snake_case `tool_input` payload. The current listed `ai-docs/anthropic/hooks.md` documents the newer `.claude/hooks.json`/camelCase schema, while the plan intentionally follows this repo's existing settings-file convention.
 
 ## Codex Verification
 

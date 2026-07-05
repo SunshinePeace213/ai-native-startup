@@ -99,6 +99,11 @@ Docs the design stands on (path — fetched date):
 
 - `ai-docs/anthropic/hooks.md` — 2026-07-05 — PostToolUse & WorktreeCreate events, matcher
   syntax, command-hook stdin/exit-code semantics, `WorktreeCreate` being async (cannot block).
+- `ai-docs/anthropic/hooks-guide.md` — 2026-07-05 — the **classic `settings.json` hook shape**
+  this repo actually uses (`"hooks": { "PostToolUse": [{ "matcher": "Edit|Write", "hooks": [...] }] }`)
+  with snake_case `.tool_input.file_path`; includes a worked PostToolUse Prettier-formatter
+  example matching this design. (`hooks.md` documents the newer `.claude/hooks.json`/camelCase
+  schema; the plan follows the classic settings-file convention grounded here.)
 - `ai-docs/anthropic/agent-sdk/slash-commands.md` — 2026-07-05 — custom Markdown commands in
   `.claude/commands/` with frontmatter (`description`, `allowed-tools`), `!`-bash execution;
   notes `.claude/commands/` is legacy vs `.claude/skills/` (repo convention keeps commands/).
@@ -106,5 +111,5 @@ Docs the design stands on (path — fetched date):
   (`# /// script … # ///`, empty `dependencies` required), `--no-project`, project deps
   ignored under inline metadata.
 
-All three were fetched 2026-07-05 (one day old at planning time) — within the 30-day
+All four were fetched 2026-07-05 (one day old at planning time) — within the 30-day
 freshness window; no stale warning and no gap-fill needed.
