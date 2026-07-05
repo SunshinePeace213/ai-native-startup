@@ -6,10 +6,11 @@
 """Install this repo's dev linters (Prettier, markdownlint-cli2, Ruff) from the
 committed manifests + lockfiles.
 
-Invoked by the ``/meta-install`` command (first contributor checkout, or a fresh
-worktree). Runs ``bun install`` + ``uv sync`` in the project root, then warns
-(never mutates a manifest) if a declared tool is absent. Always exits 0 so it can
-never break the caller.
+Invoked by the ``SessionStart`` hook (auto-install on a fresh session / clone) and
+the ``/meta-install`` command. Runs ``bun install`` + ``uv sync`` in the project
+root, then warns (never mutates a manifest) if a declared tool is unresolvable
+after install. Idempotent -- a fast no-op when deps are already present. Always
+exits 0 so it can never break the caller.
 """
 
 import os

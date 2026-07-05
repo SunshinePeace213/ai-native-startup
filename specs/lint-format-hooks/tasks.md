@@ -18,8 +18,9 @@ dispatcher) — and the `/meta-install` command that reuses the installer.
 
 ### Phase 3: Integration & Polish
 
-Register the `PostToolUse` lint hook in `.claude/settings.local.json` (preserving the
-existing `PreToolUse` hook), then validate every acceptance criterion end to end.
+Register the `PostToolUse` lint hook and the `SessionStart` install hook in
+`.claude/settings.local.json` (preserving the existing `PreToolUse` hook), then validate
+every acceptance criterion end to end.
 
 ## Team Orchestration
 
@@ -97,9 +98,9 @@ trailingComma "all", tabWidth 2`.
 - Create `.claude/hooks/lint.py` with a PEP 723 header, stdlib-only.
 - Read stdin JSON; extract `tool_input.file_path`; on malformed/empty input, exit 0.
 - Guard: skip paths under `node_modules/`, `.venv/`, `dist/`.
-- Route by extension: `.ts/.tsx/.js/.jsx/.json/.css` → `bun x prettier --write`;
+- Route by extension: `.ts/.tsx/.js/.jsx/.json/.css` → `node_modules/.bin/prettier --write`;
   `.py/.pyi` → `uv run --no-sync ruff format` then `uv run --no-sync ruff check --fix`;
-  `.md/.markdown` → `bun x markdownlint-cli2 --fix`. Unknown ext → no-op.
+  `.md/.markdown` → `node_modules/.bin/markdownlint-cli2 --fix`. Unknown ext → no-op.
 - Detect a missing tool WITHOUT installing (`uv run --no-sync …`; direct
   `node_modules/.bin/<tool>` for JS); on absence print a one-line stderr note and exit 0.
 - Never `exit 2`; surface unfixable lint as a non-blocking stderr note; always exit 0.
@@ -117,7 +118,7 @@ trailingComma "all", tabWidth 2`.
 - Body instructs running the installer (`uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/install_deps.py`,
   or `bun install` + `uv sync`) so a new contributor installs all dev libraries on first checkout.
 
-### 5. Register the lint hook
+### 5. Register the hooks
 
 - **Task ID:** register-hooks
 - **Depends On:** write-installer, write-dispatcher
@@ -129,6 +130,9 @@ trailingComma "all", tabWidth 2`.
   `enabledPlugins`.
 - Add `PostToolUse`: matcher `Write|Edit|MultiEdit` →
   `uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/lint.py`.
+- Add `SessionStart` →
+  `uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/install_deps.py` (auto-install deps
+  on a fresh session/clone). NO `WorktreeCreate` hook.
 - Confirm the file is valid JSON.
 
 ### 6. Validate Everything

@@ -34,14 +34,18 @@ readability, accepting the per-edit cold-start.
   - **Why:** No stalls or retry loops; the edit loop is never denied.
 
 - **Q:** How do the linters get installed, given they must live in the repo?
-  - **A:** Installed via the `/meta-install` command (`bun install` + `uv sync`) on a fresh
-    clone or a fresh worktree. NO `WorktreeCreate` hook: per `ai-docs/anthropic/worktrees.md`
+  - **A:** Two install paths: a **`SessionStart`** hook auto-installs (`bun install` +
+    `uv sync`) on a fresh session or clone (idempotent — a fast no-op once deps exist,
+    stderr-only), and the **`/meta-install`** command is the manual path for a first checkout
+    and for mid-session worktree entry (which fires `CwdChanged`, not `SessionStart`, so the
+    hook does not cover it). NO `WorktreeCreate` hook: per `ai-docs/anthropic/worktrees.md`
     a `WorktreeCreate` hook *replaces* git's default worktree creation (it must create the
     worktree and return its path), so it is unsafe as a setup hook. The linter itself does
     not self-heal; it warns-and-skips when a tool is absent.
   - **Why:** Keeps the install off the per-edit hot path and out of git-worktree creation;
-    `/meta-install` + warn-and-skip make the flow reliable without a footgun. Worktrees start
-    empty (`node_modules`/`.venv` gitignored) so they need an explicit install trigger.
+    the `SessionStart` hook plus `/meta-install` and warn-and-skip make the flow reliable
+    without a footgun. Worktrees start empty (`node_modules`/`.venv` gitignored) so they need
+    an explicit install trigger.
 
 - **Q:** What does the install step run?
   - **A:** Sync from lockfile (`bun install`, `uv sync`); warn (do not mutate) if a tool is
@@ -98,6 +102,9 @@ tabWidth 2`; Ruff `line-length 100, target py312, select E/F/I/UP/B/SIM` + `ruff
   path field? Owner: build/validation step to determine empirically.
   Resolved at build time: a `WorktreeCreate` hook replaces git's worktree creation entirely
   (per `ai-docs/anthropic/worktrees.md`), so the auto-install approach was dropped.
+- **Post-cross-check addition:** a `SessionStart` auto-install hook was added at the owner's
+  request after the Codex cross-check; mid-session worktree entry stays on `/meta-install`
+  because it fires `CwdChanged`, not `SessionStart`.
 
 ## KB References
 
@@ -120,7 +127,8 @@ Docs the design stands on (path — fetched date):
 - `ai-docs/anthropic/worktrees.md` — 2026-07-05 — registering a `WorktreeCreate` hook
   **replaces git's default worktree creation entirely** (the hook must create the worktree
   and print its path). This invalidated the planned `WorktreeCreate` auto-install, which is
-  why install is owned by `/meta-install` (with the linter warn-and-skipping until deps exist).
+  why install is owned by the `SessionStart` hook + `/meta-install` (with the linter
+  warn-and-skipping until deps exist).
 
 All five were fetched 2026-07-05 (one day old at planning time) — within the 30-day
 freshness window; no stale warning and no gap-fill needed.

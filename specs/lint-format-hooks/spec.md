@@ -11,12 +11,14 @@ written — Prettier for JS/TS via **bun**, Ruff for Python via **uv**, and mark
 for Markdown via **bun**. The linters run as **project dev dependencies** (declared in
 this repo's `package.json` / `pyproject.toml`, pinned by `bun.lock` / `uv.lock`), so a
 fresh checkout or a fresh git worktree must install them before they can run. That
-install is owned by the `/meta-install` command (`bun install` + `uv sync`), which a new
-contributor runs on first checkout and which is also how a fresh worktree gets populated;
-until it has run, the linter warns-and-skips. (A `WorktreeCreate` auto-install hook was
-rejected: per `ai-docs/anthropic/worktrees.md`, registering one replaces git's default
-worktree creation entirely, so it cannot be used just to install deps.) The dispatcher and
-installer are **Python** scripts run via `uv run --script`.
+install is handled two ways: a **`SessionStart`** hook auto-installs (`bun install` +
+`uv sync`) on a fresh session or clone — idempotent (a fast no-op once deps are present)
+and writing only to stderr — and the **`/meta-install`** command is the manual path for a
+first checkout and for mid-session worktree entry (which fires `CwdChanged`, not
+`SessionStart`); until deps exist, the linter warns-and-skips. (A `WorktreeCreate`
+auto-install hook was rejected: per `ai-docs/anthropic/worktrees.md`, registering one
+replaces git's default worktree creation entirely, so it cannot be used just to install
+deps.) The dispatcher and installer are **Python** scripts run via `uv run --script`.
 
 Scope note: this repo has no TS/Python source of its own today (it is a harness repo of
 Markdown + shell). This plan therefore also **scaffolds** the dev-tool manifests and
@@ -27,13 +29,14 @@ its worktrees) is what the linter hook then formats.
 
 Editing a `.ts`/`.tsx`/`.js`/`.jsx`/`.json`/`.css`, `.py`/`.pyi`, or `.md`/`.markdown`
 file in a session rooted at this repo auto-formats that file in place (never blocking the
-turn), using the project-declared linters; a contributor (or a fresh worktree) gets those
-linters by running `/meta-install`, and the linter warns-and-skips until they exist.
+turn), using the project-declared linters; those linters are installed by the
+`SessionStart` hook on a fresh session or clone and by `/meta-install` for a first checkout
+or mid-session worktree entry, and the linter warns-and-skips until they exist.
 
 ## Non-Goals
 
 - **No lazy self-heal install inside the linter hook.** The linter warns-and-skips when a
-  tool is missing; installation is owned by the `/meta-install` command.
+  tool is missing; installation is owned by the `SessionStart` hook and `/meta-install`.
 - **No blocking / gating.** The linter never denies an edit (never `exit 2`); leftover,
   non-auto-fixable lint issues are surfaced as a non-blocking note only.
 - **No user-level or plugin distribution.** Scope is this repo's `.claude/` only.
@@ -60,15 +63,18 @@ in place, and always exits 0. One dispatcher (not one script per language) is re
 because the classic settings hook `matcher` keys on **tool name**, not file extension —
 three separately-registered scripts would all spawn on every edit and triple the Python
 cold-start. Installation is a separate concern in `.claude/hooks/install_deps.py`
-(`bun install` + `uv sync`), invoked by the `/meta-install` command so the install logic
-lives in one place. Both scripts are stdlib-only Python invoked with `uv run --script`
-(PEP 723 inline metadata), honoring the repo's "always uv" rule while keeping cold-start
-minimal.
+(`bun install` + `uv sync`), invoked by a **`SessionStart`** hook (auto-install on a fresh
+session or clone; idempotent, stderr-only) and by the `/meta-install` command (the manual
+path for a first checkout and for mid-session worktree entry, which fires `CwdChanged` not
+`SessionStart`) so the install logic lives in one place. Both scripts are stdlib-only
+Python invoked with `uv run --script` (PEP 723 inline metadata), honoring the repo's
+"always uv" rule while keeping cold-start minimal.
 
 Main alternative considered and rejected: **lazy self-heal** (install-on-demand inside the
-linter). It is the most robust for correctness, but the owner chose an explicit install
-trigger (the `/meta-install` command) to keep manifest mutation out of the per-edit hot
-path; the linter's warn-and-skip plus `/meta-install` cover the gap. A `WorktreeCreate`
+linter). It is the most robust for correctness, but the owner chose explicit install
+triggers (the `SessionStart` hook plus the `/meta-install` command) to keep manifest
+mutation out of the per-edit hot path; the linter's warn-and-skip plus those install paths
+cover the gap. A `WorktreeCreate`
 auto-install hook was also rejected — per `ai-docs/anthropic/worktrees.md`, registering
 one replaces git's default worktree creation entirely, so it cannot serve as a mere
 install step.
@@ -80,9 +86,12 @@ install step.
   `lint.py` routes by extension, auto-fixes, and always exits 0.
 - **Python via `uv run --script`, stdlib-only.** Matches the owner's language choice and
   the "always uv" rule; PEP 723 header with empty `dependencies` so nothing resolves.
-- **Install owned by `/meta-install`, sync-from-lockfile.**
-  `install_deps.py` runs `bun install` + `uv sync`; if a linter is not declared in a
-  manifest it **warns** rather than mutating. Linter warns-and-skips if a tool is absent.
+- **Install by `SessionStart` hook + `/meta-install`, sync-from-lockfile.**
+  `install_deps.py` runs `bun install` + `uv sync`, invoked by a `SessionStart` hook
+  (auto-install on a fresh session/clone; idempotent, stderr-only) and by `/meta-install`
+  (manual path for a first checkout and mid-session worktree entry); if a declared linter
+  stays unresolvable after install it **warns** rather than mutating. Linter warns-and-skips
+  if a tool is absent.
 - **Linter configs:** Prettier `printWidth 100, singleQuote:false, semi, trailingComma:all,
 tabWidth 2`; Ruff `line-length 100, target py312, select E/F/I/UP/B/SIM` + `ruff format`;
   markdownlint lenient (`default:true`, disable MD013/MD033/MD041, MD024 siblings_only).
@@ -98,8 +107,8 @@ tabWidth 2`; Ruff `line-length 100, target py312, select E/F/I/UP/B/SIM` + `ruff
 Use these files to complete the task:
 
 - `.claude/settings.local.json` — tracked settings holding the existing `PreToolUse` Bash
-  hook; add `PostToolUse` (Write/Edit/MultiEdit → lint.py) here, preserving the existing
-  hook.
+  hook; add `PostToolUse` (Write/Edit/MultiEdit → lint.py) and `SessionStart` (→
+  install_deps.py) here, preserving the existing `PreToolUse` hook.
 - `.claude/hooks/block-coauthor-trailer.sh` — reference for the repo's hook conventions
   (stdin payload with snake_case `tool_name`/`tool_input`, `$CLAUDE_PROJECT_DIR`).
 - `AGENTS.md` — "always uv / always bun", full-width panels; the runtime rules the scripts
@@ -111,8 +120,8 @@ Use these files to complete the task:
   → route by extension → Prettier / Ruff / markdownlint auto-fix → warn-and-skip on missing
   tool → always exit 0. Stdlib-only, PEP 723 header.
 - `.claude/hooks/install_deps.py` — installer: `bun install` + `uv sync` (idempotent); warn
-  if a declared linter is missing from the manifests. Invoked by `/meta-install`.
-  Stdlib-only, PEP 723 header.
+  if a declared linter is unresolvable after install. Invoked by the `SessionStart` hook and
+  `/meta-install`. Stdlib-only, PEP 723 header.
 - `.claude/commands/meta-install.md` — `/meta-install` command: run the installer so a new
   contributor installs all dev libraries on first checkout.
 - `package.json` — declares `prettier` and `markdownlint-cli2` as devDependencies.
@@ -134,7 +143,10 @@ Use these files to complete the task:
   a path guard in the dispatcher).
 - **Formatter reports unfixable lint** (`ruff check` violations that are not auto-fixable):
   captured and echoed to stderr as a non-blocking note; still exit 0.
-- **`uv` or `bun` not on PATH**: warn to stderr and exit 0; the edit loop is never broken.
+- **`uv` or `bun` not on PATH**: the formatter subprocesses the dispatcher launches
+  (prettier/ruff/markdownlint) warn to stderr and exit 0; if the outer `uv` that launches
+  the hook is itself missing, the hook simply never starts — non-blocking per the hooks
+  docs. Either way the edit loop is never broken.
 - **Fresh worktree before install**: the linter warns-and-skips until `/meta-install` is
   run in that worktree (`bun install` + `uv sync` populate `node_modules`/`.venv`).
 - **Re-run idempotency**: `bun install` / `uv sync` and all formatters are safe to run
