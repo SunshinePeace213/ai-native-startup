@@ -4,10 +4,10 @@
 - **JavaScript/TypeScript**: Always use `bun`, never raw `npm` or `npx`
 - **Python rich panels**: Always full width panels
 - **Safe delete**: NEVER use `rm -rf` directly. Use `mv <target> ~/.Trash/` instead of permanent deletion to prevent accidental data loss
-- **Auto-format on save**: files Claude edits are auto-formatted in place by a project hook (Prettier / Ruff / markdownlint); a fresh checkout installs the linters on SessionStart or via `/meta-install`. See [HARNESS-LAYER.md](./HARNESS-LAYER.md)
 
 ## Harness Development
 
+- **Hooks**: files Claude edits are auto-formatted in place (Prettier / Ruff / markdownlint); a fresh checkout installs the linters on SessionStart or via `/meta-install`. Details: [HARNESS-LAYER.md](./HARNESS-LAYER.md)
 - **Keep it short**: Write harness/prompt files (skills, agents, commands, and rules under `.claude/` and `.agents/`) in fluent, KISS prose. Every line loads into context — say it once, briefly, then stop. When in doubt, cut.
 - **Memory goes here**: Persist project memory and preferences in this `AGENTS.md`, not `CLAUDE.md` (which only `@`-imports this file).
 - **Instructions, not rationale**: State what to do, not why. No "chose A over B", no decision logs, no design history — that's context bloat the agent never acts on.
