@@ -1,7 +1,7 @@
 # Spec: lint-format-hooks
 
 - **Owner:** @ringo
-- **Status:** Drafted for Review
+- **Status:** Approved
 
 ## Task Description
 
@@ -177,10 +177,17 @@ Use these files to complete the task:
 
 - Add `ai-docs/anthropic/hooks-guide.md` and/or `ai-docs/anthropic/agent-sdk/claude-code-features.md` to `decisions.md` `## KB References` for the classic `.claude/settings*.json` hook shape and snake_case `tool_input` payload. The current listed `ai-docs/anthropic/hooks.md` documents the newer `.claude/hooks.json`/camelCase schema, while the plan intentionally follows this repo's existing settings-file convention.
 
+### Round 2 — Verdict: approved
+
+The spec meets the bar for `/harness-build`; no blocking findings remain.
+
 ## Codex Verification
 
-- **Outcome:** _pending — Codex review not yet run_
-- **Rejected findings:** _none yet_
+- **Outcome:** approved at round 2 (round 1 requested stronger AC1/AC4 validation; fixed).
+- **Rejected findings:** none — the blocking finding (weak, non-parsing validation commands +
+  a raw `python3` call) and the advisory (ground the classic settings schema in a KB doc) were
+  both applied: validation now parses manifests via `uv run --no-project python`, and
+  `hooks-guide.md` was added to `## KB References`.
 
 ## References
 
@@ -198,4 +205,4 @@ specs/lint-format-hooks/
 - [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
 - [x] Acceptance criteria are specific and testable
 - [x] All four files exist under specs/lint-format-hooks/ and are saved in the repository
-- [ ] Codex has reviewed the spec and Status reflects the outcome
+- [x] Codex has reviewed the spec and Status reflects the outcome
