@@ -120,8 +120,9 @@ def test_allows_coauthor_name_starting_with_claude():
 
 
 def test_allows_non_git_command_mentioning_trailer():
-    """The old shell hook's false positive: writing documentation ABOUT the
-    trailer is not attributing a commit. No git/gh invocation, no block."""
+    """Writing documentation ABOUT the trailer is not attributing a commit:
+    the guard inspects only the command string for a git/gh token, unlike the
+    old hook's whole-payload grep. No git/gh token in the command, no block."""
     cmd = (
         "cat > docs/policy-notes.md <<'EOF'\nNever add "
         "Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\nEOF"

@@ -29,6 +29,9 @@
 - **AC9** — `.claude/settings.local.json` is untracked (out of the index, listed in `.gitignore`)
   with its on-disk copy reset to `{}`, and AGENTS.md carries the settings-sync rule: experiment in
   `settings.local.json`, fold shippable changes into `settings.json` before merging to main.
+- **AC10** — `.codex/hooks.json`'s PreToolUse command runs `block_attribution.py` via
+  `uv run --script`, and no tracked file outside `specs/` and `ai-docs/` still references
+  `block-coauthor-trailer.sh` (build-time amendment, see decisions.md).
 
 ## Validation Commands
 
@@ -57,3 +60,5 @@ Run these to prove the criteria above. Map each command to the criteria it verif
 - `uv run pytest tests/harness-layer/hooks/ -q` — verifies AC7. Pass: all tests pass, none skipped.
 - `grep -n "block_attribution.py" HARNESS-LAYER.md && grep -q "settings.json" HARNESS-LAYER.md && ! grep -q "block-coauthor-trailer.sh" HARNESS-LAYER.md && echo "docs OK"` —
   verifies AC8. Pass: match lines then `docs OK`.
+- `grep -q "block_attribution.py" .codex/hooks.json && ! grep -rq --exclude-dir=.git --exclude-dir=specs --exclude-dir=ai-docs "block-coauthor-trailer.sh" . && echo "codex hook OK"` —
+  verifies AC10. Pass: `codex hook OK`.

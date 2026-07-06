@@ -61,6 +61,16 @@ updates) follows repo conventions, recorded below as assumptions.
     after the round-2 approval per the advisory-recommendation workflow; automated merge-time
     enforcement of the rule is explicitly out of scope.
 
+- **Q:** (build, Codex impl-review round 1) `.codex/hooks.json` still executed the deleted
+  shell hook — revert the build's repoint, or amend the plan to include it?
+  - **A:** Amend: repointing the Codex PreToolUse command at `block_attribution.py` is in
+    scope; everything else Codex-side stays out.
+  - **Why:** Deleting the shell script orphaned the tracked Codex registration — every Codex
+    Bash call would exec a missing file, silently unenforcing the policy the plan strengthens.
+    `ai-docs/openai/codex/hooks.md` grounds compatibility (`tool_input.command` payload,
+    exit 2 blocks), so one guard serves both harnesses. Reverting would ship a known-broken
+    config. AC10 adds the validation.
+
 ## Assumptions
 
 Accepted by the user at sign-off as my recommendations; the build can challenge any of them by

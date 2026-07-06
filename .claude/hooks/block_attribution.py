@@ -46,7 +46,8 @@ def read_command() -> str | None:
 
     Bounded wait: a TTY or empty/unreadable/malformed stdin yields None
     (fail-open), as does any payload whose tool_name is not "Bash" or whose
-    command is not a non-empty string.
+    command is not a non-empty string. Expected no-payload cases stay silent;
+    unexpected I/O errors are noted to stderr.
     """
     try:
         stdin = sys.stdin
@@ -57,15 +58,19 @@ def read_command() -> str | None:
             note("no payload on stdin after 5s; allowing (fail-open)")
             return None
         raw = stdin.read()
-        if not raw or not raw.strip():
-            return None
+    except Exception as exc:  # noqa: BLE001
+        note(f"could not read stdin ({exc}); allowing (fail-open)")
+        return None
+    if not raw or not raw.strip():
+        return None
+    try:
         payload = json.loads(raw)
         if payload.get("tool_name") != "Bash":
             return None
         command = payload.get("tool_input", {}).get("command")
-        return command if isinstance(command, str) and command.strip() else None
-    except Exception:
-        return None
+    except (ValueError, AttributeError):
+        return None  # malformed payload is an expected fail-open case
+    return command if isinstance(command, str) and command.strip() else None
 
 
 def main() -> int:

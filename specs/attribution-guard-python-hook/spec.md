@@ -36,8 +36,11 @@ strings pass through untouched.
 
 - **No custom attribution text.** The user explicitly deferred customizing `attribution.commit` /
   `attribution.pr`; both are set to `""` for now (revisit later).
-- **No Codex-side changes.** Codex has its own hook/config system; this plan touches only the
-  Claude Code harness.
+- **No Codex-side changes** beyond repointing the existing `.codex/hooks.json` PreToolUse
+  command at the new guard (build-time amendment: that config executed the deleted shell
+  script, and Codex's hook contract — `tool_input.command` payload, exit 2 blocks, per
+  `ai-docs/openai/codex/hooks.md` — matches the guard's stdin contract). No other Codex
+  config or attribution work.
 - **No changes to the other hooks** (`lint.py`, `install_deps.py`, `check-spec-completeness.sh`).
 - **No change to GIT-COMMIT-PR-MESSAGE.md** — "no attribution" matches its current text verbatim.
 - **No automated enforcement of the settings-sync rule** — it ships as an AGENTS.md rule only;
@@ -116,6 +119,8 @@ Use these files to complete the task:
   `uv sync` (SessionStart / `/meta-install`) installs it.
 - `HARNESS-LAYER.md` — the "Block Claude Commit Trailer (PreToolUse)" section and the Files tree
   describe the old shell hook; update both.
+- `.codex/hooks.json` — Codex PreToolUse registration of the same guard; repointed from the
+  deleted shell script to `block_attribution.py` (build-time amendment, see decisions.md).
 
 ### New Files
 
