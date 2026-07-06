@@ -83,6 +83,16 @@ def test_blocks_gh_pr_body_with_generated_with_footer():
     assert_blocked(run_hook(bash_payload(cmd)))
 
 
+def test_blocks_whitespace_wrapped_generated_with_footer():
+    """Whitespace reflow is not an evasion route: a footer wrapped across lines
+    is still attribution."""
+    cmd = (
+        'gh pr create --title "x" --body "body\n\n'
+        '🤖 Generated with\n[Claude Code](https://claude.com/claude-code)"'
+    )
+    assert_blocked(run_hook(bash_payload(cmd)))
+
+
 # --- Allow: the guard must not tax legitimate work ---------------------------
 
 
@@ -90,13 +100,21 @@ def test_allows_clean_git_commit():
     """Ordinary commits are the 99% case; the guard must be invisible to them."""
     proc = run_hook(bash_payload('git commit -m "🔧 chore(hooks): x"'))
     assert proc.returncode == 0
-    assert proc.stderr == ""
+    assert "[block_attribution]" not in proc.stderr
 
 
 def test_allows_non_claude_coauthor():
     """The policy targets Claude attribution only — crediting a human
     co-author is legitimate git practice."""
     cmd = 'git commit -m "x\n\nCo-Authored-By: Alice <alice@example.com>"'
+    proc = run_hook(bash_payload(cmd))
+    assert proc.returncode == 0
+
+
+def test_allows_coauthor_name_starting_with_claude():
+    """Prefix names are not Claude: the trailing word boundary protects human
+    co-authors whose name merely starts with "Claude"."""
+    cmd = 'git commit -m "x\n\nCo-Authored-By: Claudette Rivers <c@example.com>"'
     proc = run_hook(bash_payload(cmd))
     assert proc.returncode == 0
 

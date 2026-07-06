@@ -20,11 +20,11 @@ import re
 import select
 import sys
 
-GIT_TOKEN = re.compile(r"\b(git|gh)\b")
+GIT_TOKEN = re.compile(r"\b(git|gh)\b", re.IGNORECASE)
 PATTERNS = [
     (
         "'Co-Authored-By: Claude ...' trailer",
-        re.compile(r"co-authored-by:\s*claude", re.IGNORECASE),
+        re.compile(r"co-authored-by:\s*claude\b", re.IGNORECASE),
     ),
     (
         "'Claude-Session:' trailer",
@@ -32,7 +32,7 @@ PATTERNS = [
     ),
     (
         "'Generated with [Claude Code]' footer",
-        re.compile(r"generated with \[?claude code\]?", re.IGNORECASE),
+        re.compile(r"generated\s+with\s+\[?claude\s+code\]?", re.IGNORECASE),
     ),
 ]
 
@@ -44,16 +44,17 @@ def note(msg: str) -> None:
 def read_command() -> str | None:
     """Extract tool_input.command from a Bash payload on stdin; None otherwise.
 
-    Never hangs: a TTY or empty/unreadable/malformed stdin yields None, as does
-    any payload whose tool_name is not "Bash" or whose command is not a
-    non-empty string.
+    Bounded wait: a TTY or empty/unreadable/malformed stdin yields None
+    (fail-open), as does any payload whose tool_name is not "Bash" or whose
+    command is not a non-empty string.
     """
     try:
         stdin = sys.stdin
         if stdin is None or stdin.closed or stdin.isatty():
             return None
-        ready, _, _ = select.select([stdin], [], [], 0.5)
+        ready, _, _ = select.select([stdin], [], [], 5.0)
         if not ready:
+            note("no payload on stdin after 5s; allowing (fail-open)")
             return None
         raw = stdin.read()
         if not raw or not raw.strip():

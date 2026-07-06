@@ -25,7 +25,7 @@ entering a worktree mid-session (SessionStart doesn't fire there).
 ### Block Claude Attribution (PreToolUse)
 
 `.claude/hooks/block_attribution.py` denies (exit 2) any Bash command that invokes
-`git` / `gh` and carries a default Claude attribution form — the `Co-Authored-By: Claude`
+`git` / `gh` and carries a default Claude attribution form in the command text — the `Co-Authored-By: Claude`
 trailer, the `Claude-Session:` trailer, or the `Generated with [Claude Code]` footer —
 per [GIT-COMMIT-PR-MESSAGE.md](./GIT-COMMIT-PR-MESSAGE.md). It acts only on git/gh
 commands, so non-git commands that merely mention those strings pass. The `attribution`

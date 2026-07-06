@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/block-coauthor-trailer.sh\"",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/block_attribution.py\"",
             "statusMessage": "Checking Bash command"
           }
         ]
