@@ -11,13 +11,15 @@ verifies this script.
 
 ### Phase 2: Core Implementation
 
-Registration and cleanup: add the `attribution` block to `.claude/settings.local.json`, point the
-PreToolUse hook at the new script, `git rm` the old shell hook. In parallel, the pytest suite and
-its `pytest` dev dependency.
+Registration and cleanup: migrate the shared config (plugins, hooks, new `attribution` block) into
+a tracked `.claude/settings.json`, untrack `settings.local.json` as the personal scratchpad, point
+the PreToolUse hook at the new script, `git rm` the old shell hook. In parallel, the pytest suite
+and its `pytest` dev dependency.
 
 ### Phase 3: Integration & Polish
 
-HARNESS-LAYER.md documentation update, then full validation against acceptance-criteria.md.
+HARNESS-LAYER.md documentation update plus the AGENTS.md settings-sync rule, then full validation
+against acceptance-criteria.md.
 
 ## Team Orchestration
 
@@ -78,11 +80,16 @@ HARNESS-LAYER.md documentation update, then full validation against acceptance-c
 - **Assigned To:** builder-hook
 - **Agent Type:** `general-purpose`
 - **Parallel:** false
-- **Satisfies:** AC6
-- In `.claude/settings.local.json`, add the top-level block
-  `"attribution": {"commit": "", "pr": "", "sessionUrl": false}`.
-- In the same file, change the `PreToolUse` → `Bash` hook command to
+- **Satisfies:** AC6, AC9
+- Create the tracked `.claude/settings.json` with the shared config migrated from
+  `.claude/settings.local.json`: the `enabledPlugins` block, the full `hooks` block, and the new
+  top-level `"attribution": {"commit": "", "pr": "", "sessionUrl": false}`.
+- In that hooks block, change the `PreToolUse` → `Bash` hook command to
   `uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/block_attribution.py`.
+- Untrack the scratchpad: `git rm --cached .claude/settings.local.json`, add
+  `.claude/settings.local.json` to `.gitignore`, and reset the on-disk file to `{}` — hooks merge
+  across scopes, so a stale local copy would keep invoking the deleted shell hook. (Old content
+  survives in `settings.json` and git history.)
 - `git rm .claude/hooks/block-coauthor-trailer.sh` (never plain `rm`; git history keeps it
   recoverable).
 
@@ -113,19 +120,23 @@ HARNESS-LAYER.md documentation update, then full validation against acceptance-c
 - Tests must encode intent in their names/docstrings (why the behavior matters, per the repo's
   testing rule), not just assert numbers.
 
-### 4. Update HARNESS-LAYER.md
+### 4. Update docs and the settings-sync rule
 
 - **Task ID:** update-docs
 - **Depends On:** wire-settings
 - **Assigned To:** builder-hook
 - **Agent Type:** `general-purpose`
 - **Parallel:** false
-- **Satisfies:** AC8
+- **Satisfies:** AC8, AC9
 - Replace the "Block Claude Commit Trailer (PreToolUse)" section: new name (e.g. "Block Claude
   Attribution (PreToolUse)"), the Python script path, the three blocked forms, and a sentence on
   the `attribution` settings block as the prevention layer.
-- Update the Files tree: `block_attribution.py` replaces `block-coauthor-trailer.sh`; note the
-  test suite at `tests/harness-layer/hooks/`.
+- Update HARNESS-LAYER.md's intro and Files tree: hooks are registered in `.claude/settings.json`
+  (not `settings.local.json`); `block_attribution.py` replaces `block-coauthor-trailer.sh`; note
+  the test suite at `tests/harness-layer/hooks/`.
+- Add the settings-sync rule to AGENTS.md (project memory), kept to two short lines: experiment in
+  `.claude/settings.local.json` (untracked, personal, overrides in-session); before merging to
+  main, fold changes that should ship into the tracked `.claude/settings.json`.
 - Note: HARNESS-LAYER.md may carry uncommitted local edits in the main checkout; reconcile against
   the branch copy, don't blindly overwrite.
 

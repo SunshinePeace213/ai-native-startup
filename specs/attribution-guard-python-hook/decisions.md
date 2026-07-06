@@ -50,14 +50,25 @@ updates) follows repo conventions, recorded below as assumptions.
   - **A:** Approved ("Approve — write the spec") on 2026-07-06.
   - **Why:** All nine replayed decisions accepted without revision.
 
+- **Q:** (post-approval) Codex's advisory — move shared config to `.claude/settings.json`?
+  - **A:** Yes, extended by a user directive into a workflow rule: `.claude/settings.json` becomes
+    the tracked shared truth (plugins, hooks, attribution); `.claude/settings.local.json` becomes
+    an untracked personal scratchpad (`git rm --cached` + `.gitignore`, on-disk copy reset to
+    `{}`); AGENTS.md gains the rule "experiment in settings.local.json; fold shippable changes
+    into settings.json before merging to main."
+  - **Why:** Matches the documented settings scopes (project = shared, local = personal), removes
+    the tracked-local-file oddity, and keeps a fast local-experimentation loop. Asked and answered
+    after the round-2 approval per the advisory-recommendation workflow; automated merge-time
+    enforcement of the rule is explicitly out of scope.
+
 ## Assumptions
 
 Accepted by the user at sign-off as my recommendations; the build can challenge any of them by
 reopening the plan, not by silently deviating:
 
-- **Settings location:** the `attribution` block goes in the tracked `.claude/settings.local.json`.
-  Repo convention — that file already registers all hooks and is checked into git, so the team
-  shares it. Invalidated if the repo later migrates to a shared `.claude/settings.json`.
+- **Settings location (SUPERSEDED):** originally the `attribution` block was to join the tracked
+  `.claude/settings.local.json`. Superseded post-approval by the settings.json migration decision
+  above — shared config now lives in `.claude/settings.json`.
 - **Hook naming & runtime:** `.claude/hooks/block_attribution.py`, `#!/usr/bin/env -S uv run
   --script` shebang with PEP 723 inline metadata (`requires-python = ">=3.12"`, stdlib only) —
   mirrors `lint.py` / `install_deps.py`. Snake_case because it is Python, like its siblings.
@@ -89,9 +100,10 @@ reopening the plan, not by silently deviating:
 - **Out of scope:** Codex-side attribution/config — Codex sessions are not governed by Claude Code
   hooks or settings.
 - **Out of scope:** any change to `lint.py`, `install_deps.py`, or `check-spec-completeness.sh`.
-- **Open question (owner: @SunshinePeace213):** whether the repo should migrate tracked settings
-  from `settings.local.json` to a shared `settings.json` — surfaced during grilling because
-  "local" is conventionally personal scope; deliberately not part of this plan.
+- **Out of scope:** automated enforcement of the settings-sync rule (a merge-time CI check or
+  hook) — the rule ships as AGENTS.md prose; automation is a candidate future chore.
+- ~~Open question: migrate tracked settings from `settings.local.json` to a shared
+  `settings.json`?~~ **Resolved** post-approval — see the settings.json migration decision above.
 
 ## KB References
 

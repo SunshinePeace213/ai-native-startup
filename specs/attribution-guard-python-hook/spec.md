@@ -1,7 +1,7 @@
 # Spec: Attribution guard — Python hook + attribution settings
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
   <!-- Lifecycle, set by /plan-w-team: Drafted for Review → Approved (after a Codex `approved`
        verdict) → Needs Human Review (still changes-requested after 2 Codex rounds). One value only. -->
 
@@ -40,6 +40,8 @@ strings pass through untouched.
   Claude Code harness.
 - **No changes to the other hooks** (`lint.py`, `install_deps.py`, `check-spec-completeness.sh`).
 - **No change to GIT-COMMIT-PR-MESSAGE.md** — "no attribution" matches its current text verbatim.
+- **No automated enforcement of the settings-sync rule** — it ships as an AGENTS.md rule only;
+  a merge-time check (CI or hook) is a possible future chore.
 
 ## Problem Statement
 
@@ -54,8 +56,12 @@ backstop — rewritten in Python to fix its false positives and coverage gaps.
 
 ## Solution Approach
 
-Add the `attribution` block to the tracked `.claude/settings.local.json` and swap the PreToolUse
-hook command from the shell script to a new Python guard. The guard reads the hook payload from
+Migrate the shared config into a tracked `.claude/settings.json` — the documented team scope —
+carrying `enabledPlugins`, the hooks block, and the new `attribution` block, and swap the PreToolUse
+hook command from the shell script to a new Python guard. `.claude/settings.local.json` becomes an
+untracked personal scratchpad (it overrides the project file in-session), governed by a new
+AGENTS.md rule: experiment locally, fold shippable changes into `settings.json` before merging to
+main. The guard reads the hook payload from
 stdin, and only when `tool_name == "Bash"` **and** the command string contains a `git`/`gh` token
 does it scan for the three default Claude attribution patterns (case-insensitive):
 `Co-Authored-By: Claude …` (any model name), `Claude-Session:`, and `Generated with [Claude Code]`.
@@ -78,6 +84,10 @@ model to add it). Rejected in grilling (Q1).
   inspect only `tool_input.command`, and require a `git`/`gh` token before pattern-matching.
 - **Block every default form** — co-author trailer with any model name, `Claude-Session:` trailer,
   and the `🤖 Generated with [Claude Code]` PR footer; exit 2 + stderr guidance on match.
+- **settings.json is the shared truth** — plugins, hooks, and attribution migrate to a tracked
+  `.claude/settings.json`; `.claude/settings.local.json` becomes an untracked personal scratchpad;
+  AGENTS.md gains the sync rule (fold shippable local changes into `settings.json` before merging
+  to main). User-locked, post-approval revision extending Codex's advisory.
 
 ## Tracking
 
@@ -95,8 +105,11 @@ Use these files to complete the task:
 
 - `.claude/hooks/block-coauthor-trailer.sh` — the shell hook being replaced; remove with `git rm`
   once the Python guard is registered (recoverable from git history — never `rm -rf`).
-- `.claude/settings.local.json` — tracked settings file; gains the `attribution` block and the new
-  hook command under the existing `PreToolUse` → `Bash` matcher.
+- `.claude/settings.local.json` — migration source: its `enabledPlugins` and `hooks` move into the
+  new `settings.json`; the file is then untracked (`git rm --cached`) and reset on disk to `{}`.
+- `.gitignore` — gains a `.claude/settings.local.json` line so the scratchpad stays personal.
+- `AGENTS.md` — gains the settings-sync rule (experiment in `settings.local.json`, fold shippable
+  changes into `settings.json` before merging to main).
 - `.claude/hooks/lint.py` — style reference: `uv run --script` shebang, PEP 723 inline metadata,
   stdin-read pattern (`select` with timeout), fail-open `main()` wrapper.
 - `pyproject.toml` — add `pytest>=8` to the existing `[dependency-groups] dev` list so
@@ -106,6 +119,8 @@ Use these files to complete the task:
 
 ### New Files
 
+- `.claude/settings.json` — the tracked shared config: `enabledPlugins`, `hooks` (PreToolUse →
+  `block_attribution.py`, PostToolUse lint, SessionStart install), and the `attribution` block.
 - `.claude/hooks/block_attribution.py` — the Python guard (stdlib only; PEP 723 header with
   `requires-python = ">=3.12"`, empty `dependencies`).
 - `tests/harness-layer/hooks/test_block_attribution.py` — subprocess-based pytest suite feeding JSON
@@ -131,6 +146,10 @@ Use these files to complete the task:
 - **`uv` missing or script unreadable** → the hook command itself fails; per documented exit-code
   semantics a non-2 failure does not block the tool call. Accepted risk; `install_deps.py` owns
   keeping `uv` present.
+- **Stale personal scratchpad** — hooks merge across settings scopes, so a leftover
+  `settings.local.json` still registering the deleted shell hook would fail on every Bash call.
+  The migration must reset the on-disk file to `{}`; its old content survives in `settings.json`
+  and git history.
 - **Idempotency / concurrency** — the guard is a pure read-only check on stdin; no state, safe to
   run on every Bash call and in parallel sessions.
 
@@ -181,12 +200,18 @@ Use these files to complete the task:
   location. Keep the current scope decision if intentional; otherwise move the shared hook and
   attribution settings to `.claude/settings.json`.
 
+### Round 2 — Verdict: approved
+
+The spec meets the harness-build bar with no remaining blocking findings.
+
 ## Codex Verification
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** pending — review loop not yet run
-- **Rejected findings:** none
+- **Outcome:** approved at round 2 (round 1 `changes-requested` — the AC6 grep-exit-code
+  validation defect — fixed in commit `4bd325f`)
+- **Rejected findings:** none — the single blocking finding was applied; the advisory
+  settings.json recommendation was put to the user after approval (see decisions.md)
 
 ## References
 
@@ -204,4 +229,4 @@ specs/attribution-guard-python-hook/
 - [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
 - [x] Acceptance criteria are specific and testable
 - [x] All four files exist under specs/attribution-guard-python-hook/ and are saved in the repository
-- [ ] Codex has reviewed the spec and Status reflects the outcome
+- [x] Codex has reviewed the spec and Status reflects the outcome
