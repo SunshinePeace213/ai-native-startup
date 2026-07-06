@@ -38,6 +38,7 @@ turns attribution off at the source; this hook is the enforcement backstop.
 ```text
 .claude/
 ├── settings.json                # registers the hooks + attribution off
+├── settings.json                # registers any harness layer in development branch
 ├── hooks/
 │   ├── lint.py                  # format-on-save dispatcher
 │   ├── install_deps.py          # installer (SessionStart + /meta-install)

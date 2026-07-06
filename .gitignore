@@ -365,4 +365,5 @@ dist
 # =============================================================================
 # Claude Code personal scratchpad — shared config lives in .claude/settings.json
 # =============================================================================
+.claude/worktrees
 .claude/settings.local.json
