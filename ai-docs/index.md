@@ -27,6 +27,7 @@ and run `/kb`.
 | Environment variables — shell setup, settings precedence, variable catalog | [anthropic/env-vars.md](./anthropic/env-vars.md) | 2026-07-05 |
 | Built-in tools reference — tools, permissions, behaviors | [anthropic/tools-reference.md](./anthropic/tools-reference.md) | 2026-07-05 |
 | Hooks reference — events, schemas, handlers, exit codes | [anthropic/hooks.md](./anthropic/hooks.md) | 2026-07-05 |
+| Settings — scopes, precedence, attribution, config keys | [anthropic/settings.md](./anthropic/settings.md) | 2026-07-06 |
 | Model lineup — names, capabilities, pricing, platform availability | [anthropic/models.md](./anthropic/models.md) | 2026-07-05 |
 | Agent Skills via the Messages API — custom and managed skills | [anthropic/skills-api-guide.md](./anthropic/skills-api-guide.md) | 2026-07-05 |
 | Agent Skills — authoring best practices for concise, effective skills | [anthropic/skills-best-practices.md](./anthropic/skills-best-practices.md) | 2026-07-05 |

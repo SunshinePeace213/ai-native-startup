@@ -10,6 +10,7 @@
 - **Hooks**: files Claude edits are auto-formatted in place (Prettier / Ruff / markdownlint); a fresh checkout installs the linters on SessionStart or via `/meta-install`. Details: [HARNESS-LAYER.md](./HARNESS-LAYER.md)
 - **Keep it short**: Write harness/prompt files (skills, agents, commands, and rules under `.claude/` and `.agents/`) in fluent, KISS prose. Every line loads into context — say it once, briefly, then stop. When in doubt, cut.
 - **Memory goes here**: Persist project memory and preferences in this `AGENTS.md`, not `CLAUDE.md` (which only `@`-imports this file).
+- **Settings sync**: Experiment in `.claude/settings.local.json` (untracked, personal, overrides in-session). Before merging to main, fold changes that should ship into the tracked `.claude/settings.json`.
 - **Instructions, not rationale**: State what to do, not why. No "chose A over B", no decision logs, no design history — that's context bloat the agent never acts on.
 - **No stray cross-refs**: Don't reference other commands or skills unless the file actually needs them to run. Mentions "for context" just add noise.
 - **Model selection**: Always pass **alias** (`opus`, `sonnet`, `haiku`, `fable`). Never hardcode a dated id like `claude-sonnet-4-6` or `claude-opus-4-8`

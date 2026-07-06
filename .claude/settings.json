@@ -13,7 +13,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-coauthor-trailer.sh"
+            "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block_attribution.py"
           }
         ]
       }
@@ -39,5 +39,10 @@
         ]
       }
     ]
+  },
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
   }
 }

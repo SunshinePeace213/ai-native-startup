@@ -2,7 +2,7 @@
 
 ## Hooks
 
-Three Claude Code hooks, registered in `.claude/settings.local.json`, keep the repo tidy.
+Three Claude Code hooks, registered in `.claude/settings.json`, keep the repo tidy.
 
 ### Auto Lint (PostToolUse)
 
@@ -22,23 +22,29 @@ runs `.claude/hooks/install_deps.py` (`bun install` + `uv sync`) — idempotent,
 no-op once the tools exist. Run `/meta-install` by hand on a first clone or after
 entering a worktree mid-session (SessionStart doesn't fire there).
 
-### Block Claude Commit Trailer (PreToolUse)
+### Block Claude Attribution (PreToolUse)
 
-`.claude/hooks/block-coauthor-trailer.sh` rejects any `git` / `gh` command whose message
-carries a `Co-Authored-By: Claude` trailer, per
-[GIT-COMMIT-PR-MESSAGE.md](./GIT-COMMIT-PR-MESSAGE.md).
+`.claude/hooks/block_attribution.py` denies (exit 2) any Bash command that contains a
+`git` / `gh` token and carries a default Claude attribution form in the command text — the
+`Co-Authored-By: Claude` trailer, the `Claude-Session:` trailer, or the
+`Generated with [Claude Code]` footer — per
+[GIT-COMMIT-PR-MESSAGE.md](./GIT-COMMIT-PR-MESSAGE.md). Commands without a git/gh token
+that merely mention those strings pass. The `attribution` block in `.claude/settings.json`
+turns attribution off at the source; this hook is the enforcement backstop.
+`.codex/hooks.json` registers the same guard for Codex sessions.
 
 ### Files
 
 ```text
 .claude/
-├── settings.local.json          # registers the hooks
+├── settings.json                # registers the hooks + attribution off
 ├── hooks/
 │   ├── lint.py                  # format-on-save dispatcher
 │   ├── install_deps.py          # installer (SessionStart + /meta-install)
-│   └── block-coauthor-trailer.sh  # commit-trailer guard
+│   └── block_attribution.py     # attribution guard (PreToolUse)
 └── commands/
     └── meta-install.md          # the /meta-install command
+tests/harness-layer/hooks/       # pytest suite for the hooks
 .prettierrc.json                 # Prettier config
 .prettierignore
 .markdownlint.jsonc              # markdownlint config
