@@ -81,6 +81,10 @@ anthropic:
     file: anthropic/hooks.md
     topic: Hooks reference — events, schemas, handlers, exit codes
     fetched: 2026-07-05
+  - url: https://code.claude.com/docs/en/settings
+    file: anthropic/settings.md
+    topic: Settings — scopes, precedence, attribution, config keys
+    fetched: 2026-07-06
   - url: https://platform.claude.com/docs/en/about-claude/models/overview
     file: anthropic/models.md
     topic: Model lineup — names, capabilities, pricing, platform availability
