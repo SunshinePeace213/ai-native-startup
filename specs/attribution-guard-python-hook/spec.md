@@ -204,14 +204,20 @@ Use these files to complete the task:
 
 The spec meets the harness-build bar with no remaining blocking findings.
 
+### Round 3 — Verdict: approved
+
+The revised settings.json migration and settings-sync rule meet the harness-build bar with no remaining blocking findings.
+
 ## Codex Verification
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
 - **Outcome:** approved at round 2 (round 1 `changes-requested` — the AC6 grep-exit-code
-  validation defect — fixed in commit `4bd325f`)
-- **Rejected findings:** none — the single blocking finding was applied; the advisory
-  settings.json recommendation was put to the user after approval (see decisions.md)
+  validation defect — fixed in commit `4bd325f`); the post-approval settings.json migration +
+  sync-rule revision (user-directed, extending Codex's advisory) was re-verified and approved at
+  round 3
+- **Rejected findings:** none — the single blocking finding was applied and the advisory was
+  applied in extended form per the user's directive (see decisions.md)
 
 ## References
 
