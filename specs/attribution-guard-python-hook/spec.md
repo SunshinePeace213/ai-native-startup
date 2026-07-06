@@ -164,7 +164,22 @@ Use these files to complete the task:
 <!-- CODEX-OWNED. Written only by the spec-review skill (one `### Round N — Verdict: …` block per
      round). Claude must NEVER edit this section. -->
 
-*Pending Codex review.*
+### Round 1 — Verdict: changes-requested
+
+- `acceptance-criteria.md` AC6's validation command for the removed shell hook is self-failing:
+  `git ls-files .claude/hooks/ | grep -c block-coauthor-trailer.sh` prints `0` when the hook is
+  gone, but `grep` exits 1 on no match, so the validation step can fail after a correct build.
+  Replace it with an exit-status-safe check, for example
+  `! git ls-files --error-unmatch .claude/hooks/block-coauthor-trailer.sh` or
+  `test "$(git ls-files .claude/hooks/block-coauthor-trailer.sh | wc -l)" -eq 0`.
+
+**Recommendations (advisory, non-blocking):**
+
+- The plan's use of tracked `.claude/settings.local.json` matches the repo's current working
+  convention, but `ai-docs/anthropic/settings.md` and `ai-docs/anthropic/hooks-guide.md` describe
+  local settings as personal / not shareable and `.claude/settings.json` as the shareable project
+  location. Keep the current scope decision if intentional; otherwise move the shared hook and
+  attribution settings to `.claude/settings.json`.
 
 ## Codex Verification
 

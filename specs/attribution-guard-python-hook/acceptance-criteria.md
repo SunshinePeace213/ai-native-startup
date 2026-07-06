@@ -43,8 +43,9 @@ Run these to prove the criteria above. Map each command to the criteria it verif
   verify AC5. Pass: both `exit=0`.
 - `uv run python -c "import json,sys; s=json.load(open('.claude/settings.local.json')); a=s['attribution']; assert a=={'commit':'','pr':'','sessionUrl':False}, a; cmds=[h['command'] for m in s['hooks']['PreToolUse'] for h in m['hooks']]; assert any('block_attribution.py' in c for c in cmds), cmds; print('settings OK')"` —
   verifies AC6 (attribution block + hook registration + valid JSON). Pass: `settings OK`.
-- `git ls-files .claude/hooks/ | grep -c block-coauthor-trailer.sh` — verifies AC6 (old hook gone).
-  Pass: `0`.
+- `! git ls-files --error-unmatch .claude/hooks/block-coauthor-trailer.sh 2>/dev/null && echo "old hook gone"` —
+  verifies AC6 (old hook gone). Pass: prints `old hook gone`, exit 0. (Not `grep -c`, which exits 1
+  on zero matches and would fail a correct build.)
 - `uv run pytest tests/harness-layer/hooks/ -q` — verifies AC7. Pass: all tests pass, none skipped.
 - `grep -n "block_attribution.py" HARNESS-LAYER.md && ! grep -q "block-coauthor-trailer.sh" HARNESS-LAYER.md && echo "docs OK"` —
   verifies AC8. Pass: match lines then `docs OK`.
