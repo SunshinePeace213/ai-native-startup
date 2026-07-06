@@ -96,7 +96,8 @@ HARNESS-LAYER.md documentation update, then full validation against acceptance-c
 - **Satisfies:** AC7
 - Add `pytest>=8` to `[dependency-groups] dev` in `pyproject.toml` (alongside `ruff`), then
   `uv sync`.
-- Create `.claude/hooks/tests/test_block_attribution.py`: each test runs the script via
+- Create `tests/harness-layer/hooks/test_block_attribution.py` (create the folder path; it is the
+  repo-level home for harness hook suites): each test runs the script via
   `subprocess.run`, feeds a JSON payload on stdin, and asserts exit code (and stderr content for
   blocks). Cover at minimum:
   - block: `git commit -m` message with `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`
@@ -123,7 +124,8 @@ HARNESS-LAYER.md documentation update, then full validation against acceptance-c
 - Replace the "Block Claude Commit Trailer (PreToolUse)" section: new name (e.g. "Block Claude
   Attribution (PreToolUse)"), the Python script path, the three blocked forms, and a sentence on
   the `attribution` settings block as the prevention layer.
-- Update the Files tree: `block_attribution.py` (+ `tests/`) replaces `block-coauthor-trailer.sh`.
+- Update the Files tree: `block_attribution.py` replaces `block-coauthor-trailer.sh`; note the
+  test suite at `tests/harness-layer/hooks/`.
 - Note: HARNESS-LAYER.md may carry uncommitted local edits in the main checkout; reconcile against
   the branch copy, don't blindly overwrite.
 

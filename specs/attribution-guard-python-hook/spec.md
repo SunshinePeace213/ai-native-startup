@@ -108,7 +108,7 @@ Use these files to complete the task:
 
 - `.claude/hooks/block_attribution.py` — the Python guard (stdlib only; PEP 723 header with
   `requires-python = ">=3.12"`, empty `dependencies`).
-- `.claude/hooks/tests/test_block_attribution.py` — subprocess-based pytest suite feeding JSON
+- `tests/harness-layer/hooks/test_block_attribution.py` — subprocess-based pytest suite feeding JSON
   payloads to the script and asserting exit codes + stderr.
 
 ## Edge Cases
@@ -156,7 +156,7 @@ Use these files to complete the task:
   protected files" recipe grounds. Do not mix the two.
 - New dev dependency: `pytest>=8` via `uv add --dev pytest` (or editing `[dependency-groups]`
   directly, matching how `ruff` is pinned).
-- Run tests with `uv run pytest .claude/hooks/tests/ -q` after `uv sync`.
+- Run tests with `uv run pytest tests/harness-layer/hooks/ -q` after `uv sync`.
 - Follow-up (out of scope): revisit custom attribution text once the user decides on wording.
 
 ## Codex Findings

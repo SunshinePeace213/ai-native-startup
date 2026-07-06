@@ -39,6 +39,13 @@ updates) follows repo conventions, recorded below as assumptions.
     Hiding everything also matches GIT-COMMIT-PR-MESSAGE.md verbatim, so no policy-doc change is
     needed. Customization is deferred, not rejected.
 
+- **Q:** Where do the hook tests live?
+  - **A:** `tests/harness-layer/hooks/test_block_attribution.py` — a repo-level
+    `tests/harness-layer/hooks/` folder as the home for harness hook suites.
+  - **Why:** User directive during drafting (supersedes the initial `.claude/hooks/tests/`
+    recommendation); keeps test code out of the context-loaded `.claude/` tree and gives future
+    hook tests a shared, predictable location.
+
 - **Q:** Final sign-off on the full decision set?
   - **A:** Approved ("Approve — write the spec") on 2026-07-06.
   - **Why:** All nine replayed decisions accepted without revision.
@@ -64,7 +71,8 @@ reopening the plan, not by silently deviating:
   prevents generation. Matches `lint.py`'s never-block posture.
 - **Block mechanics:** stderr policy message + exit 2, per the settings-based hook format
   (exit 2 = deny, stderr fed back to Claude so it retries clean).
-- **Tests:** subprocess-based pytest (`.claude/hooks/tests/test_block_attribution.py`) that runs
+- **Tests:** subprocess-based pytest (`tests/harness-layer/hooks/test_block_attribution.py`;
+  location user-directed — see Resolved Decisions) that runs
   the script with sample payloads and asserts exit code + stderr — tests the real stdin→exit-code
   contract rather than internals. `pytest>=8` added to the existing `[dependency-groups] dev`.
 - **Old hook removal:** `git rm .claude/hooks/block-coauthor-trailer.sh` after the replacement is

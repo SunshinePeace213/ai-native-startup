@@ -21,7 +21,7 @@
   `"attribution": {"commit": "", "pr": "", "sessionUrl": false}`, its `PreToolUse` → `Bash` hook
   runs `block_attribution.py` via `uv run --script`, the file is valid JSON, and
   `block-coauthor-trailer.sh` is no longer tracked.
-- **AC7** — `uv run pytest .claude/hooks/tests/ -q` passes with zero failures and zero skips, and
+- **AC7** — `uv run pytest tests/harness-layer/hooks/ -q` passes with zero failures and zero skips, and
   the suite covers every block/allow case listed in tasks.md task 3.
 - **AC8** — HARNESS-LAYER.md describes the Python guard (path, three blocked forms, attribution
   settings as the prevention layer) and its Files tree no longer mentions the shell hook.
@@ -45,6 +45,6 @@ Run these to prove the criteria above. Map each command to the criteria it verif
   verifies AC6 (attribution block + hook registration + valid JSON). Pass: `settings OK`.
 - `git ls-files .claude/hooks/ | grep -c block-coauthor-trailer.sh` — verifies AC6 (old hook gone).
   Pass: `0`.
-- `uv run pytest .claude/hooks/tests/ -q` — verifies AC7. Pass: all tests pass, none skipped.
+- `uv run pytest tests/harness-layer/hooks/ -q` — verifies AC7. Pass: all tests pass, none skipped.
 - `grep -n "block_attribution.py" HARNESS-LAYER.md && ! grep -q "block-coauthor-trailer.sh" HARNESS-LAYER.md && echo "docs OK"` —
   verifies AC8. Pass: match lines then `docs OK`.
