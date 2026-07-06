@@ -131,6 +131,26 @@ def test_allows_non_git_command_mentioning_trailer():
     assert proc.returncode == 0
 
 
+def test_allows_payload_with_git_only_outside_command():
+    """The old whole-payload grep false-blocked when a stray 'git' anywhere in
+    the payload JSON (here: the cwd) combined with trailer text in the command.
+    The guard reads only tool_input.command, so that false positive is gone."""
+    payload = json.dumps(
+        {
+            "tool_name": "Bash",
+            "cwd": "/home/user/git/repo",
+            "tool_input": {
+                "command": (
+                    "cat > notes.md <<'EOF'\nNever add "
+                    "Co-Authored-By: Claude <noreply@anthropic.com>\nEOF"
+                )
+            },
+        }
+    )
+    proc = run_hook(payload)
+    assert proc.returncode == 0
+
+
 def test_allows_non_bash_payload():
     """The guard is scoped to Bash: blocking Write/Edit payloads would break
     unrelated tools for no policy gain."""
