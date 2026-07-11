@@ -2,25 +2,7 @@
 
 ## Hooks
 
-Three Claude Code hooks, registered in `.claude/settings.json`, keep the repo tidy.
-
-### Auto Lint (PostToolUse)
-
-`.claude/hooks/lint.py` formats every file Claude writes or edits, routed by extension:
-
-- `.ts .tsx .js .jsx .json .css` → Prettier (bun)
-- `.py .pyi` → `ruff format` + `ruff check --fix` (uv)
-- `.md .markdown` → markdownlint (bun)
-
-It never blocks a turn: it always exits 0, warns and skips when a formatter is missing,
-and leaves `node_modules/`, `.venv/`, and `dist/` alone.
-
-### Install Deps (SessionStart + /meta-install)
-
-The linters are dev-dependencies pinned by `bun.lock` / `uv.lock`. A SessionStart hook
-runs `.claude/hooks/install_deps.py` (`bun install` + `uv sync`) — idempotent, a fast
-no-op once the tools exist. Run `/meta-install` by hand on a first clone or after
-entering a worktree mid-session (SessionStart doesn't fire there).
+Only one Claude Code hooks, registered in `.claude/settings.json`, keep the repo tidy.
 
 ### Block Claude Attribution (PreToolUse)
 
@@ -38,10 +20,7 @@ turns attribution off at the source; this hook is the enforcement backstop.
 ```text
 .claude/
 ├── settings.json                # registers the hooks + attribution off
-├── settings.json                # registers any harness layer in development branch
 ├── hooks/
-│   ├── lint.py                  # format-on-save dispatcher
-│   ├── install_deps.py          # installer (SessionStart + /meta-install)
 │   └── block_attribution.py     # attribution guard (PreToolUse)
 └── commands/
     └── meta-install.md          # the /meta-install command
