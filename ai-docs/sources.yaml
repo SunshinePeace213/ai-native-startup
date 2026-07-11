@@ -208,6 +208,10 @@ astral:
     topic: uv — projects: create, manage, and build Python projects
     fetched: 2026-07-05
 openai/codex:
+  - url: https://learn.chatgpt.com/docs/models
+    file: openai/codex/models.md
+    topic: Codex — model catalog (Sol, Terra, Luna, 5.5, Spark) and reasoning-effort levels
+    fetched: 2026-07-11
   - url: https://developers.openai.com/codex/config-basic
     file: openai/codex/config-basic.md
     topic: Codex — basic config: locations, precedence, common options, feature flags

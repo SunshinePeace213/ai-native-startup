@@ -17,10 +17,12 @@ TARGET: $ARGUMENTS — the branch or worktree name to ship. Empty → infer from
 
 ## Instructions
 
-- **Resolve the branch, worktree path, and PR** from `git worktree list` and `gh pr list`,
-  cross-checked against the plan's `## Tracking` block in `specs/<name>/spec.md`.
-  `EnterWorktree` mangles branch names (`chore/x` → `worktree-chore+x`), so trust
-  `git worktree list`, not a guessed name. No open PR for the branch → STOP.
+- **Resolve two distinct branch names.** The `local_branch` is the mangled worktree branch
+  (`EnterWorktree` turns `chore/17-x` into `worktree-chore+17-x`) — take it from
+  `git worktree list`. The `remote_branch` is the convention branch `<type>/<N>-<slug>` from
+  the spec's `## Tracking` — it is what the PR heads. Use `remote_branch` for
+  `gh pr list --head` and the remote deletion; use `local_branch` only for local cleanup.
+  No open PR for `remote_branch` → STOP.
 - **Merge only a green, ready PR at the approved head.** The PR must be ready (not draft),
   its required checks must pass (`gh pr checks` — treat "no checks" as pass), and its head
   SHA must equal the **approved head recorded in the PR body's stage table** (the Evidence of
@@ -38,9 +40,9 @@ TARGET: $ARGUMENTS — the branch or worktree name to ship. Empty → infer from
 
 ## Workflow
 
-1. **Resolve.** Find the branch, its worktree path (`git worktree list`), and its PR
-   (`gh pr list --head <branch>`; cross-check the spec's `## Tracking`). Nothing resolves,
-   or no open PR → STOP and report.
+1. **Resolve.** Find the worktree path and `local_branch` (`git worktree list`), the
+   `remote_branch` from the spec's `## Tracking`, and the PR
+   (`gh pr list --head <remote_branch>`). Nothing resolves, or no open PR → STOP and report.
 2. **Verify the PR.** It is ready (not draft), `gh pr checks <PR>` passes (no checks = pass),
    and its head equals the approved head recorded in the PR body's stage table (final
    Codex R / Ready row Evidence). Any mismatch → ABORT with the reason.

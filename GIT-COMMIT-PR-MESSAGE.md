@@ -75,8 +75,9 @@ Refs #42
 
 - Exactly **one type label** per issue, matching the change type: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore` (the old `enhancement` / `bug` / `documentation` labels are renamed to `feat` / `fix` / `docs`).
 - Exactly **one `priority:P0`–`priority:P3`** label, chosen at creation (default `priority:P2`).
-- `status:needs-human` is the **only** status label — apply it when a plan or build is flagged for human review.
+- `status:needs-human` is the **only** status label — apply it when a plan or build is flagged for human review; remove it when the flagged work later passes review.
 - `epic` is orthogonal — it rides alongside the type + priority labels on an epic/plan issue.
+- **Who applies them:** the agent path (`gh issue create` in the plan commands) attaches the full type + priority set at creation. Manual web-form submissions attach only the form's built-in labels (the type; `epic` for epics) — the maintainer completes the priority (and, for epics, the type) label at triage; GitHub issue forms cannot map a dropdown to a label.
 
 ## Model-C Linking & Reference Vocabulary
 

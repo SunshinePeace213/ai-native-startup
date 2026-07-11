@@ -108,7 +108,7 @@ Every plan gets a GitHub issue and its own convention branch so `/build` can pic
 - **Tracking.** In spec.md's `## Tracking`, record Issue `#N`, Branch `<type>/<N>-<slug>`, and the absolute worktree path (`git rev-parse --show-toplevel`).
 - **Commit.** Stage only the spec folder (`git add specs/<name-of-plan>/`) and make one commit `<emoji> <type>(spec): draft plan for <name-of-plan>` with a `Refs #N` footer — no `Co-Authored-By`.
 - **Push.** `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>` lands the convention branch on GitHub.
-- **Plan-links comment.** After the first push, upsert one issue comment whose first line is `<!-- plan-links -->`, its body markdown links to all four spec files as blob URLs on the convention branch. Search the issue's comments for the marker; update it via `gh api` if found, else `gh issue comment`. Always pass the body with `--body-file`, never inline shell interpolation.
+- **Plan-links comment.** After the first push, upsert one issue comment whose first line is `<!-- plan-links -->`, its body markdown links to all four spec files as blob URLs on the convention branch. Upsert: list comments with `gh api --paginate repos/{owner}/{repo}/issues/<N>/comments`; if the marker is found, update with `gh api --method PATCH repos/{owner}/{repo}/issues/comments/<comment-id> -F body=@<file>`; else create with `gh issue comment <N> --body-file <file>`. Always write the body to a file first (`gh api` has no `--body-file`).
 
 ## Codex Cross-Review
 
@@ -116,13 +116,13 @@ Once the plan is pushed, Codex reviews it as a peer — up to `MAX_REVIEW_ROUNDS
 
 1. **Ask Codex.** `codex exec -C "<worktree root>" -s workspace-write "Use the spec-review skill to review round <N> of the plan at specs/<name-of-plan>/spec.md; read all four files, append your verdict inside spec.md's ## Codex Findings, and return only the terse summary."`
 2. **Read the verdict from the file, not stdout:** `grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<name-of-plan>/spec.md | tail -1`. A round that writes no verdict is re-run — never treated as approval.
-3. **Relay the digest.** Read the `**Issue-comment digest:**` paragraph at the end of the round's verdict block and post it verbatim as an issue comment whose first line is `<!-- codex-spec-round-N -->` (N = the round). Upsert by marker (update via `gh api` if found, else `gh issue comment`), body via `--body-file`. Codex never calls `gh` — you relay.
+3. **Relay the digest.** Read the `**Issue-comment digest:**` paragraph at the end of the round's verdict block and post it verbatim as an issue comment whose first line is `<!-- codex-spec-round-N -->` (N = the round). Upsert by marker exactly as the plan-links comment does (paginated `gh api` search → PATCH `-F body=@<file>`, else `gh issue comment --body-file`). Codex never calls `gh` — you relay.
 4. **`changes-requested`** → fix the blocking findings, then checkpoint: `git add specs/<name-of-plan>/`, one commit with `Refs #N`, push. Go to round N+1.
 5. **`approved`** → gate passed. Set spec.md `Status: Approved`, then checkpoint the approval round (one commit with `Refs #N`, push). Handle the recommendations below.
 
-**Better-approach recommendations are advisory** — they never block approval. Once approved, for each one Codex left, analyze it, explain to the user whether it is genuinely better, and ask via AskUserQuestion whether to apply. Applying a recommendation is a NEW commit and triggers one more review round — approval never covers unreviewed changes.
+**Better-approach recommendations are advisory** — they never block approval. Once approved, for each one Codex left, analyze it, explain to the user whether it is genuinely better, and ask via AskUserQuestion whether to apply. Applying a recommendation is a NEW commit and triggers one more review round — approval never covers unreviewed changes. Advice rounds never count against `MAX_REVIEW_ROUNDS` (that cap governs `changes-requested` loops), so an approval at the cap still has a valid re-review path.
 
-**Over `MAX_REVIEW_ROUNDS` and still `changes-requested`** → STOP. Set spec.md `Status: Needs Human Review`, add the `status:needs-human` label to the issue (`gh issue edit <N> --add-label status:needs-human`), record the outstanding findings in `## Codex Verification`, commit and push, and tell the user to resolve them before the plan continues. Do NOT run the hand-off Report.
+**Over `MAX_REVIEW_ROUNDS` and still `changes-requested`** → STOP. Set spec.md `Status: Needs Human Review`, add the `status:needs-human` label to the issue (`gh issue edit <N> --add-label status:needs-human`), record the outstanding findings in `## Codex Verification`, commit and push, and tell the user to resolve them before the plan continues. Do NOT run the hand-off Report. When a later round reaches `approved` after this escalation, remove the label (`gh issue edit <N> --remove-label status:needs-human`).
 
 Record the final outcome (approved at round N | needs human review after N rounds) in spec.md's `## Codex Verification`.
 

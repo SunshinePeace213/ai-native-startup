@@ -1,6 +1,6 @@
 # Concept ported from pr-review-toolkit/type-design-analyzer.md — re-sync when that plugin updates.
 name = "review-type-design"
-description = "Reviews types added or changed in the branch diff (the supplied commit range) for encapsulation, invariant expression/enforcement, and usefulness — flagging types that allow illegal states or leak mutable internals. Read-only; reports grounded findings only."
+description = "Reviews types, schemas, and contracts added or changed in the branch diff (the supplied commit range) for encapsulation, invariant expression/enforcement, and usefulness — flagging designs that allow illegal states or leak mutable internals. Read-only; reports grounded findings only."
 sandbox_mode = "read-only"
 model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
@@ -15,9 +15,11 @@ Review exactly the commit range given in your task prompt (`<BASE_SHA>..<HEAD_SH
 delta range on later rounds). Every finding MUST be INTRODUCED by that range — do not flag
 pre-existing code. Only when the prompt says the working tree may be dirty, also run
 `git status --porcelain --untracked-files=all`, `git diff`, and `git diff --staged` to catch
-uncommitted or untracked work. Review only types (classes, structs, dataclasses, interfaces, TS types, enums, etc.) newly
-added or modified in the diff; read surrounding usage as needed. If the diff introduces no types,
-report "no findings — no new/changed types" and stop.
+uncommitted or untracked work. Review types (classes, structs, dataclasses, interfaces, TS types, enums, etc.)
+AND schemas/contracts (config shapes, frontmatter fields, structured file formats, API/prompt
+interface contracts) newly added or modified in the diff; read surrounding usage as needed. If the
+diff introduces no types, schemas, or contracts, report "no findings — no new/changed types,
+schemas, or contracts" and stop.
 
 ## For each new/changed type, analyze
 1. Invariants — identify the data-consistency rules, valid state transitions, field

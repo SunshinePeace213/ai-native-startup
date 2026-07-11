@@ -35,7 +35,7 @@ body:
     id: chore-kind
     attributes:
       label: Chore kind
-      description: Check all that apply — maps to the Conventional-Commits type for the branch and commits.
+      description: Check all that apply — categorizes the maintenance work; the issue itself stays type `chore` (the branch/commit type is picked at plan time).
       options:
         - label: refactor — restructure code without changing behavior
         - label: perf — improve performance

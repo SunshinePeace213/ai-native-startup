@@ -58,6 +58,7 @@ and run `/kb`.
 | Agent SDK — Python API reference: query() and ClaudeSDKClient | [anthropic/agent-sdk/python.md](./anthropic/agent-sdk/python.md) | 2026-07-05 |
 | uv — running scripts: inline dependencies and executables | [astral/uv-scripts.md](./astral/uv-scripts.md) | 2026-07-05 |
 | uv — projects: create, manage, and build Python projects | [astral/uv-projects.md](./astral/uv-projects.md) | 2026-07-05 |
+| Codex — model catalog (Sol, Terra, Luna, 5.5, Spark) and reasoning-effort levels | [openai/codex/models.md](./openai/codex/models.md) | 2026-07-11 |
 | Codex — basic config: locations, precedence, common options, feature flags | [openai/codex/config-basic.md](./openai/codex/config-basic.md) | 2026-07-05 |
 | Codex — advanced config: profiles, CLI overrides, precedence | [openai/codex/config-advanced.md](./openai/codex/config-advanced.md) | 2026-07-05 |
 | Codex — config.toml reference: user, project, security settings | [openai/codex/config-reference.md](./openai/codex/config-reference.md) | 2026-07-05 |

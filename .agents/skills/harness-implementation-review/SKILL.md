@@ -87,7 +87,7 @@ lens sequentially yourself). Name every skipped lens with its reason on the repo
   code: swallowed errors, overbroad catches, unjustified fallbacks.
 - **test-coverage** — only when executable hook scripts (or their tests) changed:
   untested critical paths, error handling, edge/negative cases.
-- **type-design** — only when the diff contains application code with types/schemas.
+- **type-design** — only when the diff changes types, schemas, or contracts (config shapes, frontmatter fields, structured formats count).
 - **simplification** — **advisory**: prompt bloat, redundant instructions, sections
   that repeat defaults. SKIPPED by default whenever a tidy report exists (a PR comment,
   or the caller stating a tidy pass ran); run it only as an explicit fallback when no
@@ -131,8 +131,12 @@ model aliases, MCP config — check the cached official doc in `ai-docs/`:
 ## Verdict rule
 
 - `approved` ONLY when zero blocking findings remain this round AND every Validation
-  Command passed.
-- Otherwise `changes-requested`. Advisory findings (simplification, ungrounded, stale)
+  Command either passed this round or carries a recorded carry-forward skip — on a
+  delta round, a command that passed last round and whose inputs are unchanged is a
+  conforming skip, recorded with its reason in the `Validation:` field.
+- Otherwise `changes-requested`. A FAILing command, or one omitted without a recorded
+  carry-forward reason (affected by the delta, previously failing, or newly required),
+  forces `changes-requested`. Advisory findings (simplification, ungrounded, stale)
   never change the verdict.
 
 ## Report format — write to the file, reproduce exactly

@@ -57,7 +57,7 @@ Load before grilling, so questions and design rest on documented behavior:
 
 1. Read `ai-docs/index.md` and open every cached doc relevant to the request's harness surface (hooks work → hooks.md; a new command → skills-and-commands.md; and so on).
 2. If a doc you load is older than `STALE_AFTER`, warn the user and suggest running `/harness-layer:kb` first; continue with the stale copy only if they accept.
-3. **Gap-fill:** if the KB has no doc for a topic the plan depends on, fetch it now — WebFetch the official page (or ask the claude-code-guide subagent for the right URL), write it as a normal mirror under `ai-docs/` (frontmatter `source` + `fetched`, `> **In here:**` bullets, faithful body), and add its entry to `ai-docs/sources.yaml`. After entering the worktree, re-create the gap-filled files there and commit them with the spec.
+3. **Gap-fill:** if the KB has no doc for a topic the plan depends on, fetch and READ it now — WebFetch the official page (or ask the claude-code-guide subagent for the right URL) — but write nothing yet: all writes happen inside the worktree. After Enter Worktree, write the mirror under `ai-docs/` (frontmatter `source` + `fetched`, `> **In here:**` bullets, faithful body) AND add its entry to `ai-docs/sources.yaml`, then commit them with the spec.
 4. Log every doc you relied on — path + its `fetched` date — in decisions.md under `## KB References` (a section you append; the templates don't carry it).
 
 ## Grilling Protocol
@@ -87,7 +87,7 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 9. Name the Plan - Create a descriptive kebab-case name from the plan's main topic, and pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test)
 10. Create & Link Issue - File the GitHub issue from the grilling ledger and link its convention branch (see `Worktree & Handoff`). Do this before entering the worktree.
 11. Enter Worktree - BEFORE writing any file, call `EnterWorktree(name: "<type>/<N>-<slug>")` to branch from `origin/main` into `.claude/worktrees/` and draft inside it (see `Worktree & Handoff`)
-12. Write the Spec Folder - Create `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and fill all four `SPEC_FILES` from `SPEC_TEMPLATES`; append `## KB References` to decisions.md; re-create any gap-filled KB docs inside the worktree; record the issue, branch, and worktree path in spec.md's `## Tracking`
+12. Write the Spec Folder - Create `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and fill all four `SPEC_FILES` from `SPEC_TEMPLATES`; append `## KB References` to decisions.md; write any gap-filled KB docs and their `ai-docs/sources.yaml` entries inside the worktree; record the issue, branch, and worktree path in spec.md's `## Tracking`
 13. Commit & Push - Commit the spec folder (plus gap-filled KB docs) with a `Refs #N` footer, push its branch to `origin`, then post the plan-links comment on the issue (see `Worktree & Handoff`)
 14. Cross-Review - Have Codex review the spec with `CROSS_REVIEW_SKILL`, up to `MAX_REVIEW_ROUNDS`, fixing blocking findings each round (see `Codex Cross-Review`). Gate the hand-off on the outcome.
 15. Report - Follow the `Report` section to summarize the spec folder and its key components
@@ -120,7 +120,7 @@ Every plan gets a GitHub issue and its own convention branch so `/harness-layer:
 - **Tracking.** In spec.md's `## Tracking`, record Issue `#N`, Branch `<type>/<N>-<slug>`, and the absolute worktree path (`git rev-parse --show-toplevel`).
 - **Commit.** Stage the spec folder (`git add specs/<name-of-plan>/`) plus any gap-filled KB docs (`git add ai-docs/`) and make one commit `<emoji> <type>(spec): draft plan for <name-of-plan>` with a `Refs #N` footer — no `Co-Authored-By`.
 - **Push.** `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>` lands the convention branch on GitHub.
-- **Plan-links comment.** After the first push, upsert one issue comment whose first line is `<!-- plan-links -->`, its body markdown links to all four spec files as blob URLs on the convention branch. Search the issue's comments for the marker; update it via `gh api` if found, else `gh issue comment`. Always pass the body with `--body-file`, never inline shell interpolation.
+- **Plan-links comment.** After the first push, upsert one issue comment whose first line is `<!-- plan-links -->`, its body markdown links to all four spec files as blob URLs on the convention branch. Upsert: list comments with `gh api --paginate repos/{owner}/{repo}/issues/<N>/comments`; if the marker is found, update with `gh api --method PATCH repos/{owner}/{repo}/issues/comments/<comment-id> -F body=@<file>`; else create with `gh issue comment <N> --body-file <file>`. Always write the body to a file first (`gh api` has no `--body-file`).
 
 ## Codex Cross-Review
 
@@ -128,13 +128,13 @@ Once the plan is pushed, Codex reviews it as a peer — up to `MAX_REVIEW_ROUNDS
 
 1. **Ask Codex.** `codex exec -C "<worktree root>" -s workspace-write "Use the harness-spec-review skill to review round <N> of the plan at specs/<name-of-plan>/spec.md; read all four files and the KB docs listed in decisions.md ## KB References, append your verdict inside spec.md's ## Codex Findings, and return only the terse summary."`
 2. **Read the verdict from the file, not stdout:** `grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<name-of-plan>/spec.md | tail -1`. A round that writes no verdict is re-run — never treated as approval.
-3. **Relay the digest.** Read the `**Issue-comment digest:**` paragraph at the end of the round's verdict block and post it verbatim as an issue comment whose first line is `<!-- codex-spec-round-N -->` (N = the round). Upsert by marker (update via `gh api` if found, else `gh issue comment`), body via `--body-file`. Codex never calls `gh` — you relay.
+3. **Relay the digest.** Read the `**Issue-comment digest:**` paragraph at the end of the round's verdict block and post it verbatim as an issue comment whose first line is `<!-- codex-spec-round-N -->` (N = the round). Upsert by marker exactly as the plan-links comment does (paginated `gh api` search → PATCH `-F body=@<file>`, else `gh issue comment --body-file`). Codex never calls `gh` — you relay.
 4. **`changes-requested`** → fix the blocking findings, then checkpoint: `git add specs/<name-of-plan>/ ai-docs/`, one commit with `Refs #N`, push. Go to round N+1.
 5. **`approved`** → gate passed. Set spec.md `Status: Approved`, then checkpoint the approval round (one commit with `Refs #N`, push). Handle the recommendations below.
 
-**Better-approach recommendations are advisory** — they never block approval. Once approved, for each one Codex left, analyze it, explain to the user whether it is genuinely better, and ask via AskUserQuestion whether to apply. Applying a recommendation is a NEW commit and triggers one more review round — approval never covers unreviewed changes.
+**Better-approach recommendations are advisory** — they never block approval. Once approved, for each one Codex left, analyze it, explain to the user whether it is genuinely better, and ask via AskUserQuestion whether to apply. Applying a recommendation is a NEW commit and triggers one more review round — approval never covers unreviewed changes. Advice rounds never count against `MAX_REVIEW_ROUNDS` (that cap governs `changes-requested` loops), so an approval at the cap still has a valid re-review path.
 
-**Over `MAX_REVIEW_ROUNDS` and still `changes-requested`** → STOP. Set spec.md `Status: Needs Human Review`, add the `status:needs-human` label to the issue (`gh issue edit <N> --add-label status:needs-human`), record the outstanding findings in `## Codex Verification`, commit and push, and tell the user to resolve them before the plan continues. Do NOT run the hand-off Report.
+**Over `MAX_REVIEW_ROUNDS` and still `changes-requested`** → STOP. Set spec.md `Status: Needs Human Review`, add the `status:needs-human` label to the issue (`gh issue edit <N> --add-label status:needs-human`), record the outstanding findings in `## Codex Verification`, commit and push, and tell the user to resolve them before the plan continues. Do NOT run the hand-off Report. When a later round reaches `approved` after this escalation, remove the label (`gh issue edit <N> --remove-label status:needs-human`).
 
 Record the final outcome (approved at round N | needs human review after N rounds) in spec.md's `## Codex Verification`.
 

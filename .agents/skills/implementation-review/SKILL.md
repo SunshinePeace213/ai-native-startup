@@ -173,10 +173,13 @@ prior round — you simply honor the injected N.
 ## Verdict rule
 
 - Use `approved` ONLY when **zero blocking findings remain this round AND every
-  Validation Command passed**.
-- Otherwise use `changes-requested`. Any FAILing / not-run Validation Command, or any
-  blocking finding from section A or B, forces `changes-requested`. Advisory
-  (`review-simplification`) findings never change the verdict.
+  Validation Command either passed this round or carries a recorded carry-forward
+  skip** — on a delta round, a command that passed last round and whose inputs are
+  unchanged is a conforming skip, recorded with its reason in the `Validation:` field.
+- Otherwise use `changes-requested`. Any FAILing Validation Command, or one omitted
+  without a recorded carry-forward reason (affected by the delta, previously failing,
+  or newly required), or any blocking finding from section A or B, forces
+  `changes-requested`. Advisory (`review-simplification`) findings never change the verdict.
 
 ## Report format — write to the file, reproduce exactly
 
