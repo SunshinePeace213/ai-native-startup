@@ -88,14 +88,26 @@ def run(cmd: list[str], cwd: Path | str | None = None) -> tuple[int, str, str] |
     can point at the meta-install skill. Any other launch failure returns
     ``(-1, "", str(exc))``; signal deaths also surface as negative codes,
     so callers treat ``code < 0`` uniformly as infrastructure failure.
+    Color-forcing env vars are stripped and NO_COLOR is set so captured
+    output stays machine-readable for diagnostics fed back to the agent.
     """
+    env = {k: v for k, v in os.environ.items() if k not in ("FORCE_COLOR", "CLICOLOR_FORCE")}
+    env["NO_COLOR"] = "1"
     try:
-        proc = subprocess.run(cmd, cwd=str(cwd) if cwd else None, capture_output=True, text=True)
+        proc = subprocess.run(
+            cmd, cwd=str(cwd) if cwd else None, capture_output=True, text=True, env=env
+        )
     except FileNotFoundError:
         return None
     except Exception as exc:  # noqa: BLE001
         return (-1, "", str(exc))
     return (proc.returncode, proc.stdout, proc.stderr)
+
+
+def tail(text: str, lines: int = 3) -> str:
+    """Last ``lines`` lines of ``text``, joined with ' | ' for a one-line note."""
+    stripped = text.strip()
+    return " | ".join(stripped.splitlines()[-lines:]) if stripped else ""
 
 
 def is_vendored(file_path: Path | str, root: Path) -> bool:
@@ -119,3 +131,24 @@ def format_diagnostics(lines: list[str], cap: int = DIAGNOSTIC_CAP) -> str:
     if extra > 0:
         shown.append(f"... and {extra} more")
     return "\n".join(shown)
+
+
+def target(exts: set[str]) -> tuple[Path, Path] | None:
+    """Shared format-hook guards: ``(file, project root)``, or None to exit 0.
+
+    None for: no/invalid stdin payload, non-matching extension, vendored
+    path, or a file deleted before the hook ran (only that case notes).
+    """
+    file_path = read_file_path()
+    if not file_path:
+        return None
+    path = Path(file_path)
+    if path.suffix.lower() not in exts:
+        return None
+    root = resolve_root()
+    if is_vendored(path, root):
+        return None
+    if not path.is_file():
+        note(f"{path} no longer exists; skipping")
+        return None
+    return path, root

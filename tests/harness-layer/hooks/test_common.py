@@ -187,6 +187,15 @@ def test_run_returns_exit_code_and_streams():
     assert (code, out.strip(), err.strip()) == (3, "out", "err")
 
 
+def test_run_strips_color_forcing_env(monkeypatch):
+    """Exit-2 diagnostics are fed to the agent as text: a session that forces
+    ANSI color (FORCE_COLOR) must not leak escape codes into captured output."""
+    monkeypatch.setenv("FORCE_COLOR", "3")
+    probe = "import os; print(os.environ.get('FORCE_COLOR'), os.environ.get('NO_COLOR'))"
+    code, out, _ = _common.run([sys.executable, "-c", probe])
+    assert (code, out.strip()) == (0, "None 1")
+
+
 # --- note(): every stderr line says which hook is talking --------------------
 
 
