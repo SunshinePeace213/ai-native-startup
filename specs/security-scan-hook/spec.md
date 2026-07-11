@@ -110,7 +110,7 @@ session baseline neutralizes the sweep's false-positive hazard on user-owned dir
 - **Branch:** feat/21-security-scan-hook
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/security-scan-hook
 - **Review profile:** kb-grounded
-- **PR:** <#M — filled by /harness-layer:harness-build>
+- **PR:** #22
 
 ## Relevant Files
 
