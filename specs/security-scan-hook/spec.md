@@ -19,10 +19,14 @@ agent is allowed to finish. Secret findings block until fixed; vulnerability fin
 
 ## Objective
 
-Every file an agent writes or edits in a session is scanned; a file containing a high-precision
-secret pattern cannot survive to the end of the agent's turn unnoticed — the agent is blocked
-with file:line:rule feedback until the secret is removed or explicitly pragma-suppressed — and
-curated vulnerability patterns surface to the agent as non-blocking warnings.
+Every file an agent writes via Write/Edit/MultiEdit is scanned at write time, and every file an
+agent creates or newly dirties through Bash is scanned by an end-of-turn sweep; a high-precision
+secret finding blocks the agent — immediately at write time, and once more at turn end — with
+file:line:rule feedback until the secret is removed or pragma-suppressed, so no secret passes
+silently. Curated vulnerability patterns surface to the agent as non-blocking warnings. Two
+documented limits: Bash edits to files already dirty at session start are not attributed (see
+Non-Goals), and the Stop gate blocks at most once per turn without progress (per the KB-documented
+`stop_hook_active` contract) — it guarantees loud, blocking diagnostics, not impossibility.
 
 ## Non-Goals
 
@@ -32,6 +36,13 @@ curated vulnerability patterns surface to the agent as non-blocking warnings.
 - Auto-remediation — the hook reports; the agent fixes
 - External scanner binaries (gitleaks, trufflehog, semgrep) — the ruleset is stdlib regex only
 - Blocking on vulnerability heuristics — blocking is reserved for secret matches
+- Attributing Bash edits to baseline-dirty files (files already uncommitted at SessionStart) —
+  such a change cannot be told apart from the user's own concurrent edits without process-level
+  attribution, and never flagging user-owned work is the design cornerstone; the per-write gate
+  still covers Write/Edit on those same files
+- An unbypassable Stop gate — the runtime overrides Stop blocks that repeat without progress, and
+  the KB contract requires exiting early on `stop_hook_active`; the sweep blocks once with full
+  diagnostics, it does not make stopping impossible
 
 ## Problem Statement
 
@@ -55,10 +66,15 @@ findings, diagnostics capped):
    (`git status --porcelain`) so the user's own uncommitted work is never flagged. The per-write
    gate records each scanned path; a `PostToolUse` hook on `Bash` adds newly dirty files
    (current dirty set minus baseline) so shell-created files (`echo >`, heredoc) are covered.
-   State lives in `.claude/.security-scan/<session_id>.json` (gitignored).
+   Bash edits to baseline-dirty files stay excluded by design (see Non-Goals — attribution is
+   impossible and user files must never be flagged). State lives in
+   `.claude/.security-scan/<session_id>.json` (gitignored).
 3. **End-of-turn sweep** — `Stop` + `SubagentStop` re-scan every tracked file that still exists;
-   any secret finding blocks the turn from ending (exit 2) until fixed or suppressed. Only the
-   tracked set is swept — never the whole working tree.
+   any secret finding blocks the turn from ending (exit 2) with full diagnostics. Per the KB
+   `stop_hook_active` contract, when the payload carries `stop_hook_active: true` the sweep exits
+   0 after printing a final loud warning — it blocks at most once per turn without progress, so
+   it never fights the runtime's block cap. Only the tracked set is swept — never the whole
+   working tree.
 4. **False-positive escape** — an inline `security-scan: allow` pragma on (or immediately above)
    the flagged line suppresses it, and placeholder values (`example`, `changeme`,
    `your-key-here`, `xxx…`) are auto-skipped by the scanner.
@@ -70,7 +86,8 @@ session baseline neutralizes the sweep's false-positive hazard on user-owned dir
 ## Requirements & Decisions
 
 - **Two-layer trigger, per-write + sweep** — immediate feedback at the moment of the mistake,
-  plus a completion gate that also covers Bash-created files. Owner-selected over per-write-only.
+  plus a completion gate that also covers Bash-created and newly dirtied files (baseline-dirty
+  paths excluded; see Non-Goals). Owner-selected over per-write-only.
 - **Secrets block (exit 2), vulnerabilities warn (exit 0 + additionalContext)** — blocking is
   reserved for high-precision matches; heuristics must never wedge legitimate work.
 - **Suppression = inline pragma + placeholder heuristics** — visible in diffs where it happens;
@@ -124,9 +141,9 @@ Use these files to complete the task:
   the sweep still covers Write/Edit-tracked files
 - Corrupt or missing session-state file → treated as empty (sweep passes; tracking restarts)
 - Concurrent sessions/worktrees → state keyed by `session_id` under each project dir; no sharing
-- Stop-loop safety → the sweep blocks only while findings persist (fixing them is the progress
-  path); Claude Code's built-in 8-consecutive-block cap is the backstop, and `stop_hook_active`
-  is logged for diagnosis
+- Stop-loop safety → the sweep parses `stop_hook_active` per the KB guide: false/absent → block
+  (exit 2) on secret findings; true → print a final loud warning and exit 0. It blocks at most
+  once per turn without progress, so the runtime's 8-block override never has to engage
 - Re-run idempotency → scanning is pure (same content, same findings); tracked paths are deduped
 
 ## Red Flags

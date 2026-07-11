@@ -16,9 +16,12 @@
   with no findings.
 - **AC4** — After `session_baseline.py` runs in a repo with one pre-dirty file, and
   `track_bash_writes.py` runs after a Bash-created file appears, the session state file contains
-  the new file in the tracked set and does NOT contain the pre-dirty baseline file.
-- **AC5** — `stop_sweep.py` exits 2 while a tracked file contains a secret, exits 0 after the
-  secret is removed, and exits 0 (fail-open) when the state file is missing or corrupt.
+  the new file in the tracked set and does NOT contain the pre-dirty baseline file — including
+  when the Bash call also modified that baseline file (the documented attribution exclusion).
+- **AC5** — `stop_sweep.py` exits 2 while a tracked file contains a secret and
+  `stop_hook_active` is false or absent; exits 0 with a final warning on stderr when
+  `stop_hook_active` is true even though the secret remains; exits 0 after the secret is
+  removed; and exits 0 (fail-open) when the state file is missing or corrupt.
 - **AC6** — Every one of the four scripts exits 0 on empty stdin, malformed JSON, and a payload
   referencing a nonexistent file.
 - **AC7** — `uv run pytest` passes from the repo root; the new tests are parallel-safe (isolated
@@ -42,9 +45,9 @@ Run these to prove the criteria above. Map each command to the criteria it verif
   verifies AC1. Pass = `exit=2` and stderr names the file, line, and AWS rule.
 - `echo '' | uv run --script .claude/hooks/security-scan/stop_sweep.py; echo "exit=$?"` —
   verifies AC6 for the sweep (empty stdin fail-open). Pass = `exit=0`.
-- `jq -r '.hooks | keys[]' .claude/settings.json` — verifies AC8 registration. Pass = output
-  includes `PostToolUse`, `SessionStart`, `Stop`, `SubagentStop` (Bash matcher visible under
-  PostToolUse entries).
+- `jq -e '([.hooks.PostToolUse[] | select(.matcher == "Write|Edit|MultiEdit") | .hooks[].command] | any(contains("security-scan/post_write_scan.py"))) and ([.hooks.PostToolUse[] | select(.matcher == "Bash") | .hooks[].command] | any(contains("security-scan/track_bash_writes.py"))) and ([.hooks.SessionStart[]?.hooks[].command] | any(contains("security-scan/session_baseline.py"))) and ([.hooks.Stop[]?.hooks[].command] | any(contains("security-scan/stop_sweep.py"))) and ([.hooks.SubagentStop[]?.hooks[].command] | any(contains("security-scan/stop_sweep.py")))' .claude/settings.json` —
+  verifies AC8 registration: asserts each of the five entries by event, matcher, AND script
+  command. Pass = prints `true` and exits 0.
 - `grep -n 'security-scan' .gitignore HARNESS-LAYER.md` — verifies AC8 gitignore + docs. Pass =
   a hit in each file.
 - `uv run ruff check .claude/hooks/security-scan/` — verifies AC8 lint. Pass = "All checks passed".

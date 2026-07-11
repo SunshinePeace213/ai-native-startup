@@ -47,6 +47,13 @@ pragma and built-in placeholder heuristics. Everything is stdlib-only regex — 
   - **Why:** This is the KB-documented recipe for full-coverage compliance scanning
     (hooks-guide: match Bash and list modified/untracked files via `git status --porcelain`),
     extended with a baseline so pre-existing user changes are never swept.
+  - **Amended (Codex round 1):** the baseline subtraction means a Bash edit to a file that was
+    already dirty at SessionStart is NOT tracked. This is a genuine conflict between two goals —
+    full Bash coverage vs never flagging user-owned changes — and they cannot both hold without
+    process-level attribution (pre/post snapshots would flag the user's own mid-session edits).
+    Resolution: the never-flag-user-files principle wins; the coverage guarantee is explicitly
+    narrowed in spec.md Objective/Non-Goals and AC4 asserts the exclusion. The per-write gate
+    still covers Write/Edit on those files.
 
 - **Q:** (design, lead-resolved) External scanner (gitleaks/trufflehog) or own ruleset?
   - **A:** Own curated stdlib-regex ruleset in a table-driven module.
@@ -54,11 +61,15 @@ pragma and built-in placeholder heuristics. Everything is stdlib-only regex — 
     an install step (meta-install wiring) and version drift for marginal gain at this scale.
 
 - **Q:** (design, lead-resolved) Stop-loop posture when findings persist?
-  - **A:** The sweep re-scans and keeps blocking while secrets remain (fixing them is the
-    progress path); Claude Code's built-in 8-consecutive-block cap is the backstop.
-    `stop_hook_active` is read and logged, not used to early-allow.
-  - **Why:** Early-allowing on `stop_hook_active` would let one retry bypass the gate. The
-    pragma is the sanctioned unstick path; the 8-cap prevents a true infinite loop.
+  - **A (revised, Codex round 1):** The sweep parses `stop_hook_active` exactly as the KB guide
+    prescribes: when false/absent, block (exit 2) on secret findings with full diagnostics; when
+    true, print a final loud warning and exit 0. It blocks at most once per turn without
+    progress.
+  - **Why:** The original posture (keep blocking to the 8-cap) contradicted the cached guidance
+    ("parse `stop_hook_active` and exit early if true") and could not deliver a hard gate anyway
+    — the runtime overrides repeated blocks, so a secret would survive the override regardless.
+    The revised contract is achievable and documented: the agent gets one forced continuation
+    with diagnostics; the per-write gate remains the primary blocking layer.
 
 ## Assumptions
 
@@ -92,6 +103,12 @@ pragma and built-in placeholder heuristics. Everything is stdlib-only regex — 
   designed to take one-line additions.
 - **Open question:** whether a PreToolUse variant (block the write before it lands) is worth a
   follow-up for `.env`-style paths. Deferred — PostToolUse + sweep satisfies the current ask.
+
+## Follow-ups (from review advisories)
+
+- [ ] Evaluate whether the `SubagentStop` sweep registration is redundant once the per-write gate
+  and Bash tracking are live, and drop it if so — keeping a single `Stop` registration would
+  simplify state ownership (Codex round 1, advisory).
 
 ## KB References
 

@@ -119,6 +119,9 @@ section documenting the family, and full validation against acceptance-criteria.
   is unavailable).
 - Create `track_bash_writes.py` (PostToolUse on Bash): compute current dirty set, subtract the
   baseline, union the remainder into the tracked set; never blocks, exit 0 always.
+- Honor the documented exclusion: baseline-dirty files are never added by this hook, even if a
+  Bash call modifies them (see decisions.md — attribution is impossible and user-owned changes
+  must never be flagged).
 
 ### 4. Build the end-of-turn sweep
 
@@ -132,8 +135,8 @@ section documenting the family, and full validation against acceptance-criteria.
 - Create `stop_sweep.py` (Stop + SubagentStop): load the tracked set, re-scan each file that
   still exists, and on any secret finding print capped diagnostics to stderr and exit 2 to block
   the turn from ending; exit 0 when clean.
-- Log (stderr note) when `stop_hook_active` is true, but keep blocking while findings persist —
-  the built-in 8-block cap is the backstop.
+- Parse `stop_hook_active` per the KB contract: when true, print a final loud warning naming the
+  surviving findings and exit 0 — the sweep blocks at most once per turn without progress.
 - Fail-open: missing/corrupt state, git-less environment, engine error → exit 0.
 - Write `tests/harness-layer/test_security_scan_hooks.py`: subprocess end-to-end tests piping
   payload JSON into all four scripts (block, warn, suppress, track, sweep-block-then-pass,
