@@ -1,8 +1,6 @@
 ---
-description: Internal review of a build's branch diff — parallel read-only reviewer agents with confidence-filtered findings, plus a memory-sync check on the capital-letter memory files. Invoked by /harness-layer:harness-build's review lead; runs standalone on a PR or branch without posting anything.
+description: Internal review of a build's branch diff — parallel read-only reviewer agents with confidence-filtered findings, plus a memory-sync check on the capital-letter memory files. Invoked in-session (Skill tool) by the /harness-layer:harness-build lead; runs standalone on a PR or branch without posting anything.
 argument-hint: [PR number | branch]
-model: sonnet
-disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Agent, Bash(git *), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh pr list:*), Bash(gh issue view:*), Bash(gh search:*)
 ---
 
@@ -65,7 +63,7 @@ the caller can route it:
 
 Return to the caller (no posting):
 
-```
+```text
 Reviewed: <TARGET> @ <REVIEWED_HEAD_SHA>
 Findings: <N> (of <M> raw, ≥<CONFIDENCE_FLOOR> confidence)
 

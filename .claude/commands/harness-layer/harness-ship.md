@@ -4,6 +4,7 @@ argument-hint: [branch | worktree-name]
 disable-model-invocation: true
 allowed-tools: Bash(git *), Bash(gh *)
 model: sonnet
+effort: low
 ---
 
 # Harness Ship

@@ -15,6 +15,39 @@
 - **Instructions, not rationale**: State what to do, not why. No "chose A over B", no decision logs, no design history — that's context bloat the agent never acts on.
 - **No stray cross-refs**: Don't reference other commands or skills unless the file actually needs them to run. Mentions "for context" just add noise.
 - **Model selection**: Always pass **alias** (`opus`, `sonnet`, `haiku`, `fable`). Never hardcode a dated id like `claude-sonnet-4-6` or `claude-opus-4-8`
+- **Model & effort selection** — pick by the nature of the work
+
+| Model    | Choose for                                                                          |
+| -------- | ----------------------------------------------------------------------------------- |
+| `fable`  | Highest-judgment work — specs, build orchestration, consolidating review findings   |
+| `opus`   | Complex implementation; behavior-preserving refinement                              |
+| `sonnet` | Default workhorse — standard implementation, review fixes, guarded mechanical flows |
+| `haiku`  | Utility micro-tasks — eligibility, summaries, scoring                               |
+
+| Effort   | Choose for                                                |
+| -------- | --------------------------------------------------------- |
+| `low`    | Mechanical or hard-guarded steps                          |
+| `medium` | Standard scoped edits and behavior-preserving refinement  |
+| `high`   | Complex logic; consolidating multiple sources of judgment |
+| `xhigh`  | Cross-cutting or harness-core design; deep specs          |
+| `max`    | Hardest problems — maximum depth on a single task; rare   |
+
+- **Model & effort selection (Codex)** — never hardcode a Codex model or effort: before each peer review, pick both from the task at hand and pass them on `codex exec`:
+
+| Codex model     | Choose for                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| `gpt-5.6-sol`   | Complex, open-ended, high-value work needing depth and polish — default when unsure        |
+| `gpt-5.6-terra` | Everyday workhorse — strong reasoning and tool use without Sol's depth                     |
+| `gpt-5.6-luna`  | Clear, repeatable tasks — extraction, classification, transformation, structured summaries |
+
+| Codex effort | Choose for                                                           |
+| ------------ | -------------------------------------------------------------------- |
+| `low`        | Quick, well-scoped tasks                                             |
+| `medium`     | Tasks needing more planning — the balanced default                   |
+| `high`       | Difficult multi-step work with several sources or tradeoffs          |
+| `xhigh`      | The hardest rounds (model-dependent — verify support)                |
+| `max`        | Hardest single problems — depth over speed and usage; rare           |
+| `ultra`      | Work divisible into meaningful parallel parts (runs subagents); rare |
 
 ## Git Workflow & Pull Requests
 

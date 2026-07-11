@@ -83,7 +83,7 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 5. Grill Requirements - Run the `Grilling Protocol`: interview the user one question at a time via AskUserQuestion until the coverage ledger is clear, then get final sign-off. Do NOT design or write files before this completes.
 6. Design Solution - Develop technical approach including architecture decisions and implementation strategy, grounded in the KB docs when the expert layer is active
 7. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `TEAM_MEMBERS` or use `GENERAL_PURPOSE_AGENT`. Document in plan.
-8. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments. Document in plan.
+8. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments, and each task's model and effort — `opus` for complex tasks, `sonnet` otherwise; effort `low` mechanical, `medium` default, `high` complex, `xhigh` cross-cutting or harness-core. Document in plan.
 9. Name the Plan - Create a descriptive kebab-case name from the plan's main topic, and pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test)
 10. Create & Link Issue - File the GitHub issue from the grilling ledger and link its convention branch (see `Worktree & Handoff`). Do this before entering the worktree.
 11. Enter Worktree - BEFORE writing any file, call `EnterWorktree(name: "<slug>")` to branch from `origin/main` into `.claude/worktrees/` and draft inside it (see `Worktree & Handoff`)
@@ -96,7 +96,7 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 
 Write the plan as four files under `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/`. Copy each file from `SPEC_TEMPLATES`, then replace every `<placeholder>` with real content. Keep each template's `##` headings exactly as written — a Stop hook checks that every required section is present before the run can end.
 
-```
+```text
 specs/<name-of-plan>/
 ├── spec.md                # what & why: task, objective, non-goals, locked decisions, tracking, review record
 ├── tasks.md               # how & who: phases, team members, step-by-step tasks
@@ -124,9 +124,9 @@ Every plan gets a GitHub issue and its own convention branch so `/harness-layer:
 
 ## Codex Cross-Review
 
-Once the plan is pushed, Codex reviews it as a peer inside the worktree — a hard cap of `MAX_REVIEW_ROUNDS` rounds, every round counted. Beyond ordinary spec defects, when the expert layer is active it verifies the spec's harness claims against the KB docs, and it always challenges the approach for a simpler, cleaner design. Snapshot the reviewed head SHA before each round. Every push uses the explicit refspec `git push origin HEAD:refs/heads/<type>/<N>-<slug>` (bare `git push` refuses from the local `worktree-<slug>` branch); check its exit status directly. Loop per round N:
+Once the plan is pushed, Codex reviews it as a peer inside the worktree — a hard cap of `MAX_REVIEW_ROUNDS` rounds, every round counted. Before each round, pick the Codex model and reasoning effort from the AGENTS.md Codex table based on the spec's complexity — never hardcoded. Beyond ordinary spec defects, when the expert layer is active it verifies the spec's harness claims against the KB docs, and it always challenges the approach for a simpler, cleaner design. Snapshot the reviewed head SHA before each round. Every push uses the explicit ref spec `git push origin HEAD:refs/heads/<type>/<N>-<slug>` (bare `git push` refuses from the local `worktree-<slug>` branch); check its exit status directly. Loop per round N:
 
-1. **Ask Codex.** `codex exec -C "<worktree root>" -s workspace-write "Use the spec-review skill to review round <N> of the plan at specs/<name-of-plan>/spec.md; read all four files and (when present) the KB docs listed in decisions.md ## KB References, write your verdict to specs/<name-of-plan>/reviews/codex-spec-review-round-<N>.md, and return only the terse summary."`
+1. **Ask Codex.** `codex exec -C "<worktree root>" -s workspace-write --model <codex-model> -c model_reasoning_effort="<effort>" "Use the spec-review skill to review round <N> of the plan at specs/<name-of-plan>/spec.md; read all four files and (when present) the KB docs listed in decisions.md ## KB References, write your verdict to specs/<name-of-plan>/reviews/codex-spec-review-round-<N>.md, and return only the terse summary."`
 2. **Read the verdict from the report file, not stdout:** `grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<name-of-plan>/reviews/codex-spec-review-round-<N>.md | tail -1`. A round that writes no verdict is re-run — never treated as approval.
 3. **Relay the digest.** Read the `**Issue-comment digest:**` paragraph from the round's report file and post it verbatim as an issue comment whose first line is `<!-- codex-spec-round-N -->` (N = the round). Upsert by marker exactly as the plan-links comment does (paginated `gh api` search → PATCH `-F body=@<file>`, else `gh issue comment --body-file`). Codex never calls `gh` — you relay.
 4. **`changes-requested`** → commit the report on its own (`git add specs/<name-of-plan>/reviews/`, one commit with `Refs #N`), fix the blocking findings, commit the fixes on their own (`git add specs/<name-of-plan>/ ai-docs/`, one commit with `Refs #N`), then push both commits together. Go to round N+1.
@@ -146,7 +146,7 @@ The user's selection is final. Record the final outcome (`approved` at round N |
 
 After creating and saving the spec folder, provide a concise report with the following format:
 
-```
+```text
 ✅ Spec Folder Created
 
 Folder: PLAN_OUTPUT_DIRECTORY/<name-of-plan>/ (spec.md, tasks.md, decisions.md, acceptance-criteria.md)

@@ -2,6 +2,7 @@
 name: code-simplifier
 description: Simplifies and refines recently modified application code, in any language, for clarity, consistency, and maintainability while preserving all functionality. Use proactively right after code is written or changed, or when asked to tidy, clean up, or simplify recent code.
 model: opus
+effort: medium
 tools: Read, Edit, Bash, Grep, Glob
 ---
 
