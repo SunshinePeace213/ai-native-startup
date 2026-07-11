@@ -36,9 +36,11 @@ def main() -> int:
     code, _, err = res
     if code == 0:
         return 0
-    # Prettier reports parse errors on stderr naming the offending file;
-    # anything else (config trouble etc.) is infrastructure.
-    lines = [line for line in err.splitlines() if path.name in line]
+    # A genuine parse error names the offending file AND the parser's
+    # SyntaxError on the same stderr line (JSON and YAML alike). Config or
+    # tooling failures may also name the file ("Invalid configuration for
+    # file ...") but never with that marker -- those are infrastructure.
+    lines = [line for line in err.splitlines() if path.name in line and "SyntaxError" in line]
     if lines:
         print(_common.format_diagnostics(lines), file=sys.stderr)
         return 2

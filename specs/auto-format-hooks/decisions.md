@@ -47,7 +47,7 @@ Rebuild format-on-save as six Python hooks under `.claude/hooks/auto-format/` (f
 - **Out of scope:** CSS/SCSS formatting; any extension beyond the twelve listed in spec.md.
 - **Out of scope:** SessionStart install hook (explicitly declined by the user).
 - **Out of scope:** Codex-side registration of format hooks in `.codex/hooks.json`.
-- **Out of scope:** `.worktreeinclude` processing and `worktree.baseRef` support in `worktree_create.py` — the repo uses neither; revisit if either appears.
+- **Out of scope:** `worktree.baseRef` support in `worktree_create.py` — the repo does not use it. (`.worktreeinclude` was originally listed here on the premise the repo had no such file; build-R1 internal review found `.worktreeinclude` tracked at the repo root since `cbe0b5f`, so the premise was false and the copy contract is implemented in `worktree_create.py`.)
 - **Out of scope:** Changes to `block_attribution.py`, `check-spec-completeness.sh`, or existing formatter configs.
 - **Open question:** none blocking. Follow-ups checklist (advisory, feeds a future plan):
   - [ ] `/harness-layer:kb` refresh of `ai-docs/anthropic/hooks.md` — its WorktreeCreate section ("async, logging only") lags the current worktrees doc contract.

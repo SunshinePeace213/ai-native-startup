@@ -74,20 +74,41 @@ def test_malformed_stdin_fails_open(tmp_path, run_hook):
     assert proc.returncode == 0
 
 
+def toolchainless_env(root) -> dict:
+    """Env modelling a fresh clone: no venv on PATH, no VIRTUAL_ENV (pytest's
+    own venv would otherwise leak ruff into the hook's environment)."""
+    env = env_for(root)
+    env.pop("VIRTUAL_ENV", None)
+    env["PATH"] = os.pathsep.join(p for p in env["PATH"].split(os.pathsep) if ".venv" not in p)
+    return env
+
+
 def test_missing_toolchain_fails_open_untouched(tmp_path, run_hook):
     """A root with no Python project (uv cannot run ruff there) is
-    infrastructure, not lint: exit 0, file untouched, note on stderr --
-    the failure must never surface as bogus exit-2 diagnostics. The venv
-    is stripped from PATH to model a fresh clone (pytest's own venv would
-    otherwise leak ruff into the hook's environment)."""
+    infrastructure, not lint: exit 0, file untouched, and the note names
+    the meta-install skill -- never bogus exit-2 diagnostics."""
     bare = tmp_path / "bare"
     bare.mkdir()
     fixture = bare / "x.py"
     fixture.write_text("x = 'a'\n")
-    env = env_for(bare)
-    env.pop("VIRTUAL_ENV", None)
-    env["PATH"] = os.pathsep.join(p for p in env["PATH"].split(os.pathsep) if ".venv" not in p)
-    proc = run_hook("python.py", edit_payload(fixture), env)
+    proc = run_hook("python.py", edit_payload(fixture), toolchainless_env(bare))
     assert proc.returncode == 0
     assert fixture.read_text() == "x = 'a'\n"
-    assert "[python]" in proc.stderr
+    assert "meta-install" in proc.stderr
+
+
+def test_ruff_missing_from_project_notes_meta_install(tmp_path, run_hook):
+    """uv present but ruff absent (a project env without ruff): uv fails to
+    spawn ruff, and the note must name the meta-install skill -- a generic
+    uv error would leave the agent without the actual fix (AC6)."""
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    (proj / "pyproject.toml").write_text(
+        '[project]\nname = "t"\nversion = "0.1.0"\nrequires-python = ">=3.12"\n'
+    )
+    fixture = proj / "x.py"
+    fixture.write_text("x = 'a'\n")
+    proc = run_hook("python.py", edit_payload(fixture), toolchainless_env(proj))
+    assert proc.returncode == 0
+    assert fixture.read_text() == "x = 'a'\n"
+    assert "meta-install" in proc.stderr

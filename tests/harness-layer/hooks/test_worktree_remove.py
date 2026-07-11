@@ -80,3 +80,15 @@ def test_directory_that_is_not_a_worktree_is_left_alone(wt_repo, run_hook):
     assert proc.returncode == 0
     assert plain.is_dir()
     assert (plain / "precious.txt").exists()
+
+
+def test_project_dir_being_the_removed_worktree_still_deletes_branch(wt_repo, run_hook):
+    """Claude Code may run the hook with $CLAUDE_PROJECT_DIR pointing at the
+    very worktree being removed; git must not run from the dying directory
+    or the branch delete fails and worktree-* branches leak forever."""
+    path = add_worktree(wt_repo, "selfref", "worktree-selfref")
+    env = {**wt_repo.env, "CLAUDE_PROJECT_DIR": str(path)}
+    proc = run_hook("worktree_remove.py", json.dumps({"worktreePath": str(path)}), env)
+    assert proc.returncode == 0
+    assert not path.exists()
+    assert not branch_exists(wt_repo, "worktree-selfref")

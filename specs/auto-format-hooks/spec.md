@@ -31,7 +31,7 @@ Every file Claude writes or edits in the four language families is auto-formatte
 - No CSS/SCSS or any extension beyond the ten listed (`.js .jsx .ts .tsx .json .jsonc .yaml .yml .md .markdown .py .pyi`).
 - No SessionStart install hook — fresh-clone setup is the `meta-install` skill's job (user decision).
 - No Codex-side (`.codex/hooks.json`) registration of the format hooks; only Claude Code sessions are in scope.
-- No `.worktreeinclude` processing and no `worktree.baseRef` setting support in `worktree_create.py` — the repo uses neither (recorded limitation; revisit if either appears).
+- No `worktree.baseRef` setting support in `worktree_create.py` — the repo does not use it (recorded limitation; revisit if it appears). `.worktreeinclude` processing was originally excluded on the premise the repo had no such file; build-R1 internal review proved the file exists (tracked since `cbe0b5f`), so the hook now copies its gitignored matches into new worktrees.
 - No changes to `block_attribution.py`, `check-spec-completeness.sh`, or the existing Prettier/markdownlint/Ruff config files.
 - No CI wiring; the hooks are the enforcement layer.
 
@@ -122,7 +122,7 @@ Use these files to complete the task:
 - New JS deps: `bun add -d eslint @eslint/js typescript-eslint eslint-config-prettier eslint-plugin-react eslint-plugin-react-hooks`. No new Python deps (hooks are stdlib-only).
 - The KB `hooks.md` lists WorktreeCreate under "Async Events … logging and notifications only", while `worktrees.md` (and the current official docs the user quoted) define the create-and-print-path contract that replaces default creation. The worktrees doc wins; a `/harness-layer:kb` refresh of `hooks.md` is flagged as a follow-up.
 - Reference implementation studied via `gh`: [tfriedel/claude-worktree-hooks](https://github.com/tfriedel/claude-worktree-hooks) — stdin `name` field on create, `worktree_path` on remove, stdout purity, `worktree-*` branch cleanup. Its port-hashing and env-copy features are intentionally not adopted. Because the KB hooks reference documents `worktreeName`/`worktreePath` instead, the hooks accept both shapes (see Requirements & Decisions).
-- Follow-ups (advisory, not in this plan): CSS support if styling work lands; `.worktreeinclude` handling in `worktree_create.py` if the file ever appears; KB refresh above.
+- Follow-ups (advisory, not in this plan): CSS support if styling work lands; KB refresh above. (`.worktreeinclude` handling moved in-scope during build R1 — see Non-Goals.)
 
 ## Codex Verification
 
@@ -133,7 +133,7 @@ Use these files to complete the task:
 
 ## References
 
-```
+```text
 specs/auto-format-hooks/
 ├── spec.md                 # this file — what & why, tracking, review record
 ├── decisions.md            # grilling record: resolved decisions, assumptions, out-of-scope

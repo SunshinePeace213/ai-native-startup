@@ -49,6 +49,19 @@ def test_invalid_json_exits_2_with_parse_error(linter_root, run_hook):
     assert "broken.json" in proc.stderr
 
 
+def test_broken_prettier_config_is_infrastructure_not_exit_2(linter_root, run_hook):
+    """Prettier config errors name the target file too ("Invalid configuration
+    for file ..."), but they are tooling trouble the agent cannot fix by
+    editing its data file: exit 0 with a note, never exit 2."""
+    (linter_root / ".prettierrc.json").write_text("{not json")
+    fixture = linter_root / "sample.json"
+    fixture.write_text('{"a":1}')
+    proc = run_hook("data.py", edit_payload(fixture), env_for(linter_root))
+    assert proc.returncode == 0
+    assert fixture.read_text() == '{"a":1}'  # untouched
+    assert "[data]" in proc.stderr
+
+
 def test_non_matching_extension_is_ignored(linter_root, run_hook):
     """Extension filtering is the hook's job: .toml is not this hook's file."""
     fixture = linter_root / "config.toml"

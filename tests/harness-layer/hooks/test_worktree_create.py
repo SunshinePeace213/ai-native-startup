@@ -13,6 +13,8 @@ abort creation, and a nameless payload must fail open.
 
 import json
 
+import pytest
+
 
 def wt_path(root, name):
     return root.resolve() / ".claude" / "worktrees" / name
@@ -120,3 +122,54 @@ def test_new_branch_bases_on_origin_default_not_local_head(wt_repo, run_hook):
     wt_sha = wt_repo.git("rev-parse", "HEAD", cwd=worktree).stdout.strip()
     assert wt_sha == base_sha
     assert wt_sha != local_sha
+
+
+@pytest.mark.parametrize("bad_name", ["/tmp/abs", "../escape", "a/b", "a\\b", ".", ".."])
+def test_path_shaped_names_are_rejected(wt_repo, run_hook, bad_name):
+    """A worktree name is a NAME, not a path: absolute values discard the
+    .claude/worktrees prefix entirely and traversal segments escape it, so
+    every separator- or dot-shaped value must be refused up front."""
+    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": bad_name}), wt_repo.env)
+    assert proc.returncode == 0
+    assert proc.stdout == ""
+    assert "invalid worktree name" in proc.stderr
+    assert not (wt_repo.root / ".claude" / "worktrees").exists()
+
+
+def test_worktreeinclude_copies_gitignored_files(wt_repo, run_hook):
+    """The hook replaces default creation, so it owns the .worktreeinclude
+    contract too: gitignored files matching a pattern must appear in the
+    new worktree (a fresh checkout otherwise lacks .env and friends)."""
+    (wt_repo.root / ".gitignore").write_text(".env\n")
+    (wt_repo.root / ".env").write_text("SECRET=1\n")
+    (wt_repo.root / ".worktreeinclude").write_text("# env files\n.env\n")
+    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": "inc"}), wt_repo.env)
+    worktree = wt_path(wt_repo.root, "inc")
+    assert proc.returncode == 0
+    assert proc.stdout == f"{worktree}\n"  # the copy step must not pollute stdout
+    assert (worktree / ".env").read_text() == "SECRET=1\n"
+
+
+def test_worktreeinclude_never_copies_tracked_files(wt_repo, run_hook):
+    """Only files that match AND are gitignored are copied: a tracked file
+    matching a pattern arrives via checkout (committed state), never as a
+    copy of the main checkout's uncommitted edits."""
+    (wt_repo.root / "settings.txt").write_text("committed\n")
+    wt_repo.git("add", "settings.txt")
+    wt_repo.git("commit", "-m", "track settings")
+    (wt_repo.root / "settings.txt").write_text("uncommitted local edit\n")
+    (wt_repo.root / ".worktreeinclude").write_text("settings.txt\n")
+    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": "tracked"}), wt_repo.env)
+    worktree = wt_path(wt_repo.root, "tracked")
+    assert proc.returncode == 0
+    assert (worktree / "settings.txt").read_text() == "committed\n"
+
+
+def test_absent_worktreeinclude_is_a_noop(wt_repo, run_hook):
+    """No .worktreeinclude, no copy step, no complaints -- the base contract
+    is unchanged."""
+    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": "plain"}), wt_repo.env)
+    worktree = wt_path(wt_repo.root, "plain")
+    assert proc.returncode == 0
+    assert proc.stdout == f"{worktree}\n"
+    assert worktree.is_dir()

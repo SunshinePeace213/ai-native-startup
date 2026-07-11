@@ -10,14 +10,19 @@ it owns the whole contract: read the worktree name from stdin JSON
 (``worktreeName`` per the hooks reference, or ``name`` per the reference
 implementation), ``git worktree add`` at ``<root>/.claude/worktrees/<name>``
 on branch ``worktree-<name>`` based on the origin default branch (fallback:
-local ``HEAD``; an existing branch is reused), then run ``bun install`` and
-``uv sync`` inside it so the format hooks work there. stdout carries exactly
-the absolute worktree path and nothing else -- all git/install output is
-captured or sent to stderr. Install failures log and still print the path;
-failures that prevent creation itself note to stderr and exit 0 (fail-open).
+local ``HEAD``; an existing branch is reused), copy gitignored files listed
+in ``.worktreeinclude``, then run ``bun install`` and ``uv sync`` inside it
+so the format hooks work there. The name must be a plain name -- absolute
+paths, separators, and dot segments are rejected so nothing can escape
+``.claude/worktrees``. stdout carries exactly the absolute worktree path
+and nothing else -- all git/install output is captured or sent to stderr.
+Install/copy failures log and still print the path; failures that prevent
+creation itself note to stderr and exit 0 (fail-open).
 """
 
+import shutil
 import sys
+from fnmatch import fnmatch
 from pathlib import Path
 
 import _common
@@ -35,6 +40,50 @@ def detect_base(root: Path) -> str:
 def branch_exists(root: Path, branch: str) -> bool:
     res = _common.run(["git", "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"], cwd=root)
     return res is not None and res[0] == 0
+
+
+def copy_worktree_includes(root: Path, worktree: Path) -> None:
+    """Copy gitignored files matching ``.worktreeinclude`` into the worktree.
+
+    The hook replaces default creation, so it owns this documented contract
+    too. Patterns are matched only against untracked-and-ignored files
+    (``git ls-files -oi``), so tracked files are never duplicated. Matching
+    is simplified gitignore syntax: a pattern matches a candidate's relative
+    path or basename. Every failure notes and continues (fail-open).
+    """
+    include = root / ".worktreeinclude"
+    if not include.is_file():
+        return
+    try:
+        patterns = [
+            line.strip()
+            for line in include.read_text().splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+    except OSError as exc:
+        _common.note(f"could not read .worktreeinclude ({exc}); skipping includes")
+        return
+    if not patterns:
+        return
+    res = _common.run(["git", "ls-files", "-oi", "--exclude-standard"], cwd=root)
+    if res is None or res[0] != 0:
+        _common.note("could not list gitignored files; skipping .worktreeinclude copy")
+        return
+    for rel in res[1].splitlines():
+        rel = rel.strip()
+        if not rel:
+            continue
+        matched = any(
+            fnmatch(rel, pat.lstrip("/")) or fnmatch(Path(rel).name, pat) for pat in patterns
+        )
+        if not matched:
+            continue
+        try:
+            dest = worktree / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(root / rel, dest)
+        except OSError as exc:
+            _common.note(f"could not copy {rel} into worktree ({exc})")
 
 
 def install_dependencies(worktree: Path) -> None:
@@ -58,6 +107,9 @@ def main() -> int:
         _common.note("no worktree name in payload (worktreeName/name); skipping")
         return 0
     name = name.strip()
+    if "/" in name or "\\" in name or name in {".", ".."}:
+        _common.note(f"invalid worktree name {name!r} (must be a plain name); skipping")
+        return 0
 
     root = _common.resolve_root()
     worktree = root / ".claude" / "worktrees" / name
@@ -75,6 +127,7 @@ def main() -> int:
         _common.note(f"git worktree add failed ({res[0]}): {res[2].strip()}")
         return 0
 
+    copy_worktree_includes(root, worktree)
     install_dependencies(worktree)
     print(worktree)  # the contract: stdout is exactly the absolute path
     return 0
