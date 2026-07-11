@@ -39,7 +39,7 @@ GENERAL_PURPOSE_AGENT: `general-purpose`
 - Carefully analyze the user's requirements provided in the USER_PROMPT variable
 - Determine the task type (feat|fix|docs|style|refactor|perf|test|chore) and complexity (simple|medium|complex)
 - Think deeply (ultrathink) about the best approach to implement the requested functionality or solve the problem
-- Understand the codebase directly without subagents to understand existing patterns and architecture
+- Understand the codebase directly without subagents — existing patterns and architecture
 - Follow the `Output: Spec Folder` section below to create a comprehensive implementation plan
 - Include all required sections and conditional sections based on task type and complexity
 - Generate a descriptive, kebab-case name for the plan based on its main topic
@@ -70,7 +70,7 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 3. Understand Codebase - Without subagents, directly understand existing patterns, architecture, and relevant files
 4. Grill Requirements - Run the `Grilling Protocol`: interview the user one question at a time via AskUserQuestion until the coverage ledger is clear, then get final sign-off. Do NOT design or write files before this completes.
 5. Design Solution - Develop technical approach including architecture decisions and implementation strategy
-6. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `.claude/agents/team/*.md` or use `general-purpose`. Document in plan.
+6. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `TEAM_MEMBERS` or use `GENERAL_PURPOSE_AGENT`. Document in plan.
 7. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments. Document in plan.
 8. Name the Plan - Create a descriptive kebab-case name from the plan's main topic, and pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test)
 9. Create & Link Issue - File the GitHub issue from the grilling ledger and link its convention branch (see `Worktree & Handoff`). Do this before entering the worktree.
