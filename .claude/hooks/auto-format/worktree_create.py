@@ -37,7 +37,7 @@ def branch_exists(root: Path, branch: str) -> bool:
     return res is not None and res[0] == 0
 
 
-def install_deps(worktree: Path) -> None:
+def install_dependencies(worktree: Path) -> None:
     """bun install + uv sync inside the worktree; failures log and never abort."""
     for cmd in (["bun", "install"], ["uv", "sync"]):
         res = _common.run(cmd, cwd=worktree)
@@ -75,7 +75,7 @@ def main() -> int:
         _common.note(f"git worktree add failed ({res[0]}): {res[2].strip()}")
         return 0
 
-    install_deps(worktree)
+    install_dependencies(worktree)
     print(worktree)  # the contract: stdout is exactly the absolute path
     return 0
 
