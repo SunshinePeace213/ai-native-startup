@@ -64,8 +64,13 @@ findings, diagnostics capped):
    stdout so the agent sees it without being blocked.
 2. **Session tracking** — `SessionStart` records a baseline of already-dirty files
    (`git status --porcelain`) so the user's own uncommitted work is never flagged. The per-write
-   gate records each scanned path; a `PostToolUse` hook on `Bash` adds newly dirty files
-   (current dirty set minus baseline) so shell-created files (`echo >`, heredoc) are covered.
+   gate records each scanned path; the Bash tracker — registered on BOTH `PostToolUse` and
+   `PostToolUseFailure` for `Bash`, since a command can write a file and then exit non-zero —
+   adds newly dirty files (current dirty set minus baseline) so shell-created files (`echo >`,
+   heredoc) are covered. The session state also carries the last-seen git HEAD (recorded at
+   SessionStart, advanced by the tracker), and the tracker unions in
+   `git diff --name-only <last-head>..HEAD` whenever HEAD moved, so files written **and
+   committed** within a single Bash invocation are tracked even though the tree ends clean.
    Bash edits to baseline-dirty files stay excluded by design (see Non-Goals — attribution is
    impossible and user files must never be flagged). State lives in
    `.claude/.security-scan/<session_id>.json` (gitignored).
@@ -111,7 +116,7 @@ session baseline neutralizes the sweep's false-positive hazard on user-owned dir
 
 Use these files to complete the task:
 
-- `.claude/settings.json` — register the five hook entries (PostToolUse ×2, SessionStart, Stop, SubagentStop)
+- `.claude/settings.json` — register the six hook entries (PostToolUse ×2, PostToolUseFailure Bash, SessionStart, Stop, SubagentStop)
 - `.claude/hooks/auto-format/_common.py` — the reference implementation of the repo's fail-open
   helper idioms (bounded stdin read, `note()`, vendored-dir skip, diagnostic capping) to mirror
 - `.claude/hooks/block_attribution.py` — reference for the exit-2 + stderr-policy-message idiom
@@ -139,6 +144,10 @@ Use these files to complete the task:
 - Oversized file → scan only the first 1 MiB and note the truncation; never hang on huge files
 - Not a git repo, or `git` unavailable → baseline is empty and Bash tracking is skipped with a note;
   the sweep still covers Write/Edit-tracked files
+- Unborn HEAD (no commits yet) or missing stored last-head → skip the commit-diff union with a
+  note; dirty-set tracking still applies
+- Stored last-head unreachable (history rewritten mid-session) → the commit diff fails open with
+  a note and last-head resets to current HEAD
 - Corrupt or missing session-state file → treated as empty (sweep passes; tracking restarts)
 - Concurrent sessions/worktrees → state keyed by `session_id` under each project dir; no sharing
 - Stop-loop safety → the sweep parses `stop_hook_active` per the KB guide: false/absent → block

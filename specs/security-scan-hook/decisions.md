@@ -54,6 +54,14 @@ pragma and built-in placeholder heuristics. Everything is stdlib-only regex — 
     Resolution: the never-flag-user-files principle wins; the coverage guarantee is explicitly
     narrowed in spec.md Objective/Non-Goals and AC4 asserts the exclusion. The per-write gate
     still covers Write/Edit on those files.
+  - **Amended (Codex round 2):** two Bash coverage gaps closed. (1) The tracker is registered on
+    `PostToolUseFailure` as well as `PostToolUse` for Bash — a command can write a file and then
+    exit non-zero, and only the failure event fires. (2) The session state carries a last-seen
+    git HEAD; the tracker unions `git diff --name-only <last-head>..HEAD` when HEAD moved, so a
+    file written and committed inside one Bash invocation (clean tree afterwards) is still
+    tracked. Mid-session commits are treated as agent-era: in this workflow commits during an
+    agent session are agent commits, and a committed secret is precisely the highest-value
+    finding to surface.
 
 - **Q:** (design, lead-resolved) External scanner (gitleaks/trufflehog) or own ruleset?
   - **A:** Own curated stdlib-regex ruleset in a table-driven module.
@@ -109,6 +117,10 @@ pragma and built-in placeholder heuristics. Everything is stdlib-only regex — 
 - [ ] Evaluate whether the `SubagentStop` sweep registration is redundant once the per-write gate
   and Bash tracking are live, and drop it if so — keeping a single `Stop` registration would
   simplify state ownership (Codex round 1, advisory).
+- [ ] Refresh `ai-docs/anthropic/hooks.md` via `/harness-layer:kb` — the cached mirror's
+  `.claude/hooks.json` config format, camelCase payloads, and exit-code table conflict with the
+  hooks guide and the repo's working `.claude/settings.json` conventions (Codex round 2,
+  advisory).
 
 ## KB References
 
@@ -117,4 +129,7 @@ pragma and built-in placeholder heuristics. Everything is stdlib-only regex — 
   fail-open guidance, `stop_hook_active` / 8-block cap, `additionalContext` injection, and the
   compliance-scanning recipe (Stop sweep + Bash matching with `git status --porcelain`).
 - `ai-docs/anthropic/hooks.md` (fetched 2026-07-05) — event catalog and matcher availability
-  (PostToolUse, Stop, SubagentStop, SessionStart), event payload schemas, timeout defaults.
+  (PostToolUse, PostToolUseFailure, Stop, SubagentStop, SessionStart), event payload schemas,
+  timeout defaults. Caveat: where this mirror's config format or payload casing conflicts with
+  the hooks guide, the guide and the repo's working `.claude/settings.json` conventions are the
+  operative grounding (refresh queued in Follow-ups).

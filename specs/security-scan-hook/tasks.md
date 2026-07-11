@@ -82,7 +82,8 @@ section documenting the family, and full validation against acceptance-criteria.
 - Implement guards: skip binary (null byte in first 8 KiB), vendored dirs, missing files; cap the
   scan at 1 MiB with a truncation note.
 - Implement session-state helpers: read/write `.claude/.security-scan/<session_id>.json`
-  (baseline set + tracked set, deduped), corrupt-file-as-empty, prune state files older than 7 days.
+  (baseline set + tracked set + last-seen git HEAD, deduped), corrupt-file-as-empty, prune state
+  files older than 7 days.
 - Write `tests/harness-layer/test_security_scan_engine.py`: at least one positive and one negative
   case per rule, every suppression path, every guard — parallel-safe (`tmp_path` only).
 
@@ -115,13 +116,17 @@ section documenting the family, and full validation against acceptance-criteria.
 - **Parallel:** true (alongside post-write-hook)
 - **Satisfies:** AC4, AC6
 - Create `session_baseline.py` (SessionStart): record `git status --porcelain` paths as the
-  baseline set in the session state file; prune stale state files; exit 0 always (note when git
-  is unavailable).
-- Create `track_bash_writes.py` (PostToolUse on Bash): compute current dirty set, subtract the
-  baseline, union the remainder into the tracked set; never blocks, exit 0 always.
-- Honor the documented exclusion: baseline-dirty files are never added by this hook, even if a
-  Bash call modifies them (see decisions.md — attribution is impossible and user-owned changes
-  must never be flagged).
+  baseline set and the current HEAD as last-seen HEAD in the session state file; prune stale
+  state files; exit 0 always (note when git is unavailable or HEAD is unborn).
+- Create `track_bash_writes.py` (registered on BOTH PostToolUse and PostToolUseFailure for Bash —
+  a command can write a file and then exit non-zero): compute current dirty set, subtract the
+  baseline, union the remainder into the tracked set; when HEAD moved since last-seen, also union
+  `git diff --name-only <last-head>..HEAD` (covers files written and committed within one Bash
+  call) and advance last-seen HEAD; never blocks, exit 0 always (fail open with a note on unborn
+  HEAD or an unreachable last-head, resetting last-head to current).
+- Honor the documented exclusion: baseline-dirty files are never added from the dirty-set path,
+  even if a Bash call modifies them (see decisions.md — attribution is impossible and user-owned
+  changes must never be flagged).
 
 ### 4. Build the end-of-turn sweep
 
@@ -141,6 +146,9 @@ section documenting the family, and full validation against acceptance-criteria.
 - Write `tests/harness-layer/test_security_scan_hooks.py`: subprocess end-to-end tests piping
   payload JSON into all four scripts (block, warn, suppress, track, sweep-block-then-pass,
   fail-open) — parallel-safe, each test isolated in `tmp_path` with its own fake project dir.
+  Include the two round-2 cases: a failed Bash call (PostToolUseFailure payload) that left a
+  newly dirty secret file is tracked and swept, and a file created and committed within one Bash
+  call is tracked via the HEAD diff and swept.
 
 ### 5. Register hooks and document
 
@@ -151,9 +159,10 @@ section documenting the family, and full validation against acceptance-criteria.
 - **Model / Effort:** `sonnet` / `low`
 - **Parallel:** false
 - **Satisfies:** AC8
-- Add the five entries to `.claude/settings.json` following the existing shape: PostToolUse
-  `Write|Edit|MultiEdit` → `post_write_scan.py`; PostToolUse `Bash` → `track_bash_writes.py`;
-  `SessionStart` → `session_baseline.py`; `Stop` and `SubagentStop` → `stop_sweep.py`.
+- Add the six entries to `.claude/settings.json` following the existing shape: PostToolUse
+  `Write|Edit|MultiEdit` → `post_write_scan.py`; PostToolUse `Bash` and PostToolUseFailure
+  `Bash` → `track_bash_writes.py`; `SessionStart` → `session_baseline.py`; `Stop` and
+  `SubagentStop` → `stop_sweep.py`.
 - Add `.claude/.security-scan/` to `.gitignore`.
 - Add a brief HARNESS-LAYER.md section for the security-scan family (what fires when, exit
   semantics, the pragma) matching the doc's existing tone.
