@@ -52,7 +52,6 @@ Rebuild format-on-save as six Python hooks under `.claude/hooks/auto-format/` (f
 - **Open question:** none blocking. Follow-ups checklist (advisory, feeds a future plan):
   - [ ] `/harness-layer:kb` refresh of `ai-docs/anthropic/hooks.md` — its WorktreeCreate section ("async, logging only") lags the current worktrees doc contract.
   - [ ] CSS support when styling work lands.
-  - [ ] `.worktreeinclude` handling in `worktree_create.py` if the file is ever added.
   - [ ] (Codex round 1, advisory) Consult and log `ai-docs/anthropic/skills.md`, `agent-teams.md`, and `settings.md` in KB References when the build touches those surfaces.
   - [ ] (Codex round 1, advisory) If the build session lacks the Task*/team tools, collapse the two builders into one and execute the same ordered task list solo — scope unchanged.
 
