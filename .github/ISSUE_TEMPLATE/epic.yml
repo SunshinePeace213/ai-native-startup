@@ -1,5 +1,5 @@
 name: Epic / Plan
-description: Track a multi-step plan through its /plan-w-team → /build → /ship lifecycle
+description: Track a multi-step plan through its /harness-layer:harness-plan → /harness-layer:harness-build → /harness-layer:harness-ship lifecycle
 title: "📋 epic: "
 labels: [epic]
 assignees: [SunshinePeace213]
@@ -28,7 +28,7 @@ body:
     id: non-goals
     attributes:
       label: Non-goals
-      description: The scope fence — what this epic deliberately does NOT do, so /build won't gold-plate.
+      description: The scope fence — what this epic deliberately does NOT do, so /harness-layer:harness-build won't gold-plate.
   - type: textarea
     id: child-issues
     attributes:
@@ -54,4 +54,4 @@ body:
     id: open-questions
     attributes:
       label: Open questions
-      description: Deferred decisions or anything still in discussion. Resolve before /build where possible.
+      description: Deferred decisions or anything still in discussion. Resolve before /harness-layer:harness-build where possible.

@@ -1,5 +1,5 @@
 ---
-description: Creates a concise engineering implementation plan for harness-layer work — changes to CLAUDE.md imports, skills, commands, subagents, hooks, or MCP under .claude/ and .agents/ — grounded in the ai-docs/ knowledge base, and saves it to the specs directory
+description: Creates a concise engineering implementation plan for any coding OR harness-layer task — grounded in the ai-docs/ knowledge base when the work touches the harness — and saves it to the specs directory
 argument-hint: [user prompt] [orchestration prompt]
 model: fable
 disallowed-tools: Task, EnterPlanMode
@@ -17,7 +17,7 @@ hooks:
 
 # Harness Plan
 
-Grill with the user to lock requirements via the `Grilling Protocol`, then turn those locked requirements (passed in `USER_PROMPT`) into a spec the team can build from — for changes to the harness itself. Before designing anything, load the relevant official docs from `KNOWLEDGE_BASE` (see `Domain Knowledge`) so every harness claim in the spec is grounded, not remembered. Write the plan as a four-file spec folder at `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/`, drafted on its own git worktree and pushed to GitHub, then gated by a Codex peer review (`CROSS_REVIEW_SKILL`) before hand-off.
+Grill with the user to lock requirements via the `Grilling Protocol`, then turn those locked requirements (passed in `USER_PROMPT`) into a spec the team can build from — for any coding OR harness-layer task. When the work touches the harness layer, ground every claim in the KB first (see `Domain Knowledge`); otherwise plan straight from the codebase. Write the plan as a four-file spec folder at `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/`, drafted on its own git worktree and pushed to GitHub, then gated by a Codex peer review (`CROSS_REVIEW_SKILL`) before hand-off.
 
 ## Variables
 
@@ -29,8 +29,8 @@ ISSUE_SKELETONS: `specs/_templates/issues/` - agent-facing issue-body skeletons 
 SPEC_FILES: `spec.md`, `tasks.md`, `decisions.md`, `acceptance-criteria.md`
 KNOWLEDGE_BASE: `ai-docs/` — cached official docs; catalog in `ai-docs/index.md`, manifest in `ai-docs/sources.yaml`
 STALE_AFTER: `30` days — a KB doc older than this is stale
-MAX_REVIEW_ROUNDS: `2` - max Codex cross-review rounds before flagging the spec for a human
-CROSS_REVIEW_SKILL: `harness-spec-review` — the Codex-side review skill in `.agents/skills/`
+MAX_REVIEW_ROUNDS: `2` - hard cap on Codex cross-review rounds; every round counts, and going over triggers the user gate
+CROSS_REVIEW_SKILL: `spec-review` — the Codex-side review skill in `.agents/skills/`
 TEAM_MEMBERS: `.claude/agents/team/*.md`
 GENERAL_PURPOSE_AGENT: `general-purpose`
 
@@ -42,8 +42,8 @@ GENERAL_PURPOSE_AGENT: `general-purpose`
 - Carefully analyze the user's requirements provided in the USER_PROMPT variable
 - Determine the task type (feat|fix|docs|style|refactor|perf|test|chore) and complexity (simple|medium|complex)
 - Think deeply (ultrathink) about the best approach to implement the requested functionality or solve the problem
-- Understand the codebase directly without subagents — existing harness patterns live under `.claude/` and `.agents/`
-- **Ground every harness claim.** Statements about hooks, frontmatter, subagents, skills, commands, MCP, or model aliases in the spec must trace to a KB doc (see `Domain Knowledge`); record what you consulted in decisions.md's `## KB References`.
+- Understand the codebase directly without subagents — application code and any existing harness patterns under `.claude/` and `.agents/`
+- **Ground harness-layer claims.** When the expert layer is active, statements about hooks, frontmatter, subagents, skills, commands, MCP, or model aliases must trace to a KB doc (see `Domain Knowledge`); record what you consulted in decisions.md's `## KB References`.
 - Follow the `Output: Spec Folder` section below to create a comprehensive implementation plan
 - Generate a descriptive, kebab-case name for the plan based on its main topic
 - Create the folder `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and write all four `SPEC_FILES` into it, copying each template from `SPEC_TEMPLATES` and replacing every placeholder
@@ -53,20 +53,20 @@ GENERAL_PURPOSE_AGENT: `general-purpose`
 
 ## Domain Knowledge
 
-Load before grilling, so questions and design rest on documented behavior:
+Conditional expert layer. Run it only when the task touches the harness surface — any of `.claude/`, `.agents/`, `.codex/`, `ai-docs/`, the root memory files (CLAUDE.md, AGENTS.md, HARNESS-LAYER.md, GIT-COMMIT-PR-MESSAGE.md), or a domain that has an `ai-docs/index.md` entry. When no signal fires, state that the expert layer is skipped, read no KB docs, and set the review profile to `standard`. When a signal fires, set the profile to `kb-grounded` and:
 
-1. Read `ai-docs/index.md` and open every cached doc relevant to the request's harness surface (hooks work → hooks.md; a new command → skills-and-commands.md; and so on).
+1. Read `ai-docs/index.md` and open every cached doc relevant to the request's surface (hooks work → hooks.md; a new command → skills-and-commands.md; and so on).
 2. If a doc you load is older than `STALE_AFTER`, warn the user and suggest running `/harness-layer:kb` first; continue with the stale copy only if they accept.
-3. **Gap-fill:** if the KB has no doc for a topic the plan depends on, fetch and READ it now — WebFetch the official page (or ask the claude-code-guide subagent for the right URL) — but write nothing yet: all writes happen inside the worktree. After Enter Worktree, write the mirror under `ai-docs/` (frontmatter `source` + `fetched`, `> **In here:**` bullets, faithful body) AND add its entry to `ai-docs/sources.yaml`, then commit them with the spec.
+3. **Gap-fill:** if the KB has no doc for a topic the plan depends on, fetch and READ it now — WebFetch the official page (or ask the claude-code-guide subagent for the right URL) — but write nothing yet: all writes happen inside the worktree. After entering the worktree, write the mirror under `ai-docs/` (frontmatter `source` + `fetched`, `> **In here:**` bullets, faithful body) AND add its entry to `ai-docs/sources.yaml`, then commit them with the spec.
 4. Log every doc you relied on — path + its `fetched` date — in decisions.md under `## KB References` (a section you append; the templates don't carry it).
 
 ## Grilling Protocol
 
 Before designing anything, interview the user until every decision needed to build is settled — a shared written understanding, not a guess.
 
-- **Explore first.** Answer from the codebase and the KB whatever they can answer; ask the user only what they can't.
+- **Explore first.** Answer from the codebase and (when active) the KB whatever they can answer; ask the user only what they can't.
 - **One question at a time.** Use AskUserQuestion with 2-4 concrete options, your pick first and labeled "(Recommended)". Wait for the answer before the next question.
-- **Coverage ledger.** Track each decision dimension as resolved or open, and keep going until none are open. Cover as applicable: scope & non-goals, users, success criteria & acceptance tests, edge cases & errors, dependencies, testing — plus the harness dimensions: invocation & trigger control (user-invoked vs auto-triggered vs disable-model-invocation), context budget (what loads always vs on demand), frontmatter (tools, model alias, effort), hook lifecycle & exit-code semantics, artifact choice (skill vs command vs subagent), and distribution (project vs user vs plugin). Mark irrelevant ones N/A.
+- **Coverage ledger.** Track each decision dimension as resolved or open, and keep going until none are open. Cover as applicable: scope & non-goals, users, success criteria & acceptance tests, data model, interfaces/APIs, edge cases & errors, performance & scale, security & authz, observability, rollout/migration, dependencies, testing. When the expert layer is active, also cover the harness dimensions: invocation & trigger control (user-invoked vs auto-triggered vs disable-model-invocation), context budget (what loads always vs on demand), frontmatter (tools, model alias, effort), hook lifecycle & exit-code semantics, artifact choice (skill vs command vs subagent), and distribution (project vs user vs plugin). Mark irrelevant ones N/A.
 - **Adaptive depth.** Match complexity — a light pass for chores, a deep pass for complex features. Don't interrogate trivial tasks.
 - **Accept-all escape hatch.** Always offer an early exit: if the user picks "Accept all recommendations", close every open item with your recommended answers, record them as assumptions, and move on.
 - **Record every decision.** Log each answer — and every deferred "you decide" as an explicit assumption — in `decisions.md`.
@@ -78,16 +78,16 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 
 1. Preflight - Before anything else, verify required tools. If `gh` is missing or `gh auth status` fails, STOP and ask the user to configure GitHub auth (`gh auth login`). If `command -v codex` fails, STOP and point them to `/codex:setup`. Resolve the issue assignee with `gh api user -q .login`. Continue only when all pass.
 2. Analyze Requirements - Parse the USER_PROMPT to understand the core problem and desired outcome
-3. Understand Codebase - Without subagents, directly understand existing harness patterns under `.claude/` and `.agents/` and relevant files
-4. Load Domain Knowledge - Follow the `Domain Knowledge` section: read the relevant KB docs, warn on stale, gap-fill what's missing
+3. Understand Codebase - Without subagents, directly understand the relevant code and any existing harness patterns under `.claude/` and `.agents/`
+4. Set Review Profile - Apply the `Domain Knowledge` trigger: if an expert-layer signal fires, load the KB docs and set the profile to `kb-grounded`; otherwise skip the layer and set `standard`.
 5. Grill Requirements - Run the `Grilling Protocol`: interview the user one question at a time via AskUserQuestion until the coverage ledger is clear, then get final sign-off. Do NOT design or write files before this completes.
-6. Design Solution - Develop technical approach including architecture decisions and implementation strategy, grounded in the KB docs
+6. Design Solution - Develop technical approach including architecture decisions and implementation strategy, grounded in the KB docs when the expert layer is active
 7. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `TEAM_MEMBERS` or use `GENERAL_PURPOSE_AGENT`. Document in plan.
 8. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments. Document in plan.
 9. Name the Plan - Create a descriptive kebab-case name from the plan's main topic, and pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test)
 10. Create & Link Issue - File the GitHub issue from the grilling ledger and link its convention branch (see `Worktree & Handoff`). Do this before entering the worktree.
-11. Enter Worktree - BEFORE writing any file, call `EnterWorktree(name: "<type>/<N>-<slug>")` to branch from `origin/main` into `.claude/worktrees/` and draft inside it (see `Worktree & Handoff`)
-12. Write the Spec Folder - Create `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and fill all four `SPEC_FILES` from `SPEC_TEMPLATES`; append `## KB References` to decisions.md; write any gap-filled KB docs and their `ai-docs/sources.yaml` entries inside the worktree; record the issue, branch, and worktree path in spec.md's `## Tracking`
+11. Enter Worktree - BEFORE writing any file, call `EnterWorktree(name: "<slug>")` to branch from `origin/main` into `.claude/worktrees/` and draft inside it (see `Worktree & Handoff`)
+12. Write the Spec Folder - Create `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and fill all four `SPEC_FILES` from `SPEC_TEMPLATES`; append `## KB References` to decisions.md when the expert layer is active; write any gap-filled KB docs and their `ai-docs/sources.yaml` entries inside the worktree; record the issue, branch, worktree path, and review profile in spec.md's `## Tracking`
 13. Commit & Push - Commit the spec folder (plus gap-filled KB docs) with a `Refs #N` footer, push its branch to `origin`, then post the plan-links comment on the issue (see `Worktree & Handoff`)
 14. Cross-Review - Have Codex review the spec with `CROSS_REVIEW_SKILL`, up to `MAX_REVIEW_ROUNDS`, fixing blocking findings each round (see `Codex Cross-Review`). Gate the hand-off on the outcome.
 15. Report - Follow the `Report` section to summarize the spec folder and its key components
@@ -100,7 +100,7 @@ Write the plan as four files under `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/`. Copy
 specs/<name-of-plan>/
 ├── spec.md                # what & why: task, objective, non-goals, locked decisions, tracking, review record
 ├── tasks.md               # how & who: phases, team members, step-by-step tasks
-├── decisions.md           # the grilling record + ## KB References (the docs the design stands on)
+├── decisions.md           # the grilling record (+ ## KB References when the expert layer is active)
 └── acceptance-criteria.md # done: testable criteria + validation commands
 ```
 
@@ -108,7 +108,7 @@ When filling them:
 
 - Include the conditional sections (`## Problem Statement` and `## Solution Approach` in spec.md, `## Implementation Phases` in tasks.md) only when task_type is feature or complexity is medium/complex.
 - Trace requirements end to end: each requirement in spec.md maps to a task in tasks.md, and each task names the `AC#` from acceptance-criteria.md that it satisfies.
-- Leave spec.md's `## Codex Findings` untouched — it is Codex-owned.
+- Record the review profile in spec.md's `## Tracking` as a line `Review profile: kb-grounded` or `Review profile: standard`. Codex writes its verdicts under `reviews/`, never into the spec.
 
 ## Worktree & Handoff
 
@@ -116,27 +116,31 @@ Every plan gets a GitHub issue and its own convention branch so `/harness-layer:
 
 - **Create the issue.** Pick the skeleton kind from `<type>` — feat→`feature`, fix→`bug`, docs/style/refactor/perf/test/chore→`chore`, `epic` only for a genuine multi-issue initiative. Fill `ISSUE_SKELETONS/<kind>.md` from the grilling ledger (no second interview), write it to a temp file, and create the issue: `gh issue create --title "<emoji> <type>: <plan title>" --body-file <tmp> --label <type> --label priority:P<0-3> --assignee <login>` (gitmoji from the commit table, matching the issue forms) — exactly one type label from {feat,fix,docs,style,refactor,perf,test,chore}, one `priority:P0`–`priority:P3` label, and the login from Preflight. Note the returned issue number `#N`.
 - **Link the branch.** `gh issue develop <N> --base main --name <type>/<N>-<slug>` creates the convention branch on the issue.
-- **Enter the worktree.** Call `EnterWorktree(name: "<type>/<N>-<slug>")` — it branches from `origin/main` into `.claude/worktrees/` and switches in. Write the spec folder there, never on `main`. (`EnterWorktree` mangles the local branch name; the convention name is what you push below.)
-- **Tracking.** In spec.md's `## Tracking`, record Issue `#N`, Branch `<type>/<N>-<slug>`, and the absolute worktree path (`git rev-parse --show-toplevel`).
+- **Enter the worktree.** Call `EnterWorktree(name: "<slug>")` — it branches from `origin/main` into `.claude/worktrees/<slug>` and switches in. Write the spec folder there, never on `main`. (`EnterWorktree` creates the local branch `worktree-<slug>`; the convention branch `<type>/<N>-<slug>` is reached only through the explicit push refspec below.)
+- **Tracking.** In spec.md's `## Tracking`, record Issue `#N`, Branch `<type>/<N>-<slug>`, the absolute worktree path (`git rev-parse --show-toplevel`), and `Review profile: kb-grounded|standard`.
 - **Commit.** Stage the spec folder (`git add specs/<name-of-plan>/`) plus any gap-filled KB docs (`git add ai-docs/`) and make one commit `<emoji> <type>(spec): draft plan for <name-of-plan>` with a `Refs #N` footer — no `Co-Authored-By`.
-- **Push.** `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>` lands the convention branch on GitHub.
+- **Push.** `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>` lands the convention branch on GitHub (bare `git push` refuses from the local `worktree-<slug>` branch).
 - **Plan-links comment.** After the first push, upsert one issue comment whose first line is `<!-- plan-links -->`, its body markdown links to all four spec files as blob URLs on the convention branch. Upsert: list comments with `gh api --paginate repos/{owner}/{repo}/issues/<N>/comments`; if the marker is found, update with `gh api --method PATCH repos/{owner}/{repo}/issues/comments/<comment-id> -F body=@<file>`; else create with `gh issue comment <N> --body-file <file>`. Always write the body to a file first (`gh api` has no `--body-file`).
 
 ## Codex Cross-Review
 
-Once the plan is pushed, Codex reviews it as a peer — up to `MAX_REVIEW_ROUNDS` — inside the worktree. Beyond ordinary spec defects, it verifies the spec's harness claims against the KB docs, and challenges the approach for a simpler, cleaner design. Every round ends with exactly one commit+push checkpoint on the convention branch (with a `Refs #N` footer) — never amend a pushed checkpoint. Every push uses the explicit refspec `git push origin HEAD:refs/heads/<type>/<N>-<slug>` (bare `git push` refuses from the mangled worktree branch); check its exit status directly. Loop per round N:
+Once the plan is pushed, Codex reviews it as a peer inside the worktree — a hard cap of `MAX_REVIEW_ROUNDS` rounds, every round counted. Beyond ordinary spec defects, when the expert layer is active it verifies the spec's harness claims against the KB docs, and it always challenges the approach for a simpler, cleaner design. Snapshot the reviewed head SHA before each round. Every push uses the explicit refspec `git push origin HEAD:refs/heads/<type>/<N>-<slug>` (bare `git push` refuses from the local `worktree-<slug>` branch); check its exit status directly. Loop per round N:
 
-1. **Ask Codex.** `codex exec -C "<worktree root>" -s workspace-write "Use the harness-spec-review skill to review round <N> of the plan at specs/<name-of-plan>/spec.md; read all four files and the KB docs listed in decisions.md ## KB References, append your verdict inside spec.md's ## Codex Findings, and return only the terse summary."`
-2. **Read the verdict from the file, not stdout:** `grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<name-of-plan>/spec.md | tail -1`. A round that writes no verdict is re-run — never treated as approval.
-3. **Relay the digest.** Read the `**Issue-comment digest:**` paragraph at the end of the round's verdict block and post it verbatim as an issue comment whose first line is `<!-- codex-spec-round-N -->` (N = the round). Upsert by marker exactly as the plan-links comment does (paginated `gh api` search → PATCH `-F body=@<file>`, else `gh issue comment --body-file`). Codex never calls `gh` — you relay.
-4. **`changes-requested`** → fix the blocking findings, then checkpoint: `git add specs/<name-of-plan>/ ai-docs/`, one commit with `Refs #N`, push. Go to round N+1.
-5. **`approved`** → gate passed. Set spec.md `Status: Approved`, then checkpoint the approval round (one commit with `Refs #N`, push). Handle the recommendations below.
+1. **Ask Codex.** `codex exec -C "<worktree root>" -s workspace-write "Use the spec-review skill to review round <N> of the plan at specs/<name-of-plan>/spec.md; read all four files and (when present) the KB docs listed in decisions.md ## KB References, write your verdict to specs/<name-of-plan>/reviews/codex-spec-review-round-<N>.md, and return only the terse summary."`
+2. **Read the verdict from the report file, not stdout:** `grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<name-of-plan>/reviews/codex-spec-review-round-<N>.md | tail -1`. A round that writes no verdict is re-run — never treated as approval.
+3. **Relay the digest.** Read the `**Issue-comment digest:**` paragraph from the round's report file and post it verbatim as an issue comment whose first line is `<!-- codex-spec-round-N -->` (N = the round). Upsert by marker exactly as the plan-links comment does (paginated `gh api` search → PATCH `-F body=@<file>`, else `gh issue comment --body-file`). Codex never calls `gh` — you relay.
+4. **`changes-requested`** → commit the report on its own (`git add specs/<name-of-plan>/reviews/`, one commit with `Refs #N`), fix the blocking findings, commit the fixes on their own (`git add specs/<name-of-plan>/ ai-docs/`, one commit with `Refs #N`), then push both commits together. Go to round N+1.
+5. **`approved`** → gate passed; the approval round's report commit is the approved head. Commit the report (`git add specs/<name-of-plan>/reviews/`, one commit with `Refs #N`) and push. Set spec.md `Status: Approved`, record any advisories, and record the outcome (below).
 
-**Better-approach recommendations are advisory** — they never block approval. Once approved, for each one Codex left, analyze it, explain to the user whether it is genuinely better, and ask via AskUserQuestion whether to apply. Applying a recommendation is a NEW commit with a `Refs #N` footer, pushed BEFORE the round runs, and triggers one more review round — approval never covers unreviewed changes. Advice rounds — and any follow-up rounds they spawn until approval — never count against `MAX_REVIEW_ROUNDS` (that cap governs `changes-requested` loops), so an approval at the cap still has a valid re-review path.
+**Advisories never spawn extra rounds.** Better-approach and other non-blocking suggestions are recorded as a follow-ups checklist in decisions.md to feed a future plan — they are not fixed in this run and never trigger another review round.
 
-**Over `MAX_REVIEW_ROUNDS` and still `changes-requested`** → STOP. Set spec.md `Status: Needs Human Review`, add the `status:needs-human` label to the issue (`gh issue edit <N> --add-label status:needs-human`), record the outstanding findings in `## Codex Verification`, commit and push, and tell the user to resolve them before the plan continues. Do NOT run the hand-off Report. When a later round reaches `approved` after this escalation, remove the label (`gh issue edit <N> --remove-label status:needs-human`).
+**Over `MAX_REVIEW_ROUNDS` and still `changes-requested`** (round 2's verdict is `changes-requested`) → STOP and present ONE AskUserQuestion that explains why a further round would be needed and what it would do, with these options and their exit statuses:
 
-Record the final outcome (approved at round N | needs human review after N rounds) in spec.md's `## Codex Verification`.
+- **Run one more delta round** — Codex re-reviews the fix delta as a new round.
+- **`accepted-with-unverified-fixes`** — allowed ONLY when the remaining blockers are non-severe and mechanically verifiable AND the plan's validation commands pass after the fixes; the user must pick it explicitly. Record it on the issue.
+- **`needs-human`** — add the `status:needs-human` label (`gh issue edit <N> --add-label status:needs-human`) and post an issue comment naming the blockers.
+
+The user's selection is final. Record the final outcome (`approved` at round N | `accepted-with-unverified-fixes` | `needs-human`) in spec.md's `## Codex Verification`. On `needs-human`, do NOT run the hand-off Report; when a later round reaches `approved`, remove the label (`gh issue edit <N> --remove-label status:needs-human`).
 
 ## Report
 
@@ -149,8 +153,9 @@ Folder: PLAN_OUTPUT_DIRECTORY/<name-of-plan>/ (spec.md, tasks.md, decisions.md, 
 Issue: #N <url>
 Branch: <type>/<N>-<slug> — pushed to origin
 Worktree: <absolute worktree path>
-Codex Review: <approved at round N>
-KB Grounding: <N docs consulted, M gap-filled>
+Review profile: <kb-grounded | standard>
+Codex Review: <approved at round N | accepted-with-unverified-fixes | needs-human>
+KB Grounding: <N docs consulted, M gap-filled — or "none (standard profile)">
 Topic: <brief description of what the plan covers>
 Key Components:
 - <main component 1>

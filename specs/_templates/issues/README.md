@@ -2,7 +2,7 @@
 
 Agent-facing markdown skeletons for creating issues from the CLI. GitHub issue
 **forms** (`.github/ISSUE_TEMPLATE/*.yml`) cannot be submitted via `gh`, so
-`/plan-w-team` fills the matching skeleton here and runs
+`/harness-layer:harness-plan` fills the matching skeleton here and runs
 `gh issue create --body-file <skeleton>`.
 
 **Sync rule:** each skeleton's `##` headings must match its form's field labels

@@ -1,6 +1,6 @@
 <!-- Agent-facing body skeleton for an epic issue. Headings mirror
-     .github/ISSUE_TEMPLATE/epic.yml field labels one-to-one. /plan-w-team fills
-     this and creates the issue via `gh issue create --body-file`. -->
+     .github/ISSUE_TEMPLATE/epic.yml field labels one-to-one. /harness-layer:harness-plan
+     fills this and creates the issue via `gh issue create --body-file`. -->
 
 ## Priority
 

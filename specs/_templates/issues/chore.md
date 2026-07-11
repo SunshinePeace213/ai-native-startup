@@ -1,5 +1,5 @@
 <!-- Agent-facing body skeleton for a chore issue. Headings mirror
-     .github/ISSUE_TEMPLATE/chore.yml field labels one-to-one. /plan-w-team
+     .github/ISSUE_TEMPLATE/chore.yml field labels one-to-one. /harness-layer:harness-plan
      fills this and creates the issue via `gh issue create --body-file`. -->
 
 ## Priority

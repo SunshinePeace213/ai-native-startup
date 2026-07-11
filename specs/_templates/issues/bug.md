@@ -1,6 +1,6 @@
 <!-- Agent-facing body skeleton for a bug issue. Headings mirror
-     .github/ISSUE_TEMPLATE/bug.yml field labels one-to-one. /plan-w-team fills
-     this and creates the issue via `gh issue create --body-file`. -->
+     .github/ISSUE_TEMPLATE/bug.yml field labels one-to-one. /harness-layer:harness-plan
+     fills this and creates the issue via `gh issue create --body-file`. -->
 
 ## Priority
 

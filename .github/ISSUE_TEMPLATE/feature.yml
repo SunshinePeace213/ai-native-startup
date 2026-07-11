@@ -42,7 +42,7 @@ body:
     id: acceptance-criteria
     attributes:
       label: Acceptance criteria
-      description: Concrete, checkable outcomes that define done. Write each as a testable checklist item — these become the Agent-Task success criteria for /build.
+      description: Concrete, checkable outcomes that define done. Write each as a testable checklist item — these become the Agent-Task success criteria for /harness-layer:harness-build.
       value: |
         - [ ]
         - [ ]

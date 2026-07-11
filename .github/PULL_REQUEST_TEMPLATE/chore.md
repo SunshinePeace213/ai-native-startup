@@ -46,7 +46,7 @@ Closes #<issue>
 
 ## Build Status
 
-<!-- Updated live by /build. Status: pending / done / N/A. Evidence: commit SHA, report-comment link, or N/A. -->
+<!-- Updated live by /harness-layer:harness-build. Status: pending / done / N/A. Evidence: commit SHA, report-comment link, or N/A. -->
 
 | Stage | Status | Evidence |
 | --- | --- | --- |

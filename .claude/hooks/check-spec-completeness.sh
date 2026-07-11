@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stop hook for /plan-w-team: block the run from ending until the per-plan spec folder is complete.
+# Stop hook for /harness-layer:harness-plan: block the run from ending until the per-plan spec folder is complete.
 # Two checks only: (1) all four files exist, (2) each file has its required '##' sections.
 # Exit 2 => deny stop; stderr is fed back to Claude so it completes the gaps.
 set -euo pipefail
@@ -32,7 +32,6 @@ Tracking
 Relevant Files
 Edge Cases
 Red Flags
-Codex Findings
 Codex Verification
 References
 Self Validation"

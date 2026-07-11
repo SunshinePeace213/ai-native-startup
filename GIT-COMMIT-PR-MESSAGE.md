@@ -50,13 +50,13 @@ Refs #42
 ## Pull Request Requirements
 
 - Use **one PR template per commit type**. The 8 templates live under `.github/PULL_REQUEST_TEMPLATE/`: `feat.md`, `fix.md`, `docs.md`, `style.md`, `refactor.md`, `perf.md`, `test.md`, `chore.md`. Each is tailored to its type (e.g. `feat` carries Breaking-changes + Screenshots; `fix` carries Root-cause + Regression-test) and all 8 share the stage table, Test Evidence, Risk & Rollback, Review Reports, and Reviewer Checklist.
-- `/build` opens a **draft** PR right after the first implementation checkpoint, filling the body from the matching template with `gh pr create --draft --body-file <type>.md` (not `--template`).
+- `/harness-layer:harness-build` opens a **draft** PR right after the first implementation checkpoint, filling the body from the matching template with `gh pr create --draft --body-file <type>.md` (not `--template`).
 - PR title carries the emoji to mirror the commit, e.g. `✨ feat(api): user login`.
 - The PR body carries `Closes #N` — the PR is the **only** artifact that closes an issue.
 - Fill out the Summary and Test Evidence, and keep the linked-issue line accurate.
 - The PR body carries the **stage table** (Implementation → Ready) and the **Agent Task Manifest** table (copied from `TaskList`) — the single durable audit point for the ephemeral Agent Tasks.
 - Each review posts a **marker comment** — `<!-- report:tidy -->`, `<!-- report:code-review -->`, `<!-- report:codex-round-N -->` — upserted in place (never stacked), each stating the reviewed head SHA; the `Review Reports` section links them.
-- The PR flips from draft to **ready only when its head commit equals the Codex-approved SHA**; `/ship` then merges with `gh pr merge --squash --match-head-commit <approved-sha>` (no local squash-merge).
+- The PR flips from draft to **ready only when its head commit equals the Codex-approved SHA**; `/harness-layer:harness-ship` then merges with `gh pr merge --squash --match-head-commit <approved-sha>` (no local squash-merge).
 - If a task requires a bypass (e.g. emergency hotfix), carry over `[skip-ci]` or `[skip-drift-check]` tokens as required.
 - If modifying user-facing UI, include structural text maps or mock descriptions.
 
@@ -67,7 +67,7 @@ Refs #42
   - `bug.yml` — bug report (repro, expected/actual, severity, environment).
   - `chore.yml` — maintenance umbrella covering `refactor` / `perf` / `style` / `test` / `build` / `ci`.
   - `epic.yml` — epic/plan that links the `specs/<name>/` plan files and carries a child-issue checklist.
-- Forms can't be submitted from the CLI, so `/plan-w-team` fills the paired markdown skeletons under `specs/_templates/issues/` and creates the issue with `gh issue create --body-file`.
+- Forms can't be submitted from the CLI, so `/harness-layer:harness-plan` fills the paired markdown skeletons under `specs/_templates/issues/` and creates the issue with `gh issue create --body-file`.
 - A feature issue's **Acceptance Criteria become the Agent-Task success criteria** for the build — write them as verifiable checks.
 - File **one issue per unit of intent**; the issue number threads the entire workflow.
 
@@ -91,14 +91,14 @@ Refs #42
 
 ## Worktree Rule
 
-- Claude's `EnterWorktree` isolation **mangles the local branch name**: a worktree named `feat/x` produces local branch `worktree-feat+x`, not `feat/x`. The local branch name is therefore cosmetic.
-- Name the worktree to match the intent (e.g. the feature slug).
+- Claude's `EnterWorktree(name: "<slug>")` names the local branch **`worktree-<slug>`**, which does not match the remote convention branch `<type>/<N>-<slug>`. The local branch name is therefore cosmetic.
+- Name the worktree with the plan's kebab-case `<slug>`.
 - The `<type>/<issue#>-<slug>` convention is enforced on the **remote** branch via an explicit push refspec:
 
   ```bash
   git push -u origin HEAD:refs/heads/<type>/<N>-<slug>
   ```
 
-- **Every push from the worktree needs that explicit refspec**, not just the first: with the mangled local branch, a bare `git push` refuses (`push.default=simple` name mismatch). Check each push's exit status directly — piping push output into another command hides the failure.
-- The **issue number recorded in the plan's `## Tracking` block is the source of truth** — never parse `#N` from the (mangled) local branch name.
+- **Every push from the worktree needs that explicit refspec**, not just the first: from the local `worktree-<slug>` branch a bare `git push` refuses (`push.default=simple` name mismatch). Check each push's exit status directly — piping push output into another command hides the failure.
+- The **issue number recorded in the plan's `## Tracking` block is the source of truth** — never parse `#N` from the local `worktree-<slug>` branch name.
 - Base ref `fresh` (branches from `origin/main`) already satisfies "always branch from `main`".
