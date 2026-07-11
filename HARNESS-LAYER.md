@@ -37,7 +37,7 @@ skill. Shared boilerplate lives in `_common.py`.
 Hooks under `.claude/hooks/security-scan/` scan agent-written content for secrets and
 common vulnerability patterns (stdlib regex, no external scanner):
 
-- `post_write_scan.py` — fires on `Write|Edit|MultiEdit`, scans the saved file
+- `post_write_scan.py` — `Write|Edit|MultiEdit`: scans the saved file
 - `session_baseline.py` — SessionStart: records already-dirty files as a baseline so the
   user's own uncommitted work is never flagged
 - `track_bash_writes.py` — PostToolUse + PostToolUseFailure on `Bash`: tracks files newly
