@@ -62,7 +62,7 @@ Closes #<issue>
 | Internal code-review | pending | |
 | Codex R1 | pending | |
 | Fixes (if required) | pending | |
-| Codex R2 delta (if required) | pending | |
+| Codex R2+ delta (if required) | pending | |
 | Ready | pending | |
 
 ## Review Reports
@@ -72,7 +72,7 @@ Closes #<issue>
 - Tidy — `<!-- report:tidy -->`
 - Code review — `<!-- report:code-review -->`
 - Codex R1 — `<!-- report:codex-round-1 -->`
-- Codex R2 — `<!-- report:codex-round-2 -->` (if required)
+- Codex R2+ — `<!-- report:codex-round-N -->` — one entry per delta round (if required)
 
 ## Reviewer Checklist
 
