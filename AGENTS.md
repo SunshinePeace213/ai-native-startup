@@ -5,6 +5,19 @@
 - **Python rich panels**: Always full width panels
 - **Safe delete**: NEVER use `rm -rf` directly. Use `mv <target> ~/.Trash/` instead of permanent deletion to prevent accidental data loss
 
+## Python Testing
+
+When writing test cases or running Python tests, use the installed pytest plugins — don't reinvent what they provide:
+
+- **Run**: `uv run pytest` from the repo root — runs `tests/` in parallel (`-n auto`, pytest-xdist) with pytest-sugar output and a 60s per-test timeout (pytest-timeout); config in `pyproject.toml`
+- **Debug one test**: `uv run pytest <file>::<test> -n 0` — disables workers so `-s`, breakpoints, and ordered output work
+- **Timeouts**: a hung test is killed at 60s; mark a known-slow test `@pytest.mark.timeout(120)` — never raise the global value
+- **Coverage**: `uv run pytest --cov=<path> --cov-report=term-missing` (pytest-cov) — measures in-process code only; code exercised via subprocess (e.g. the hooks) reports 0%
+- **Mocking**: use the `mocker` fixture (pytest-mock; patches auto-undo at teardown) or built-in `monkeypatch`; never import `unittest.mock` directly
+- **New tests must be parallel-safe**: isolate all state per test (`tmp_path`, `monkeypatch`); never rely on test order, shared globals, or fixed paths/ports
+- **UI**: sugar theme lives in `pytest-sugar.conf` (repo root, loaded from cwd); `-p no:sugar` for plain output; the live bar only renders on a TTY — non-TTY runs (agents, CI) fall back to plain dots, which is correct for log parsing
+- **No flake-retry plugins**: a failing test fails the run — fix it, don't auto-rerun it
+
 ## Harness Development
 
 - **Hooks**: files Claude edits are auto-formatted in place (Prettier / ESLint / Ruff / markdownlint); unfixable lint errors come back as exit-2 diagnostics — fix them. New worktrees get `bun install` + `uv sync` automatically; on a fresh clone use the `meta-install` skill. Details: [HARNESS-LAYER.md](./HARNESS-LAYER.md)
