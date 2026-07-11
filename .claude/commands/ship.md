@@ -23,8 +23,9 @@ TARGET: $ARGUMENTS — the branch or worktree name to ship. Empty → infer from
   `git worktree list`, not a guessed name. No open PR for the branch → STOP.
 - **Merge only a green, ready PR at the approved head.** The PR must be ready (not draft),
   its required checks must pass (`gh pr checks` — treat "no checks" as pass), and its head
-  SHA must equal the Codex-approved SHA recorded in the final `<!-- report:codex-round-N -->`
-  comment / review report and the spec's `## Tracking`. Any mismatch → ABORT.
+  SHA must equal the **approved head recorded in the PR body's stage table** (the Evidence of
+  the final Codex R / Ready rows — the round comment's `REVIEWED_HEAD_SHA` is that commit's
+  parent, not the merge guard). Any mismatch → ABORT.
 - **Squash-merge through GitHub**: `gh pr merge <PR> --squash --match-head-commit <approved-sha>`.
   The `--match-head-commit` guard refuses the merge if the head moved. Pass a trailer-free
   squash subject — no `Co-Authored-By`.
@@ -41,8 +42,8 @@ TARGET: $ARGUMENTS — the branch or worktree name to ship. Empty → infer from
    (`gh pr list --head <branch>`; cross-check the spec's `## Tracking`). Nothing resolves,
    or no open PR → STOP and report.
 2. **Verify the PR.** It is ready (not draft), `gh pr checks <PR>` passes (no checks = pass),
-   and its head equals the Codex-approved SHA from the final `<!-- report:codex-round-N -->`
-   comment / `## Tracking`. Any mismatch → ABORT with the reason.
+   and its head equals the approved head recorded in the PR body's stage table (final
+   Codex R / Ready row Evidence). Any mismatch → ABORT with the reason.
 3. **Squash-merge.** `gh pr merge <PR> --squash --match-head-commit <approved-sha> --subject "<emoji> <type>(<scope>): <summary>"`. On conflict or a moved head → ABORT and report the manual command.
 4. **Confirm.** Poll `gh pr view <PR> --json state,mergedAt` until GitHub reports `MERGED`. Only then proceed.
 5. **Cleanup.** From the primary checkout on `main`: `git worktree remove <path>` → `git branch -D <local-branch>` → `git push origin --delete <type>/<N>-<slug>` → `git worktree prune`.

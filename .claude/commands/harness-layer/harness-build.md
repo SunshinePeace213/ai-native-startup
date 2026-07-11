@@ -69,7 +69,7 @@ Before each round: ensure a clean tree, then snapshot `BASE_SHA=$(git merge-base
 2. **Read the verdict from the file, not stdout:** `grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<name>/reviews/codex-impl-review-round-<N>.md`. A round that writes no verdict is re-run — never treated as approval.
 3. **Post the report** — upload the report file's content as the `<!-- report:codex-round-N -->` comment, stating `REVIEWED_HEAD_SHA`.
 4. **`changes-requested`** → fix every blocking finding (route each fix to its original builder where practical). Then make **exactly one commit+push** for the round — the review report plus any fixes, `Refs #N`, **never amend** — tick **Fixes**, and go to round N+1 with fresh SHAs.
-5. **`approved`** → commit+push the round's review report in that same single commit (the approved head), verify the PR head equals it, tick **Codex R{N}**. For each advisory recommendation, tell the user whether it is genuinely better and ask via AskUserQuestion whether to apply.
+5. **`approved`** → commit+push the round's review report in that same single commit — the resulting SHA is the **approved head**. Record it as the Evidence of both the **Codex R{N}** and **Ready** stage rows (`gh pr edit` moves no commits), verify the PR head equals it, tick **Codex R{N}**. `/ship` matches against this recorded SHA — the round comment's `REVIEWED_HEAD_SHA` is its parent, not the merge guard. For each advisory recommendation, tell the user whether it is genuinely better and ask via AskUserQuestion whether to apply.
 
 **Over `MAX_CROSS_CHECK_ROUNDS` and still `changes-requested`** → STOP. Add the `status:needs-human` label to the issue (`gh issue edit <N> --add-label status:needs-human`), report the outstanding findings, and tell the user to resolve them before hand-off. Do NOT present the success `Report`.
 
@@ -83,7 +83,7 @@ After the build passes both gates and the PR is ready, provide a concise report:
 Plan: specs/<name>/
 Issue: #<N>
 PR: #<M> (ready) @ <approved-sha>
-Branch: <type>/<slug>
+Branch: <type>/<N>-<slug>
 Stages: Implementation ✓ Tidy ✓ Internal code-review ✓ Codex R<n> ✓ Ready ✓
 Internal review: <no findings | N fixed>
 Codex cross-check: <approved at round N>
@@ -92,5 +92,5 @@ KB grounding: <docs checked, contradictions fixed if any>
 Implemented:
 - <what shipped, concise>
 
-Next: /ship <type>/<slug>.
+Next: /ship <type>/<N>-<slug>.
 ```
