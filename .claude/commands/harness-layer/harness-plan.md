@@ -108,7 +108,7 @@ When filling them:
 
 - Include the conditional sections (`## Problem Statement` and `## Solution Approach` in spec.md, `## Implementation Phases` in tasks.md) only when task_type is feature or complexity is medium/complex.
 - Trace requirements end to end: each requirement in spec.md maps to a task in tasks.md, and each task names the `AC#` from acceptance-criteria.md that it satisfies.
-- Record the review profile in spec.md's `## Tracking` as a line `Review profile: kb-grounded` or `Review profile: standard`. Codex writes its verdicts under `reviews/`, never into the spec.
+- Codex writes its verdicts under `reviews/`, never into the spec.
 
 ## Worktree & Handoff
 

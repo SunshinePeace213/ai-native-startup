@@ -27,7 +27,6 @@ REVIEWER_MODEL: `sonnet` — every reviewer agent; utility agents (eligibility, 
 - **Read-only.** Use `gh` only to read (`pr view/diff/list`, `issue view`, `search`). Never post, comment, edit, or push.
 - A draft PR is an expected input — this command runs inside builds. Never decline a review for draft state or absence of a prior review.
 - Score findings honestly and drop what falls under `CONFIDENCE_FLOOR`; a short, real findings list beats a padded one. Pre-existing issues, linter-catchable nits, and likely-intentional changes are false positives.
-- Return findings to the caller; do not act on them.
 
 ## Workflow
 

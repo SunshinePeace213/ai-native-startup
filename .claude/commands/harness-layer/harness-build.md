@@ -56,7 +56,7 @@ Before any work, verify the tools this build reuses. STOP on the first failure a
 
 ## Verification
 
-Two read-only gates verify the build — internal (same model) and Codex (cross-model); YOU apply every fix, commit, and post the report comment. Round 1 runs both gates **concurrently**; a Codex round 2 delta follows only when round 1 is not a clean pass. Hard cap: `MAX_CROSS_CHECK_ROUNDS` Codex rounds — every `codex exec` counts, advisory-induced rounds included.
+Two read-only gates verify the build — internal (same model) and Codex (cross-model); YOU apply every fix, commit, and post the report comment. Round 1 runs both gates **concurrently**; a Codex round 2 delta follows only when round 1 is not a clean pass. Hard cap: `MAX_CROSS_CHECK_ROUNDS` Codex rounds.
 
 **Freeze & tracked SHAs.** Ensure a clean tree, then snapshot `BASE_SHA=$(git merge-base origin/main HEAD)` and `REVIEWED_HEAD_SHA=$(git rev-parse HEAD)`. A round tracks four SHAs: `BASE_SHA`, `REVIEWED_HEAD_SHA` (the reviewed input), the **report SHA** (the report commit), and the **fix SHA** (the fix commit). Any push while a round is running invalidates it — re-freeze and re-run.
 

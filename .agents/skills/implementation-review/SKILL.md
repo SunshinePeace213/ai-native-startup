@@ -13,9 +13,7 @@ own plan-adherence findings, and write **one consolidated, committed report** pe
 then return only a terse verdict summary — Claude reads the full report **from the file**,
 never from your stdout.
 
-You run under `-s workspace-write`, but that grant exists for exactly two purposes: **running
-the plan's Validation Commands** and **writing your one report file**. You edit NO source and
-write NO file other than this round's report.
+You edit NO source and write NO file other than this round's report.
 
 ## Inputs
 

@@ -21,8 +21,7 @@ Read all four in full before judging:
 - **acceptance-criteria.md** — numbered, testable criteria and their validation commands.
 
 The caller injects the **review profile** (`kb-grounded` or `standard`) and the **round
-number N**. Use N verbatim — never infer it. All four spec files are read-only; you write
-only your report.
+number N**. Use N verbatim — never infer it.
 
 ## KB grounding (conditional — run when any signal fires)
 
@@ -65,7 +64,7 @@ style, wording, formatting, or "you could also" nice-to-haves. When in doubt, le
 ## Output contract
 
 Write your verdict to `specs/<plan-name>/reviews/codex-spec-review-round-N.md`, creating
-`reviews/` if absent. N is injected — never inferred. Write only this file; the spec and its
+`reviews/` if absent. Write only this file; the spec and its
 siblings stay untouched.
 
 The report's **first line** MUST be exactly one of (the dash is an em-dash, U+2014, one space
