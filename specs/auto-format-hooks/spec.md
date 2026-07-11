@@ -64,7 +64,7 @@ Dependency install rides the worktree lifecycle instead of SessionStart. `worktr
 - **Branch:** chore/19-auto-format-hooks
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/auto-format-hooks
 - **Review profile:** kb-grounded
-- **PR:** <#M — filled by /harness-layer:harness-build>
+- **PR:** #20
 
 ## Relevant Files
 
