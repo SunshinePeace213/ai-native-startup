@@ -1,7 +1,7 @@
 # Spec: auto-format-hooks
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
   <!-- Lifecycle, set by /harness-layer:harness-plan: Drafted for Review → Approved (on a Codex
        `approved` verdict). If round 2 is still changes-requested, the over-cap gate records the exit
        status in ## Codex Verification — approved | accepted-with-unverified-fixes | needs-human. One value only. -->
@@ -128,8 +128,8 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** <approved at round N | accepted-with-unverified-fixes | needs-human>
-- **Rejected findings:** <any Codex finding Claude chose not to act on, each with a one-line rationale; "none" if all warranted findings were applied>
+- **Outcome:** approved at round 2
+- **Rejected findings:** none — both round-1 blocking findings were applied (dual worktree payload shapes; tightened AC1/AC9/AC11 validation commands). Round-1/2 advisories (extra KB references, single-builder fallback) are recorded as follow-ups in decisions.md, not fixed in this run per the review protocol.
 
 ## References
 
@@ -147,4 +147,4 @@ specs/auto-format-hooks/
 - [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
 - [x] Acceptance criteria are specific and testable
 - [x] All four files exist under specs/auto-format-hooks/ and are saved in the repository
-- [ ] Codex has reviewed the spec and Status reflects the outcome
+- [x] Codex has reviewed the spec and Status reflects the outcome
