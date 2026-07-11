@@ -112,7 +112,7 @@ Every plan gets a GitHub issue and its own convention branch so `/build` can pic
 
 ## Codex Cross-Review
 
-Once the plan is pushed, Codex reviews it as a peer — up to `MAX_REVIEW_ROUNDS` — inside the worktree. It catches spec defects AND challenges the approach for a simpler, cleaner design. Every round ends with exactly one commit+push checkpoint on the convention branch (with a `Refs #N` footer) — never amend a pushed checkpoint. Loop per round N:
+Once the plan is pushed, Codex reviews it as a peer — up to `MAX_REVIEW_ROUNDS` — inside the worktree. It catches spec defects AND challenges the approach for a simpler, cleaner design. Every round ends with exactly one commit+push checkpoint on the convention branch (with a `Refs #N` footer) — never amend a pushed checkpoint. Every push uses the explicit refspec `git push origin HEAD:refs/heads/<type>/<N>-<slug>` (bare `git push` refuses from the mangled worktree branch); check its exit status directly. Loop per round N:
 
 1. **Ask Codex.** `codex exec -C "<worktree root>" -s workspace-write "Use the spec-review skill to review round <N> of the plan at specs/<name-of-plan>/spec.md; read all four files, append your verdict inside spec.md's ## Codex Findings, and return only the terse summary."`
 2. **Read the verdict from the file, not stdout:** `grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<name-of-plan>/spec.md | tail -1`. A round that writes no verdict is re-run — never treated as approval.

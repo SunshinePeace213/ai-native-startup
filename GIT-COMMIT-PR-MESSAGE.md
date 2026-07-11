@@ -99,5 +99,6 @@ Refs #42
   git push -u origin HEAD:refs/heads/<type>/<N>-<slug>
   ```
 
+- **Every push from the worktree needs that explicit refspec**, not just the first: with the mangled local branch, a bare `git push` refuses (`push.default=simple` name mismatch). Check each push's exit status directly — piping push output into another command hides the failure.
 - The **issue number recorded in the plan's `## Tracking` block is the source of truth** — never parse `#N` from the (mangled) local branch name.
 - Base ref `fresh` (branches from `origin/main`) already satisfies "always branch from `main`".
