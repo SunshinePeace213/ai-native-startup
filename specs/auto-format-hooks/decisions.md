@@ -34,7 +34,7 @@ Rebuild format-on-save as six Python hooks under `.claude/hooks/auto-format/` (f
 - Seven files in `.claude/hooks/auto-format/`: `js_ts.py`, `data.py`, `markdown.py`, `python.py`, `worktree_create.py`, `worktree_remove.py`, `_common.py`. Invalidated if the user wants different names or a dispatcher architecture.
 - Registration lives in the tracked `.claude/settings.json` using the existing format: PostToolUse matcher `Write|Edit|MultiEdit`, commands via `uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/auto-format/<file>.py`. Each of the four format hooks registers separately and self-filters by extension (the settings.json matcher targets tool names, not file paths).
 - Stdin payload is snake_case (`tool_name`, `tool_input.file_path`), as the working `block_attribution.py` proves for this config format. The KB `hooks.md` shows camelCase (`toolName`, `toolInput`) for the newer `.claude/hooks.json` format this repo does not use — conflict resolved in favor of the in-repo working code; flagged for a KB refresh.
-- WorktreeCreate stdin carries a `name` field and WorktreeRemove a `worktree_path` field, per the tfriedel reference implementation; the build must verify against a live payload before relying on it (surfaced as a test concern).
+- WorktreeCreate/WorktreeRemove stdin field names differ between sources: the KB hooks reference documents `worktreeName`/`worktreePath`, the tfriedel reference implementation reads `name`/`worktree_path`. Resolution (Codex round 1): both hooks accept **both** shapes, tests exercise both, and the build verifies against a live payload and records which shape arrived.
 - Diagnostics cap: first 10 issues + "and N more", format `file:line rule message`.
 - Vendored-path skip set: `node_modules`, `.venv`, `dist`, matched on the path relative to the project root (retired `lint.py` behavior).
 - `worktree_create.py` bases new branches on the origin default branch, falling back to local `HEAD`; reuses an existing `worktree-<name>` branch instead of failing.
@@ -53,6 +53,8 @@ Rebuild format-on-save as six Python hooks under `.claude/hooks/auto-format/` (f
   - [ ] `/harness-layer:kb` refresh of `ai-docs/anthropic/hooks.md` — its WorktreeCreate section ("async, logging only") lags the current worktrees doc contract.
   - [ ] CSS support when styling work lands.
   - [ ] `.worktreeinclude` handling in `worktree_create.py` if the file is ever added.
+  - [ ] (Codex round 1, advisory) Consult and log `ai-docs/anthropic/skills.md`, `agent-teams.md`, and `settings.md` in KB References when the build touches those surfaces.
+  - [ ] (Codex round 1, advisory) If the build session lacks the Task*/team tools, collapse the two builders into one and execute the same ordered task list solo — scope unchanged.
 
 ## KB References
 

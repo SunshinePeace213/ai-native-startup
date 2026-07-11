@@ -95,10 +95,10 @@ Hook registration in `.claude/settings.json`, the `/meta-install` command → sk
 - **Agent Type:** `general-purpose`
 - **Parallel:** true (alongside build-format-hooks)
 - **Satisfies:** AC7, AC8
-- `worktree_create.py`: read `name` from stdin JSON; `git worktree add` at `<root>/.claude/worktrees/<name>` on branch `worktree-<name>` based on the origin default branch (fallback local `HEAD`; reuse the branch if it exists); run `bun install` then `uv sync` inside the worktree; print ONLY the absolute worktree path on stdout — all git/install output captured or sent to stderr; install failure logs and still prints the path.
-- `worktree_remove.py`: read `worktree_path` from stdin JSON; exit 0 if the path is gone; `git worktree remove --force`; delete the checked-out branch only when it matches `worktree-*`; all failures → note + exit 0.
-- Verify the stdin field names against a live payload (create a scratch worktree with the hook registered in `settings.local.json`, or capture via `claude --debug`) before finalizing — the names come from a reference implementation, not official docs.
-- Write `tests/harness-layer/hooks/test_worktree_create.py` + `test_worktree_remove.py` using temp git repos: create → path printed alone on stdout, worktree + branch exist; remove → worktree gone, `worktree-*` branch deleted, foreign branch preserved; missing path → exit 0.
+- `worktree_create.py`: read the worktree name from stdin JSON, accepting both `worktreeName` (KB hooks reference) and `name` (reference implementation); neither present → note + exit 0. Then `git worktree add` at `<root>/.claude/worktrees/<name>` on branch `worktree-<name>` based on the origin default branch (fallback local `HEAD`; reuse the branch if it exists); run `bun install` then `uv sync` inside the worktree; print ONLY the absolute worktree path on stdout — all git/install output captured or sent to stderr; install failure logs and still prints the path.
+- `worktree_remove.py`: read the path from stdin JSON, accepting both `worktreePath` (KB hooks reference) and `worktree_path` (reference implementation); exit 0 if the path is gone; `git worktree remove --force`; delete the checked-out branch only when it matches `worktree-*`; all failures → note + exit 0.
+- Verify the actual field names against a live payload (create a scratch worktree with the hook registered in `settings.local.json`, or capture via `claude --debug`) and record which shape arrived in the PR notes — the dual-shape parsing must cover it either way.
+- Write `tests/harness-layer/hooks/test_worktree_create.py` + `test_worktree_remove.py` using temp git repos: create → path printed alone on stdout, worktree + branch exist, both payload shapes accepted; remove → worktree gone, `worktree-*` branch deleted, foreign branch preserved, both payload shapes accepted; missing path → exit 0.
 
 ### 5. Register the hooks
 
