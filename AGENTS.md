@@ -10,6 +10,7 @@
 - **Hooks**: files Claude edits are auto-formatted in place (Prettier / Ruff / markdownlint); a fresh checkout installs the linters on SessionStart or via `/meta-install`. Details: [HARNESS-LAYER.md](./HARNESS-LAYER.md)
 - **Keep it short**: Write harness/prompt files (skills, agents, commands, and rules under `.claude/` and `.agents/`) in fluent, KISS prose. Every line loads into context — say it once, briefly, then stop. When in doubt, cut.
 - **Memory goes here**: Persist project memory and preferences in this `AGENTS.md`, not `CLAUDE.md` (which only `@`-imports this file).
+- **Memory series**: The root ALL-CAPS files are the project memory series; `AGENTS.md` is the hub. A genuinely new convention series → a new root `ALL-CAPS.md` referenced from here — brief and imperative, no rationale.
 - **Settings sync**: Experiment in `.claude/settings.local.json` (untracked, personal, overrides in-session). Before merging to main, fold changes that should ship into the tracked `.claude/settings.json`.
 - **Instructions, not rationale**: State what to do, not why. No "chose A over B", no decision logs, no design history — that's context bloat the agent never acts on.
 - **No stray cross-refs**: Don't reference other commands or skills unless the file actually needs them to run. Mentions "for context" just add noise.
@@ -28,5 +29,4 @@
 
 ## Harness-Layer Pipeline
 
-- **Harness development** — files under `.claude/` and `.agents/`: `/harness-layer:harness-plan` → `/harness-layer:harness-build` → `/ship`. Keep the `ai-docs/` KB fresh with `/harness-layer:kb`.
-- **Coding task** — application code: `/plan-w-team` → `/build` → `/ship`.
+- **Pipeline** — every task, application code or harness work: `/harness-layer:harness-plan` → `/harness-layer:harness-build` → `/harness-layer:harness-ship`. The domain-expert KB layer engages automatically when the work touches the harness. Keep the `ai-docs/` KB fresh with `/harness-layer:kb`.

@@ -1,0 +1,50 @@
+name: Chore / maintenance
+description: Refactor, perf, style, test, build, or CI work with no user-facing feature change
+title: "🔧 chore: "
+labels: [chore]
+assignees: [SunshinePeace213]
+body:
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How urgent is this relative to other work?
+      options:
+        - P0 — critical
+        - P1 — high
+        - P2 — medium
+        - P3 — low
+      default: 2
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Precisely which files, modules, or systems this touches. Keep it tight; state what is deliberately left alone.
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: Why do this now? Tie it to a concrete benefit (unblocks a feature, cuts build time, pays down specific debt).
+    validations:
+      required: true
+  - type: checkboxes
+    id: chore-kind
+    attributes:
+      label: Chore kind
+      description: Check all that apply — categorizes the maintenance work; the issue itself stays type `chore` (the branch/commit type is picked at plan time).
+      options:
+        - label: refactor — restructure code without changing behavior
+        - label: perf — improve performance
+        - label: style — formatting / whitespace, no logic change
+        - label: test — add or fix tests
+        - label: build — build system, dependencies, packaging
+        - label: ci — CI configuration and scripts
+  - type: textarea
+    id: risk-impact
+    attributes:
+      label: Risk & impact
+      description: What could break and how you'll know. Note behavior that MUST stay identical, the verification approach, and a rollback note.

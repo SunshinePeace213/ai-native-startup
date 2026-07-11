@@ -2,8 +2,9 @@
 
 - **Owner:** <github handle of the human owner, e.g. @ringo>
 - **Status:** Drafted for Review
-  <!-- Lifecycle, set by /plan-w-team: Drafted for Review → Approved (after a Codex `approved`
-       verdict) → Needs Human Review (still changes-requested after 2 Codex rounds). One value only. -->
+  <!-- Lifecycle, set by /harness-layer:harness-plan: Drafted for Review → Approved (on a Codex
+       `approved` verdict). If round 2 is still changes-requested, the over-cap gate records the exit
+       status in ## Codex Verification — approved | accepted-with-unverified-fixes | needs-human. One value only. -->
 
 ## Task Description
 
@@ -33,13 +34,15 @@
 
 ## Tracking
 
-<!-- Recorded by /plan-w-team. The Issue field is the SINGLE SOURCE OF TRUTH /build reads — /build
-     NEVER re-derives #N from the mangled local branch name. spec.md is the single home for this
-     block; decisions.md does not duplicate it. -->
+<!-- Recorded by /harness-layer:harness-plan. The Issue field is the SINGLE SOURCE OF TRUTH
+     /harness-layer:harness-build reads — it NEVER re-derives #N from the local `worktree-<slug>`
+     branch name. spec.md is the single home for this block; decisions.md does not duplicate it. -->
 
-- **Issue:** <#N, or the literal `none — gh unavailable` when no issue was created>
-- **Branch:** <intended convention branch `<type>/<N>-<slug>`, or `<type>/<slug>` with no #N>
+- **Issue:** <#N — mandatory; every plan is filed as an issue before its worktree exists>
+- **Branch:** <convention branch `<type>/<N>-<slug>`>
 - **Worktree:** <absolute worktree path>
+- **Review profile:** <kb-grounded | standard>
+- **PR:** <#M — filled by /harness-layer:harness-build>
 
 ## Relevant Files
 
@@ -65,18 +68,11 @@ Use these files to complete the task:
 
 <optional: extra context, dependencies, follow-ups. New libs: specify with `uv add <pkg>` (Python) or `bun add <pkg>` (JS/TS).>
 
-## Codex Findings
-
-<!-- CODEX-OWNED. Written only by the spec-review skill (one `### Round N — Verdict: …` block per
-     round). Claude must NEVER edit this section. -->
-
-_Pending Codex review._
-
 ## Codex Verification
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** <approved at round N | proceeded without full approval after 2 rounds | skipped — Codex unavailable>
+- **Outcome:** <approved at round N | accepted-with-unverified-fixes | needs-human>
 - **Rejected findings:** <any Codex finding Claude chose not to act on, each with a one-line rationale; "none" if all warranted findings were applied>
 
 ## References

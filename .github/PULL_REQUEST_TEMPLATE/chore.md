@@ -18,7 +18,17 @@ Chores (deps, config, tooling) often need no CI run — append a bypass token wh
 
 ## Rationale
 
-<!-- Why this chore matters (security, upkeep, unblocking other work). Note any risk and how it's contained. -->
+<!-- Why this chore matters (security, upkeep, unblocking other work). -->
+
+## Test Evidence
+
+<!-- Commands run + observed results (build/CI green, or N/A). -->
+
+## Risk & Rollback
+
+<!-- What could break, how to detect it, how to roll back. "None" is allowed. -->
+
+None.
 
 ## Linked Issue
 
@@ -28,18 +38,38 @@ Closes #<issue>
 
 ## Agent Task Manifest
 
-<!-- Copied verbatim from TaskList at build time. Format: - [ ] #<taskId> <subject> — <owner> — <status> -->
+<!-- One row per Agent Task from TaskList at build time. -->
 
-- [ ] #<taskId> <subject> — <owner> — <status>
+| task | owner | done | verification | notes |
+| --- | --- | --- | --- | --- |
+| #<taskId> <subject> | <owner> | ☐ | <how verified> | |
 
 ## Build Status
 
-<!-- Checked off live by /build as each phase completes. -->
+<!-- Updated live by /harness-layer:harness-build. Status: pending / done / N/A. Evidence: commit SHA, report-comment link, or N/A. -->
 
-- [ ] Implementation
-- [ ] Internal check
-- [ ] Claude code review
-- [ ] Codex review R1
-- [ ] Fixes
-- [ ] Codex review R2
-- [ ] Result
+| Stage | Status | Evidence |
+| --- | --- | --- |
+| Implementation | pending | |
+| Tidy | pending | |
+| Internal code-review | pending | |
+| Codex R1 | pending | |
+| Fixes (if required) | pending | |
+| Codex R2+ delta (if required) | pending | |
+| Ready | pending | |
+
+## Review Reports
+
+<!-- Links to the marker comments on this PR (upserted, each states the reviewed head SHA). -->
+
+- Tidy — `<!-- report:tidy -->`
+- Code review — `<!-- report:code-review -->`
+- Codex R1 — `<!-- report:codex-round-1 -->`
+- Codex R2+ — `<!-- report:codex-round-N -->` — one entry per delta round (if required)
+
+## Reviewer Checklist
+
+- [ ] Intent & scope match the linked issue
+- [ ] Validation evidence present and green
+- [ ] Rollback plan is plausible
+- [ ] Security / data / deployment impact considered

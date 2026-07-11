@@ -28,7 +28,7 @@ evaluations, just vibe with me", do that instead.
 
 Confirm the artifact before building anything.
 
-- A **slash command** is a reusable prompt the user invokes by name (`/build`,
+- A **slash command** is a reusable prompt the user invokes by name (`/review`,
   `/commit`). Default form: a flat file at `.claude/commands/<name>.md`.
 - A **skill** is knowledge or capability Claude reaches for on its own, or any
   command that needs bundled material: a directory at

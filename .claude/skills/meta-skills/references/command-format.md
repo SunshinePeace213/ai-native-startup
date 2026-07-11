@@ -62,7 +62,7 @@ auto-triggering via a discoverable description?
          (+ disable-model-invocation to keep a side-effecting one manual)
 ```
 
-Most commands — `build`, `commit`, `plan-w-team` — are a single prompt with
+Most commands — `commit`, `review` — are a single prompt with
 args; a directory for a one-file command is overhead. And a same-name skill
 silently beats a flat command, so never keep both.
 
@@ -81,6 +81,7 @@ Pulls live data into the prompt **before Claude sees it**:
   git log --oneline -5
   ```
   ````
+
 - **`@file`** — injects that file's contents into the prompt.
 
 Injection requires the tool be allowed: a `` !`git ...` `` needs

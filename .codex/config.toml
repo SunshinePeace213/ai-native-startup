@@ -1,4 +1,4 @@
-# Project-local Codex config for the /build multi-layer review pipeline.
+# Project-local Codex config for the /harness-layer:harness-build multi-layer review pipeline.
 # The implementation-review orchestrator spawns the 6 read-only review subagents
 # defined in .codex/agents/*.toml.
 
