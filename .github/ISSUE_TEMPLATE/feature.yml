@@ -1,0 +1,61 @@
+name: Feature request
+description: Propose a new capability or enhancement
+title: "✨ feat: "
+labels: [feat]
+assignees: [SunshinePeace213]
+body:
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How urgent is this relative to other work?
+      options:
+        - P0 — critical
+        - P1 — high
+        - P2 — medium
+        - P3 — low
+      default: 2
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Motivation
+      description: The user-facing problem or unmet need. Describe the pain, who feels it, and why now. Do not prescribe the solution here.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed solution
+      description: The capability you want and roughly how it behaves. Sketch the intended UX/API surface.
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User story
+      description: One or more As a… / I want… / so that… statements.
+      placeholder: |
+        As a <role>
+        I want <capability>
+        so that <benefit>
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: Concrete, checkable outcomes that define done. Write each as a testable checklist item — these become the Agent-Task success criteria for /build.
+      value: |
+        - [ ]
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you weighed and why this one wins.
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What this feature will NOT do, so build agents don't gold-plate. Anything here is a separate issue.

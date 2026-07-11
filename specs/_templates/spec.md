@@ -37,9 +37,10 @@
      NEVER re-derives #N from the mangled local branch name. spec.md is the single home for this
      block; decisions.md does not duplicate it. -->
 
-- **Issue:** <#N, or the literal `none — gh unavailable` when no issue was created>
-- **Branch:** <intended convention branch `<type>/<N>-<slug>`, or `<type>/<slug>` with no #N>
+- **Issue:** <#N — mandatory; every plan is filed as an issue before its worktree exists>
+- **Branch:** <convention branch `<type>/<N>-<slug>`>
 - **Worktree:** <absolute worktree path>
+- **PR:** <#M — filled by /build>
 
 ## Relevant Files
 

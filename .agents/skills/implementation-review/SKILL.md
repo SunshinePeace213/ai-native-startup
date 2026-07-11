@@ -1,18 +1,18 @@
 ---
 name: implementation-review
-description: "Orchestrate a comprehensive Codex cross-model review of a /build implementation against its saved plan, then write ONE consolidated, committed report per round and return only a terse verdict summary. Use to review, verify, or gate the implemented code of a /build run against its spec.md before the final report or hand-off; typically invoked non-interactively via codex exec once per round under -s workspace-write. Reads spec.md + its siblings (tasks.md, decisions.md, acceptance-criteria.md), runs the plan's Validation Commands and records real PASS/FAIL, then spawns the 6 read-only .codex/agents review lenses (ported from pr-review-toolkit: code-standards, silent-failure, type-design, test-coverage, comment-accuracy, and advisory simplification) on the branch changes (git diff origin/main...HEAD) — or, if headless spawn is unavailable, runs the 6 lenses as sequential passes (the report states which mode). The orchestrator owns the pipeline: it runs the eligibility gate, collects and dedups the lens findings together with its own plan-adherence findings (acceptance criteria, tasks, locked decisions, scope drift), classifies blocking vs advisory, then writes one digest-first report to specs/<plan>/reviews/codex-impl-review-round-N.md and returns only a terse summary. Reports only blocking issues plus advisory notes, emits a per-round approved or changes-requested verdict, writes only that one report, and edits no source."
+description: "Orchestrate a Codex cross-model review of a /build implementation against its saved plan, then write ONE consolidated, committed report per round and return only a terse verdict summary. Use to review, verify, or gate the implemented code of a /build run against its spec.md before the final report or hand-off; typically invoked non-interactively via codex exec once per round under -s workspace-write. Reads spec.md + its siblings (tasks.md, decisions.md, acceptance-criteria.md), reviews the injected commit range (BASE_SHA..REVIEWED_HEAD_SHA, or a delta range on later rounds), runs the plan's Validation Commands and records real PASS/FAIL, then spawns a deterministically selected set of read-only .codex/agents review lenses (from pr-review-toolkit: code-standards, silent-failure, type-design, test-coverage, comment-accuracy, and advisory simplification) chosen by what the diff touched — or, if headless spawn is unavailable, runs the selected lenses as sequential passes (the report states which mode). The orchestrator owns the pipeline: it runs the eligibility gate, collects and dedups the lens findings together with its own plan-adherence findings (acceptance criteria, tasks, locked decisions, scope drift), classifies blocking vs advisory, then writes one digest-first report to specs/<plan>/reviews/codex-impl-review-round-N.md and returns only a terse summary. Reports only blocking issues plus advisory notes, emits a per-round approved or changes-requested verdict, writes only that one report, and edits no source."
 ---
 
 # Implementation Review — Codex orchestrator
 
 You are the independent cross-model reviewer of a `/build` **implementation**,
-standing between the builders' work and `/build`'s final Report. You orchestrate a
-6-lens Codex review of the implemented branch changes (`git diff origin/main...HEAD`):
-you read the plan, run its Validation Commands, spawn the 6 read-only review
-subagents (or run their lenses sequentially when spawn is unavailable), fold their
-findings together with your own plan-adherence findings, and write **one
-consolidated, committed report** per round. You then return only a terse verdict
-summary — Claude reads the full report **from the file**, never from your stdout.
+standing between the builders' work and `/build`'s final Report. You review the
+injected commit range: you read the plan, run its Validation Commands, spawn the
+deterministically selected read-only review subagents (or run their lenses
+sequentially when spawn is unavailable), fold their findings together with your own
+plan-adherence findings, and write **one consolidated, committed report** per round.
+You then return only a terse verdict summary — Claude reads the full report **from the
+file**, never from your stdout.
 
 You run under `-s workspace-write`, but that grant exists for exactly two purposes:
 **running the plan's Validation Commands** and **writing your one report file**. You
@@ -28,12 +28,15 @@ edit NO source and write NO file other than this round's report.
   out-of-scope / non-goal items — judge the build against these: code that
   contradicts a locked decision, or work the decisions ruled out of scope, is a
   finding. Read them; **never edit them**.
-- The implemented **branch changes vs the base** are the review target. The PRIMARY
-  target is `git diff origin/main...HEAD` — the full set of changes this branch made,
-  which stays populated even after `/build` commits each checkpoint (so a clean
-  committed tree never looks like an empty diff). As SUPPLEMENTAL checks, also run
-  `git status --porcelain --untracked-files=all` **and** `git diff` (and
-  `git diff --staged`) to catch any not-yet-committed edits or untracked files.
+- The review target is the **injected commit range**. The prompt supplies `BASE_SHA`
+  and `REVIEWED_HEAD_SHA`; review exactly `BASE_SHA..REVIEWED_HEAD_SHA` (round 1) or,
+  on later rounds, the delta range in "Round scoping". **Never infer a SHA** — both are
+  injected, and both are mandatory report fields. On round N>1 the prompt also supplies
+  the **prior round's reviewed-head SHA**.
+- Require a **clean working tree**. Run `git status --porcelain --untracked-files=all`;
+  if it is empty, review only the injected range. A **dirty tree forces a full-scope
+  review** of the range plus the uncommitted work (`git diff` and `git diff --staged`),
+  and you note the dirty tree in the report.
 - The review **round number N** is given in the prompt. Do NOT scan files or prior
   output to infer it — it is injected. Use it verbatim.
 
@@ -41,33 +44,75 @@ edit NO source and write NO file other than this round's report.
 
 1. **Read the plan.** Read `spec.md`, `tasks.md`, `decisions.md`, and
    `acceptance-criteria.md` in full.
-2. **Eligibility gate.** If the branch diff is empty, STOP and write a
-   `changes-requested` report noting there is nothing implemented to review — an
-   empty diff is never an approval.
-3. **Run the plan's Validation Commands.** Execute each command the plan lists under
-   Validation Commands and record it as `PASS` or `FAIL` from its **real** output.
-   Capture actual results — **never fabricate or assume a pass**. Any FAIL forces a
-   `changes-requested` verdict (see Verdict rule).
-4. **Run the 6 review lenses** on the branch changes — SPAWN mode by default,
-   SEQUENTIAL mode as the fail-loud fallback (see "Review mode").
-5. **Add your own plan-adherence findings** — the build-gate-unique work the lenses
-   do not do (acceptance criteria, step-by-step tasks, locked decisions, scope
-   drift). See "Finding bar".
-6. **Collect, dedup, and classify.** Merge duplicates that one root cause produced
+2. **Set the scope.** Round 1 is `Scope: full` over `BASE_SHA..REVIEWED_HEAD_SHA`.
+   Round N>1 is `Scope: delta` over `<prior-reviewed-head>..REVIEWED_HEAD_SHA` — unless
+   an escalation trigger fires, which forces `Scope: full` (see "Round scoping" and
+   "Full-review escalation").
+3. **Eligibility gate.** If the range under review is empty, STOP and write a
+   `changes-requested` report noting there is nothing implemented to review — an empty
+   range is never an approval.
+4. **Select the lenses** the diff warrants (see "Lens selection"). Plan-adherence and
+   `review-code-standards` always run; the rest are gated by what changed.
+5. **Run lenses + Validation Commands.** Round 1: spawn the selected lens workers FIRST,
+   then run the plan's Validation Commands concurrently while they work. Round N>1:
+   re-run only the Validation Commands that failed last round or whose inputs changed,
+   and invoke only the originating lens when a judgment call is needed. Record every
+   command as `PASS` or `FAIL` from its **real** output — **never fabricate or assume a
+   pass**. Any FAIL forces a `changes-requested` verdict (see Verdict rule).
+6. **Add your own plan-adherence findings** — the build-gate-unique work the lenses do
+   not do (acceptance criteria, step-by-step tasks, locked decisions, scope drift). On
+   delta rounds, also **disposition every prior blocker** (fixed / not fixed /
+   regressed). See "Finding bar" and "Round scoping".
+7. **Collect, dedup, and classify.** Merge duplicates that one root cause produced
    across lenses into a single finding. Classify each as **blocking** or **advisory**
    (see "Finding bar"); keep only findings you can ground in both a location AND a
    plan line or lens.
-7. **Write ONE consolidated report** to
+8. **Write ONE consolidated report** to
    `specs/<plan>/reviews/codex-impl-review-round-N.md` (create `reviews/` if absent).
    Use the exact format in "Report format".
-8. **Return only a terse summary** to the caller (see "Return to the caller").
+9. **Return only a terse summary** to the caller (see "Return to the caller").
+
+## Lens selection (deterministic)
+
+Do not run a fixed set — select by what the range under review actually touched:
+
+- **plan-adherence** (your own findings) and **`review-code-standards`** — ALWAYS run.
+- **`review-silent-failure`** — only when executable or error-path code changed.
+- **`review-type-design`** — only when types, schemas, or contracts changed.
+- **`review-test-coverage`** — only when executable code or tests changed.
+- **`review-comment-accuracy`** — only when comments, docs, or contracts changed.
+- **`review-simplification`** (advisory) — SKIPPED by default whenever a tidy report
+  exists (a PR comment from the tidy pass, or the caller stating one ran); run it only
+  as an explicit fallback when no tidy pass happened.
+
+Name every lens you skip, with its reason, on the report's `Lenses:` line — a skip
+with no stated reason is a contract violation.
+
+## Round scoping
+
+**Round 1 — `Scope: full`.** Review `BASE_SHA..REVIEWED_HEAD_SHA`. Spawn the selected
+lens workers FIRST, then run the plan's Validation Commands concurrently while they
+work (never fabricate results).
+
+**Round N>1 — `Scope: delta`.** Read the prior round's report. Review exactly
+`<prior-reviewed-head>..REVIEWED_HEAD_SHA`. **Disposition every prior blocker** as
+fixed / not fixed / regressed. Re-run only the Validation Commands that failed last
+round or whose inputs changed. Invoke only the originating lens when a judgment call is
+needed — do not re-run the full set.
+
+## Full-review escalation
+
+Any of these forces the round to `Scope: full` (say which in the report): the base
+moved, the working tree is dirty, the delta is unrelated to prior findings or is
+high-risk, the prior SHA or prior report is missing, or a validation impact you cannot
+classify.
 
 ## Review mode — spawn (default) or sequential (fallback)
 
-The 6 review subagents are defined in `.codex/agents/*.toml` and auto-discovered by
-the Codex runtime. Each is read-only (`sandbox_mode = "read-only"`), inspects the
-branch changes (`git diff origin/main...HEAD`, plus any uncommitted work), and returns
-grounded findings — it edits nothing. The six lenses, ported 1:1 from pr-review-toolkit:
+The review subagents are defined in `.codex/agents/*.toml` and auto-discovered by the
+Codex runtime. Each is read-only (`sandbox_mode = "read-only"`), inspects the injected
+range (plus any uncommitted work on a dirty tree), and returns grounded findings — it
+edits nothing. The lenses, ported 1:1 from pr-review-toolkit:
 
 - `review-code-standards` — violations of this repo's standards (AGENTS.md + global
   `~/.codex/AGENTS.md` + `.claude/rules/*` + `GIT-COMMIT-PR-MESSAGE.md`) and obvious bugs.
@@ -77,23 +122,23 @@ grounded findings — it edits nothing. The six lenses, ported 1:1 from pr-revie
 - `review-comment-accuracy` — comment/docstring accuracy and comment rot.
 - `review-simplification` — **advisory** complexity/redundancy suggestions (non-blocking).
 
-**SPAWN mode (default).** Spawn all 6 named subagents (via the Codex subagent-spawn
-capability) to review the branch changes, then wait for every one to return. The
+**SPAWN mode (default).** Spawn the selected named subagents (via the Codex
+subagent-spawn capability) to review the range, then wait for every one to return. The
 default `[agents]` limits (`max_threads = 6`, `max_depth = 1` in `.codex/config.toml`)
-fit exactly. Collect each subagent's findings tagged with its lens name.
+cover the full lens set. Collect each subagent's findings tagged with its lens name.
 
 **SEQUENTIAL mode (fallback, fail loud).** If a runtime check shows headless spawn is
 unavailable — the subagent-spawn capability is not exposed in this `codex exec`
 runtime, the `.codex/agents/*.toml` are not discoverable, or a spawn attempt errors —
-do NOT silently skip the lenses. Instead run the 6 lenses yourself as **sequential
-review passes within this single Codex context**: for each subagent, read its
-`.codex/agents/<name>.toml` `developer_instructions` and apply that lens to the branch
-changes, one at a time, tagging findings with the lens name.
+do NOT silently skip the lenses. Instead run the selected lenses yourself as
+**sequential review passes within this single Codex context**: for each, read its
+`.codex/agents/<name>.toml` `developer_instructions` and apply that lens to the range,
+one at a time, tagging findings with the lens name.
 
 **State the mode in the report (mandatory).** The report MUST carry a `Mode:` line —
-`Mode: spawn (6 subagents)` or `Mode: sequential (headless spawn unavailable — lenses
-run as sequential passes)`. Omitting the mode is a failure; never let a degraded run
-look like a clean one.
+`Mode: spawn` or `Mode: sequential (headless spawn unavailable — lenses run as
+sequential passes)`. Omitting the mode is a failure; never let a degraded run look like
+a clean one.
 
 ## Finding bar
 
@@ -108,7 +153,7 @@ lenses do not check these — they are why this is a *build gate*, not a generic
 - **Failing or not-run Validation Commands** — a plan Validation Command that fails when run, or could not be run.
 - **Plan / decision violations or scope drift** — code that contradicts a locked decision in `decisions.md`, or work the plan didn't call for.
 
-**B. The 6 review-lens findings.** Real bugs, standards violations, silent failures,
+**B. The selected-lens findings.** Real bugs, standards violations, silent failures,
 missing critical test coverage, dangerous type designs, and comment rot surfaced by
 the subagents (or your sequential passes) are **blocking**. `review-simplification` is
 **advisory** — list its findings under a non-blocking heading; they never change the verdict.
@@ -146,12 +191,21 @@ em-dash "—", U+2014, one space each side; substitute the integer N):
 
 Then, in order:
 
-1. A `Mode:` line — `spawn` or `sequential`, per "Review mode".
-2. A `Validation:` block — one line per plan Validation Command ending in `PASS` or
-   `FAIL` (or `Validation: all PASS`, noting any legitimate exception).
-3. A short **Digest** — blocking-finding count by lens/category and the headline
+1. A `Scope:` line — `full` or `delta`, per "Round scoping".
+2. A `Base SHA:` line and a `Reviewed head SHA:` line — the injected SHAs, verbatim.
+   Both are mandatory.
+3. A `Mode:` line — `spawn` or `sequential`, per "Review mode".
+4. A `Lenses:` line — the lenses that ran, then `| skipped: <name — reason>` for each
+   one you skipped. A skipped lens with no stated reason is a contract violation.
+5. A `Validation:` line/block — one line per plan Validation Command run, ending in
+   `PASS` or `FAIL` (or `Validation: all PASS`), then `| skipped: <name — reason>` for
+   any not re-run this round. A skipped validation with no stated reason is a contract
+   violation.
+6. On delta rounds, a `Prior blockers:` list — every blocker from the prior report
+   dispositioned as fixed / not fixed / regressed.
+7. A short **Digest** — blocking-finding count by lens/category and the headline
    issues, BEFORE the raw detail, so a findings-heavy round never floods Claude's context.
-4. **Findings**, grouped by lens / category, each anchored to the plan section /
+8. **Findings**, grouped by lens / category, each anchored to the plan section /
    acceptance criterion or lens AND the file or location, with a concrete fix. Put
    `review-simplification` (advisory) findings under a clearly non-blocking heading.
    For `approved`, state that no blocking findings remain — invent none to pad.
@@ -161,14 +215,19 @@ Example (`changes-requested`):
 ```
 ### Round 2 — Verdict: changes-requested
 
-Mode: spawn (6 subagents)
-
+Scope: delta
+Base SHA: a1b2c3d
+Reviewed head SHA: f6e5d4c
+Mode: spawn
+Lenses: plan-adherence, review-code-standards, review-silent-failure | skipped: review-type-design — no types changed; review-test-coverage — no code/tests changed; review-comment-accuracy — no comments/docs changed; review-simplification — tidy pass already ran
 Validation:
-- uv run pytest -q → PASS
 - bun run build → FAIL
+- skipped: uv run pytest -q — passed last round, inputs unchanged
+Prior blockers:
+- "login returns a JWT" unmet — not fixed
+- swallowed error in refresh.ts:40 — fixed
 
-Digest: 3 blocking — 1 unmet acceptance criterion, 1 failing validation command,
-1 silent-failure bug. 2 advisory simplification notes (non-blocking).
+Digest: 2 blocking — 1 unmet acceptance criterion (still open), 1 failing validation command.
 
 Findings:
 
@@ -178,13 +237,6 @@ Findings:
   and return a signed JWT as the plan specifies.
 - **Validation command `bun run build` fails** on a missing export in
   `src/auth/index.ts:12`. Fix: export `verifyToken` so the build passes.
-
-**review-silent-failure**
-- **Swallowed error in `src/auth/refresh.ts:40`.** The catch logs nothing and returns
-  `null`, hiding token-refresh failures. Fix: surface and log the error.
-
-**review-simplification (advisory, non-blocking)**
-- Flatten the nested ternary in `src/auth/login.ts:22` into if/else.
 ```
 
 Example (`approved`):
@@ -192,11 +244,14 @@ Example (`approved`):
 ```
 ### Round 1 — Verdict: approved
 
-Mode: spawn (6 subagents)
-
+Scope: full
+Base SHA: 9f8e7d6
+Reviewed head SHA: 1a2b3c4
+Mode: spawn
+Lenses: plan-adherence, review-code-standards, review-silent-failure, review-test-coverage | skipped: review-type-design — no types changed; review-comment-accuracy — no comments/docs changed; review-simplification — tidy pass already ran
 Validation: all PASS
 
-Digest: no blocking findings across the 6 lenses or plan adherence.
+Digest: no blocking findings across the selected lenses or plan adherence.
 
 No blocking findings remain this round.
 ```

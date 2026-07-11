@@ -25,6 +25,7 @@ USER_PROMPT: $1
 ORCHESTRATION_PROMPT: $2 - (Optional) Guidance for team assembly, task structure, and execution strategy
 PLAN_OUTPUT_DIRECTORY: `specs/`
 SPEC_TEMPLATES: `specs/_templates/` - the four canonical templates to copy and fill
+ISSUE_SKELETONS: `specs/_templates/issues/` - agent-facing issue-body skeletons (feature|bug|chore|epic), one per kind
 SPEC_FILES: `spec.md`, `tasks.md`, `decisions.md`, `acceptance-criteria.md`
 KNOWLEDGE_BASE: `ai-docs/` — cached official docs; catalog in `ai-docs/index.md`, manifest in `ai-docs/sources.yaml`
 STALE_AFTER: `30` days — a KB doc older than this is stale
@@ -39,7 +40,7 @@ GENERAL_PURPOSE_AGENT: `general-purpose`
 - If no `USER_PROMPT` is provided, stop and ask the user to provide it.
 - If `ORCHESTRATION_PROMPT` is provided, use it to guide team composition, task granularity, dependency structure, and parallel/sequential decisions.
 - Carefully analyze the user's requirements provided in the USER_PROMPT variable
-- Determine the task type (chore|feature|refactor|fix|enhancement) and complexity (simple|medium|complex)
+- Determine the task type (feat|fix|docs|style|refactor|perf|test|chore) and complexity (simple|medium|complex)
 - Think deeply (ultrathink) about the best approach to implement the requested functionality or solve the problem
 - Understand the codebase directly without subagents — existing harness patterns live under `.claude/` and `.agents/`
 - **Ground every harness claim.** Statements about hooks, frontmatter, subagents, skills, commands, MCP, or model aliases in the spec must trace to a KB doc (see `Domain Knowledge`); record what you consulted in decisions.md's `## KB References`.
@@ -75,7 +76,7 @@ Before designing anything, interview the user until every decision needed to bui
 
 IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a plan document.
 
-1. Preflight - Before anything else, verify required tools. If `gh` is missing or `gh auth status` fails, STOP and ask the user to configure GitHub auth (`gh auth login`). If `command -v codex` fails, STOP and point them to `/codex:setup`. Continue only when both pass.
+1. Preflight - Before anything else, verify required tools. If `gh` is missing or `gh auth status` fails, STOP and ask the user to configure GitHub auth (`gh auth login`). If `command -v codex` fails, STOP and point them to `/codex:setup`. Resolve the issue assignee with `gh api user -q .login`. Continue only when all pass.
 2. Analyze Requirements - Parse the USER_PROMPT to understand the core problem and desired outcome
 3. Understand Codebase - Without subagents, directly understand existing harness patterns under `.claude/` and `.agents/` and relevant files
 4. Load Domain Knowledge - Follow the `Domain Knowledge` section: read the relevant KB docs, warn on stale, gap-fill what's missing
@@ -84,11 +85,12 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 7. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `TEAM_MEMBERS` or use `GENERAL_PURPOSE_AGENT`. Document in plan.
 8. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments. Document in plan.
 9. Name the Plan - Create a descriptive kebab-case name from the plan's main topic, and pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test)
-10. Enter Worktree - BEFORE writing any file, call `EnterWorktree(name: "<type>/<name-of-plan>")` to branch from `origin/main` into `.claude/worktrees/` and draft inside it (see `Worktree & Handoff`)
-11. Write the Spec Folder - Create `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and fill all four `SPEC_FILES` from `SPEC_TEMPLATES`; append `## KB References` to decisions.md; re-create any gap-filled KB docs inside the worktree; record the branch and worktree path in spec.md's `## Tracking`
-12. Commit & Push - Commit the spec folder (plus gap-filled KB docs) and push its branch to `origin` so the plan is trackable on GitHub (see `Worktree & Handoff`)
-13. Cross-Review - Have Codex review the spec with `CROSS_REVIEW_SKILL`, up to `MAX_REVIEW_ROUNDS`, fixing blocking findings each round (see `Codex Cross-Review`). Gate the hand-off on the outcome.
-14. Report - Follow the `Report` section to summarize the spec folder and its key components
+10. Create & Link Issue - File the GitHub issue from the grilling ledger and link its convention branch (see `Worktree & Handoff`). Do this before entering the worktree.
+11. Enter Worktree - BEFORE writing any file, call `EnterWorktree(name: "<type>/<N>-<slug>")` to branch from `origin/main` into `.claude/worktrees/` and draft inside it (see `Worktree & Handoff`)
+12. Write the Spec Folder - Create `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and fill all four `SPEC_FILES` from `SPEC_TEMPLATES`; append `## KB References` to decisions.md; re-create any gap-filled KB docs inside the worktree; record the issue, branch, and worktree path in spec.md's `## Tracking`
+13. Commit & Push - Commit the spec folder (plus gap-filled KB docs) with a `Refs #N` footer, push its branch to `origin`, then post the plan-links comment on the issue (see `Worktree & Handoff`)
+14. Cross-Review - Have Codex review the spec with `CROSS_REVIEW_SKILL`, up to `MAX_REVIEW_ROUNDS`, fixing blocking findings each round (see `Codex Cross-Review`). Gate the hand-off on the outcome.
+15. Report - Follow the `Report` section to summarize the spec folder and its key components
 
 ## Output: Spec Folder
 
@@ -110,25 +112,29 @@ When filling them:
 
 ## Worktree & Handoff
 
-Draft every plan on its own feature branch so `/harness-layer:harness-build` can pick it up and GitHub can track it.
+Every plan gets a GitHub issue and its own convention branch so `/harness-layer:harness-build` can pick it up and GitHub can track it. Run the steps in order; if any `gh` call fails, STOP and tell the user how to fix it — never proceed degraded or with a placeholder issue.
 
-- **Enter first.** After naming the plan, call `EnterWorktree(name: "<type>/<slug>")` — it branches from `origin/main` into `.claude/worktrees/` and switches in. Write the spec folder there, never on `main`. (`EnterWorktree` mangles the local branch name; the convention name is what you push below.)
-- **Tracking.** In spec.md's `## Tracking`, record Branch `<type>/<slug>`, the absolute worktree path (`git rev-parse --show-toplevel`), and Issue `none — deferred` (issue tracking is future work).
-- **Commit.** Stage the spec folder (`git add specs/<name-of-plan>/`) plus any gap-filled KB docs (`git add ai-docs/`) and make one trailer-free commit `<emoji> <type>(spec): draft plan for <name-of-plan>` — no `Co-Authored-By`, no `Refs #N` (issues deferred).
-- **Push.** `git push -u origin HEAD:refs/heads/<type>/<slug>` lands the convention branch on GitHub. If `origin` is unreachable, keep the local commit and report that push was skipped — never fail silently.
+- **Create the issue.** Pick the skeleton kind from `<type>` — feat→`feature`, fix→`bug`, docs/style/refactor/perf/test/chore→`chore`, `epic` only for a genuine multi-issue initiative. Fill `ISSUE_SKELETONS/<kind>.md` from the grilling ledger (no second interview), write it to a temp file, and create the issue: `gh issue create --title "<type>: <plan title>" --body-file <tmp> --label <type> --label priority:P<0-3> --assignee <login>` — exactly one type label from {feat,fix,docs,style,refactor,perf,test,chore}, one `priority:P0`–`priority:P3` label, and the login from Preflight. Note the returned issue number `#N`.
+- **Link the branch.** `gh issue develop <N> --base main --name <type>/<N>-<slug>` creates the convention branch on the issue.
+- **Enter the worktree.** Call `EnterWorktree(name: "<type>/<N>-<slug>")` — it branches from `origin/main` into `.claude/worktrees/` and switches in. Write the spec folder there, never on `main`. (`EnterWorktree` mangles the local branch name; the convention name is what you push below.)
+- **Tracking.** In spec.md's `## Tracking`, record Issue `#N`, Branch `<type>/<N>-<slug>`, and the absolute worktree path (`git rev-parse --show-toplevel`).
+- **Commit.** Stage the spec folder (`git add specs/<name-of-plan>/`) plus any gap-filled KB docs (`git add ai-docs/`) and make one commit `<emoji> <type>(spec): draft plan for <name-of-plan>` with a `Refs #N` footer — no `Co-Authored-By`.
+- **Push.** `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>` lands the convention branch on GitHub.
+- **Plan-links comment.** After the first push, upsert one issue comment whose first line is `<!-- plan-links -->`, its body markdown links to all four spec files as blob URLs on the convention branch. Search the issue's comments for the marker; update it via `gh api` if found, else `gh issue comment`. Always pass the body with `--body-file`, never inline shell interpolation.
 
 ## Codex Cross-Review
 
-Once the plan is pushed, Codex reviews it as a peer — up to `MAX_REVIEW_ROUNDS` — inside the worktree. Beyond ordinary spec defects, it verifies the spec's harness claims against the KB docs, and challenges the approach for a simpler, cleaner design. Loop per round N:
+Once the plan is pushed, Codex reviews it as a peer — up to `MAX_REVIEW_ROUNDS` — inside the worktree. Beyond ordinary spec defects, it verifies the spec's harness claims against the KB docs, and challenges the approach for a simpler, cleaner design. Every round ends with exactly one commit+push checkpoint on the convention branch (with a `Refs #N` footer) — never amend a pushed checkpoint. Loop per round N:
 
 1. **Ask Codex.** `codex exec -C "<worktree root>" -s workspace-write "Use the harness-spec-review skill to review round <N> of the plan at specs/<name-of-plan>/spec.md; read all four files and the KB docs listed in decisions.md ## KB References, append your verdict inside spec.md's ## Codex Findings, and return only the terse summary."`
 2. **Read the verdict from the file, not stdout:** `grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<name-of-plan>/spec.md | tail -1`. A round that writes no verdict is re-run — never treated as approval.
-3. **`changes-requested`** → fix the blocking findings, then checkpoint: `git add specs/<name-of-plan>/ ai-docs/`, one trailer-free commit, push. Go to round N+1.
-4. **`approved`** → gate passed. Set spec.md `Status: Approved`, then handle the recommendations below.
+3. **Relay the digest.** Read the `**Issue-comment digest:**` paragraph at the end of the round's verdict block and post it verbatim as an issue comment whose first line is `<!-- codex-spec-round-N -->` (N = the round). Upsert by marker (update via `gh api` if found, else `gh issue comment`), body via `--body-file`. Codex never calls `gh` — you relay.
+4. **`changes-requested`** → fix the blocking findings, then checkpoint: `git add specs/<name-of-plan>/ ai-docs/`, one commit with `Refs #N`, push. Go to round N+1.
+5. **`approved`** → gate passed. Set spec.md `Status: Approved`, then checkpoint the approval round (one commit with `Refs #N`, push). Handle the recommendations below.
 
-**Better-approach recommendations are advisory** — they never block approval. Once approved, for each one Codex left, analyze it, explain to the user whether it is genuinely better, and ask via AskUserQuestion whether to apply. Apply the chosen ones and amend the checkpoint.
+**Better-approach recommendations are advisory** — they never block approval. Once approved, for each one Codex left, analyze it, explain to the user whether it is genuinely better, and ask via AskUserQuestion whether to apply. Applying a recommendation is a NEW commit and triggers one more review round — approval never covers unreviewed changes.
 
-**Over `MAX_REVIEW_ROUNDS` and still `changes-requested`** → STOP. Set spec.md `Status: Needs Human Review`, record the outstanding findings in `## Codex Verification`, commit, and tell the user to resolve them before the plan continues. Do NOT run the hand-off Report.
+**Over `MAX_REVIEW_ROUNDS` and still `changes-requested`** → STOP. Set spec.md `Status: Needs Human Review`, add the `status:needs-human` label to the issue (`gh issue edit <N> --add-label status:needs-human`), record the outstanding findings in `## Codex Verification`, commit and push, and tell the user to resolve them before the plan continues. Do NOT run the hand-off Report.
 
 Record the final outcome (approved at round N | needs human review after N rounds) in spec.md's `## Codex Verification`.
 
@@ -140,7 +146,8 @@ After creating and saving the spec folder, provide a concise report with the fol
 ✅ Spec Folder Created
 
 Folder: PLAN_OUTPUT_DIRECTORY/<name-of-plan>/ (spec.md, tasks.md, decisions.md, acceptance-criteria.md)
-Branch: <type>/<slug> — pushed to origin
+Issue: #N <url>
+Branch: <type>/<N>-<slug> — pushed to origin
 Worktree: <absolute worktree path>
 Codex Review: <approved at round N>
 KB Grounding: <N docs consulted, M gap-filled>

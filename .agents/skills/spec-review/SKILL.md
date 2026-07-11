@@ -32,6 +32,7 @@ make `/build` produce the wrong thing or get stuck:
 - **Untestable acceptance criteria** — a criterion with no observable check, or a validation command that doesn't verify what it claims.
 - **Security / data risks** — destructive ops, secret exposure, or data-loss paths.
 - **Scope drift** — work beyond the locked decisions, or marked out of scope / non-goal.
+- **Untracked or mismatched spec** — spec.md's `## Tracking` MUST name `Issue #N` and a branch `<type>/<N>-<slug>` carrying that SAME number. Missing, placeholder, or number-mismatched tracking is blocking.
 
 **Adversarial challenge (advisory).** Also ask: is this the simplest approach that meets
 the objective? Is there a cleaner design, or unnecessary complexity to cut? Record these as
@@ -58,6 +59,7 @@ Rules:
 - `changes-requested`: one bullet per blocking finding, each stating the problem AND a concrete fix (which file / section / step).
 - After the blocking findings, list any advisory items — including a simpler/cleaner approach — under a `**Recommendations (advisory, non-blocking):**` list.
 - `approved`: one short line that the spec meets the bar. Invent no findings to pad it (advisory recommendations may still follow).
+- **Issue-comment digest (final element of every block).** End the block with `**Issue-comment digest:**` followed by exactly one short paragraph: the round number, verdict, blocking-finding count + headline issues, and the next action. Draw only on this round's findings — add no new claim or recommendation. The orchestrator posts it verbatim to the issue thread; you still never call `gh`.
 
 Example:
 
@@ -70,6 +72,8 @@ Example:
 **Recommendations (advisory, non-blocking):**
 
 - The three near-identical builder tasks could collapse into one parameterized task — simpler team, same coverage.
+
+**Issue-comment digest:** Round 2, changes-requested — 2 blocking: an untestable acceptance criterion (3) and a mis-ordered migration (Step 4 reads a column Step 6 creates). Next: revise both, then re-review.
 ```
 
 ## Return to the caller (short)

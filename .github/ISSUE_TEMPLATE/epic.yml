@@ -1,0 +1,57 @@
+name: Epic / Plan
+description: Track a multi-step plan through its /plan-w-team → /build → /ship lifecycle
+title: "📋 epic: "
+labels: [epic]
+assignees: [SunshinePeace213]
+body:
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How urgent is this relative to other work?
+      options:
+        - P0 — critical
+        - P1 — high
+        - P2 — medium
+        - P3 — low
+      default: 2
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: The outcome this epic delivers, in one or two sentences. Mirror the Objective from the plan's spec.md.
+    validations:
+      required: true
+  - type: textarea
+    id: non-goals
+    attributes:
+      label: Non-goals
+      description: The scope fence — what this epic deliberately does NOT do, so /build won't gold-plate.
+  - type: textarea
+    id: child-issues
+    attributes:
+      label: Child issues
+      description: Checklist of real child issues only — one `- [ ] #N` per line. Never list ephemeral agent tasks here.
+      value: |
+        - [ ] #
+        - [ ] #
+  - type: textarea
+    id: lifecycle
+    attributes:
+      label: Lifecycle
+      description: Move the ▲ marker as the work advances.
+      value: |
+        `Plan ▸ Spec-review ▸ Approved ▸ Build ▸ Ship ▸ Done`
+        ▲ current phase: **Plan**
+  - type: textarea
+    id: plan-links
+    attributes:
+      label: Links to plan files
+      description: Markdown links to the plan's spec.md / tasks.md / decisions.md / acceptance-criteria.md on the convention branch.
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions
+      description: Deferred decisions or anything still in discussion. Resolve before /build where possible.
