@@ -15,6 +15,7 @@ import json
 import os
 import re
 import select
+import subprocess
 import sys
 import time
 from dataclasses import dataclass
@@ -466,3 +467,89 @@ def prune_stale_states(root: Path | str, max_age_seconds: int = STATE_MAX_AGE_SE
         with contextlib.suppress(OSError):
             if entry.stat().st_mtime < cutoff:
                 entry.unlink()
+
+
+# --- Git helpers (session_baseline.py / track_bash_writes.py) -----------------
+#
+# Path convention: every path recorded in session state (``baseline`` and
+# ``tracked``) is an absolute filesystem path. ``tool_input.file_path``
+# (post_write_scan.py) already arrives absolute from Claude Code and is
+# stored as-is. ``git status``/``git diff`` output is root-relative because
+# these helpers always invoke git with ``cwd=root``; the functions below
+# resolve those relative paths against ``root`` before returning them, so
+# both sources land in the same path space for state storage and for the
+# stop-sweep to look up later.
+
+
+def run_git(args: list[str], cwd: Path | str) -> tuple[int, str, str] | None:
+    """Run ``git <args>`` in ``cwd``; None when git can't be spawned or times out."""
+    try:
+        proc = subprocess.run(
+            ["git", *args], cwd=str(cwd), capture_output=True, text=True, timeout=15
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return proc.returncode, proc.stdout, proc.stderr
+
+
+def parse_porcelain_paths(output: str) -> list[str]:
+    """Root-relative paths from ``git status --porcelain`` text.
+
+    Each line is ``XY path`` or, for a rename/copy, ``XY old -> new``; only
+    the new path is kept. A path git wrapped in double quotes (unusual
+    characters) is unwrapped as-is; escape sequences inside are not decoded
+    (not needed for this repo's filenames).
+    """
+    paths = []
+    for line in output.splitlines():
+        if len(line) < 4:
+            continue
+        rest = line[3:]
+        if " -> " in rest:
+            rest = rest.split(" -> ", 1)[1]
+        rest = rest.strip()
+        if len(rest) >= 2 and rest[0] == '"' and rest[-1] == '"':
+            rest = rest[1:-1]
+        if rest:
+            paths.append(rest)
+    return paths
+
+
+def git_dirty_paths(root: Path | str) -> list[str] | None:
+    """Absolute paths of every dirty (index + worktree) entry under ``root``.
+
+    None means git couldn't be spawned or ``root`` isn't a repo -- a
+    fail-open signal distinct from "clean repo", which returns ``[]``.
+    """
+    res = run_git(["status", "--porcelain"], root)
+    if res is None:
+        return None
+    code, out, _err = res
+    if code != 0:
+        return None
+    root = Path(root)
+    return [str(root / rel) for rel in parse_porcelain_paths(out)]
+
+
+def git_head(root: Path | str) -> str | None:
+    """Current HEAD commit sha; None when unborn, unreadable, or no git."""
+    res = run_git(["rev-parse", "HEAD"], root)
+    if res is None:
+        return None
+    code, out, _err = res
+    if code != 0:
+        return None
+    head = out.strip()
+    return head or None
+
+
+def git_diff_paths(root: Path | str, old_rev: str, new_rev: str) -> list[str] | None:
+    """Absolute paths changed between ``old_rev`` and ``new_rev``; None if the diff fails."""
+    res = run_git(["diff", "--name-only", f"{old_rev}..{new_rev}"], root)
+    if res is None:
+        return None
+    code, out, _err = res
+    if code != 0:
+        return None
+    root = Path(root)
+    return [str(root / line) for line in out.splitlines() if line.strip()]
