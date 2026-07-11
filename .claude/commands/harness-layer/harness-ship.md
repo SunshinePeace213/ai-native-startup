@@ -3,6 +3,7 @@ description: Squash-merges a finished build's PR into main, then removes the wor
 argument-hint: [branch | worktree-name]
 disable-model-invocation: true
 allowed-tools: Bash(git *), Bash(gh *)
+model: sonnet
 ---
 
 # Harness Ship
