@@ -149,7 +149,7 @@ and full testability under the existing hook-test framework.
 - **Branch:** feat/26-sensitive-file-guard
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/sensitive-file-guard
 - **Review profile:** kb-grounded
-- **PR:** <#M — filled by /harness-layer:harness-build>
+- **PR:** #28
 
 ## Relevant Files
 
