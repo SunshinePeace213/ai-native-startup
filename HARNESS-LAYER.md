@@ -62,8 +62,8 @@ Session state lives in `.claude/.security-scan/` (gitignored); the engine is
 `.claude/hooks/worktree/worktree_create.py` replaces default worktree creation: `git
 worktree add` at `.claude/worktrees/<name>` on branch `worktree-<name>`, then
 `bun install` + `uv sync` inside it so the format hooks work there; stdout is the
-worktree path only. `.claude/hooks/worktree/worktree_remove.py` removes the worktree
-and deletes its `worktree-*` branch. Fresh clones use the `meta-install` skill instead:
+worktree path only. `worktree_remove.py` removes the worktree and deletes its
+`worktree-*` branch. Fresh clones use the `meta-install` skill instead:
 `bun install` + `uv sync` from the committed lockfiles.
 
 ### Files
