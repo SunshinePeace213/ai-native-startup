@@ -522,6 +522,81 @@ def _literal_prefix(segment: str) -> str:
     return "".join(out)
 
 
+def _rewrite_char_classes(segment: str) -> str:
+    """Replace every fnmatch character class in a glob segment with ``?``.
+
+    A class matches exactly one character, so ``?`` (any single char) matches a
+    SUPERSET of the class's strings (``.env[.]local`` -> ``.env?local``,
+    ``[a-z]*.py`` -> ``?*.py``, negated ``.env[!x]local`` -> ``.env?local``).
+    Running the overlap check on this superset is conservative: any file the
+    original glob selects the rewrite selects too, so a deny can only over-block
+    (acceptable, security-first), never under-block (CX2-1: ripgrep expands
+    character classes as ordinary glob syntax, not obfuscation, so a class glob
+    that selects a cataloged name must deny like its ``*``/``?`` cousin). Classes
+    are parsed exactly as ``fnmatch.translate`` does -- ``!`` negation and a
+    leading ``]`` as a class member (``[]]``) -- so ``]`` and backslashes inside a
+    class do not fool it. An UNCLOSED ``[`` is left as a literal ``[`` (the
+    fnmatch/ripgrep-lenient reading), which is also superset-safe.
+    """
+    out: list[str] = []
+    i, n = 0, len(segment)
+    while i < n:
+        ch = segment[i]
+        if ch != "[":
+            out.append(ch)
+            i += 1
+            continue
+        j = i + 1
+        if j < n and segment[j] == "!":  # negation marker
+            j += 1
+        if j < n and segment[j] == "]":  # a ']' right after '['/'[!' is a member
+            j += 1
+        while j < n and segment[j] != "]":
+            j += 1
+        if j >= n:  # no closing ']': fnmatch treats the '[' as a literal
+            out.append("[")
+            i += 1
+        else:  # a closed class matches one char -> one '?'
+            out.append("?")
+            i = j + 1
+    return "".join(out)
+
+
+def _globs_intersect(glob: str, rule: str) -> bool:
+    """True iff some filename matches both fnmatch patterns (case-insensitive).
+
+    Both sides use ``*`` (any run), ``?`` (one char), and literals only -- the
+    caller has rewritten the glob's character classes to ``?`` and the catalog's
+    basename rules use only ``*``. This is the standard two-pattern intersection
+    DP: it is exact (never claims a false overlap) and complete (finds a shared
+    name whenever one exists), verified against brute-force enumeration.
+    O(len(glob) * len(rule)); the guard's outer ``try`` fails open on the (never
+    reached, given catalog/segment lengths) recursion limit.
+    """
+    a, b = glob.lower(), rule.lower()
+    la, lb = len(a), len(b)
+    memo: dict[tuple[int, int], bool] = {}
+
+    def meet(i: int, j: int) -> bool:
+        cached = memo.get((i, j))
+        if cached is not None:
+            return cached
+        if i == la and j == lb:
+            res = True
+        elif i < la and a[i] == "*":  # '*' = empty, or absorb the char b emits
+            res = meet(i + 1, j) or (j < lb and meet(i, j + 1))
+        elif j < lb and b[j] == "*":
+            res = meet(i, j + 1) or (i < la and meet(i + 1, j))
+        elif i < la and j < lb and (a[i] == "?" or b[j] == "?" or a[i] == b[j]):
+            res = meet(i + 1, j + 1)
+        else:
+            res = False
+        memo[(i, j)] = res
+        return res
+
+    return meet(0, 0)
+
+
 def match_glob(pattern: object) -> Rule | None:
     """The catalog rule a Grep ``glob`` can select a cataloged file for, or None.
 
@@ -529,14 +604,27 @@ def match_glob(pattern: object) -> Rule | None:
     so ``match_command_text``'s literal-token grammar cannot see that ``.env*`` or
     ``secrets.*`` select cataloged files. This matcher denies a glob only when it
     clearly targets a cataloged BASENAME family. A glob whose basename segment
-    opens with a wildcard -- ``*.py``, ``**/*.md``, ``*``, ``src/**`` -- has no
+    opens with a wildcard -- ``*.py``, ``**/*.md``, ``*``, ``src/**``, and (after
+    character classes are rewritten to ``?``) ``[a-z]*.py`` -- has no
     catalog-shaped literal segment and always passes, matching the spec's "Grep
     over a directory is allowed" posture (A5); a glob that is exactly a D3
-    template name (``.env.example``) passes too. Otherwise the glob's basename and
-    each catalog basename rule are tested for overlap in both directions -- a
-    concrete instance of the glob is itself a cataloged name, or the glob selects
-    a canonical instance of a rule -- so ``.env*``, ``**/.env*``, ``secrets.*``,
-    and ``id_rsa*`` are denied. Never raises: weird input yields None (fail-open).
+    template name (``.env.example``) passes too. That allow boundary is unchanged.
+
+    Otherwise the glob's basename (classes rewritten to ``?``, a superset) is
+    tested against each catalog basename rule two ways: (a) a concrete instance of
+    the glob -- its wildcards filled -- is itself a cataloged name (this is what
+    catches suffix families such as ``bar.env`` -> ``*.env`` while leaving
+    ``README*`` alone, whose filled instance ends in the filler, not ``.env``); and
+    (b) for a PREFIX-anchored rule (one that does not open with ``*``) the glob's
+    strings and the rule's strings intersect, via ``_globs_intersect``. Restricting
+    (b) to prefix-anchored rules is what preserves the allow boundary: ``*.pem`` /
+    ``*.tfstate`` and a literal-prefix glob like ``README*`` intersect only ``*``
+    -leading (suffix) rules and stay allowed, while ``.env[.]local`` -> ``.env.*``,
+    ``.env?local`` -> ``.env.*``, ``id_r[s]a[0-9]*`` -> ``id_rsa*``, and
+    ``service-[a]ccount[0-9]*.json`` -> ``service-account*.json`` are denied (the
+    old sample/witness heuristic replaced only ``*``/``?`` and so missed every
+    character-class glob -- CX2-1). Never raises: weird input yields None
+    (fail-open).
 
     Directory-fragment targeting via a glob (e.g. ``.ssh/*``) is out of scope
     here: like a bare Grep directory target it follows the allow posture, and a
@@ -546,15 +634,17 @@ def match_glob(pattern: object) -> Rule | None:
         return None
     try:
         segment = _glob_basename(pattern.strip())
-        if is_allowlisted(segment):
+        if is_allowlisted(segment):  # exact D3 template name (before any rewrite)
             return None
+        segment = _rewrite_char_classes(segment)
         if not _literal_prefix(segment):
-            return None  # broad wildcard, no catalog-shaped literal -> allow
+            return None  # opens with a wildcard -> broad search -> allow
         seg_lower = segment.lower()
         witness = segment.replace("*", "x").replace("?", "x")
         for rule in _BASENAME_RULES:
-            sample = rule.pattern.replace("*", "x").replace("?", "x")
-            if rule.path_re.match(witness) or fnmatch.fnmatchcase(sample.lower(), seg_lower):
+            if rule.path_re.match(witness):
+                return rule
+            if not rule.pattern.startswith("*") and _globs_intersect(seg_lower, rule.pattern):
                 return rule
     except Exception as exc:  # noqa: BLE001
         note(f"match_glob failed for {pattern!r} ({exc}); allowing (fail-open)")

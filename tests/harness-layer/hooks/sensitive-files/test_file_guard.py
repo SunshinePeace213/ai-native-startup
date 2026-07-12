@@ -241,6 +241,35 @@ def test_grep_broad_or_template_glob_allows(run_hook, glob):
     assert_allowed(res)
 
 
+# --- Grep: character-class globs targeting the catalog (CX2-1) ------------------
+
+
+@pytest.mark.parametrize(
+    "glob",
+    [".env[.]local", "id_r[s]a[0-9]*", "service-[a]ccount[0-9]*.json", "**/.env[.]local"],
+)
+def test_grep_character_class_glob_targeting_catalog_denies(run_hook, glob):
+    """ripgrep expands character classes as ordinary glob syntax, so these SELECT
+    cataloged files just like `.env*` / `id_rsa*` do. The old matcher substituted
+    only `*`/`?` and left `[...]` intact, so all of these exited 0 -- the CX2-1
+    bypass. None opens with a wildcard, so they are outside the broad-glob allow
+    boundary and must deny end to end through the real guard."""
+    res = run_hook(SCRIPT, grep_payload(glob=glob))
+    assert res.returncode == 2
+    assert "Blocked:" in res.stderr
+    assert glob in res.stderr
+
+
+@pytest.mark.parametrize("glob", ["[a-z]*.py", "README[0-9].md"])
+def test_grep_class_glob_without_catalog_overlap_allows(run_hook, glob):
+    """The allow boundary is unchanged for classes: a class that OPENS the segment
+    (`[a-z]*.py`) is broad search, and a literal-prefix class glob no catalog
+    family shares (`README[0-9].md`) is ordinary search -- over-blocking either
+    would push the agent around the guard."""
+    res = run_hook(SCRIPT, grep_payload(glob=glob))
+    assert_allowed(res)
+
+
 # --- Symlink dodge (AC5) ----------------------------------------------------------
 
 

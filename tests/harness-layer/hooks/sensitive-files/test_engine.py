@@ -323,6 +323,66 @@ def test_match_glob_never_raises_on_weird_input(eng, value):
     assert eng.match_glob(value) is None
 
 
+# --- Grep glob matching: character classes (CX2-1) ----------------------------
+#
+# ripgrep expands fnmatch character classes as ordinary glob syntax -- not
+# obfuscation -- so a class glob that selects a cataloged name must deny like its
+# `*`/`?` cousin. The old witness heuristic substituted only `*`/`?`, leaving
+# `[...]` intact, so every one of these exited 0 (AC2 bypass). None of these
+# basename segments opens with a wildcard, so they sit OUTSIDE the documented
+# broad-glob allow boundary. No secret VALUE appears -- these are names only.
+
+GLOB_CLASS_DENY = [
+    ".env[.]local",  # -> `.env.*` ([.] is exactly a dot, selecting `.env.local`)
+    "id_r[s]a[0-9]*",  # -> `id_rsa*`
+    "service-[a]ccount[0-9]*.json",  # -> `service-account*.json`
+    ".env[!x]local",  # negated class includes `.`, so it still selects `.env.local`
+    ".env.examp[l]e",  # -> `.env.*`; NOT the `.env.example` template literal
+    "id_[r]sa",  # -> `id_rsa*` (no trailing wildcard; still a cataloged name)
+]
+
+
+@pytest.mark.parametrize("glob", GLOB_CLASS_DENY)
+def test_match_glob_denies_character_class_targeting_globs(eng, glob):
+    """A character class is rewritten to `?` (a superset: a class matches one
+    char, `?` matches any) and then intersected with each prefix-anchored catalog
+    rule, so a class glob that can select a cataloged file is denied like the
+    equivalent wildcard glob."""
+    assert eng.match_glob(glob) is not None
+
+
+def test_match_glob_negated_class_denies_via_dot_member(eng):
+    """`[!x]` matches any char except `x` -- including `.` -- so `.env[!x]local`
+    still selects `.env.local`; the `?` superset rewrite preserves that."""
+    assert eng.match_glob(".env[!x]local").category_id == "env"
+
+
+def test_match_glob_class_template_lookalike_is_not_allowlisted(eng):
+    """The D3 allowlist is an EXACT-name exemption, checked before the class
+    rewrite: `.env.examp[l]e` is not the literal `.env.example`, so it is not
+    exempt, and its `.env.examp?e` superset overlaps `.env.*` -> deny. The real
+    template still passes."""
+    assert eng.match_glob(".env.examp[l]e") is not None
+    assert eng.match_glob(".env.example") is None
+
+
+GLOB_CLASS_ALLOW = [
+    "[a-z]*.py",  # opens with a class -> `?*.py` -> wildcard-opening -> allow
+    "README[0-9].md",  # literal prefix `README`, no cataloged family overlaps it
+    "[env.local",  # unclosed `[` is a literal; `[env.local` matches no rule
+    "src/**/[Tt]est*.go",  # broad code search, no catalog overlap
+]
+
+
+@pytest.mark.parametrize("glob", GLOB_CLASS_ALLOW)
+def test_match_glob_allows_class_globs_without_catalog_overlap(eng, glob):
+    """The allow boundary is unchanged: a class that OPENS the segment leaves an
+    empty literal prefix (broad search), and a literal-prefix glob whose family no
+    catalog rule shares stays allowed. An unclosed `[` is treated as a literal,
+    matching fnmatch."""
+    assert eng.match_glob(glob) is None
+
+
 # --- Denial message builder ---------------------------------------------------
 
 
