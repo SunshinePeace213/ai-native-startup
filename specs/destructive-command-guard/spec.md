@@ -196,8 +196,16 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
+**Spec review (planning):**
+
 - **Outcome:** approved at round 3 (user-approved delta round after the round-2 cap)
 - **Rejected findings:** none — all five blocking findings across rounds 1–2 were applied; the one standing advisory (`!`-prefix hook-bypass claim needs a cached KB citation) is recorded as a follow-up checklist item in decisions.md, per the advisories-never-spawn-rounds rule.
+
+**Implementation build (`/harness-layer:harness-build`, PR #27):**
+
+- **Outcome:** `accepted-with-unverified-fixes`. Codex impl-review ran R1 (changes-requested, 5 blockers) → R2 (changes-requested, 3) → user-approved R3 (changes-requested, 4, incl. a severe ReDoS) → all fixed. Two over-cap gates, both answered "one more bounded round". The R4 delta confirmation could not be obtained — the Codex run was repeatedly SIGTERM'd in the background-job environment — and the user directed finishing without it. An internal reviewer substituted for R4 and found one further regression (protected paths behind a `${…}`/`$(…)`/backtick substitution closer bypassed after the R3 boundary change); fixed in `f19766c`.
+- **Verification of the accepted head:** full suite 378 passing, wiring 5, ruff clean, ReDoS timing linear to n≈2000, and the full deny/allow/ask probe matrix confirmed on the running hook.
+- **Unverified:** no independent cross-model (Codex) sign-off on the final fix delta; all findings across every round are nonetheless applied and locally verified.
 
 ## References
 
