@@ -38,6 +38,13 @@ A `destructive-guard` PreToolUse hook family on the Bash matcher blocks destruct
 - Environment Manipulation ask-tier scope is profile/`/etc/environment` writes and `LD_PRELOAD` injection only — ordinary `export FOO=bar` must never match.
 - Issue priority P1, type `feat`, plan name `destructive-command-guard` (accepted at sign-off).
 
+### Accepted regex-precision limitations (Codex impl-review rounds 2–3, user-approved at the over-cap gate)
+
+These are direct consequences of the "no shell-AST parsing / high-precision regex over the raw command string" non-goal; the command is normalized only for syntactic quoting, not fully interpreted. Accepted rather than chased into interpreter emulation:
+
+- **Quote normalization is quote-state-aware, not a full shell parser.** A single left-to-right pass drops syntactic single/double quotes, keeps an opposite-type quote as a literal, and neutralizes redirect/pipe/separator operators (`<>|&;`) that appear *inside* quotes; command substitution (`$(…)`, backticks) stays active inside double quotes. This catches the realistic quoted-evasion forms (`rm "-rf"`, `rm -'r'f`, `mv /"etc"`, `dd of=/dev/"sda"`) while leaving benign quoted literals alone. Backslash escaping (`rm -rf\ x`) and nested command substitution are out of scope.
+- **`mv <src> /dev/null` followed by a shell redirection or a space-comment** (`mv f /dev/null 2>err`, `mv f /dev/null </in`, `mv f /dev/null # x`) is a known false negative: the `/dev/null` destination is anchored to the end of its command segment to keep the matcher linear-time (a prior redirect-aware tail caused catastrophic backtracking that could hang the hook). Plain `mv <src> /dev/null` is still denied; the redirect-suffixed forms are exotic and out of scope.
+
 ## Open Questions / Out of Scope
 
 - **Out of scope:** commands the user runs with the `!` prefix (hooks never see them; intended human bypass).

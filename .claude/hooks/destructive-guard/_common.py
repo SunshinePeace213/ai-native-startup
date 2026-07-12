@@ -117,15 +117,18 @@ _NAMED_ROOTS = (
 )  # fmt: skip
 
 # Quote handling. Bash concatenates adjacent quoted and unquoted fragments into
-# ONE word and strips the quotes before running the command; this scanner sees
-# the raw string. evaluate() reproduces that by removing every ' and " up front
-# (see _strip_quotes), so the patterns below scan a de-quoted copy and use STRICT
-# word boundaries -- a quote is never treated as a word boundary here.
+# ONE word and strips the SYNTACTIC quotes before running the command; this
+# scanner sees the raw string. evaluate() normalizes it first with a
+# quote-state-aware pass (see _strip_quotes) that drops syntactic ' and ", keeps
+# an opposite-type literal quote, and turns a quoted redirect/pipe/separator into
+# a space -- so the patterns below scan a normalized copy and use STRICT word
+# boundaries. A syntactic quote is gone; a surviving literal quote is a real word
+# character here, never a boundary.
 #   _OB  -- an OPTION-token boundary: the flag is preceded by whitespace or the
-#           start of the (de-quoted) string. Zero-width, so it never widens a
+#           start of the (normalized) string. Zero-width, so it never widens a
 #           filename match (a hyphen inside "my-report" is preceded by a letter,
 #           not whitespace, so it still isn't read as a flag) but a real ` -rf`
-#           token -- including one that was `-'r'f` before de-quoting -- is.
+#           token -- including one that was `-'r'f` before normalization -- is.
 _OB = r"(?<!\S)"
 
 # A protected-root TARGET, per the normalization rule: the bare root, the root
@@ -133,26 +136,28 @@ _OB = r"(?<!\S)"
 # deeper sub-path. Two branches: named roots / mnt / home variants (which take
 # an optional trailing "/" or "/*"), and the bare filesystem root "/" (whose
 # "/" + trailing-slash + "/*" forms collapse to "/" or "/*"). Each branch
-# carries its own leading lookbehind (reject "./etc", "/home/x/etc") and
-# trailing lookahead (reject "/etc/nginx", "~/projects", "$HOMEDIR"). Quotes are
-# already stripped before matching, so no quote-tolerance is baked in here.
+# carries its own leading lookbehind -- the root must begin at a real argument
+# boundary (start, whitespace, "=", a redirect, or a pipe/separator), so a glued
+# prefix like "./etc", "/home/x/etc" or "@/etc" is NOT the protected root -- and a
+# trailing lookahead (reject "/etc/nginx", "~/projects", "$HOMEDIR"). Syntactic
+# quotes are already normalized away before matching (see _strip_quotes).
 _PROTECTED_ROOT = (
     r"(?:"
-    r"(?<![\w./~-])(?:/mnt/[A-Za-z]|/(?:" + "|".join(_NAMED_ROOTS) + r")"
+    r"(?<![^\s=<>|&;])(?:/mnt/[A-Za-z]|/(?:" + "|".join(_NAMED_ROOTS) + r")"
     r"|~|\$\{HOME\}|\$HOME)(?:/\*|/)?(?![\w*./-])"
-    r"|(?<![\w./~-])/\*?(?![\w*./-])"
+    r"|(?<![^\s=<>|&;])/\*?(?![\w*./-])"
     r")"
 )
 
 # A critical-file TARGET. Fixed names plus the sudoers.d/cron/boot wildcards. A
-# leading (?<![\w./~-]) rejects a longer host path (`x/etc/passwd`, `./etc/hosts`)
-# so only the real file matches -- quotes are already stripped, so a de-quoted
-# `truncate x/etc/passwd` correctly falls through. Each FIXED literal ends in
-# (?![\w.-]) so a suffix like ".bak" does NOT match (`/etc/passwd.bak` is not the
-# real file); the intentional cron*/sudoers.d/boot wildcards are left open so
-# they still match their sub-paths.
+# leading (?<![^\s=<>|&;]) requires the path to begin at a real argument boundary
+# (start, whitespace, "=", a redirect, or a pipe/separator), so a glued prefix
+# like `x/etc/passwd`, `./etc/hosts` or `@/etc/passwd` is NOT the real file and
+# falls through. Each FIXED literal ends in (?![\w.-]) so a suffix like ".bak"
+# does NOT match (`/etc/passwd.bak` is not the real file); the intentional
+# cron*/sudoers.d/boot wildcards are left open so they still match their sub-paths.
 _CRITICAL_FILE = (
-    r"(?<![\w./~-])(?:"
+    r"(?<![^\s=<>|&;])(?:"
     r"/etc/(?:"
     r"(?:passwd|shadow|group|fstab|hosts|ssh/sshd_config)(?![\w.-])"
     r"|sudoers(?:\.d(?:/[^\s;&|]+)?)?(?![\w.-])"
@@ -250,11 +255,13 @@ RULES: list[Rule] = [
         "deny",
         re.compile(
             r"\bmv\b(?:(?:\s+-{1,2}\S+)*\s+" + _PROTECTED_ROOT + r"(?=\s)"
-            # /dev/null must be the final destination: after it, only trailing
-            # redirections (`2>/tmp/err`) and/or a `# comment` may precede the
-            # segment end -- another positional arg means /dev/null was a source.
-            r"|" + _SEG + _OB + r"/dev/null\b"
-            r"(?:\s*\d*>>?&?\s*[^\s;&|#]*)*\s*(?:#[^\n]*)?(?=[;&|\n]|$))"
+            # /dev/null must be the FINAL positional token of its command segment:
+            # the literal, optional trailing whitespace, then the segment end. Any
+            # following positional arg, redirect, or comment means /dev/null is not
+            # the sole destination, so we do not match -- `mv <src> /dev/null 2>err`
+            # is an accepted documented limitation (a false negative) that keeps this
+            # branch bounded and non-backtracking (no nested/overlapping quantifier).
+            r"|" + _SEG + _OB + r"/dev/null(?![\w./~-])\s*(?=[;&|\n]|$))"
         ),
         "mv of a protected root, or mv into /dev/null (a silent delete)",
         "moving a protected root relocates the whole system/home tree, and "
@@ -717,25 +724,50 @@ RULES: list[Rule] = [
 
 
 def _strip_quotes(command: str) -> str:
-    """Drop shell quote characters so quoted/fragmented spellings scan like bare ones.
+    """Normalize shell quotes so quoted/fragmented spellings scan like bare ones.
 
     Bash concatenates adjacent quoted and unquoted fragments into ONE word and
-    strips the quotes before running the command, so ``rm -'r'f x`` runs as
-    ``rm -rf x`` and ``rm x"-rf" y`` runs as ``rm x-rf y``. This scanner sees the
-    raw string; removing every ``'`` and ``"`` reproduces Bash's in-word quote
-    removal closely enough that the strict-boundary patterns above then read the
-    same tokens Bash would. Pure string work -- it never shells out or executes.
+    strips the SYNTACTIC quotes before running the command, so ``rm -'r'f x``
+    runs as ``rm -rf x``. This scanner sees the raw string; a single
+    left-to-right, quote-state-aware pass reproduces the parts that matter:
+
+    * a ``'`` outside double quotes and a ``"`` outside single quotes are
+      SYNTACTIC -- they open/close a span and are dropped;
+    * a quote of the OTHER type inside a span is a literal character and is
+      kept (``echo 'a"b'`` keeps the ``"``), so it still separates words rather
+      than fusing them and never fabricates a bare token;
+    * a redirect/pipe/separator operator (``< > | & ;``) INSIDE quotes is always
+      literal, so it is replaced with a space and never read as active syntax;
+    * command substitution (``$( )`` / backticks) and ``$`` are left untouched,
+      so a quoted ``eval "$(curl ...)"`` is still detected.
+
+    This is NOT a full reproduction of Bash quote removal (no backslash escapes
+    or expansion) -- it is pure, bounded O(n) string work that never shells out
+    or executes.
     """
-    return command.replace("'", "").replace('"', "")
+    out: list[str] = []
+    in_single = False
+    in_double = False
+    for ch in command:
+        if ch == "'" and not in_double:
+            in_single = not in_single
+        elif ch == '"' and not in_single:
+            in_double = not in_double
+        elif (in_single or in_double) and ch in "<>|&;":
+            out.append(" ")
+        else:
+            out.append(ch)
+    return "".join(out)
 
 
 def evaluate(command: str) -> tuple[list[Rule], list[Rule]]:
     """Return ``(deny_matches, ask_matches)`` for ``command``, in rule-table order.
 
-    The command is de-quoted first (see ``_strip_quotes``) so both tiers scan the
-    same shell-word-normalized copy. Pure inspection: every rule whose pattern is
-    found in that copy is collected into the list for its severity. Order is
-    preserved so the entrypoint reports the highest-priority (earliest) matches first.
+    The command is quote-normalized first (see ``_strip_quotes``) so both tiers
+    scan the same shell-word-normalized copy. Pure inspection: every rule whose
+    pattern is found in that copy is collected into the list for its severity. Order
+    is preserved so the entrypoint reports the highest-priority (earliest) matches
+    first.
     """
     command = _strip_quotes(command)
     deny_matches: list[Rule] = []

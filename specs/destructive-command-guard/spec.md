@@ -169,6 +169,7 @@ Use these files to complete the task:
 - **Oversized command string** → scan the first 64 KB and note truncation to stderr; never raise.
 - **Concurrent tool calls / parallel sessions** → guard is stateless (no state files), so parallel-safe by construction.
 - **`uv` unavailable or hook crashes at spawn** → Claude Code treats a non-2 failure as non-blocking and the action proceeds (KB: hooks-guide); the guard is defense-in-depth, not a sandbox — record as residual risk, do not fight it.
+- **Quoted evasions & exotic shell syntax** → the command is normalized for syntactic quoting only (see decisions.md `## Accepted regex-precision limitations`), not fully parsed: realistic quoted forms (`rm "-rf"`, `rm -'r'f`) are caught, but `mv <src> /dev/null` with a trailing redirect/comment and backslash-escaped flags are accepted false negatives, per the no-shell-AST-parsing non-goal.
 
 ## Red Flags
 

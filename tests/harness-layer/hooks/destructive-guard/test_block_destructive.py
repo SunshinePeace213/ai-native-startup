@@ -336,25 +336,48 @@ DENY_CASES = [
     ("frag-dd-of-sda", "dd-to-block-device", "Disk Overwrite Operations", 'dd of=/dev/"sda"'),
     # Single-quote quote-tolerance: the other delimiter must normalize identically.
     ("sq-rm-rf", "rm-recursive-force", "Destructive File Operations", "rm '-rf' /tmp/x"),
-    # --- R2-2: /dev/null is still the mv DESTINATION when a trailing redirect or
-    # `# comment` follows it, so these must DENY (a silent delete of the source).
+    # --- R3-1: /dev/null as the FINAL positional destination is a silent delete of
+    # the source, so a bare `mv <src> /dev/null` must DENY. A trailing redirect or
+    # `# comment` suffix (`mv file /dev/null 2>err`) is an ACCEPTED documented
+    # limitation now -- a bounded, end-anchored anchor beats parsing the tail, which
+    # caused catastrophic backtracking -- so those are intentionally NOT asserted.
+    ("mv-devnull-dest", "mv-protected-root", "Destructive File Operations", "mv file /dev/null"),
     (
-        "mv-devnull-redirect-suffix",
+        "mv-devnull-dest-named",
         "mv-protected-root",
         "Destructive File Operations",
-        "mv file /dev/null 2>/tmp/mv.err",
+        "mv secret.txt /dev/null",
+    ),
+    # --- R3-2: quote-state-aware normalization still strips SYNTACTIC quotes, so a
+    # double-quoted destructive string normalizes to the bare token and still denies
+    # (an accepted prose tradeoff: `echo "rm -rf /"` reads as an active rm -rf).
+    ("quoted-prose-rm-rf", "rm-recursive-force", "Destructive File Operations", 'echo "rm -rf /"'),
+    # --- R3-3: a critical target at a REAL argument boundary (start, whitespace, or a
+    # redirect operator) still denies; the argument-boundary lookbehind only rejects
+    # punctuation-glued relative paths (see the R3-3 allow block), never these.
+    (
+        "overwrite-passwd-redirect-nospace",
+        "overwrite-critical-file",
+        "System File Overwriting",
+        ">/etc/passwd",
     ),
     (
-        "mv-devnull-quoted-redirect-suffix",
-        "mv-protected-root",
-        "Destructive File Operations",
-        'mv file "/dev/null" 2>/tmp/mv.err',
+        "overwrite-passwd-leading-redirect",
+        "overwrite-critical-file",
+        "System File Overwriting",
+        "> /etc/passwd",
     ),
     (
-        "mv-devnull-comment-suffix",
-        "mv-protected-root",
-        "Destructive File Operations",
-        "mv file /dev/null # discard",
+        "overwrite-passwd-tee",
+        "overwrite-critical-file",
+        "System File Overwriting",
+        "tee /etc/passwd",
+    ),
+    (
+        "truncate-passwd-bare",
+        "truncate-critical-file",
+        "System File Overwriting",
+        "truncate /etc/passwd",
     ),
 ]
 
@@ -544,6 +567,30 @@ ALLOW_CASES = [
     ("frag-benign-rm-r-x-etc", 'rm -r x"/etc"'),
     ("frag-benign-truncate-x-passwd", 'truncate x"/etc/passwd"'),
     ("frag-benign-crontab-x-r", 'crontab x"-r"'),
+    # R3-1: /dev/null is NOT the sole final destination here, so each is a normal
+    # move (or a filename that merely starts with /dev/null) and must pass.
+    # `mv /dev/null >foo` has /dev/null as the sole SOURCE (was wrongly denied);
+    # `/dev/null#discard` is one filename word, not a comment (was wrongly denied);
+    # `/dev/null other` is not the last positional arg.
+    ("mv-devnull-sole-source-redirect", "mv /dev/null >foo"),
+    ("mv-devnull-filename-hash", "mv file /dev/null#discard"),
+    ("mv-devnull-not-last-arg", "mv file /dev/null other"),
+    # R3-2: quote-state-aware normalization keeps an OPPOSITE-type literal quote and
+    # neutralizes a quoted redirect/pipe/separator, so none of these fabricate a bare
+    # destructive token. `r"m` / `r'm` keep the literal quote (no `rm` word); the flag
+    # `-'r'f` inside "..." keeps its literal quotes (not `-rf`); the quoted ">" is
+    # neutralized to a space (not an active redirect onto /dev/sda).
+    ("opp-quote-single-outer-dquote-literal", "echo 'r\"m -rf /tmp/x'"),
+    ("opp-quote-double-outer-squote-literal", 'echo "r\'m -rf /tmp/x"'),
+    ("opp-quote-flag-literal-quotes-not-rf", "rm \"-'r'f\" ordinary.txt"),
+    ("quoted-redirect-operator-neutralized", 'echo ">" /dev/sda'),
+    # R3-3: a critical/protected path glued behind a punctuation prefix (`@`, `+`) is a
+    # relative argument, not the real file/root, so the argument-boundary lookbehind
+    # must let these pass -- none targets the real /etc/passwd or the real /etc root.
+    ("punct-prefix-truncate-at-passwd", "truncate @/etc/passwd"),
+    ("punct-prefix-truncate-plus-passwd", "truncate +/etc/passwd"),
+    ("punct-prefix-truncate-foo-at-passwd", "truncate foo@/etc/passwd"),
+    ("punct-prefix-rm-at-etc", "rm -r @/etc"),
 ]
 
 
@@ -696,3 +743,35 @@ def test_deny_and_ask_fixtures_cover_every_rule_id(common):
     all_rule_ids = {rule.rule_id for rule in common.RULES}
     covered_rule_ids = {case[1] for case in DENY_CASES} | {case[1] for case in ASK_CASES}
     assert covered_rule_ids == all_rule_ids
+
+
+# --- Adversarial ReDoS regression: the mv /dev/null tail must stay bounded -----
+# The round-3 tail `(?:\s*\d*>>?&?\s*[^\s;&|#]*)*` backtracked catastrophically:
+# `mv file /dev/null ` + `2>`*n + ` target` exceeded 5s at n=16 (only 58 bytes),
+# both in evaluate() and through the running hook, defeating the fail-open wrapper
+# (a regex search that never returns cannot be caught). The simple end-anchored
+# tail is linear, so both tests below finish instantly; on the round-3 pattern
+# they would hang past their timeouts and FAIL.
+
+REDOS_MV_TAIL = "mv file /dev/null " + "2>" * 20 + " target"
+
+
+def test_mv_devnull_tail_redos_regression_subprocess(guard):
+    """The running hook must RETURN a decision on the adversarial mv /dev/null
+    tail, never wedge -- a non-returning regex hangs the PreToolUse hook past the
+    launcher's 45s subprocess timeout, which fails this test loudly instead of
+    silently breaking the fail-open contract every unrelated tool call relies on."""
+    res = guard(REDOS_MV_TAIL)
+    assert res.returncode in (0, 2)  # returned at all == did not hang
+
+
+def test_mv_devnull_tail_redos_regression_in_process(common):
+    """evaluate() must scan the adversarial tail in linear time: the round-3
+    pattern took >5s at n=16, so at n=20 it would blow past pytest's 60s per-test
+    timeout and fail; completing near-instantly proves the anchor is
+    non-backtracking. The trailing-suffix shape is an accepted false negative (not
+    the sole-destination form), so it must NOT deny -- the point is that it returns."""
+    deny_matches, ask_matches = common.evaluate(REDOS_MV_TAIL)
+    assert isinstance(deny_matches, list)
+    assert isinstance(ask_matches, list)
+    assert all(rule.rule_id != "mv-protected-root" for rule in deny_matches)
