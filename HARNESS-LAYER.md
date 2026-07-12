@@ -28,8 +28,8 @@ against a flat rule table before execution. Deny-tier matches (`rm -rf` on a pro
 root, disk overwrites, fork bombs, …) exit 2 with a `BLOCKED / Why: / Fix:` stderr block
 the agent can act on. Ask-tier matches (`git push --force`, `curl | bash`, …) return
 `permissionDecision: "ask"` so the human approves per call. No agent-facing bypass
-exists; the human's `!` prefix is the intended relief valve — prefixed commands never
-pass through hooks.
+exists; the human's `!` prefix is the intended relief valve (input-box `!` commands
+are run directly, not via the tool-use path the hook guards).
 
 ### Auto-Format (PostToolUse)
 
@@ -94,6 +94,9 @@ worktree path only. `worktree_remove.py` removes the worktree and deletes its
 │   │   ├── data.py                # .json .jsonc .yaml .yml → prettier
 │   │   ├── markdown.py            # .md .markdown → markdownlint-cli2 --fix
 │   │   └── python.py              # .py .pyi → ruff format + ruff check --fix
+│   ├── destructive-guard/
+│   │   ├── _common.py             # rule engine: flat table, evaluate(), fail-open plumbing
+│   │   └── block_destructive.py   # PreToolUse entrypoint: deny exit 2 / ask stdout JSON
 │   ├── security-scan/
 │   │   ├── _common.py             # scanner engine: rules, suppression, session state
 │   │   ├── post_write_scan.py     # per-write gate (Write|Edit|MultiEdit)
@@ -111,6 +114,7 @@ tests/harness-layer/hooks/
 ├── test_wiring.py     # settings.json / registrar ↔ .claude/hooks cross-check
 ├── attribution/       # pytest suite for the attribution hook
 ├── auto-format/       # pytest suite for the four formatter hooks
+├── destructive-guard/ # pytest suite for the destructive-guard hook
 ├── security-scan/     # engine + e2e tests for the four security-scan scripts
 ├── spec-completeness/ # pytest suite for the spec gate
 └── worktree/          # pytest suite for the worktree lifecycle hooks

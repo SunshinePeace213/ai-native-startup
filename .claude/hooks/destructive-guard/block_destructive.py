@@ -38,11 +38,14 @@ def main() -> int:
     if not isinstance(command, str) or not command.strip():
         return 0
 
-    if len(command) > MAX_COMMAND_BYTES:
+    encoded = command.encode("utf-8", errors="replace")
+    if len(encoded) > MAX_COMMAND_BYTES:
         _common.note(
             f"command exceeds {MAX_COMMAND_BYTES} bytes; scanning first {MAX_COMMAND_BYTES} only"
         )
-        command = command[:MAX_COMMAND_BYTES]
+        # Cap on ENCODED bytes, not code points; decode back dropping any partial
+        # multibyte char left at the truncation boundary (fail-open: never raises).
+        command = encoded[:MAX_COMMAND_BYTES].decode("utf-8", errors="ignore")
 
     deny_matches, ask_matches = _common.evaluate(command)
 
@@ -53,6 +56,9 @@ def main() -> int:
             f"Fix: {rule.fix_hint}"
             for rule in deny_matches[:3]
         ]
+        extra = len(deny_matches) - 3
+        if extra > 0:
+            blocks.append(f"[destructive-guard] ... and {extra} more rule(s) matched")
         print("\n".join(blocks), file=sys.stderr)
         return 2
 

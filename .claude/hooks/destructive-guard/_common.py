@@ -116,15 +116,30 @@ _NAMED_ROOTS = (
     "opt", "proc", "root", "sbin", "srv", "sys", "usr", "var",
 )  # fmt: skip
 
+# Quote tolerance. Bash strips quotes before running a command, but this scanner
+# sees the raw string, so `rm "-rf" /tmp/x` and `mv "/etc" /tmp/x` must read the
+# same as their unquoted forms. Two shapes:
+#   _OB  -- an OPTION-token boundary: the flag is preceded by whitespace/start OR
+#           by an opening quote. Zero-width, so it never widens a filename match
+#           (a hyphen inside "my-report" is preceded by a letter -- neither
+#           whitespace nor a quote -- so it still isn't read as a flag).
+#   _Q   -- an optional opening quote consumed right before a path/target literal
+#           that follows an operator (`> "/dev/sda"`, `of="/etc/passwd"`).
+_OB = r"(?:(?<!\S)|(?<=['\"]))"
+_Q = r"['\"]?"
+
 # A protected-root TARGET, per the normalization rule: the bare root, the root
 # with a single trailing slash, or the root with a trailing /* -- but NOT a
 # deeper sub-path. Two branches: named roots / mnt / home variants (which take
 # an optional trailing "/" or "/*"), and the bare filesystem root "/" (whose
 # "/" + trailing-slash + "/*" forms collapse to "/" or "/*"). Each branch
 # carries its own leading lookbehind (reject "./etc", "/home/x/etc") and
-# trailing lookahead (reject "/etc/nginx", "~/projects", "$HOMEDIR").
+# trailing lookahead (reject "/etc/nginx", "~/projects", "$HOMEDIR"). A leading
+# _Q consumes an optional surrounding quote (`"/etc"`); the lookbehind already
+# tolerates a preceding quote, so both quoted and pre-consumed-quote call sites
+# match.
 _PROTECTED_ROOT = (
-    r"(?:"
+    _Q + r"(?:"
     r"(?<![\w./~-])(?:/mnt/[A-Za-z]|/(?:" + "|".join(_NAMED_ROOTS) + r")"
     r"|~|\$\{HOME\}|\$HOME)(?:/\*|/)?(?![\w*./-])"
     r"|(?<![\w./~-])/\*?(?![\w*./-])"
@@ -132,10 +147,17 @@ _PROTECTED_ROOT = (
 )
 
 # A critical-file TARGET. Fixed names plus the sudoers.d/cron/boot wildcards.
+# A leading _Q consumes an optional surrounding quote (`> "/etc/passwd"`). Each
+# FIXED literal ends in (?![\w.-]) so a suffix like ".bak" does NOT match
+# (`/etc/passwd.bak` is not the real file); the intentional cron*/sudoers.d/boot
+# wildcards are left open so they still match their sub-paths.
 _CRITICAL_FILE = (
-    r"(?:"
-    r"/etc/(?:passwd|shadow|group|sudoers(?:\.d(?:/[^\s;&|]+)?)?|fstab|hosts"
-    r"|ssh/sshd_config|cron[^\s;&|]*)"
+    _Q + r"(?:"
+    r"/etc/(?:"
+    r"(?:passwd|shadow|group|fstab|hosts|ssh/sshd_config)(?![\w.-])"
+    r"|sudoers(?:\.d(?:/[^\s;&|]+)?)?(?![\w.-])"
+    r"|cron[^\s;&|]*"
+    r")"
     r"|/boot/[^\s;&|]+"
     r")"
 )
@@ -165,13 +187,13 @@ _SEGG = r"[^;&|\n]*"
 _REDIR_OR_TEE = r"(?:>{1,2}\s*|(?<!\S)tee\b" + _SEG + r")"
 
 # Recursive-flag and force-flag detectors. Each requires a real option token
-# (``(?<!\S)`` -- preceded by whitespace/start, so a filename like "my-report"
-# is never read as a flag) and matches combined clusters in any order:
-# ``-rf``, ``-fr``, ``-vrf``, ``-r`` / ``-R``, and the long ``--recursive`` /
-# ``--force``.
-_REC = r"(?<!\S)(?:--recursive|-[A-Za-z]*[rR][A-Za-z]*)\b"
-_FORCE = r"(?<!\S)(?:--force|-[A-Za-z]*f[A-Za-z]*)\b"
-_REC_R = r"(?<!\S)(?:--recursive|-[A-Za-z]*R[A-Za-z]*)\b"  # chmod/chown use -R
+# (``_OB`` -- preceded by whitespace/start or an opening quote, so a filename
+# like "my-report" is never read as a flag but a quoted `"-rf"` is) and matches
+# combined clusters in any order: ``-rf``, ``-fr``, ``-vrf``, ``-r`` / ``-R``,
+# and the long ``--recursive`` / ``--force``.
+_REC = _OB + r"(?:--recursive|-[A-Za-z]*[rR][A-Za-z]*)\b"
+_FORCE = _OB + r"(?:--force|-[A-Za-z]*f[A-Za-z]*)\b"
+_REC_R = _OB + r"(?:--recursive|-[A-Za-z]*R[A-Za-z]*)\b"  # chmod/chown use -R
 
 # Fork-bomb: the two authoritative patterns from spec.md, combined so B's
 # ``(\w+)`` is capture group 1 (A defines no groups) and its ``\1`` backrefs
@@ -228,8 +250,8 @@ RULES: list[Rule] = [
         "Destructive File Operations",
         "deny",
         re.compile(
-            r"\bmv\b(?:(?:\s+-{1,2}\S+)*\s+" + _PROTECTED_ROOT + r"(?=\s)"
-            r"|" + _SEG + r"(?<!\S)/dev/null\b)"
+            r"\bmv\b(?:(?:\s+-{1,2}\S+)*\s+" + _PROTECTED_ROOT + _Q + r"(?=\s)"
+            r"|" + _SEG + _OB + r"/dev/null\b" + _Q + r"\s*(?=[;&|\n]|$))"
         ),
         "mv of a protected root, or mv into /dev/null (a silent delete)",
         "moving a protected root relocates the whole system/home tree, and "
@@ -241,7 +263,7 @@ RULES: list[Rule] = [
         "dd-to-block-device",
         "Disk Overwrite Operations",
         "deny",
-        re.compile(r"\bdd\b" + _SEG + r"(?<!\S)of=" + _BLOCKDEV),
+        re.compile(r"\bdd\b" + _SEG + r"(?<!\S)of=" + _Q + _BLOCKDEV),
         "dd writing directly to a raw block device (of=/dev/sdX ...)",
         "dd onto a disk device overwrites partitions and filesystems in place, "
         "regardless of count=, and is unrecoverable.",
@@ -251,7 +273,7 @@ RULES: list[Rule] = [
         "redirect-to-block-device",
         "Disk Overwrite Operations",
         "deny",
-        re.compile(r">{1,2}\s*" + _BLOCKDEV),
+        re.compile(r">{1,2}\s*" + _Q + _BLOCKDEV),
         "shell redirect onto a raw block device (> /dev/sdX)",
         "redirecting output onto a disk device corrupts its partition table "
         "and filesystems; /dev/null and /dev/stdout are never affected.",
@@ -261,7 +283,7 @@ RULES: list[Rule] = [
         "shred-device",
         "Disk Overwrite Operations",
         "deny",
-        re.compile(r"\bshred\b" + _SEG + r"(?<!\S)/dev/(?!null\b|std(?:out|in|err)\b)[A-Za-z]"),
+        re.compile(r"\bshred\b" + _SEG + _OB + r"/dev/(?!null\b|std(?:out|in|err)\b)[A-Za-z]"),
         "shred targeting a /dev device node",
         "shred overwrites a device repeatedly to make its data unrecoverable, "
         "destroying whatever disk or partition it names.",
@@ -284,7 +306,7 @@ RULES: list[Rule] = [
         "deny",
         re.compile(
             r"(?:\bwipefs\b|\bblkdiscard\b"
-            r"|\bsgdisk\b" + _SEG + r"(?:(?<!\S)-Z\b|--zap-all\b))"
+            r"|\bsgdisk\b" + _SEG + r"(?:" + _OB + r"-Z\b|--zap-all\b))"
         ),
         "partition/signature wipe (wipefs, blkdiscard, sgdisk -Z)",
         "these erase partition tables or discard every block on a device, "
@@ -310,7 +332,8 @@ RULES: list[Rule] = [
             r"(?:"
             r"\bcat\b"
             + _SEG
-            + r"(?<!\S)/dev/(?:zero|urandom|random)\b"
+            + _OB
+            + r"/dev/(?:zero|urandom|random)\b"
             + _SEG
             + r">{1,2}(?!\s*/dev/null\b)(?!\s*/dev/stdout\b)\s*"
             r"|\byes\b" + _SEG + r">{1,2}(?!\s*/dev/null\b)(?!\s*/dev/stdout\b)\s*"
@@ -318,9 +341,13 @@ RULES: list[Rule] = [
             + _SEGG
             + r"\bcount=)(?!"
             + _SEGG
-            + r"\bof=/dev/null\b)"
+            + r"\bof="
+            + _Q
+            + r"/dev/null\b)"
             + _SEG
-            + r"\bif=/dev/(?:zero|urandom|random)\b"
+            + r"\bif="
+            + _Q
+            + r"/dev/(?:zero|urandom|random)\b"
             r")"
         ),
         "unbounded write from an infinite source (fills the disk)",
@@ -334,7 +361,7 @@ RULES: list[Rule] = [
         "deny",
         re.compile(
             r"(?:"
-            r"\btail\b" + _SEG + r"(?<!\S)/dev/zero\b"
+            r"\btail\b" + _SEG + _OB + r"/dev/zero\b"
             r"|\$\(\s*cat\b[^)]*?/dev/(?:zero|urandom|random)\b"
             r"|\$\(\s*yes\s*\)"
             r"|`\s*cat\b[^`]*?/dev/(?:zero|urandom|random)\b"
@@ -406,9 +433,9 @@ RULES: list[Rule] = [
         "deny",
         re.compile(
             r"\b(?:kill|killall|pkill)\b"
-            r"(?=" + _SEG + r"(?:(?<!\S)-9\b|(?<!\S)-(?:KILL|SIGKILL)\b"
-            r"|(?<!\S)-s\s+(?:KILL|SIGKILL|9)\b))"
-            r"(?=" + _SEG + r"(?:(?<!\S)-1\b|(?<![\w./-])1\b|\binit\b|\bsystemd\b))"
+            r"(?=" + _SEG + r"(?:" + _OB + r"-9\b|" + _OB + r"-(?:KILL|SIGKILL)\b"
+            r"|" + _OB + r"-s\s+(?:KILL|SIGKILL|9)\b))"
+            r"(?=" + _SEG + r"(?:" + _OB + r"-1\b|(?<![\w./-])1\b|\binit\b|\bsystemd\b))"
         ),
         "SIGKILL aimed at every process or at PID 1 / init / systemd",
         "kill -9 -1 or killing PID 1 takes down every process or the init "
@@ -456,7 +483,7 @@ RULES: list[Rule] = [
         "ask",
         re.compile(
             _REDIR_OR_TEE + r"(?:" + _HOME + r"/\.(?:bashrc|bash_profile|profile|zshrc)"
-            r"|/etc/(?:profile|environment|bash\.bashrc))\b"
+            r"|/etc/(?:profile|environment|bash\.bashrc))(?![\w.-])"
         ),
         "write into a shell profile / environment file",
         "profile writes persist across every future shell, so a bad line can "
@@ -478,7 +505,7 @@ RULES: list[Rule] = [
         "crontab-wipe",
         "Cron & Scheduled Tasks",
         "deny",
-        re.compile(r"\bcrontab\b" + _SEG + r"(?<!\S)-[A-Za-z]*r[A-Za-z]*\b"),
+        re.compile(r"\bcrontab\b" + _SEG + _OB + r"-[A-Za-z]*r[A-Za-z]*\b"),
         "crontab -r (wipes the user's crontab)",
         "crontab -r deletes the entire crontab with no confirmation and no undo.",
         "Back up with `crontab -l` first, or edit with `crontab -e`.",
@@ -487,7 +514,7 @@ RULES: list[Rule] = [
         "cron-write",
         "Cron & Scheduled Tasks",
         "deny",
-        re.compile(_REDIR_OR_TEE + r"/etc/cron[^\s;&|]*"),
+        re.compile(_REDIR_OR_TEE + _Q + r"/etc/cron[^\s;&|]*"),
         "redirect or tee into /etc/cron*",
         "writing system cron files installs or clobbers scheduled jobs that run "
         "as root, a persistence and privilege vector.",
@@ -499,7 +526,7 @@ RULES: list[Rule] = [
         "Network Manipulation",
         "deny",
         re.compile(
-            r"(?:\biptables\b" + _SEG + r"(?:(?<!\S)-F\b|--flush\b)"
+            r"(?:\biptables\b" + _SEG + r"(?:" + _OB + r"-F\b|--flush\b)"
             r"|\bnft\b" + _SEG + r"flush\s+ruleset\b"
             r"|\bufw\b" + _SEG + r"disable\b)"
         ),
@@ -526,9 +553,9 @@ RULES: list[Rule] = [
         "History & Log Manipulation",
         "deny",
         re.compile(
-            r"(?:\bhistory\b" + _SEG + r"(?<!\S)-c\b"
-            r"|\b(?:rm|truncate)\b" + _SEG + _HOME + r"/\.(?:bash_history|zsh_history)\b"
-            r"|>{1,2}\s*" + _HOME + r"/\.(?:bash_history|zsh_history)\b)"
+            r"(?:\bhistory\b" + _SEG + _OB + r"-c\b"
+            r"|\b(?:rm|truncate)\b" + _SEG + _HOME + r"/\.(?:bash_history|zsh_history)(?![\w.-])"
+            r"|>{1,2}\s*" + _HOME + r"/\.(?:bash_history|zsh_history)(?![\w.-]))"
         ),
         "wiping shell history",
         "clearing history erases the record of what was run, which destroys an "
@@ -565,7 +592,9 @@ RULES: list[Rule] = [
         "kernel-modules",
         "Kernel & System Operations",
         "deny",
-        re.compile(r"(?:\b(?:insmod|rmmod)\b|\bmodprobe\b" + _SEG + r"(?:(?<!\S)-r\b|--remove\b))"),
+        re.compile(
+            r"(?:\b(?:insmod|rmmod)\b|\bmodprobe\b" + _SEG + r"(?:" + _OB + r"-r\b|--remove\b))"
+        ),
         "loading/unloading a kernel module (insmod, rmmod, modprobe -r)",
         "changing kernel modules alters the running kernel and can crash or "
         "compromise the whole system.",
@@ -576,9 +605,9 @@ RULES: list[Rule] = [
         "Kernel & System Operations",
         "deny",
         re.compile(
-            r"(?:>{1,2}\s*/dev/k?mem\b|\bof=/dev/k?mem\b"
-            r"|\bsysctl\b" + _SEG + r"(?<!\S)-w\b"
-            r"|>{1,2}\s*/proc/sys/[^\s;&|]+)"
+            r"(?:>{1,2}\s*" + _Q + r"/dev/k?mem\b|\bof=" + _Q + r"/dev/k?mem\b"
+            r"|\bsysctl\b" + _SEG + _OB + r"-w\b"
+            r"|>{1,2}\s*" + _Q + r"/proc/sys/[^\s;&|]+)"
         ),
         "writing kernel memory / tunables (/dev/mem, sysctl -w, /proc/sys/*)",
         "writing raw kernel memory or live tunables can corrupt kernel state "
@@ -591,7 +620,7 @@ RULES: list[Rule] = [
         "Symbolic Link Attacks",
         "deny",
         re.compile(
-            r"\bln\b(?=" + _SEG + r"(?<!\S)-[A-Za-z]*s[A-Za-z]*\b)"
+            r"\bln\b(?=" + _SEG + _OB + r"-[A-Za-z]*s[A-Za-z]*\b)"
             r"(?=" + _SEG + _CRITICAL_FILE + r")"
         ),
         "symlink involving a critical system file",
@@ -609,7 +638,9 @@ RULES: list[Rule] = [
             + _SEG
             + r"\bpush\b"
             + _SEG
-            + r"(?:--force(?:-with-lease)?\b|(?<!\S)-[A-Za-z]*f[A-Za-z]*\b)"
+            + r"(?:--force(?:-with-lease)?\b|"
+            + _OB
+            + r"-[A-Za-z]*f[A-Za-z]*\b)"
         ),
         "git push --force / -f (including --force-with-lease)",
         "a force push overwrites remote history and can discard teammates' "
@@ -631,7 +662,13 @@ RULES: list[Rule] = [
         "Git Security",
         "ask",
         re.compile(
-            r"\bgit\b" + _SEG + r"\bclean\b" + _SEG + r"(?:--force\b|(?<!\S)-[A-Za-z]*f[A-Za-z]*\b)"
+            r"\bgit\b"
+            + _SEG
+            + r"\bclean\b"
+            + _SEG
+            + r"(?:--force\b|"
+            + _OB
+            + r"-[A-Za-z]*f[A-Za-z]*\b)"
         ),
         "git clean -f (deletes untracked files)",
         "git clean -f permanently removes untracked files; with -x it also "
@@ -653,7 +690,7 @@ RULES: list[Rule] = [
         "Git Security",
         "ask",
         re.compile(
-            r"\bgit\b" + _SEG + r"\bpush\b" + _SEG + r"(?:--delete\b|(?<!\S)-d\b|\s:[\w./-]+)"
+            r"\bgit\b" + _SEG + r"\bpush\b" + _SEG + r"(?:--delete\b|" + _OB + r"-d\b|\s:[\w./-]+)"
         ),
         "git push deleting a remote branch",
         "pushing a delete (--delete or :branch) removes the branch on the remote for everyone.",
@@ -666,8 +703,8 @@ RULES: list[Rule] = [
         "deny",
         re.compile(
             r"(?:\b(?:userdel|groupdel)\b"
-            r"|\bpasswd\b" + _SEG + r"(?:\broot\b|(?<!\S)-d\b|(?<!\S)--delete\b)"
-            r"|\busermod\b(?=" + _SEG + r"(?:(?<!\S)-L\b|--lock\b))(?=" + _SEG + r"\broot\b))"
+            r"|\bpasswd\b" + _SEG + r"(?:\broot\b|" + _OB + r"-d\b|" + _OB + r"--delete\b)"
+            r"|\busermod\b(?=" + _SEG + r"(?:" + _OB + r"-L\b|--lock\b))(?=" + _SEG + r"\broot\b))"
         ),
         "user/account manipulation (userdel, groupdel, passwd root, usermod -L root)",
         "deleting accounts or changing/locking the root password can lock "
