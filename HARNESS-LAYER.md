@@ -71,18 +71,16 @@ files by name/path only, never by reading contents:
 - `bash_guard.py` — `Bash`: scans the raw command text for a cataloged token,
   token-boundary aware (survives `|`, `&&`, `>`, quoting, multiline commands)
 
-The catalog (`_common.py`) covers 14 categories — env files, SSH/auth keys,
-certs & private keys, cloud credentials, package-manager credentials, VCS/tool
-credentials, CI/CD & IaC secrets, framework/app secrets, database credentials,
-shell/REPL history, browser/OS credential stores, Kerberos, crypto wallets,
-AI-tool auth — matched by basename pattern or slash-bounded path fragment, with
-tilde/relative/symlink normalization. A seven-name template allowlist
-(`.env.example`, `.env.sample`, `.env.template`, `.env.dist`, `example.env`,
-`sample.env`, `template.env`) is the only escape hatch. A match exits 2 with a
-three-line stderr denial (blocked path/token + category, redirect guidance, the
-standing policy line) fed back to the agent; everything else — including any
-plumbing failure — fails open with exit 0. `.codex/hooks.json` registers
-`bash_guard.py` for Codex parity; `file_guard.py` has no Codex equivalent.
+The catalog engine (`_common.py`) matches secret-bearing files — env files,
+SSH/auth keys, certs & private keys, cloud/package-manager/VCS credentials, CI/CD
+& IaC secrets, database credentials, credential stores, wallets, AI-tool auth —
+by basename pattern or slash-bounded path fragment, with tilde/relative/symlink
+normalization. Template files (`.env.example`, `.env.sample`, `.env.template`,
+`.env.dist`, `example.env`, `sample.env`, `template.env`) are the only allowlist.
+A match exits 2 with a three-line stderr denial (blocked path/token + category,
+redirect guidance, the standing policy line) fed back to the agent; everything
+else — including any plumbing failure — fails open with exit 0. `.codex/hooks.json`
+registers `bash_guard.py` for Codex parity; `file_guard.py` has no Codex equivalent.
 
 ### Worktree Lifecycle (WorktreeCreate / WorktreeRemove)
 
