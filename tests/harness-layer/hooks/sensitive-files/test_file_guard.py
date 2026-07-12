@@ -288,6 +288,30 @@ def test_grep_bounded_suffix_glob_targeting_catalog_denies(run_hook, glob):
     assert glob in res.stderr
 
 
+# --- Grep: trailing-star suffix targeting (CX4-1) ------------------------------
+
+
+@pytest.mark.parametrize(
+    "glob", ["secret.pe[m]*", "secret.pem*", "foo*bar.pem", "state.tfstat[e]*"]
+)
+def test_grep_trailing_star_suffix_targeting_denies(run_hook, glob):
+    """CX4-1: a trailing star must not disable suffix-rule targeting detection;
+    each glob genuinely selects a cataloged suffix name when its stars match empty,
+    so the real guard must deny it with exit 2."""
+    res = run_hook(SCRIPT, grep_payload(glob=glob))
+    assert res.returncode == 2
+    assert "Blocked:" in res.stderr
+    assert glob in res.stderr
+
+
+@pytest.mark.parametrize("glob", ["README*", "x*"])
+def test_grep_trailing_star_without_suffix_overlap_allows(run_hook, glob):
+    """CX4-1 must preserve the locked allow boundary: these star-free cores do
+    not overlap a cataloged suffix rule, so the real guard must still exit 0."""
+    res = run_hook(SCRIPT, grep_payload(glob=glob))
+    assert_allowed(res)
+
+
 # --- Grep: over-long globs don't fail the DP open (CX3-2) ------------------------
 
 

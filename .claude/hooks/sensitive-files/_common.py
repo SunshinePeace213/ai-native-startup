@@ -621,16 +621,14 @@ def match_glob(pattern: object) -> Rule | None:
     intersect via ``_globs_intersect`` (catches ``.env[.]local`` -> ``.env.*``,
     ``id_r[s]a[0-9]*`` -> ``id_rsa*``, ``service-[a]ccount[0-9]*.json`` ->
     ``service-account*.json``); and (c) for a SUFFIX-anchored rule (one opening
-    with ``*``, e.g. ``*.pem``/``*.env``) the same intersection, but ONLY when the
-    rewritten glob has no ``*`` of its own -- a length-bounded, narrow targeter such
-    as ``secret.pe?`` -> ``*.pem`` or ``x.?nv`` -> ``*.env``. That ``*``-free gate
-    on (c) is what preserves the allow boundary: a glob that keeps a ``*``
-    (``README*``, ``*.py``, ``[a-z]*.py`` -> ``?*.py``) is a broad search, is never
-    intersected against a suffix rule, and stays allowed; a bare suffix glob
-    (``*.pem``) opens with ``*`` and never reaches this loop at all (empty literal
-    prefix). The old single-witness suffix check missed every constrained
-    class/``?`` glob (CX2-1/CX3-1). Never raises: weird input yields None
-    (fail-open).
+    with ``*``, e.g. ``*.pem``/``*.env``), the intersection after removing every
+    ``*`` from the rewritten glob. Removing ``*`` is sound because each star can
+    match the empty string: every name selected by the star-free core is also
+    selected by the original glob. It catches trailing-star targeting such as
+    ``secret.pe?*`` -> core ``secret.pe?`` -> ``*.pem`` (CX4-1), while the empty
+    literal-prefix return still allows broad suffix globs (``*.pem``), and cores
+    without catalog overlap (``README*`` -> ``README``) stay allowed. Never
+    raises: weird input yields None (fail-open).
 
     Directory-fragment targeting via a glob (e.g. ``.ssh/*``) is out of scope
     here: like a bare Grep directory target it follows the allow posture, and a
@@ -647,16 +645,15 @@ def match_glob(pattern: object) -> Rule | None:
         if not _literal_prefix(segment):
             return None  # opens with a wildcard -> broad search -> allow
         seg_lower = segment.lower()
+        core = seg_lower.replace("*", "")
         witness = segment.replace("*", "x").replace("?", "x")
-        bounded = "*" not in segment  # no unbounded tail -> a narrow, length-bounded targeter
         for rule in _BASENAME_RULES:
             if rule.path_re.match(witness):
                 return rule
             if rule.pattern.startswith("*"):
-                # Suffix-anchored rule: only a length-bounded glob (`secret.pe?`)
-                # is a narrow targeter; a glob keeping its own `*` (`README*`,
-                # `*.py`) is a broad search left allowed (the suffix-glob boundary).
-                if bounded and _globs_intersect(seg_lower, rule.pattern):
+                # A star can be empty, so every core match is a real glob match.
+                # The empty-prefix return above preserves the broad-glob boundary.
+                if _globs_intersect(core, rule.pattern):
                     return rule
             elif _globs_intersect(seg_lower, rule.pattern):
                 return rule

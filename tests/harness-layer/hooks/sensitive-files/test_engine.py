@@ -426,6 +426,35 @@ def test_match_glob_allows_bare_suffix_and_prefix_star_globs(eng, glob):
     assert eng.match_glob(glob) is None
 
 
+# --- Grep glob matching: trailing-star suffix targeting (CX4-1) ---------------
+
+
+@pytest.mark.parametrize(
+    "glob,expected",
+    [
+        ("secret.pe[m]*", "certs"),
+        ("secret.pem*", "certs"),
+        ("foo*bar.pem", "certs"),
+        ("state.tfstat[e]*", "cicd"),
+    ],
+)
+def test_match_glob_denies_trailing_star_suffix_targeting_globs(eng, glob, expected):
+    """CX4-1: a trailing star must not disable suffix-rule targeting detection;
+    removing stars leaves a core that is genuinely selectable because every star
+    can match empty, and the returned category must identify the covering rule."""
+    rule = eng.match_glob(glob)
+    assert rule is not None, glob
+    assert rule.category_id == expected
+
+
+@pytest.mark.parametrize("glob", ["README*", "x*"])
+def test_match_glob_allows_trailing_star_without_suffix_overlap(eng, glob):
+    """CX4-1 must preserve the locked allow boundary: star removal leaves cores
+    with no cataloged suffix overlap, so these ordinary prefix searches stay
+    allowed even though trailing stars now participate in suffix detection."""
+    assert eng.match_glob(glob) is None
+
+
 # --- Grep glob matching: over-long globs don't fail the DP open (CX3-2) --------
 #
 # `_globs_intersect` is an iterative table DP, so an over-long user glob can't
