@@ -8,6 +8,11 @@
             "type": "command",
             "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/block_attribution.py\"",
             "statusMessage": "Checking Bash command"
+          },
+          {
+            "type": "command",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/sensitive-files/bash_guard.py\"",
+            "statusMessage": "Checking Bash command for sensitive files"
           }
         ]
       }

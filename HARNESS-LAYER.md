@@ -71,6 +71,27 @@ False positives: placeholder values (`example`, `changeme`, `<…>`) are auto-sk
 Session state lives in `.claude/.security-scan/` (gitignored); the engine is
 `security-scan/_common.py`.
 
+### Sensitive File Guard (PreToolUse)
+
+Hooks under `.claude/hooks/sensitive-files/` deny agent access to secret-bearing
+files by name/path only, never by reading contents:
+
+- `file_guard.py` — `Read|Edit|Write|MultiEdit|Grep`: checks `file_path` (or Grep's
+  `path`/`glob`) against the catalog
+- `bash_guard.py` — `Bash`: scans the raw command text for a cataloged token,
+  token-boundary aware (survives `|`, `&&`, `>`, quoting, multiline commands)
+
+The catalog engine (`_common.py`) matches secret-bearing files — env files,
+SSH/auth keys, certs & private keys, cloud/package-manager/VCS credentials, CI/CD
+& IaC secrets, database credentials, credential stores, wallets, AI-tool auth —
+by basename pattern or slash-bounded path fragment, with tilde/relative/symlink
+normalization. Template files (`.env.example`, `.env.sample`, `.env.template`,
+`.env.dist`, `example.env`, `sample.env`, `template.env`) are the only allowlist.
+A match exits 2 with a three-line stderr denial (blocked path/token + category,
+redirect guidance, the standing policy line) fed back to the agent; everything
+else — including any plumbing failure — fails open with exit 0. `.codex/hooks.json`
+registers `bash_guard.py` for Codex parity; `file_guard.py` has no Codex equivalent.
+
 ### Worktree Lifecycle (WorktreeCreate / WorktreeRemove)
 
 `.claude/hooks/worktree/worktree_create.py` replaces default worktree creation: `git
@@ -103,10 +124,14 @@ worktree path only. `worktree_remove.py` removes the worktree and deletes its
 │   │   ├── session_baseline.py    # SessionStart: dirty-file baseline + HEAD
 │   │   ├── track_bash_writes.py   # Bash tracker (PostToolUse + PostToolUseFailure)
 │   │   └── stop_sweep.py          # Stop/SubagentStop sweep over the tracked set
-│   └── worktree/
-│       ├── _common.py             # trimmed helpers: note, read_payload, resolve_root, run, tail
-│       ├── worktree_create.py     # WorktreeCreate: create worktree + install deps
-│       └── worktree_remove.py     # WorktreeRemove: remove worktree + branch
+│   ├── worktree/
+│   │   ├── _common.py             # trimmed helpers: note, read_payload, resolve_root, run, tail
+│   │   ├── worktree_create.py     # WorktreeCreate: create worktree + install deps
+│   │   └── worktree_remove.py     # WorktreeRemove: remove worktree + branch
+│   └── sensitive-files/
+│       ├── _common.py             # catalog engine: rules, path/command matching, denial message
+│       ├── file_guard.py          # Read|Edit|Write|MultiEdit|Grep guard (PreToolUse)
+│       └── bash_guard.py          # Bash command-text guard (PreToolUse); registered in .codex/hooks.json too
 └── skills/
     └── meta-install/SKILL.md      # fresh-clone setup: bun install + uv sync
 tests/harness-layer/hooks/
@@ -117,7 +142,8 @@ tests/harness-layer/hooks/
 ├── destructive-guard/ # pytest suite for the destructive-guard hook
 ├── security-scan/     # engine + e2e tests for the four security-scan scripts
 ├── spec-completeness/ # pytest suite for the spec gate
-└── worktree/          # pytest suite for the worktree lifecycle hooks
+├── worktree/          # pytest suite for the worktree lifecycle hooks
+└── sensitive-files/   # engine + e2e tests for the sensitive-file guards
 eslint.config.mjs                  # ESLint flat config (React-ready)
 .prettierrc.json                   # Prettier config
 .prettierignore
