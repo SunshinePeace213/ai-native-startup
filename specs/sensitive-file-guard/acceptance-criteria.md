@@ -18,8 +18,11 @@
   payloads from tools outside the matcher set all exit 0 with no deny output.
 - **AC4** — `bash_guard.py` denies commands referencing cataloged paths (the spec
   Edge-Cases corpus: `cat .env`, `cp .env /tmp/x`, `source .env`, `grep KEY .env`,
-  `python -c "open('.env')"`, `cat $HOME/.ssh/id_rsa`, `base64 .env`) and passes
-  `cat .env.example`, `ls -la`, `git status`, and a `/.awsome/` boundary negative.
+  `python -c "open('.env')"`, `cat $HOME/.ssh/id_rsa`, `base64 .env`), denies the
+  shell-operator boundary cases (`cat .env|base64`, `cat .env&&echo done`,
+  `cat .env>copy`, and a multiline command with `cat .env` on its own line), and
+  passes `cat .env.example`, `ls -la`, `git status`, and a `/.awsome/` boundary
+  negative.
 - **AC5** — Normalization defeats path dodges in tests: tilde paths, relative/
   traversal paths, and a symlink whose realpath is a cataloged file are all denied;
   a symlink named like a template resolving to a real `.env` is denied.

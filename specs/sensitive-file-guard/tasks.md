@@ -138,8 +138,10 @@ family in `HARNESS-LAYER.md`, then validate everything.
   with the matched token, exit 2; fail-open wrapper.
 - Write `test_bash_guard.py` via `run_hook` with the spec's Edge Cases corpus:
   denies `cat .env`, `cp .env /tmp/x`, `source .env`, `grep KEY .env`,
-  `python -c "open('.env')"`, `cat $HOME/.ssh/id_rsa`, `base64 .env`; passes
-  `cat .env.example`, `ls -la`, `git status`, `/.awsome/` negative;
+  `python -c "open('.env')"`, `cat $HOME/.ssh/id_rsa`, `base64 .env`, and the
+  shell-operator cases `cat .env|base64`, `cat .env&&echo done`,
+  `cat .env>copy`, plus a multiline command with `cat .env` on its own line;
+  passes `cat .env.example`, `ls -la`, `git status`, `/.awsome/` negative;
   malformed/empty stdin fail-open.
 - Do NOT edit `_common.py`; route engine gaps through the lead to builder-engine.
 

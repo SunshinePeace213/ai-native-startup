@@ -92,8 +92,12 @@ scripts. The engine owns:
    a sensitive file is caught; a symlink named like a template that resolves to a
    real secret is caught too).
 4. **Command-text matching** — one compiled alternation regex built from the same
-   catalog: basename patterns get token boundaries (start/whitespace/quote/`/`/`=`
-   before, end/whitespace/quote/`:`/`;`/`)` after); fragments are searched directly.
+   catalog: basename patterns get token boundaries — before: start of string,
+   whitespace, quote, `/`, `=`, or any shell operator; after: end of string,
+   whitespace, quote, or any shell control/redirection delimiter (`|`, `&`, `;`,
+   `<`, `>`, `(`, `)`, `:`, `,`, backtick, and newline) — so `cat .env|base64`,
+   `cat .env&&echo done`, `cat .env>copy`, and multiline commands are all denied;
+   fragments are searched directly.
    The matched token's basename is run through the allowlist before denying, so
    `cat .env.example` passes while `cat .env` is denied. Raw-string matching (not
    shlex) follows the `block_attribution.py` precedent and catches paths inside
@@ -201,8 +205,11 @@ Use these files to complete the task:
   `path` value naming a cataloged file → deny.
 - **Bash boundary cases** — `cat .env`, `cp .env /tmp/x`, `source .env`,
   `base64 .env`, `grep KEY .env`, `python -c "open('.env')"`,
-  `cat $HOME/.ssh/id_rsa` all deny; `cat .env.example`, `ls -la`,
-  `git status` all pass. `/.awsome/file` does not match the `/.aws/` fragment.
+  `cat $HOME/.ssh/id_rsa` all deny; shell operators directly after the path deny
+  too: `cat .env|base64`, `cat .env&&echo done`, `cat .env>copy`, and a
+  multiline command with `cat .env` on its own line. `cat .env.example`,
+  `ls -la`, `git status` all pass. `/.awsome/file` does not match the `/.aws/`
+  fragment.
 - **Bash false positive** — a command merely *mentioning* a cataloged name in
   prose (e.g. `echo "create your .env"`) is denied; the message tells the agent to
   rephrase or ask the user. Accepted tradeoff (decisions.md).
