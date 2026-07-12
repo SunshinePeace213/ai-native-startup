@@ -58,7 +58,7 @@ The builder implements exactly these rules; every rule gets at least one blocked
 | shred-device | Disk Overwrite Operations | deny | `shred` targeting `/dev/*` |
 | mkfs | Format Operations | deny | any `mkfs` / `mkfs.*` invocation |
 | wipe-partition | Format Operations | deny | `wipefs`, `blkdiscard`, `sgdisk -Z`/`--zap-all` |
-| fork-bomb | Fork Bombs & Resource Exhaustion | deny | exactly two forms: (a) the classic literal `:(){ :\|:& };:` tolerant of arbitrary whitespace; (b) a function definition whose body pipes the function name into itself AND backgrounds it — regex semantics `(\w+\|:)\s*\(\s*\)\s*\{[^}]*\1\s*\|\s*\1[^}]*&[^}]*\}`. Near-miss allowed: ordinary function defs (`f(){ echo hi; }; f`) and recursion without both `\|` and `&` |
+| fork-bomb | Fork Bombs & Resource Exhaustion | deny | exactly two independent patterns — see "fork-bomb detection semantics" below the table. Near-miss allowed: ordinary function defs (`f(){ echo hi; }; f`) and recursion without both the self-pipe and the background `&` |
 | unbounded-fill | Fork Bombs & Resource Exhaustion | deny | `cat /dev/zero >`, `yes >` a file/device, `dd if=/dev/zero\|/dev/urandom` with NO `count=` bound writing anywhere but `/dev/null` |
 | memory-exhaust | Fork Bombs & Resource Exhaustion | deny | exactly two forms: (a) `tail` reading `/dev/zero` with any flag order (`tail /dev/zero`, `tail -f /dev/zero`); (b) command substitution capturing an unbounded generator — `$(cat /dev/zero)`, `$(yes)`, and backtick equivalents. Near-miss allowed: `head -c 100 /dev/zero`, `yes \| head -5` |
 | chmod-recursive-protected | Dangerous Permission Changes | deny | `chmod -R` on a protected root (`chmod -R 777 /`) |
@@ -87,6 +87,16 @@ The builder implements exactly these rules; every rule gets at least one blocked
 | git-history-rewrite | Git Security | ask | `git filter-branch`, `git filter-repo` |
 | git-remote-delete | Git Security | ask | `git push <remote> --delete <branch>`, `git push <remote> :<branch>` |
 | account-destroy | User & Account Manipulation | deny | `userdel`, `groupdel`, `passwd root`, `passwd -d`, `usermod -L root` |
+
+**fork-bomb detection semantics** (two independent patterns; the table-row pipe escaping above is markdown, these are the authoritative expressions):
+
+```text
+(a) classic colon form, whitespace-tolerant:
+    :\(\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:
+(b) generalized named form — capture the identifier alone, require self-pipe + background:
+    \b(\w+)\s*\(\s*\)\s*\{[^}]*\b\1\b\s*\|\s*\b\1\b[^}]*&[^}]*\}
+Positive fixtures (both required in tests): ":(){ :|:& };:"  and  "f(){ f | f & }; f"
+```
 
 ### Message contract (agent-readable, locked by grilling)
 
