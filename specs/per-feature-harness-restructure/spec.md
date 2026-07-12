@@ -95,7 +95,7 @@ new convention is invented.
 - **Branch:** refactor/23-per-feature-harness-restructure
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/per-feature-harness-restructure
 - **Review profile:** kb-grounded
-- **PR:** <#M — filled by /harness-layer:harness-build>
+- **PR:** #24
 
 ## Relevant Files
 
