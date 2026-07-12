@@ -19,10 +19,15 @@ writes a secret VALUE -- the guard matches names/paths, never contents.
 
 import json
 import subprocess
+import sys
 
 import pytest
 
 SCRIPT = "sensitive-files/file_guard.py"
+
+
+def _raise(*_args, **_kwargs):
+    raise RuntimeError("injected engine fault")
 
 
 def file_payload(tool_name: str, file_path) -> str:
@@ -210,6 +215,32 @@ def test_grep_no_path_or_glob_allows(run_hook):
     assert_allowed(res)
 
 
+# --- Grep: wildcard globs targeting the catalog (CX1-1) -------------------------
+
+
+@pytest.mark.parametrize("glob", [".env*", "**/.env*", "secrets.*", "id_rsa*"])
+def test_grep_wildcard_glob_targeting_catalog_denies(run_hook, glob):
+    """A wildcard glob still SELECTS cataloged files -- ripgrep opens every match
+    -- so a glob clearly targeting a cataloged basename family must deny like a
+    direct name does. The old literal-token matcher saw no literal catalog token
+    in `.env*` and let it exit 0, a straight AC2 bypass (CX1-1)."""
+    res = run_hook(SCRIPT, grep_payload(glob=glob))
+    assert res.returncode == 2
+    assert "Blocked:" in res.stderr
+    assert glob in res.stderr
+
+
+@pytest.mark.parametrize("glob", ["*.py", "**/*.md", ".env.example"])
+def test_grep_broad_or_template_glob_allows(run_hook, glob):
+    """The conservative boundary the deny cases must not cross: a broad wildcard
+    with no catalog-shaped literal segment (`*.py`, `**/*.md`) is ordinary
+    codebase search, and `.env.example` is the D3 template the guard's own denial
+    recommends -- over-blocking either would make Grep unusable or train the agent
+    to route around the guard."""
+    res = run_hook(SCRIPT, grep_payload(glob=glob))
+    assert_allowed(res)
+
+
 # --- Symlink dodge (AC5) ----------------------------------------------------------
 
 
@@ -288,3 +319,22 @@ def test_grep_non_string_path_and_glob_fail_open(run_hook):
     payload = json.dumps({"tool_name": "Grep", "tool_input": {"path": 1, "glob": 2}})
     res = run_hook(SCRIPT, payload)
     assert_allowed(res)
+
+
+def test_injected_engine_exception_fails_open(load_guard, monkeypatch, tmp_path, capsys):
+    """AC6's injected-exception clause: if the engine raises THROUGH the guard's
+    own top-level wrapper, the guard must fail OPEN (return 0) -- never 1 (which
+    would wedge the tool) or 2 (a false deny). The other fail-open tests only
+    reach the early `read_payload() is None` return; this drives a real
+    deny-shaped payload all the way to `match_path`, forces THAT to raise, and
+    pins `run()`'s try/except. A regression dropping it would exit 1 here yet
+    leave every subprocess test green (they never make the engine raise)."""
+    guard, engine = load_guard(SCRIPT)
+    monkeypatch.setattr(engine, "match_path", _raise)
+    payload = tmp_path / "payload.json"
+    payload.write_text(file_payload("Read", "/x/.env"))  # filename only, no secret value
+    with payload.open() as stdin:  # a real file: read_payload's select() needs a fileno
+        monkeypatch.setattr(sys, "stdin", stdin)
+        rc = guard.run()
+    assert rc == 0
+    assert "unexpected error" in capsys.readouterr().err

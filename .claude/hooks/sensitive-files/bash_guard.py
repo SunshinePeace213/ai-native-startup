@@ -4,7 +4,9 @@
 # dependencies = []
 # ///
 """PreToolUse guard: deny Bash commands that reference a cataloged sensitive
-file/path (read-side complement to ``file_guard.py``; see spec.md).
+file/path. This is the Bash-command surface of the same sensitive-files catalog
+``file_guard.py`` enforces on the file tools -- both block read AND write/tamper
+access; scanning secret content the agent writes lives in ``security-scan/``.
 
 Reads the hook payload from stdin and, only when ``tool_name == "Bash"`` and
 ``tool_input.command`` is a non-empty string, hands the raw command text to
@@ -37,12 +39,18 @@ def main() -> int:
     return 2
 
 
-if __name__ == "__main__":
-    # Fail-open on our own bugs: unexpected errors note to stderr and exit 0
-    # (same posture as block_attribution.py). Only a confirmed catalog match
-    # exits 2.
+def run() -> int:
+    """Fail-open wrapper (AC6): unexpected errors note to stderr and return 0
+    (same posture as block_attribution.py); only a confirmed catalog match
+    returns 2. A named entry (not just the `__main__` block) so tests can drive
+    it in-process and prove an injected engine exception exits 0 -- not 1 (which
+    would wedge the tool) or 2 (a false deny)."""
     try:
-        sys.exit(main())
+        return main()
     except Exception as exc:  # noqa: BLE001
         _common.note(f"unexpected error: {exc}")
-        sys.exit(0)
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(run())

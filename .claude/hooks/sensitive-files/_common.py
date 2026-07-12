@@ -91,9 +91,11 @@ def resolve_root() -> Path:
 
 # --- Template allowlist (decisions.md D3) -------------------------------------
 #
-# The ONLY escape hatch. These basenames always pass, even though the ``.env.*``
-# / ``*.env`` catalog patterns would otherwise match them. No env-var bypass and
-# no project allowlist file exist by design.
+# The ONLY escape hatch, and it exempts BASENAME rules only. A template name
+# still DENIES when it sits inside a cataloged directory (a path-fragment match,
+# e.g. ~/.aws/.env.example) or when its realpath is a live secret (a
+# template-named symlink to a real .env). No env-var bypass and no project
+# allowlist file exist by design.
 
 TEMPLATE_ALLOWLIST: tuple[str, ...] = (
     ".env.example",
@@ -125,6 +127,12 @@ _BOUNDARY = r"""\s'"|&;:,<>()`"""
 _LEFT = rf"(?:^|(?<=[{_BOUNDARY}/=]))"
 _RIGHT = rf"(?=[{_BOUNDARY}]|$)"
 _NON_BOUNDARY = rf"[^{_BOUNDARY}/]"  # what an fnmatch '*' may span inside one token
+# Left boundary for the RELATIVE form of a path fragment in command text: a
+# command-token start (start-of-string / whitespace / quote / '=' / shell
+# operator) but NOT a preceding '/'. A slash before the fragment is the absolute
+# case, kept in the fragment's own leading-'/' branch, so `data.aws/file` (token
+# starting `data.`) never matches the `/.aws/` fragment.
+_LEFT_REL = rf"(?:^|(?<=[{_BOUNDARY}=]))"
 
 
 def _fragment_regex(fragment: str) -> str:
@@ -139,6 +147,28 @@ def _fragment_regex(fragment: str) -> str:
     if fragment.endswith("/"):
         return core
     return core + rf"(?=/|$|[{_BOUNDARY}])"
+
+
+def _cmd_fragment_regex(fragment: str) -> str:
+    """Command-text form of a path fragment.
+
+    Matches the absolute form exactly as ``_fragment_regex`` does AND -- for home
+    dot-directory fragments (those starting with ``/.``) -- the token-start
+    relative form, so an ordinary relative reference like ``cat .aws/credentials``
+    is denied just like ``/home/u/.aws/credentials`` (CX1-2). The relative left
+    boundary is a command-token start, not a path ``/``, so ``data.aws/file`` is
+    left in the absolute branch and never matches; the fragment's own trailing
+    ``/`` (or the right lookahead) preserves the ``/.awsome/`` negative. System
+    fragments that do NOT start with ``/.`` (``/etc/shadow``, ``/cookies``,
+    ``/letsencrypt/live/``) keep the absolute-only form: their relative spellings
+    are not meaningful sensitive paths and would only add false positives.
+    """
+    right = "" if fragment.endswith("/") else rf"(?=/|$|[{_BOUNDARY}])"
+    absolute = re.escape(fragment) + right
+    if fragment.startswith("/."):
+        relative = _LEFT_REL + re.escape(fragment[1:]) + right
+        return f"(?:{absolute}|{relative})"
+    return absolute
 
 
 def _cmd_basename_regex(pattern: str) -> str:
@@ -167,8 +197,10 @@ class Rule:
 
     ``guidance`` is the per-category redirect line for the denial message
     (the ``env`` category overrides it with a live template lookup).
-    ``path_re`` is the compiled matcher: fnmatch-on-basename for basenames,
-    a slash-bounded substring for fragments.
+    ``path_re`` is the compiled matcher against a normalized absolute PATH:
+    fnmatch-on-basename for basenames, a slash-bounded substring for fragments.
+    ``cmd_re`` (fragments only) is the COMMAND-TEXT matcher -- it additionally
+    accepts the token-start relative form (``.aws/`` as well as ``/.aws/``).
     """
 
     category_id: str
@@ -177,6 +209,7 @@ class Rule:
     kind: str
     pattern: str
     path_re: re.Pattern
+    cmd_re: re.Pattern | None = None
 
 
 # Each entry: (id, label, guidance, [basename patterns], [path fragments]).
@@ -338,7 +371,8 @@ def _build_rules() -> list[Rule]:
             rules.append(Rule(category_id, label, guidance, "basename", pattern, path_re))
         for pattern in fragments:
             path_re = re.compile(_fragment_regex(pattern), re.IGNORECASE)
-            rules.append(Rule(category_id, label, guidance, "fragment", pattern, path_re))
+            cmd_re = re.compile(_cmd_fragment_regex(pattern), re.IGNORECASE)
+            rules.append(Rule(category_id, label, guidance, "fragment", pattern, path_re, cmd_re))
     return rules
 
 
@@ -357,7 +391,7 @@ _BASENAME_RULES.sort(key=lambda r: "*" in r.pattern or "?" in r.pattern)
 # The two named groups (bn / fr) tell the two branches apart; the exact rule is
 # then recovered by re-testing the matched token against the per-kind rule list.
 _bn_alt = "|".join(_cmd_basename_regex(r.pattern) for r in _BASENAME_RULES)
-_fr_alt = "|".join(_fragment_regex(r.pattern) for r in _FRAGMENT_RULES)
+_fr_alt = "|".join(_cmd_fragment_regex(r.pattern) for r in _FRAGMENT_RULES)
 _COMMAND_REGEX = re.compile(
     rf"{_LEFT}(?P<bn>{_bn_alt}){_RIGHT}|(?P<fr>{_fr_alt})",
     re.IGNORECASE,
@@ -430,8 +464,10 @@ def _basename_rule_for(token: str) -> Rule | None:
 
 
 def _fragment_rule_for(token: str) -> Rule | None:
+    # cmd_re (not path_re) so the relative token form (`.aws/`) re-identifies its
+    # rule as well as the absolute form (`/.aws/`) does.
     for rule in _FRAGMENT_RULES:
-        if rule.path_re.search(token):
+        if rule.cmd_re.search(token):
             return rule
     return None
 
@@ -460,6 +496,68 @@ def match_command_text(command: object) -> tuple[str, Rule] | None:
                 return token, rule
     except Exception as exc:  # noqa: BLE001
         note(f"match_command_text failed ({exc}); allowing (fail-open)")
+        return None
+    return None
+
+
+# --- Grep glob matching -------------------------------------------------------
+
+
+def _glob_basename(pattern: str) -> str:
+    """Last path segment of a Grep glob (``**/.env*`` -> ``.env*``)."""
+    return pattern.rsplit("/", 1)[-1]
+
+
+def _literal_prefix(segment: str) -> str:
+    """Leading run of literal chars before the first fnmatch metacharacter.
+
+    ``.env*`` -> ``.env``; ``secrets.*`` -> ``secrets.``; a segment that opens
+    with a wildcard (``*.py``, ``*``, ``**``) has an EMPTY literal prefix.
+    """
+    out: list[str] = []
+    for ch in segment:
+        if ch in "*?[":
+            break
+        out.append(ch)
+    return "".join(out)
+
+
+def match_glob(pattern: object) -> Rule | None:
+    """The catalog rule a Grep ``glob`` can select a cataloged file for, or None.
+
+    Conservative by design (CX1-1): a ``glob`` is a selection PATTERN, not a path,
+    so ``match_command_text``'s literal-token grammar cannot see that ``.env*`` or
+    ``secrets.*`` select cataloged files. This matcher denies a glob only when it
+    clearly targets a cataloged BASENAME family. A glob whose basename segment
+    opens with a wildcard -- ``*.py``, ``**/*.md``, ``*``, ``src/**`` -- has no
+    catalog-shaped literal segment and always passes, matching the spec's "Grep
+    over a directory is allowed" posture (A5); a glob that is exactly a D3
+    template name (``.env.example``) passes too. Otherwise the glob's basename and
+    each catalog basename rule are tested for overlap in both directions -- a
+    concrete instance of the glob is itself a cataloged name, or the glob selects
+    a canonical instance of a rule -- so ``.env*``, ``**/.env*``, ``secrets.*``,
+    and ``id_rsa*`` are denied. Never raises: weird input yields None (fail-open).
+
+    Directory-fragment targeting via a glob (e.g. ``.ssh/*``) is out of scope
+    here: like a bare Grep directory target it follows the allow posture, and a
+    Grep ``path`` naming such a file still routes through ``match_path``.
+    """
+    if not isinstance(pattern, str) or not pattern.strip():
+        return None
+    try:
+        segment = _glob_basename(pattern.strip())
+        if is_allowlisted(segment):
+            return None
+        if not _literal_prefix(segment):
+            return None  # broad wildcard, no catalog-shaped literal -> allow
+        seg_lower = segment.lower()
+        witness = segment.replace("*", "x").replace("?", "x")
+        for rule in _BASENAME_RULES:
+            sample = rule.pattern.replace("*", "x").replace("?", "x")
+            if rule.path_re.match(witness) or fnmatch.fnmatchcase(sample.lower(), seg_lower):
+                return rule
+    except Exception as exc:  # noqa: BLE001
+        note(f"match_glob failed for {pattern!r} ({exc}); allowing (fail-open)")
         return None
     return None
 

@@ -255,6 +255,74 @@ def test_command_allowlist_token_passes_but_a_real_secret_still_denies(eng):
     assert token == ".env"
 
 
+def test_command_text_matches_relative_dotdir_fragment(eng):
+    """A plain relative path is not obfuscation (CX1-2): a fragment-only rule
+    (`/.aws/`, `/.docker/config.json`) must match its token-start relative form,
+    so `cat .aws/credentials` denies like the absolute path does."""
+    token, rule = eng.match_command_text("cat .aws/credentials")
+    assert token == ".aws/"
+    assert rule.category_id == "cloud"
+    assert eng.match_command_text("cat .docker/config.json")[1].category_id == "cloud"
+
+
+def test_command_text_relative_fragment_anchors_to_token_start(eng):
+    """The relative branch must anchor to a command-token start, or it would
+    false-positive on any word ending in the fragment: `data.aws/file` (token
+    begins `data.`) must NOT match `/.aws/`, mirroring the `/.awsome/` negative."""
+    assert eng.match_command_text("cat data.aws/file") is None
+
+
+# --- Grep glob matching (CX1-1) -----------------------------------------------
+
+GLOB_DENY = [".env*", "**/.env*", "secrets.*", "id_rsa*", "id_rsa.pub"]
+GLOB_ALLOW = [
+    "*.py",
+    "**/*.md",
+    "*",
+    "src/**",
+    ".env.example",
+    "README*",
+    "package.json",
+    "*.tfstate",  # a bare `*.<ext>` stays allowed even for a cataloged extension
+]
+
+
+@pytest.mark.parametrize("glob", GLOB_DENY)
+def test_match_glob_denies_catalog_targeting_globs(eng, glob):
+    """A `glob` is a selection pattern, not a path: `match_command_text`'s
+    literal-token grammar can't see that `.env*` selects `.env`, so these
+    exited 0 before (AC2 bypass). A glob clearly targeting a cataloged basename
+    family -- via a trailing-wildcard prefix (`.env*`), a suffix wildcard on a
+    literal stem (`secrets.*`), or a literal cataloged name (`id_rsa.pub`) --
+    must match."""
+    assert eng.match_glob(glob) is not None
+
+
+@pytest.mark.parametrize("glob", GLOB_ALLOW)
+def test_match_glob_allows_broad_and_template_globs(eng, glob):
+    """The conservative boundary: a glob whose basename opens with a wildcard has
+    no catalog-shaped literal segment (`*.py`, `**/*.md`, `*`, `src/**`, and even
+    `*.tfstate` on a cataloged extension) and is ordinary search; a literal
+    non-cataloged name (`README*`, `package.json`) and the D3 template
+    `.env.example` are safe. Denying any of these would make Grep unusable or
+    push the agent around the guard."""
+    assert eng.match_glob(glob) is None
+
+
+def test_match_glob_reports_the_targeted_category(eng):
+    """The denial routes on the returned rule, so a `.env`-family glob must carry
+    the env category (not merely "some match")."""
+    assert eng.match_glob(".env*").category_id == "env"
+    assert eng.match_glob("id_rsa*").category_id == "ssh"
+
+
+@pytest.mark.parametrize("value", [None, "", "   ", 123, [".env*"], {}])
+def test_match_glob_never_raises_on_weird_input(eng, value):
+    """Same fail-open contract as the other matchers: non-string or empty input
+    returns None, never raises."""
+    assert eng.match_glob(value) is None
+
+
 # --- Denial message builder ---------------------------------------------------
 
 

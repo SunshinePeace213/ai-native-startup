@@ -15,8 +15,15 @@ filenames -- the guard matches command text, never file contents.
 """
 
 import json
+import sys
+
+import pytest
 
 SCRIPT = "sensitive-files/bash_guard.py"
+
+
+def _raise(*_args, **_kwargs):
+    raise RuntimeError("injected engine fault")
 
 
 def bash_payload(command: str) -> str:
@@ -123,6 +130,37 @@ def test_denies_multiline_command_with_env_on_its_own_line(run_hook):
     assert_blocked(proc, ".env", "Environment files")
 
 
+# --- Deny: relative references to fragment-only catalog rules (CX1-2) --------
+
+
+@pytest.mark.parametrize(
+    "command,token,label",
+    [
+        ("cat .aws/credentials", ".aws/", "Cloud provider credentials"),
+        ("cat .docker/config.json", ".docker/config.json", "Cloud provider credentials"),
+        ("grep x .ssh/id_ed25519", ".ssh/", "SSH & auth keys"),
+    ],
+)
+def test_denies_relative_fragment_reference(run_hook, command, token, label):
+    """A plain relative path is not obfuscation (spec Non-Goals): `cat
+    .aws/credentials` reads the exact same file as `/home/u/.aws/credentials`.
+    These entries have no sensitive basename rule and depend on the path
+    fragment, which the old matcher searched only in leading-slash form -- so
+    they exited 0, an AC4 catalog-coverage gap (CX1-2). The relative token-start
+    form must deny too."""
+    proc = run_hook(SCRIPT, bash_payload(command))
+    assert_blocked(proc, token, label)
+
+
+def test_allows_relative_lookalike_not_at_token_start(run_hook):
+    """The relative fragment anchors to a command-token start: in `data.aws/file`
+    the token begins `data.`, not `.aws/`, so it must NOT match the `/.aws/`
+    fragment. This is the mirror of the `/.awsome/` boundary negative, guarding
+    the new relative branch against a whole class of false positives."""
+    proc = run_hook(SCRIPT, bash_payload("cat data.aws/file"))
+    assert_allowed(proc)
+
+
 # --- Deny: accepted false-positive tradeoff (A6) -----------------------------
 
 
@@ -220,3 +258,22 @@ def test_allows_non_dict_tool_input(run_hook):
     payload = json.dumps({"tool_name": "Bash", "tool_input": "not-a-dict"})
     proc = run_hook(SCRIPT, payload)
     assert proc.returncode == 0
+
+
+def test_injected_engine_exception_fails_open(load_guard, monkeypatch, tmp_path, capsys):
+    """AC6's injected-exception clause: if the engine raises THROUGH the guard's
+    own top-level wrapper, the guard must fail OPEN (return 0) -- never 1 (which
+    would wedge the Bash call) or 2 (a false deny). The other fail-open tests
+    only reach the early return; this drives a real deny-shaped payload all the
+    way to `match_command_text`, forces THAT to raise, and pins `run()`'s
+    try/except. A regression dropping it would exit 1 here yet leave every
+    subprocess test green (they never make the engine raise)."""
+    guard, engine = load_guard(SCRIPT)
+    monkeypatch.setattr(engine, "match_command_text", _raise)
+    payload = tmp_path / "payload.json"
+    payload.write_text(bash_payload("cat .env"))  # filename only, no secret value
+    with payload.open() as stdin:  # a real file: read_payload's select() needs a fileno
+        monkeypatch.setattr(sys, "stdin", stdin)
+        rc = guard.run()
+    assert rc == 0
+    assert "unexpected error" in capsys.readouterr().err
