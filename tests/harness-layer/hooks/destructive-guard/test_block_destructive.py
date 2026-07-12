@@ -379,6 +379,36 @@ DENY_CASES = [
         "System File Overwriting",
         "truncate /etc/passwd",
     ),
+    # --- R3-4: a target immediately preceded by a substitution CLOSER (`}` from
+    # `${X}`, `)` from `$(...)`, or a backtick) is still a real argument boundary --
+    # if the substitution expands to empty, the command resolves to exactly the
+    # protected root/file, so the conservative deny is correct (the R3-3 lookbehind
+    # allowed only start/whitespace/=/redirect/pipe/separator and missed these,
+    # letting `truncate ${X}/etc/passwd` etc. bypass entirely).
+    (
+        "subst-closer-truncate-dollar-brace",
+        "truncate-critical-file",
+        "System File Overwriting",
+        "truncate ${X}/etc/passwd",
+    ),
+    (
+        "subst-closer-rm-r-cmdsub-etc",
+        "rm-recursive-protected",
+        "Destructive File Operations",
+        "rm -r $(true)/etc",
+    ),
+    (
+        "subst-closer-chmod-cmdsub-etc",
+        "chmod-recursive-protected",
+        "Dangerous Permission Changes",
+        "chmod -R 777 $(true)/etc",
+    ),
+    (
+        "subst-closer-truncate-backtick",
+        "truncate-critical-file",
+        "System File Overwriting",
+        "truncate `true`/etc/passwd",
+    ),
 ]
 
 

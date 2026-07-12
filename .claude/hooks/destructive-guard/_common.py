@@ -137,27 +137,29 @@ _OB = r"(?<!\S)"
 # an optional trailing "/" or "/*"), and the bare filesystem root "/" (whose
 # "/" + trailing-slash + "/*" forms collapse to "/" or "/*"). Each branch
 # carries its own leading lookbehind -- the root must begin at a real argument
-# boundary (start, whitespace, "=", a redirect, or a pipe/separator), so a glued
-# prefix like "./etc", "/home/x/etc" or "@/etc" is NOT the protected root -- and a
-# trailing lookahead (reject "/etc/nginx", "~/projects", "$HOMEDIR"). Syntactic
-# quotes are already normalized away before matching (see _strip_quotes).
+# boundary (start, whitespace, "=", a redirect, a pipe/separator, or a substitution
+# closer (")" "}" backtick)), so a glued prefix like "./etc", "/home/x/etc" or
+# "@/etc" is NOT the protected root -- and a trailing lookahead (reject
+# "/etc/nginx", "~/projects", "$HOMEDIR"). Syntactic quotes are already
+# normalized away before matching (see _strip_quotes).
 _PROTECTED_ROOT = (
     r"(?:"
-    r"(?<![^\s=<>|&;])(?:/mnt/[A-Za-z]|/(?:" + "|".join(_NAMED_ROOTS) + r")"
+    r"(?<![^\s=<>|&;)}`])(?:/mnt/[A-Za-z]|/(?:" + "|".join(_NAMED_ROOTS) + r")"
     r"|~|\$\{HOME\}|\$HOME)(?:/\*|/)?(?![\w*./-])"
-    r"|(?<![^\s=<>|&;])/\*?(?![\w*./-])"
+    r"|(?<![^\s=<>|&;)}`])/\*?(?![\w*./-])"
     r")"
 )
 
 # A critical-file TARGET. Fixed names plus the sudoers.d/cron/boot wildcards. A
-# leading (?<![^\s=<>|&;]) requires the path to begin at a real argument boundary
-# (start, whitespace, "=", a redirect, or a pipe/separator), so a glued prefix
-# like `x/etc/passwd`, `./etc/hosts` or `@/etc/passwd` is NOT the real file and
-# falls through. Each FIXED literal ends in (?![\w.-]) so a suffix like ".bak"
-# does NOT match (`/etc/passwd.bak` is not the real file); the intentional
-# cron*/sudoers.d/boot wildcards are left open so they still match their sub-paths.
+# leading (?<![^\s=<>|&;)}`]) requires the path to begin at a real argument boundary
+# (start, whitespace, "=", a redirect, a pipe/separator, or a substitution closer
+# (")" "}" backtick)), so a glued prefix like `x/etc/passwd`, `./etc/hosts` or
+# `@/etc/passwd` is NOT the real file and falls through. Each FIXED literal ends
+# in (?![\w.-]) so a suffix like ".bak" does NOT match (`/etc/passwd.bak` is not
+# the real file); the intentional cron*/sudoers.d/boot wildcards are left open
+# so they still match their sub-paths.
 _CRITICAL_FILE = (
-    r"(?<![^\s=<>|&;])(?:"
+    r"(?<![^\s=<>|&;)}`])(?:"
     r"/etc/(?:"
     r"(?:passwd|shadow|group|fstab|hosts|ssh/sshd_config)(?![\w.-])"
     r"|sudoers(?:\.d(?:/[^\s;&|]+)?)?(?![\w.-])"

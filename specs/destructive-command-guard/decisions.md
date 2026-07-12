@@ -44,6 +44,7 @@ These are direct consequences of the "no shell-AST parsing / high-precision rege
 
 - **Quote normalization is quote-state-aware, not a full shell parser.** A single left-to-right pass drops syntactic single/double quotes, keeps an opposite-type quote as a literal, and neutralizes redirect/pipe/separator operators (`<>|&;`) that appear *inside* quotes; command substitution (`$(…)`, backticks) stays active inside double quotes. This catches the realistic quoted-evasion forms (`rm "-rf"`, `rm -'r'f`, `mv /"etc"`, `dd of=/dev/"sda"`) while leaving benign quoted literals alone. Backslash escaping (`rm -rf\ x`) and nested command substitution are out of scope.
 - **`mv <src> /dev/null` followed by a shell redirection or a space-comment** (`mv f /dev/null 2>err`, `mv f /dev/null </in`, `mv f /dev/null # x`) is a known false negative: the `/dev/null` destination is anchored to the end of its command segment to keep the matcher linear-time (a prior redirect-aware tail caused catastrophic backtracking that could hang the hook). Plain `mv <src> /dev/null` is still denied; the redirect-suffixed forms are exotic and out of scope.
+- **A path immediately preceded by a substitution closer** (`${...}`, `$(...)`, backticks) is treated as beginning at an argument boundary and matched conservatively — so `$(cmd)/etc/passwd` is denied even when the substitution is non-empty (a deliberate false positive in the safe direction, matching the empty-expansion danger case).
 
 ## Open Questions / Out of Scope
 
