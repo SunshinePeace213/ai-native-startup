@@ -13,7 +13,7 @@ import json
 import os
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 def edit_payload(path) -> str:

@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 MODULE_PATH = REPO_ROOT / ".claude" / "hooks" / "security-scan" / "_common.py"
 _spec = importlib.util.spec_from_file_location("security_scan_common", MODULE_PATH)
 sec = importlib.util.module_from_spec(_spec)
