@@ -18,6 +18,7 @@ When writing test cases or running Python tests, use the installed pytest plugin
 - **New tests must be parallel-safe**: isolate all state per test (`tmp_path`, `monkeypatch`); never rely on test order, shared globals, or fixed paths/ports
 - **UI**: sugar theme lives in `pytest-sugar.conf` (repo root, loaded from cwd); `-p no:sugar` for plain output; the live bar only renders on a TTY — non-TTY runs (agents, CI) fall back to plain dots, which is correct for log parsing
 - **No flake-retry plugins**: a failing test fails the run — fix it, don't auto-rerun it
+- **Hook tests**: follow [HOOK-TESTING.md](./HOOK-TESTING.md) — one shared launcher, wiring matrix, fail-open contracts
 
 ## Harness Development
 

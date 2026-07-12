@@ -23,7 +23,11 @@ def wt_path(root, name):
 def test_kb_payload_shape_creates_worktree_and_branch(wt_repo, run_hook):
     """The documented shape (worktreeName) must yield a worktree on branch
     worktree-<name>, with stdout carrying the absolute path and nothing else."""
-    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": "alpha"}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": "alpha"}),
+        env_overrides=wt_repo.overrides,
+    )
     worktree = wt_path(wt_repo.root, "alpha")
     assert proc.returncode == 0
     assert proc.stdout == f"{worktree}\n"  # the hard contract: one line, path only
@@ -36,7 +40,9 @@ def test_kb_payload_shape_creates_worktree_and_branch(wt_repo, run_hook):
 def test_reference_payload_shape_is_also_accepted(wt_repo, run_hook):
     """The reference implementation sends `name`; until a live payload settles
     the question, the hook must work with either field."""
-    proc = run_hook("worktree_create.py", json.dumps({"name": "beta"}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_create.py", json.dumps({"name": "beta"}), env_overrides=wt_repo.overrides
+    )
     worktree = wt_path(wt_repo.root, "beta")
     assert proc.returncode == 0
     assert proc.stdout == f"{worktree}\n"
@@ -47,7 +53,11 @@ def test_deps_are_installed_inside_the_new_worktree(wt_repo, run_hook):
     """The whole point of owning creation: bun install + uv sync must run with
     the NEW worktree as cwd, not the main checkout, or format hooks stay dead
     exactly where builds happen."""
-    run_hook("worktree_create.py", json.dumps({"worktreeName": "deps"}), wt_repo.env)
+    run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": "deps"}),
+        env_overrides=wt_repo.overrides,
+    )
     worktree = wt_path(wt_repo.root, "deps")
     log = wt_repo.stub_log.read_text().splitlines()
     assert f"bun install {worktree}" in log
@@ -59,7 +69,11 @@ def test_install_failure_still_prints_the_path(wt_repo, run_hook):
     skip with a note), never to a failed worktree launch: the path still goes
     to stdout and the failure to stderr."""
     wt_repo.fail_installs()
-    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": "gamma"}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": "gamma"}),
+        env_overrides=wt_repo.overrides,
+    )
     worktree = wt_path(wt_repo.root, "gamma")
     assert proc.returncode == 0
     assert proc.stdout == f"{worktree}\n"
@@ -70,7 +84,9 @@ def test_install_failure_still_prints_the_path(wt_repo, run_hook):
 def test_payload_without_a_name_fails_open(wt_repo, run_hook):
     """Neither worktreeName nor name: nothing to create, exit 0 with a note
     naming the fields so a payload-shape drift is diagnosable, no stdout."""
-    proc = run_hook("worktree_create.py", json.dumps({"foo": "x"}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_create.py", json.dumps({"foo": "x"}), env_overrides=wt_repo.overrides
+    )
     assert proc.returncode == 0
     assert proc.stdout == ""
     assert "worktreeName" in proc.stderr
@@ -87,7 +103,11 @@ def test_existing_worktree_branch_is_reused(wt_repo, run_hook):
     wt_repo.git("add", ".")
     wt_repo.git("commit", "-m", "advance HEAD")
 
-    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": "reuse"}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": "reuse"}),
+        env_overrides=wt_repo.overrides,
+    )
     worktree = wt_path(wt_repo.root, "reuse")
     assert proc.returncode == 0
     assert proc.stdout == f"{worktree}\n"
@@ -114,8 +134,10 @@ def test_new_branch_bases_on_origin_default_not_local_head(wt_repo, run_hook):
     wt_repo.git("commit", "-m", "local ahead", cwd=clone)
     local_sha = wt_repo.git("rev-parse", "HEAD", cwd=clone).stdout.strip()
 
-    env = {**wt_repo.env, "CLAUDE_PROJECT_DIR": str(clone)}
-    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": "fresh"}), env)
+    env = {**wt_repo.overrides, "CLAUDE_PROJECT_DIR": str(clone)}
+    proc = run_hook(
+        "worktree/worktree_create.py", json.dumps({"worktreeName": "fresh"}), env_overrides=env
+    )
     worktree = wt_path(clone, "fresh")
     assert proc.returncode == 0
     assert proc.stdout == f"{worktree}\n"
@@ -129,7 +151,11 @@ def test_path_shaped_names_are_rejected(wt_repo, run_hook, bad_name):
     """A worktree name is a NAME, not a path: absolute values discard the
     .claude/worktrees prefix entirely and traversal segments escape it, so
     every separator- or dot-shaped value must be refused up front."""
-    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": bad_name}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": bad_name}),
+        env_overrides=wt_repo.overrides,
+    )
     assert proc.returncode == 0
     assert proc.stdout == ""
     assert "invalid worktree name" in proc.stderr
@@ -143,7 +169,11 @@ def test_worktreeinclude_copies_gitignored_files(wt_repo, run_hook):
     (wt_repo.root / ".gitignore").write_text(".env\n")
     (wt_repo.root / ".env").write_text("SECRET=1\n")
     (wt_repo.root / ".worktreeinclude").write_text("# env files\n.env\n")
-    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": "inc"}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": "inc"}),
+        env_overrides=wt_repo.overrides,
+    )
     worktree = wt_path(wt_repo.root, "inc")
     assert proc.returncode == 0
     assert proc.stdout == f"{worktree}\n"  # the copy step must not pollute stdout
@@ -159,7 +189,11 @@ def test_worktreeinclude_never_copies_tracked_files(wt_repo, run_hook):
     wt_repo.git("commit", "-m", "track settings")
     (wt_repo.root / "settings.txt").write_text("uncommitted local edit\n")
     (wt_repo.root / ".worktreeinclude").write_text("settings.txt\n")
-    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": "tracked"}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": "tracked"}),
+        env_overrides=wt_repo.overrides,
+    )
     worktree = wt_path(wt_repo.root, "tracked")
     assert proc.returncode == 0
     assert (worktree / "settings.txt").read_text() == "committed\n"
@@ -168,7 +202,11 @@ def test_worktreeinclude_never_copies_tracked_files(wt_repo, run_hook):
 def test_absent_worktreeinclude_is_a_noop(wt_repo, run_hook):
     """No .worktreeinclude, no copy step, no complaints -- the base contract
     is unchanged."""
-    proc = run_hook("worktree_create.py", json.dumps({"worktreeName": "plain"}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": "plain"}),
+        env_overrides=wt_repo.overrides,
+    )
     worktree = wt_path(wt_repo.root, "plain")
     assert proc.returncode == 0
     assert proc.stdout == f"{worktree}\n"

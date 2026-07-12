@@ -1,9 +1,11 @@
-"""Worktree feature fixtures: hook_dir plus the hermetic wt_repo sandbox.
+"""Worktree feature fixtures: the hermetic wt_repo sandbox.
 
-The worktree tests get a temp git repo with one commit (host git config shut
-out via GIT_CONFIG_GLOBAL/SYSTEM) and stub ``bun``/``uv`` executables first on
-PATH that log their invocation instead of installing anything -- fast,
-offline, and observable.
+The worktree tests get a temp git repo with one commit and stub ``bun``/``uv``
+executables first on PATH that log their invocation instead of installing
+anything -- fast, offline, and observable. ``wt_repo.overrides`` is the env
+overlay to pass to ``run_hook`` (the launcher's base env already shuts out
+the host git config); ``wt_repo.env`` is the full environment for the
+fixture's own direct git calls.
 """
 
 import os
@@ -13,17 +15,10 @@ from types import SimpleNamespace
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
-
 STUB_TEMPLATE = """#!/bin/sh
 printf '%s %s %s\\n' "{tool}" "$*" "$PWD" >> "{log}"
 exit {code}
 """
-
-
-@pytest.fixture
-def hook_dir():
-    return REPO_ROOT / ".claude" / "hooks" / "worktree"
 
 
 def _write_stubs(stub_dir: Path, log: Path, code: int = 0) -> None:
@@ -44,7 +39,8 @@ def _git(env: dict, cwd: Path, check: bool, *args: str) -> subprocess.CompletedP
 def wt_repo(tmp_path):
     """Temp git repo with one commit, hermetic git env, stub bun/uv on PATH.
 
-    Exposes: .root, .env, .tmp, .stub_log, .git(*args, cwd=root, check=True),
+    Exposes: .root, .overrides (env overlay for run_hook), .env (full env for
+    direct git calls), .tmp, .stub_log, .git(*args, cwd=root, check=True),
     and .fail_installs() to make the bun/uv stubs exit non-zero.
     """
     stub_dir = tmp_path / "stub-bin"
@@ -54,19 +50,23 @@ def wt_repo(tmp_path):
 
     root = tmp_path / "repo"
     root.mkdir()
-    env = {
-        **os.environ,
+    overrides = {
         "PATH": f"{stub_dir}{os.pathsep}{os.environ.get('PATH', '')}",
         "CLAUDE_PROJECT_DIR": str(root),
-        "GIT_CONFIG_GLOBAL": os.devnull,
-        "GIT_CONFIG_SYSTEM": os.devnull,
         "GIT_AUTHOR_NAME": "Test",
         "GIT_AUTHOR_EMAIL": "test@example.com",
         "GIT_COMMITTER_NAME": "Test",
         "GIT_COMMITTER_EMAIL": "test@example.com",
     }
+    env = {
+        **os.environ,
+        **overrides,
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_SYSTEM": os.devnull,
+    }
     repo = SimpleNamespace(
         root=root,
+        overrides=overrides,
         env=env,
         tmp=tmp_path,
         stub_log=stub_log,

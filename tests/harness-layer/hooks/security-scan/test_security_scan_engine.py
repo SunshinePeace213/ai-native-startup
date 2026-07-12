@@ -5,8 +5,8 @@ negative per rule), vuln rules are code-shape warnings (a positive AND a negativ
 per rule), suppression works via pragma and every placeholder-heuristic class,
 and the guards + session-state helpers fail open exactly as the hooks require.
 
-The engine module is loaded under a unique name (`security_scan_common`) via
-importlib -- NOT `import _common` -- so it can never collide in `sys.modules`
+The engine module is loaded through the shared ``load_hook_module`` fixture (as
+``sec``) -- NOT `import _common` -- so it can never collide in `sys.modules`
 with the auto-format hooks' own `_common` when both suites run under `-n auto`.
 
 CRITICAL: no committed line here may itself match a secret rule (the hook family
@@ -16,24 +16,22 @@ never contains a matchable literal.
 """
 
 import concurrent.futures
-import importlib.util
 import os
 import time
 from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
-MODULE_PATH = REPO_ROOT / ".claude" / "hooks" / "security-scan" / "_common.py"
-_spec = importlib.util.spec_from_file_location("security_scan_common", MODULE_PATH)
-sec = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(sec)
-
 Q = '"'  # a double quote, so no fixture writes a bare quoted literal in source
 
 
+@pytest.fixture(scope="module")
+def sec(load_hook_module):
+    return load_hook_module("security-scan/_common.py")
+
+
 @pytest.fixture
-def scan(tmp_path):
+def scan(tmp_path, sec):
     """Write ``text`` to a real file under an isolated root and return its findings."""
 
     def _scan(text: str, name: str = "sample.py", root: Path | None = None):
@@ -283,14 +281,14 @@ def test_placeholder_substring_embedded_in_real_secret_not_suppressed(scan):
 # --- Guards -------------------------------------------------------------------
 
 
-def test_binary_file_is_skipped(tmp_path):
+def test_binary_file_is_skipped(tmp_path, sec):
     target = tmp_path / "blob.bin"
     secret = (kv("x", "AKIA" + "IOSFODNN7REALKEY")).encode()
     target.write_bytes(secret + b"\x00\x01\x02binarydata")
     assert sec.scan_file(target, tmp_path) == []
 
 
-def test_vendored_dir_is_skipped(tmp_path):
+def test_vendored_dir_is_skipped(tmp_path, sec):
     for vendored in ("node_modules", ".venv", "dist"):
         target = tmp_path / vendored / "pkg" / "code.py"
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -298,12 +296,12 @@ def test_vendored_dir_is_skipped(tmp_path):
         assert sec.scan_file(target, tmp_path) == []
 
 
-def test_missing_file_is_skipped_with_note(tmp_path, capsys):
+def test_missing_file_is_skipped_with_note(tmp_path, sec, capsys):
     assert sec.scan_file(tmp_path / "gone.py", tmp_path) == []
     assert "no longer exists" in capsys.readouterr().err
 
 
-def test_oversized_file_scans_only_first_mib(tmp_path, capsys):
+def test_oversized_file_scans_only_first_mib(tmp_path, sec, capsys):
     target = tmp_path / "big.py"
     top_secret = kv("x", "AKIA" + "IOSFODNN7REALKEY")
     deep_secret = kv("y", "AKIA" + "IOSFODNN7OTHERKEY"[:16])
@@ -316,7 +314,7 @@ def test_oversized_file_scans_only_first_mib(tmp_path, capsys):
     assert "first 1 MiB only" in capsys.readouterr().err
 
 
-def test_decode_errors_do_not_raise(tmp_path):
+def test_decode_errors_do_not_raise(tmp_path, sec):
     # Invalid UTF-8 without a null byte must scan (errors="replace"), never raise.
     target = tmp_path / "weird.py"
     target.write_bytes(b"x = 1\n" + b"\xff\xfe not utf-8 \xc3\x28\n")
@@ -326,14 +324,14 @@ def test_decode_errors_do_not_raise(tmp_path):
 # --- Diagnostics + finding formatting ----------------------------------------
 
 
-def test_finding_line_format(scan):
+def test_finding_line_format(scan, sec):
     findings = scan(kv("x", "AKIA" + "IOSFODNN7REALKEY"), name="cfg.py")
     line = sec.finding_line(findings[0])
     assert line.endswith("aws-access-key AWS access key ID")
     assert ":1 " in line
 
 
-def test_format_diagnostics_caps_with_tail():
+def test_format_diagnostics_caps_with_tail(sec):
     lines = [f"f.py:{i} r msg" for i in range(1, 15)]
     out = sec.format_diagnostics(lines).splitlines()
     assert len(out) == 11 and out[10] == "... and 4 more"
@@ -342,7 +340,7 @@ def test_format_diagnostics_caps_with_tail():
 # --- Session-state helpers ----------------------------------------------------
 
 
-def test_state_roundtrip(tmp_path):
+def test_state_roundtrip(tmp_path, sec):
     state = {"baseline": ["b.py", "a.py"], "tracked": ["t.py"], "last_head": "abc123"}
     sec.save_state(tmp_path, "sess-1", state)
     loaded = sec.load_state(tmp_path, "sess-1")
@@ -351,7 +349,7 @@ def test_state_roundtrip(tmp_path):
     assert loaded["last_head"] == "abc123"
 
 
-def test_state_dedup_on_write(tmp_path):
+def test_state_dedup_on_write(tmp_path, sec):
     state = {"baseline": ["a", "a", "b"], "tracked": ["x", "x", "x"], "last_head": ""}
     sec.save_state(tmp_path, "sess-2", state)
     loaded = sec.load_state(tmp_path, "sess-2")
@@ -359,7 +357,7 @@ def test_state_dedup_on_write(tmp_path):
     assert loaded["tracked"] == ["x"]
 
 
-def test_load_missing_state_is_empty(tmp_path):
+def test_load_missing_state_is_empty(tmp_path, sec):
     assert sec.load_state(tmp_path, "never-written") == {
         "baseline": [],
         "tracked": [],
@@ -367,14 +365,14 @@ def test_load_missing_state_is_empty(tmp_path):
     }
 
 
-def test_load_corrupt_state_is_empty(tmp_path):
+def test_load_corrupt_state_is_empty(tmp_path, sec):
     path = sec.state_path(tmp_path, "sess-3")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("{ this is not valid json")
     assert sec.load_state(tmp_path, "sess-3") == {"baseline": [], "tracked": [], "last_head": ""}
 
 
-def test_load_unreadable_state_notes_and_is_empty(tmp_path, monkeypatch, capsys):
+def test_load_unreadable_state_notes_and_is_empty(tmp_path, sec, monkeypatch, capsys):
     # A permission/I/O error reading an existing state file is NOT the
     # expected missing/corrupt case -- it must be noted (naming the path) so
     # a silently-disabled sweep stays diagnosable, then fail open to empty.
@@ -398,13 +396,13 @@ def test_load_unreadable_state_notes_and_is_empty(tmp_path, monkeypatch, capsys)
     assert str(path) in capsys.readouterr().err
 
 
-def test_session_id_is_sanitized_to_one_safe_segment(tmp_path):
+def test_session_id_is_sanitized_to_one_safe_segment(tmp_path, sec):
     path = sec.state_path(tmp_path, "../../etc/passwd")
     assert path.parent == tmp_path / ".claude" / ".security-scan"
     assert "/" not in path.name and ".." not in path.name
 
 
-def test_prune_removes_stale_keeps_fresh(tmp_path):
+def test_prune_removes_stale_keeps_fresh(tmp_path, sec):
     empty = {"baseline": [], "tracked": [], "last_head": ""}
     sec.save_state(tmp_path, "fresh", empty)
     sec.save_state(tmp_path, "stale", empty)
@@ -417,7 +415,7 @@ def test_prune_removes_stale_keeps_fresh(tmp_path):
     assert not stale_path.exists()
 
 
-def test_update_state_serializes_concurrent_mutations(tmp_path):
+def test_update_state_serializes_concurrent_mutations(tmp_path, sec):
     # N concurrent load-mutate-save cycles for the SAME session, each adding
     # one distinct tracked path -- the per-session lock must make these
     # serialize rather than lose updates to a last-writer-wins race.
@@ -439,7 +437,7 @@ def test_update_state_serializes_concurrent_mutations(tmp_path):
     assert tracked == sorted(f"file_{i}.py" for i in range(n))
 
 
-def test_parse_porcelain_paths_z_rename_and_untracked():
+def test_parse_porcelain_paths_z_rename_and_untracked(sec):
     # -z record shapes: "XY path\0" normally, plus an extra "\0origPath\0"
     # field for a rename/copy -- only the NEW path is kept, verbatim (no
     # quoting/escaping to undo in -z mode).

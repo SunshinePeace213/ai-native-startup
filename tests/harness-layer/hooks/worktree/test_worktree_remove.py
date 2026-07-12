@@ -28,7 +28,11 @@ def test_kb_payload_shape_removes_worktree_and_its_branch(wt_repo, run_hook):
     """The full cleanup: worktree directory gone AND its worktree-* branch
     deleted, so kept-around branches don't accumulate forever."""
     path = add_worktree(wt_repo, "zap", "worktree-zap")
-    proc = run_hook("worktree_remove.py", json.dumps({"worktreePath": str(path)}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_remove.py",
+        json.dumps({"worktreePath": str(path)}),
+        env_overrides=wt_repo.overrides,
+    )
     assert proc.returncode == 0
     assert not path.exists()
     assert not branch_exists(wt_repo, "worktree-zap")
@@ -38,7 +42,11 @@ def test_reference_payload_shape_is_also_accepted(wt_repo, run_hook):
     """The reference implementation sends worktree_path; the hook must clean
     up with either field."""
     path = add_worktree(wt_repo, "zip", "worktree-zip")
-    proc = run_hook("worktree_remove.py", json.dumps({"worktree_path": str(path)}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_remove.py",
+        json.dumps({"worktree_path": str(path)}),
+        env_overrides=wt_repo.overrides,
+    )
     assert proc.returncode == 0
     assert not path.exists()
     assert not branch_exists(wt_repo, "worktree-zip")
@@ -48,7 +56,11 @@ def test_foreign_branch_is_preserved(wt_repo, run_hook):
     """A worktree checked out on a branch the hook did not name (no worktree-
     prefix) is someone's real work: remove the directory, keep the branch."""
     path = add_worktree(wt_repo, "feat", "feature-keep")
-    proc = run_hook("worktree_remove.py", json.dumps({"worktreePath": str(path)}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_remove.py",
+        json.dumps({"worktreePath": str(path)}),
+        env_overrides=wt_repo.overrides,
+    )
     assert proc.returncode == 0
     assert not path.exists()
     assert branch_exists(wt_repo, "feature-keep")
@@ -58,14 +70,20 @@ def test_missing_path_exits_zero(wt_repo, run_hook):
     """An already-removed worktree is a done job, not an error -- cleanup must
     be idempotent."""
     gone = wt_repo.tmp / "never-existed"
-    proc = run_hook("worktree_remove.py", json.dumps({"worktreePath": str(gone)}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_remove.py",
+        json.dumps({"worktreePath": str(gone)}),
+        env_overrides=wt_repo.overrides,
+    )
     assert proc.returncode == 0
 
 
 def test_payload_without_a_path_fails_open(wt_repo, run_hook):
     """Neither worktreePath nor worktree_path: nothing to remove, exit 0 with
     a note naming the fields so payload-shape drift is diagnosable."""
-    proc = run_hook("worktree_remove.py", json.dumps({"foo": "x"}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_remove.py", json.dumps({"foo": "x"}), env_overrides=wt_repo.overrides
+    )
     assert proc.returncode == 0
     assert "worktreePath" in proc.stderr
 
@@ -76,7 +94,11 @@ def test_directory_that_is_not_a_worktree_is_left_alone(wt_repo, run_hook):
     plain = wt_repo.tmp / "just-a-dir"
     plain.mkdir()
     (plain / "precious.txt").write_text("do not delete\n")
-    proc = run_hook("worktree_remove.py", json.dumps({"worktreePath": str(plain)}), wt_repo.env)
+    proc = run_hook(
+        "worktree/worktree_remove.py",
+        json.dumps({"worktreePath": str(plain)}),
+        env_overrides=wt_repo.overrides,
+    )
     assert proc.returncode == 0
     assert plain.is_dir()
     assert (plain / "precious.txt").exists()
@@ -87,8 +109,10 @@ def test_project_dir_being_the_removed_worktree_still_deletes_branch(wt_repo, ru
     very worktree being removed; git must not run from the dying directory
     or the branch delete fails and worktree-* branches leak forever."""
     path = add_worktree(wt_repo, "selfref", "worktree-selfref")
-    env = {**wt_repo.env, "CLAUDE_PROJECT_DIR": str(path)}
-    proc = run_hook("worktree_remove.py", json.dumps({"worktreePath": str(path)}), env)
+    env = {**wt_repo.overrides, "CLAUDE_PROJECT_DIR": str(path)}
+    proc = run_hook(
+        "worktree/worktree_remove.py", json.dumps({"worktreePath": str(path)}), env_overrides=env
+    )
     assert proc.returncode == 0
     assert not path.exists()
     assert not branch_exists(wt_repo, "worktree-selfref")

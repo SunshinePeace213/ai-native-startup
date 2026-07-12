@@ -2,9 +2,13 @@
 
 ## Hooks
 
-Claude Code hooks, registered in `.claude/settings.json` and run via `uv run --script`,
-keep the repo tidy. Register hooks with one matcher block per event+matcher pair —
-additional hooks join that block's `hooks` array, never a repeated matcher entry.
+Claude Code hooks, run via `uv run --script`, keep the repo tidy. All are registered in
+`.claude/settings.json` except the spec gate `check_spec_completeness.py`, which is
+command-scoped: `/harness-layer:harness-plan` registers it as a Stop hook in its own
+frontmatter, so it never gates unrelated sessions. Register hooks with one matcher block
+per event+matcher pair — additional hooks join that block's `hooks` array, never a
+repeated matcher entry. Tests live in `tests/harness-layer/hooks/` under the rules in
+[HOOK-TESTING.md](./HOOK-TESTING.md); `test_wiring.py` pins every registration.
 
 ### Block Claude Attribution (PreToolUse)
 
@@ -70,10 +74,10 @@ worktree path only. `worktree_remove.py` removes the worktree and deletes its
 
 ```text
 .claude/
-├── settings.json                  # registers all hooks + attribution off
+├── settings.json                  # registers all global hooks + attribution off
 ├── hooks/
 │   ├── block_attribution.py       # attribution guard (PreToolUse)
-│   ├── check-spec-completeness.sh # spec gate used by /harness-layer:harness-plan
+│   ├── check_spec_completeness.py # spec gate (Stop) — registered by /harness-layer:harness-plan
 │   ├── auto-format/
 │   │   ├── _common.py             # shared helpers (payload parse, run, diagnostics)
 │   │   ├── js_ts.py               # .js .jsx .ts .tsx → eslint --fix + prettier
@@ -93,10 +97,12 @@ worktree path only. `worktree_remove.py` removes the worktree and deletes its
 └── skills/
     └── meta-install/SKILL.md      # fresh-clone setup: bun install + uv sync
 tests/harness-layer/hooks/
-├── conftest.py       # shared helpers: REPO_ROOT, UV, run_hook (hook_dir override)
+├── conftest.py        # the framework: run_hook launcher, edit_payload, load_hook_module
+├── test_wiring.py     # settings.json / registrar ↔ .claude/hooks cross-check
 ├── attribution/       # pytest suite for the attribution hook
 ├── auto-format/       # pytest suite for the four formatter hooks
 ├── security-scan/     # engine + e2e tests for the four security-scan scripts
+├── spec-completeness/ # pytest suite for the spec gate
 └── worktree/          # pytest suite for the worktree lifecycle hooks
 eslint.config.mjs                  # ESLint flat config (React-ready)
 .prettierrc.json                   # Prettier config

@@ -9,6 +9,9 @@ outside the repo can never suppress formatting inside it; the diagnostics
 cap keeps exit-2 feedback short enough for the agent to act on; and run()
 must make a missing formatter binary distinguishable so hooks can point at
 the meta-install skill instead of raising or falsely exiting 2.
+
+The module is loaded through the shared ``load_hook_module`` fixture (as
+``fmt``), never via sys.path -- two families' `_common` must not collide.
 """
 
 import json
@@ -18,9 +21,11 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(REPO_ROOT / ".claude" / "hooks" / "auto-format"))
 
-import _common  # noqa: E402
+
+@pytest.fixture(scope="module")
+def fmt(load_hook_module):
+    return load_hook_module("auto-format/_common.py")
 
 
 @pytest.fixture
@@ -43,27 +48,27 @@ def stdin_from(monkeypatch, tmp_path):
 # --- Payload parsing: one good shape in, None for everything broken ----------
 
 
-def test_good_payload_yields_file_path(stdin_from):
+def test_good_payload_yields_file_path(stdin_from, fmt):
     """The shape the harness actually sends (snake_case, proven in-repo by
     block_attribution.py) must round-trip to the edited file's path."""
     payload = json.dumps({"tool_name": "Edit", "tool_input": {"file_path": "/tmp/example.py"}})
     stdin_from(payload)
-    assert _common.read_file_path() == "/tmp/example.py"
+    assert fmt.read_file_path() == "/tmp/example.py"
 
 
-def test_empty_stdin_yields_none(stdin_from):
+def test_empty_stdin_yields_none(stdin_from, fmt):
     """Fail-open: no payload means nothing to format, never an error."""
     stdin_from("")
-    assert _common.read_file_path() is None
+    assert fmt.read_file_path() is None
 
 
-def test_malformed_json_yields_none(stdin_from):
+def test_malformed_json_yields_none(stdin_from, fmt):
     """Fail-open: garbage stdin is a harness bug, not the hook's problem."""
     stdin_from("not json {")
-    assert _common.read_file_path() is None
+    assert fmt.read_file_path() is None
 
 
-def test_tty_stdin_yields_none(monkeypatch):
+def test_tty_stdin_yields_none(monkeypatch, fmt):
     """A human running the script by hand must not hang it waiting on stdin."""
 
     class TTYStdin:
@@ -73,111 +78,111 @@ def test_tty_stdin_yields_none(monkeypatch):
             return True
 
     monkeypatch.setattr(sys, "stdin", TTYStdin())
-    assert _common.read_file_path() is None
+    assert fmt.read_file_path() is None
 
 
-def test_payload_without_file_path_yields_none(stdin_from):
+def test_payload_without_file_path_yields_none(stdin_from, fmt):
     """A payload with no file to format (e.g. Bash-shaped) must bow out."""
     stdin_from(json.dumps({"tool_name": "Bash", "tool_input": {"command": "ls"}}))
-    assert _common.read_file_path() is None
+    assert fmt.read_file_path() is None
     stdin_from(json.dumps({"tool_name": "Edit", "tool_input": {"file_path": "   "}}))
-    assert _common.read_file_path() is None
+    assert fmt.read_file_path() is None
 
 
-def test_read_payload_returns_raw_dict(stdin_from):
+def test_read_payload_returns_raw_dict(stdin_from, fmt):
     """The worktree hooks read their own field names (worktreeName/name), so
     the parsed payload must be exposed raw, not only tool_input.file_path."""
     stdin_from(json.dumps({"worktreeName": "wt-1"}))
-    assert _common.read_payload() == {"worktreeName": "wt-1"}
+    assert fmt.read_payload() == {"worktreeName": "wt-1"}
 
 
 # --- Project-root resolution --------------------------------------------------
 
 
-def test_resolve_root_prefers_env_var(monkeypatch, tmp_path):
+def test_resolve_root_prefers_env_var(monkeypatch, tmp_path, fmt):
     """Claude Code sets $CLAUDE_PROJECT_DIR; hooks must format against the
     session's project, not wherever the script file happens to live."""
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
-    assert _common.resolve_root() == tmp_path.resolve()
+    assert fmt.resolve_root() == tmp_path.resolve()
 
 
-def test_resolve_root_falls_back_to_script_location(monkeypatch):
+def test_resolve_root_falls_back_to_script_location(monkeypatch, fmt):
     """Without the env var (manual runs, tests) the root derives from the
     module's own home: <root>/.claude/hooks/auto-format/_common.py."""
     monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
-    assert _common.resolve_root() == REPO_ROOT
+    assert fmt.resolve_root() == REPO_ROOT
 
 
-def test_resolve_root_ignores_env_var_that_is_not_a_directory(monkeypatch, tmp_path):
+def test_resolve_root_ignores_env_var_that_is_not_a_directory(monkeypatch, tmp_path, fmt):
     """A stale or bogus env value must degrade to the fallback, not hand
     formatters a cwd they cannot run in."""
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path / "gone"))
-    assert _common.resolve_root() == REPO_ROOT
+    assert fmt.resolve_root() == REPO_ROOT
 
 
 # --- Vendored-path skip: root-relative, never beyond the repo ----------------
 
 
-def test_vendored_dirs_inside_root_are_skipped(tmp_path):
+def test_vendored_dirs_inside_root_are_skipped(tmp_path, fmt):
     """Formatting third-party or generated trees creates diff noise for code
     nobody owns; each vendored dir name must skip when under the root."""
     for vendored in ("node_modules", ".venv", "dist"):
-        assert _common.is_vendored(tmp_path / vendored / "pkg" / "f.js", tmp_path)
+        assert fmt.is_vendored(tmp_path / vendored / "pkg" / "f.js", tmp_path)
 
 
-def test_root_ancestor_named_dist_does_not_skip(tmp_path):
+def test_root_ancestor_named_dist_does_not_skip(tmp_path, fmt):
     """The check is on the ROOT-RELATIVE path: a repo that itself lives under
     a directory named dist must still have its files formatted (the retired
     lint.py encoded exactly this trap)."""
     root = tmp_path / "dist" / "repo"
-    assert _common.is_vendored(root / "src" / "app.py", root) is False
+    assert fmt.is_vendored(root / "src" / "app.py", root) is False
 
 
-def test_file_outside_root_is_never_vendored(tmp_path):
+def test_file_outside_root_is_never_vendored(tmp_path, fmt):
     """Paths outside the project (scratch files) are not ours to classify;
     the vendored skip must not apply to them even under a dist/ segment."""
     root = tmp_path / "repo"
     outside = tmp_path / "elsewhere" / "dist" / "f.py"
-    assert _common.is_vendored(outside, root) is False
+    assert fmt.is_vendored(outside, root) is False
 
 
-def test_normal_in_repo_path_is_not_vendored(tmp_path):
+def test_normal_in_repo_path_is_not_vendored(tmp_path, fmt):
     """The 99% case: ordinary project files must reach the formatter."""
-    assert _common.is_vendored(tmp_path / "src" / "main.py", tmp_path) is False
+    assert fmt.is_vendored(tmp_path / "src" / "main.py", tmp_path) is False
 
 
 # --- Diagnostic capping: short enough to act on, count never lost ------------
 
 
-def test_diagnostics_cap_at_ten_with_tail():
+def test_diagnostics_cap_at_ten_with_tail(fmt):
     """Exit-2 stderr is fed straight back to the agent; past ten lines more
     detail hurts more than it helps, but the total count must survive."""
     lines = [f"f.py:{i} E501 line too long" for i in range(1, 15)]
-    out = _common.format_diagnostics(lines).splitlines()
+    out = fmt.format_diagnostics(lines).splitlines()
     assert len(out) == 11
     assert out[:10] == lines[:10]
     assert out[10] == "... and 4 more"
 
 
-def test_diagnostics_at_or_under_cap_have_no_tail():
+def test_diagnostics_at_or_under_cap_have_no_tail(fmt):
     """A tail on a short list would misreport the error count."""
     lines = [f"f.py:{i} E501 x" for i in range(1, 11)]  # exactly the cap
-    assert _common.format_diagnostics(lines) == "\n".join(lines)
+    assert fmt.format_diagnostics(lines) == "\n".join(lines)
 
 
 # --- run(): never raises, missing binary is a distinct signal ----------------
 
 
-def test_run_missing_binary_returns_none():
+def test_run_missing_binary_returns_none(fmt):
     """None is the meta-install signal: hooks translate it into a note naming
     the meta-install skill instead of a traceback or a false exit 2."""
-    assert _common.run(["auto-format-no-such-binary-xyz"]) is None
+    assert fmt.run(["auto-format-no-such-binary-xyz"]) is None
 
 
-def test_run_returns_exit_code_and_streams():
+def test_run_returns_exit_code_and_streams(fmt):
     """Hooks read the formatter's own exit code and streams to decide between
     success, real lint errors, and infrastructure failure."""
-    code, out, err = _common.run(
+    code, out, err = fmt.run(
         [
             sys.executable,
             "-c",
@@ -187,23 +192,23 @@ def test_run_returns_exit_code_and_streams():
     assert (code, out.strip(), err.strip()) == (3, "out", "err")
 
 
-def test_run_strips_color_forcing_env(monkeypatch):
+def test_run_strips_color_forcing_env(monkeypatch, fmt):
     """Exit-2 diagnostics are fed to the agent as text: a session that forces
     ANSI color (FORCE_COLOR) must not leak escape codes into captured output."""
     monkeypatch.setenv("FORCE_COLOR", "3")
     probe = "import os; print(os.environ.get('FORCE_COLOR'), os.environ.get('NO_COLOR'))"
-    code, out, _ = _common.run([sys.executable, "-c", probe])
+    code, out, _ = fmt.run([sys.executable, "-c", probe])
     assert (code, out.strip()) == (0, "None 1")
 
 
 # --- note(): every stderr line says which hook is talking --------------------
 
 
-def test_note_prefixes_hook_name(capsys, monkeypatch):
+def test_note_prefixes_hook_name(capsys, monkeypatch, fmt):
     """Four hooks share one stderr channel; the prefix says who is talking.
     The default derives from the running script so hooks need no config."""
-    _common.note("hello", hook="markdown")
+    fmt.note("hello", hook="markdown")
     monkeypatch.setattr(sys, "argv", ["/repo/.claude/hooks/auto-format/js_ts.py"])
-    _common.note("world")
+    fmt.note("world")
     err = capsys.readouterr().err.splitlines()
     assert err == ["[markdown] hello", "[js_ts] world"]

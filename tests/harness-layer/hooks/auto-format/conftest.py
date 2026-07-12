@@ -1,4 +1,4 @@
-"""Auto-format feature fixtures: hook_dir plus the linter_root sandbox."""
+"""Auto-format feature fixtures: the linter_root sandbox and project_env overlay."""
 
 import shutil
 from pathlib import Path
@@ -9,8 +9,9 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 @pytest.fixture
-def hook_dir():
-    return REPO_ROOT / ".claude" / "hooks" / "auto-format"
+def project_env():
+    """Env overlay pointing a format hook at a given project root."""
+    return lambda root: {"CLAUDE_PROJECT_DIR": str(root)}
 
 
 @pytest.fixture

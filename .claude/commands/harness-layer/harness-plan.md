@@ -12,7 +12,7 @@ hooks:
   Stop:
     - hooks:
         - type: command
-          command: '"$CLAUDE_PROJECT_DIR"/.claude/hooks/check-spec-completeness.sh'
+          command: uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/check_spec_completeness.py
 ---
 
 # Harness Plan
