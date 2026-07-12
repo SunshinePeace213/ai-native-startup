@@ -30,7 +30,7 @@ When writing test cases or running Python tests, use the installed pytest plugin
 - **Instructions, not rationale**: State what to do, not why. No "chose A over B", no decision logs, no design history — that's context bloat the agent never acts on.
 - **No stray cross-refs**: Don't reference other commands or skills unless the file actually needs them to run. Mentions "for context" just add noise.
 - **Model selection**: Always pass **alias** (`opus`, `sonnet`, `haiku`, `fable`). Never hardcode a dated id like `claude-sonnet-4-6` or `claude-opus-4-8`
-- **Quality > time > cost**: cost and token usage are never selection criteria — pick model and effort from task difficulty alone; time only breaks ties. Every tier in the tables below is live, `fable`, `max`, and `ultra` included; when difficulty is uncertain, take the higher tier. One agent, one purpose — size the team by the number of distinct purposes, never by budget.
+- **Quality > time > cost**: cost and token usage are never selection criteria — pick model and effort from task difficulty alone; time only breaks ties. Every tier in the tables below is live, `max` and `ultra` included; when difficulty is uncertain, take the higher tier. Exception: `fable` is the orchestrator model only — never spawned for tasks or fixes; `opus` is the task ceiling. One agent, one purpose — size the team by the number of distinct purposes, never by budget.
 - **Model & effort selection** — pick by the nature of the work
 
 | Model    | Choose for                                                                          |
