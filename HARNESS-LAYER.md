@@ -32,6 +32,30 @@ missing file, vendored path (`node_modules`, `.venv`, `dist`), malformed stdin, 
 formatter binary — fails open with exit 0; a missing binary notes the `meta-install`
 skill. Shared boilerplate lives in `_common.py`.
 
+### Security Scan (PostToolUse / SessionStart / Stop)
+
+Hooks under `.claude/hooks/security-scan/` scan agent-written content for secrets and
+common vulnerability patterns (stdlib regex, no external scanner):
+
+- `post_write_scan.py` — `Write|Edit|MultiEdit`: scans the saved file; PostToolUse hooks run in
+  parallel with the auto-format hooks (KB), so this is immediate best-effort feedback, not the
+  authoritative gate
+- `session_baseline.py` — SessionStart: records already-dirty files as a baseline so the
+  user's own uncommitted work is never flagged
+- `track_bash_writes.py` — PostToolUse + PostToolUseFailure on `Bash`: tracks files newly
+  dirtied or committed by shell commands (baseline files excluded)
+- `stop_sweep.py` — Stop/SubagentStop: re-scans every file tracked this session before the turn
+  may end; this exit-2 block is the only agent-visible event — the `stop_hook_active` warning
+  and vuln-only findings print to stderr for the user/debug log only, never fed back to the agent
+
+Secret findings (API keys, tokens, private keys, credentials) exit 2 with `file:line rule
+message` diagnostics — remove the secret. Vulnerability findings (unsafe `yaml.load`,
+SQL string-building, `innerHTML =`, …) warn without blocking. Everything else fails open.
+False positives: placeholder values (`example`, `changeme`, `<…>`) are auto-skipped; a
+`security-scan: allow` comment on or immediately above the flagged line suppresses it.
+Session state lives in `.claude/.security-scan/` (gitignored); the engine is
+`security-scan/_common.py`.
+
 ### Worktree Lifecycle (WorktreeCreate / WorktreeRemove)
 
 `worktree_create.py` replaces default worktree creation: `git worktree add` at
@@ -49,17 +73,26 @@ lockfiles.
 ├── hooks/
 │   ├── block_attribution.py       # attribution guard (PreToolUse)
 │   ├── check-spec-completeness.sh # spec gate used by /harness-layer:harness-plan
-│   └── auto-format/
-│       ├── _common.py             # shared helpers (payload parse, run, diagnostics)
-│       ├── js_ts.py               # .js .jsx .ts .tsx → eslint --fix + prettier
-│       ├── data.py                # .json .jsonc .yaml .yml → prettier
-│       ├── markdown.py            # .md .markdown → markdownlint-cli2 --fix
-│       ├── python.py              # .py .pyi → ruff format + ruff check --fix
-│       ├── worktree_create.py     # WorktreeCreate: create worktree + install deps
-│       └── worktree_remove.py     # WorktreeRemove: remove worktree + branch
+│   ├── auto-format/
+│   │   ├── _common.py             # shared helpers (payload parse, run, diagnostics)
+│   │   ├── js_ts.py               # .js .jsx .ts .tsx → eslint --fix + prettier
+│   │   ├── data.py                # .json .jsonc .yaml .yml → prettier
+│   │   ├── markdown.py            # .md .markdown → markdownlint-cli2 --fix
+│   │   ├── python.py              # .py .pyi → ruff format + ruff check --fix
+│   │   ├── worktree_create.py     # WorktreeCreate: create worktree + install deps
+│   │   └── worktree_remove.py     # WorktreeRemove: remove worktree + branch
+│   └── security-scan/
+│       ├── _common.py             # scanner engine: rules, suppression, session state
+│       ├── post_write_scan.py     # per-write gate (Write|Edit|MultiEdit)
+│       ├── session_baseline.py    # SessionStart: dirty-file baseline + HEAD
+│       ├── track_bash_writes.py   # Bash tracker (PostToolUse + PostToolUseFailure)
+│       └── stop_sweep.py          # Stop/SubagentStop sweep over the tracked set
 └── skills/
     └── meta-install/SKILL.md      # fresh-clone setup: bun install + uv sync
-tests/harness-layer/hooks/         # pytest suite for all hooks
+tests/harness-layer/
+├── hooks/                          # pytest suite for the attribution + auto-format hooks
+├── test_security_scan_engine.py    # engine unit tests: rules, suppression, guards
+└── test_security_scan_hooks.py     # e2e subprocess tests for the four security-scan scripts
 eslint.config.mjs                  # ESLint flat config (React-ready)
 .prettierrc.json                   # Prettier config
 .prettierignore
