@@ -3,7 +3,8 @@
 ## Hooks
 
 Claude Code hooks, registered in `.claude/settings.json` and run via `uv run --script`,
-keep the repo tidy.
+keep the repo tidy. Register hooks with one matcher block per event+matcher pair —
+additional hooks join that block's `hooks` array, never a repeated matcher entry.
 
 ### Block Claude Attribution (PreToolUse)
 
@@ -58,12 +59,12 @@ Session state lives in `.claude/.security-scan/` (gitignored); the engine is
 
 ### Worktree Lifecycle (WorktreeCreate / WorktreeRemove)
 
-`worktree_create.py` replaces default worktree creation: `git worktree add` at
-`.claude/worktrees/<name>` on branch `worktree-<name>`, then `bun install` + `uv sync`
-inside it so the format hooks work there; stdout is the worktree path only.
-`worktree_remove.py` removes the worktree and deletes its `worktree-*` branch. Fresh
-clones use the `meta-install` skill instead: `bun install` + `uv sync` from the committed
-lockfiles.
+`.claude/hooks/worktree/worktree_create.py` replaces default worktree creation: `git
+worktree add` at `.claude/worktrees/<name>` on branch `worktree-<name>`, then
+`bun install` + `uv sync` inside it so the format hooks work there; stdout is the
+worktree path only. `.claude/hooks/worktree/worktree_remove.py` removes the worktree
+and deletes its `worktree-*` branch. Fresh clones use the `meta-install` skill instead:
+`bun install` + `uv sync` from the committed lockfiles.
 
 ### Files
 
@@ -78,21 +79,25 @@ lockfiles.
 │   │   ├── js_ts.py               # .js .jsx .ts .tsx → eslint --fix + prettier
 │   │   ├── data.py                # .json .jsonc .yaml .yml → prettier
 │   │   ├── markdown.py            # .md .markdown → markdownlint-cli2 --fix
-│   │   ├── python.py              # .py .pyi → ruff format + ruff check --fix
-│   │   ├── worktree_create.py     # WorktreeCreate: create worktree + install deps
-│   │   └── worktree_remove.py     # WorktreeRemove: remove worktree + branch
-│   └── security-scan/
-│       ├── _common.py             # scanner engine: rules, suppression, session state
-│       ├── post_write_scan.py     # per-write gate (Write|Edit|MultiEdit)
-│       ├── session_baseline.py    # SessionStart: dirty-file baseline + HEAD
-│       ├── track_bash_writes.py   # Bash tracker (PostToolUse + PostToolUseFailure)
-│       └── stop_sweep.py          # Stop/SubagentStop sweep over the tracked set
+│   │   └── python.py              # .py .pyi → ruff format + ruff check --fix
+│   ├── security-scan/
+│   │   ├── _common.py             # scanner engine: rules, suppression, session state
+│   │   ├── post_write_scan.py     # per-write gate (Write|Edit|MultiEdit)
+│   │   ├── session_baseline.py    # SessionStart: dirty-file baseline + HEAD
+│   │   ├── track_bash_writes.py   # Bash tracker (PostToolUse + PostToolUseFailure)
+│   │   └── stop_sweep.py          # Stop/SubagentStop sweep over the tracked set
+│   └── worktree/
+│       ├── _common.py             # trimmed helpers: note, read_payload, resolve_root, run, tail
+│       ├── worktree_create.py     # WorktreeCreate: create worktree + install deps
+│       └── worktree_remove.py     # WorktreeRemove: remove worktree + branch
 └── skills/
     └── meta-install/SKILL.md      # fresh-clone setup: bun install + uv sync
-tests/harness-layer/
-├── hooks/                          # pytest suite for the attribution + auto-format hooks
-├── test_security_scan_engine.py    # engine unit tests: rules, suppression, guards
-└── test_security_scan_hooks.py     # e2e subprocess tests for the four security-scan scripts
+tests/harness-layer/hooks/
+├── conftest.py       # shared helpers: REPO_ROOT, UV, run_hook (hook_dir override)
+├── attribution/       # pytest suite for the attribution hook
+├── auto-format/       # pytest suite for the four formatter hooks
+├── security-scan/     # engine + e2e tests for the four security-scan scripts
+└── worktree/          # pytest suite for the worktree lifecycle hooks
 eslint.config.mjs                  # ESLint flat config (React-ready)
 .prettierrc.json                   # Prettier config
 .prettierignore
