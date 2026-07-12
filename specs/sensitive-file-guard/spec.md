@@ -1,7 +1,7 @@
 # Spec: Sensitive File Guard — block agent access to secret-bearing files
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
   <!-- Lifecycle, set by /harness-layer:harness-plan: Drafted for Review → Approved (on a Codex
        `approved` verdict). If round 2 is still changes-requested, the over-cap gate records the exit
        status in ## Codex Verification — approved | accepted-with-unverified-fixes | needs-human. One value only. -->
@@ -254,8 +254,11 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** <approved at round N | accepted-with-unverified-fixes | needs-human>
-- **Rejected findings:** <any Codex finding Claude chose not to act on, each with a one-line rationale; "none" if all warranted findings were applied>
+- **Outcome:** approved at round 3 (rounds 1–2 changes-requested and fixed; the
+  user-approved over-cap delta round verified the round-2 fix)
+- **Rejected findings:** none — both blocking findings were applied; the round-2
+  advisory (per-rule compiled command patterns) is recorded as follow-up F4 in
+  decisions.md rather than applied in this plan
 
 ## References
 
@@ -275,4 +278,4 @@ specs/sensitive-file-guard/
 - [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
 - [x] Acceptance criteria are specific and testable
 - [x] All four files exist under specs/sensitive-file-guard/ and are saved in the repository
-- [ ] Codex has reviewed the spec and Status reflects the outcome
+- [x] Codex has reviewed the spec and Status reflects the outcome
