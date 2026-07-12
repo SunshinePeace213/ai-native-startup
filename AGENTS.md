@@ -10,6 +10,7 @@
 When writing test cases or running Python tests, use the installed pytest plugins — don't reinvent what they provide:
 
 - **Run**: `uv run pytest` from the repo root — runs `tests/` in parallel (`-n auto`, pytest-xdist) with pytest-sugar output and a 60s per-test timeout (pytest-timeout); config in `pyproject.toml`
+- **Per-feature runs**: during feature work run `uv run pytest tests/harness-layer/hooks/<feature>`; run the full suite before hand-off
 - **Debug one test**: `uv run pytest <file>::<test> -n 0` — disables workers so `-s`, breakpoints, and ordered output work
 - **Timeouts**: a hung test is killed at 60s; mark a known-slow test `@pytest.mark.timeout(120)` — never raise the global value
 - **Coverage**: `uv run pytest --cov=<path> --cov-report=term-missing` (pytest-cov) — measures in-process code only; code exercised via subprocess (e.g. the hooks) reports 0%

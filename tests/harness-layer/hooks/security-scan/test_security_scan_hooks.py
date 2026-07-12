@@ -27,7 +27,7 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 HOOKS_DIR = REPO_ROOT / ".claude" / "hooks" / "security-scan"
 SCRIPTS = [
     "post_write_scan.py",
