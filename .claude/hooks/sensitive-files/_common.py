@@ -599,15 +599,46 @@ def _globs_intersect(glob: str, rule: str) -> bool:
 
 
 def _has_both_ends_rule_signal(glob: str, rule: str) -> bool:
-    """Whether ``glob`` literals visibly reference a ``*LIT*`` rule's family.
+    """Whether raw ``glob`` literals reference a ``*LIT*`` rule's family.
 
     Three contiguous literal characters from LIT are enough to show targeting
     intent without treating incidental one- or two-character overlap as signal.
-    Wildcards carry no signal, so broad searches such as ``x*y*`` stay allowed.
+    A singleton class is its exact literal (``[f]`` -> ``f``); a negated,
+    ranged, or multi-member class and ``?``/``*`` break literal contiguity.
+    Classes follow fnmatch's leading-``]`` and ``!`` parsing. Thus variable-only
+    wildcards carry no signal, so patterns such as ``x*y*`` pass this gate.
     """
-    skeleton = glob.replace("*", "").replace("?", "")
-    literal = rule.strip("*")
-    return any(literal[i : i + 3] in skeleton for i in range(len(literal) - 2))
+    skeleton: list[str] = []
+    i, n = 0, len(glob)
+    while i < n:
+        ch = glob[i]
+        if ch in "*?":
+            skeleton.append("\0")
+            i += 1
+            continue
+        if ch != "[":
+            skeleton.append(ch)
+            i += 1
+            continue
+        j = i + 1
+        negated = j < n and glob[j] == "!"
+        if negated:
+            j += 1
+        member_start = j
+        if j < n and glob[j] == "]":
+            j += 1
+        while j < n and glob[j] != "]":
+            j += 1
+        if j >= n:
+            skeleton.append("[")
+            i += 1
+            continue
+        members = glob[member_start:j]
+        skeleton.append(members if not negated and len(members) == 1 else "\0")
+        i = j + 1
+    skeleton_text = "".join(skeleton).lower()
+    literal = rule.strip("*").lower()
+    return any(literal[i : i + 3] in skeleton_text for i in range(len(literal) - 2))
 
 
 def match_glob(pattern: object) -> Rule | None:
@@ -642,17 +673,16 @@ def match_glob(pattern: object) -> Rule | None:
     return still allows broad suffix globs (``*.pem``), and cores without catalog
     overlap (``README*`` -> ``README`` and ``secret.pe*`` -> ``secret.pe``) stay
     allowed. INVARIANT for rules broad at both ends (currently only
-    ``*.tfstate.*``): a non-wildcard-opening glob is guaranteed denied when its
-    terminal-star-stripped pattern intersects the rule with internal stars
-    honored AND its literal skeleton contains a contiguous three-character
-    substring of the rule's fixed middle literal (``.tfstate.``). This catches
-    unobfuscated targeters whose literals reference the protected name family
-    (``terraform.*state.backup*``) without denying unrelated broad searches
-    (``a*.py``). Three characters avoid incidental one- or two-character signal;
-    a glob carrying no such catalog signal (e.g. ``x*y*``) deliberately stays
-    allowed even if a wildcard expansion could select a state file, matching the
-    locked best-effort posture for ``README*``/``*.py``. Never raises: weird input
-    yields None (fail-open).
+    ``*.tfstate.*``): a rule denies iff the terminal-star-stripped rewritten
+    superset intersects the rule with internal stars honored AND the raw glob's
+    singleton-literal skeleton contains a contiguous three-character substring
+    of the rule's fixed middle literal (``.tfstate.``). Singleton classes count
+    as their exact character; variable classes, ``?``, and ``*`` break signal
+    contiguity. Thus any intersecting glob spelling at least three consecutive
+    real family characters through literals or singleton classes is denied,
+    while globs whose possible family characters come only from variables pass
+    that rule's signal gate under the locked broad-search posture. Never raises:
+    weird input yields None (fail-open).
 
     Directory-fragment targeting via a glob (e.g. ``.ssh/*``) is out of scope
     here: like a bare Grep directory target it follows the allow posture, and a
@@ -661,10 +691,10 @@ def match_glob(pattern: object) -> Rule | None:
     if not isinstance(pattern, str) or not pattern.strip():
         return None
     try:
-        segment = _glob_basename(pattern.strip())
-        if is_allowlisted(segment):  # exact D3 template name (before any rewrite)
+        raw_segment = _glob_basename(pattern.strip())
+        if is_allowlisted(raw_segment):  # exact D3 template name (before any rewrite)
             return None
-        segment = _rewrite_char_classes(segment)
+        segment = _rewrite_char_classes(raw_segment)
         segment = re.sub(r"\*+", "*", segment)  # collapse '*' runs (identical; shrinks the DP)
         if not _literal_prefix(segment):
             return None  # opens with a wildcard -> broad search -> allow
@@ -679,7 +709,7 @@ def match_glob(pattern: object) -> Rule | None:
                 # widening may conservatively over-block the original class glob.
                 # Only the terminal star is a broad-search marker (CX5-1).
                 both_ends = rule.pattern.endswith("*")
-                if both_ends and not _has_both_ends_rule_signal(core, rule.pattern):
+                if both_ends and not _has_both_ends_rule_signal(raw_segment, rule.pattern):
                     continue
                 if _globs_intersect(core, rule.pattern):
                     return rule

@@ -342,6 +342,18 @@ def test_grep_signaled_both_ends_targeting_denies(run_hook, glob):
     assert glob in res.stderr
 
 
+@pytest.mark.parametrize(
+    "glob", ["prod.t[f]s[t]a[t]e.backup*", "terraform.tf[s]tate.backup*"]
+)
+def test_grep_singleton_class_both_ends_targeters_deny(run_hook, glob):
+    """CX7-1: singleton classes are exact literals, not obfuscation, so their
+    signal must reach the real guard and deny the targeted state glob with exit 2."""
+    res = run_hook(SCRIPT, grep_payload(glob=glob))
+    assert res.returncode == 2
+    assert "Blocked:" in res.stderr
+    assert glob in res.stderr
+
+
 @pytest.mark.parametrize("glob", ["a*.py", "data*log*"])
 def test_grep_no_signal_both_ends_overlap_allows(run_hook, glob):
     """CX6-1 keeps the locked broad-search posture: without a three-character

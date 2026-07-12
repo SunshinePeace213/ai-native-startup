@@ -486,6 +486,17 @@ def test_match_glob_denies_signaled_both_ends_targeting_globs(eng, glob):
     assert rule.category_id == "cicd"
 
 
+@pytest.mark.parametrize(
+    "glob", ["prod.t[f]s[t]a[t]e.backup*", "terraform.tf[s]tate.backup*"]
+)
+def test_match_glob_denies_singleton_class_both_ends_targeters(eng, glob):
+    """CX7-1: singleton classes are exact literals, not obfuscation, so their
+    characters contribute to the family signal and intersecting targets deny."""
+    rule = eng.match_glob(glob)
+    assert rule is not None, glob
+    assert rule.category_id == "cicd"
+
+
 # --- Grep glob matching: over-long globs don't fail the DP open (CX3-2) --------
 #
 # `_globs_intersect` is an iterative table DP, so an over-long user glob can't
