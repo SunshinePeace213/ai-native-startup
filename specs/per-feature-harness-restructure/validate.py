@@ -1,9 +1,12 @@
 """Deterministic spec validator for per-feature-harness-restructure (AC2 + AC4).
 
-The executable contract for the two prose-heavy criteria: asserts the trimmed
-`worktree/_common.py` module surface EXACTLY (AST — rejects extra helpers,
-constants, or classes) and every harness-build.md clause as a relationship,
-not a fragment. Prints every missing clause; exits 1 on any failure.
+The executable contract for the two prose-heavy criteria. AC2: AST-asserts the
+trimmed `worktree/_common.py` surface EXACTLY (rejects extra functions,
+constants, or classes). AC4: each harness-build.md clause is one bounded
+relationship — ALL of a clause's required terms must co-occur inside a single
+markdown block (one bullet, heading, or paragraph), so fragments scattered
+across unrelated sections never pass. Forbidden patterns are document-wide.
+Prints every failing clause by name; exits 1 on any failure.
 
 Run from the repo root (passes only after the build lands):
 
@@ -30,10 +33,14 @@ def phrase(words: str) -> str:
     return r"\s+".join(re.escape(w) for w in words.split())
 
 
-def within(*parts: str, gap: int = 160) -> str:
-    """Patterns required in order within `gap` chars of each other."""
-    joiner = rf"[\s\S]{{0,{gap}}}?"
-    return joiner.join(parts)
+def segments(text: str) -> list[str]:
+    """Markdown blocks: each list item, heading, or paragraph stands alone.
+
+    Splits at a newline followed by a list marker or heading, and at blank
+    lines; wrapped continuation lines stay inside their block.
+    """
+    parts = re.split(r"\n(?=[-*+] |\d+\. |#{1,6} )|\n{2,}", text)
+    return [p for p in parts if p.strip()]
 
 
 # --- AC2: exact trimmed-module surface -------------------------------------
@@ -65,19 +72,21 @@ else:
     if not re.search(r"^STDIN_TIMEOUT(?:\s*:\s*float)?\s*=\s*5\.0\s*$", source, re.M):
         failures.append("AC2: STDIN_TIMEOUT must be exactly 5.0")
 
-# --- AC4: harness-build.md clauses as relationships -------------------------
-# (clause, required patterns, forbidden patterns)
+# --- AC4: harness-build.md clauses, each bounded to ONE markdown block ------
+# (clause, required patterns — all must hit the SAME block, forbidden patterns — document-wide)
 CLAUSES: list[tuple[str, list[str], list[str]]] = [
     (
         "fixer model routing via Agent model param",
-        [within(r"\bmodel\b", phrase("per issue difficulty"), gap=80), phrase("`model` param")],
+        [r"\bmodel\b", phrase("per issue difficulty"), phrase("`model` param")],
         [r"fixer\s+subagents?\s+\(effort\s+per\s+issue\)"],
     ),
     (
         "effort tier in task brief; inherited session effort; no effort parameter",
         [
-            within(phrase("effort tier"), phrase("task brief")),
-            within(r"\binherit\w*\b", phrase("reasoning effort"), gap=80),
+            phrase("effort tier"),
+            phrase("task brief"),
+            r"\binherit\w*\b",
+            phrase("reasoning effort"),
         ],
         # forbid an effort key on an Agent deployment (Codex's own
         # model_reasoning_effort config line is legitimate and stays)
@@ -87,14 +96,15 @@ CLAUSES: list[tuple[str, list[str], list[str]]] = [
         "parallel background fixers on disjoint clusters; exactly one fix commit",
         [
             phrase("disjoint clusters"),
-            within(r"parallel", r"background\s+fixer", gap=60),
+            r"\bparallel\b",
+            r"background\s+fixer",
             phrase("ONE fix commit"),
         ],
         [],
     ),
     (
         "concurrent launch of unblocked, file-disjoint implement tasks",
-        [within(r"\bunblocked\b", phrase("file-disjoint tasks"), r"concurrent\w*", gap=120)],
+        [r"\bunblocked\b", phrase("file-disjoint tasks"), r"\bconcurrent\w*"],
         [],
     ),
     (
@@ -103,10 +113,12 @@ CLAUSES: list[tuple[str, list[str], list[str]]] = [
         [],
     ),
     (
-        "PR assignee plus mirrored type and priority labels read from the issue",
+        "gh pr create carries assignee plus type/priority labels read from the issue",
         [
+            phrase("gh pr create"),
             r"--assignee",
-            within(phrase("type label"), r"priority:P", gap=200),
+            phrase("type label"),
+            r"priority:P",
             phrase("--json labels"),
         ],
         [],
@@ -117,10 +129,13 @@ if not BUILD_MD.is_file():
     failures.append(f"AC4: {BUILD_MD.relative_to(ROOT)} missing")
 else:
     text = BUILD_MD.read_text()
+    blocks = segments(text)
     for clause, required, forbidden in CLAUSES:
-        for pat in required:
-            if not re.search(pat, text):
-                failures.append(f"AC4 [{clause}]: missing /{pat}/")
+        if not any(all(re.search(pat, block) for pat in required) for block in blocks):
+            failures.append(
+                f"AC4 [{clause}]: no single markdown block contains all of: "
+                + ", ".join(f"/{pat}/" for pat in required)
+            )
         for pat in forbidden:
             if re.search(pat, text):
                 failures.append(f"AC4 [{clause}]: forbidden /{pat}/ present")

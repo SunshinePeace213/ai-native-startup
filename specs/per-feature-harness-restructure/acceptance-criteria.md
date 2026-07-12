@@ -66,18 +66,23 @@ checked-in validator, which reports each missing clause by name.
 ### AC4 — harness-build.md upgrades (validator-asserted relationships)
 
 - `uv run python specs/per-feature-harness-restructure/validate.py` — pass: exit 0. One check per
-  clause, each a relationship (patterns tolerate markdown line-wrapping, required to co-occur
-  within a bounded window), with the failing clause named on miss:
-  1. **fixer model routing** — "model … per issue difficulty" AND "`model` param" present;
-     "fixer subagent(s) (effort per issue)" forbidden.
-  2. **effort mechanism** — "effort tier … task brief" AND "inherit… reasoning effort" present;
-     an `effort:`/`effort=` key within 80 chars after "Agent" forbidden (Codex's
-     `model_reasoning_effort=` config line stays legitimate).
-  3. **parallel fix clusters** — "disjoint clusters" AND "parallel … background fixer" AND
-     "ONE fix commit" present.
-  4. **concurrent implement** — "unblocked … file-disjoint tasks … concurrent*" within one window.
-  5. **manifest key** — "kebab-case Task ID" AND "GitHub autolinks" present.
-  6. **PR metadata** — "--assignee" AND "type label … priority:P" AND "--json labels" present.
+  clause; ALL of a clause's required terms must co-occur inside a SINGLE markdown block (one
+  bullet, heading, or paragraph — wrapped continuation lines stay in their block), so fragments
+  scattered across unrelated sections never pass. Forbidden patterns are document-wide. The
+  failing clause is named on miss:
+  1. **fixer model routing** — one block containing "model", "per issue difficulty", and
+     "`model` param"; "fixer subagent(s) (effort per issue)" forbidden anywhere.
+  2. **effort mechanism** — one block containing "effort tier", "task brief", "inherit…", and
+     "reasoning effort"; an `effort:`/`effort=` key within 80 chars after "Agent" forbidden
+     anywhere (Codex's `model_reasoning_effort=` config line stays legitimate).
+  3. **parallel fix clusters** — one block containing "disjoint clusters", "parallel",
+     "background fixer", and "ONE fix commit".
+  4. **concurrent implement** — one block containing "unblocked", "file-disjoint tasks", and
+     "concurrent*".
+  5. **manifest key** — one block containing "kebab-case Task ID" and "GitHub autolinks".
+  6. **PR metadata** — one block containing "gh pr create", "--assignee", "type label",
+     "priority:P", and "--json labels" — assignee and both labels tied to the same
+     `gh pr create` instruction.
 
 ### AC5 — memory sync
 
