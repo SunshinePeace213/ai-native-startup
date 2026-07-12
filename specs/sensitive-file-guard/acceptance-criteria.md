@@ -32,8 +32,13 @@
 - **AC7** — Wiring is pinned: `.claude/settings.json` runs `bash_guard.py` inside
   the existing PreToolUse `Bash` block and `file_guard.py` in one new
   `Read|Grep|Edit|Write|MultiEdit` block; `.codex/hooks.json` runs `bash_guard.py`
-  in its PreToolUse `Bash` block; `test_wiring.py`'s `EXPECTED_BINDINGS` covers
-  both new registrations and passes.
+  in its PreToolUse `Bash` block. `test_wiring.py` proves all of it: the
+  `EXPECTED_BINDINGS` matrix covers both new Claude registrations, and a new
+  assertion loads `.codex/hooks.json` and checks the `bash_guard.py` binding's
+  event (`PreToolUse`), matcher (`Bash`), command path
+  (`.claude/hooks/sensitive-files/bash_guard.py` via the
+  `$(git rev-parse --show-toplevel)` form), and non-empty `statusMessage` —
+  removing or malforming the Codex binding fails the test.
 - **AC8** — `HARNESS-LAYER.md` documents the family (new section + Files-tree
   entries) in the file's existing style.
 - **AC9** — The full test suite is green from the repo root with no skips

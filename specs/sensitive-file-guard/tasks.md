@@ -161,9 +161,13 @@ family in `HARNESS-LAYER.md`, then validate everything.
 - `.codex/hooks.json`: add `bash_guard.py` to the PreToolUse `Bash` block using the
   `$(git rev-parse --show-toplevel)` command form and a `statusMessage`, mirroring
   the attribution entry.
-- Extend `test_wiring.py` `EXPECTED_BINDINGS` with both new registrations,
-  following the matrix's existing shape (including how it covers the Codex
-  registrar for `block_attribution.py`).
+- Extend `test_wiring.py`: add both new Claude registrations to
+  `EXPECTED_BINDINGS`, AND — because the matrix today loads only
+  `.claude/settings.json` — add explicit `.codex/hooks.json` coverage: load that
+  file and assert the `bash_guard.py` binding semantically (event `PreToolUse`,
+  matcher `Bash`, command resolves to
+  `.claude/hooks/sensitive-files/bash_guard.py` via the
+  `$(git rev-parse --show-toplevel)` form, non-empty `statusMessage`).
 - `HARNESS-LAYER.md`: add a "Sensitive File Guard (PreToolUse)" section (scope,
   catalog summary, allowlist, deny/fail-open contract, Codex parity) and add the
   new files to the Files tree. Keep it in the file's existing terse style.

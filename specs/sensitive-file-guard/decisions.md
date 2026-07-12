@@ -126,6 +126,9 @@ user-facing decisions were grilled and the recommended option accepted each time
   - [ ] **F2** — Codex `apply_patch` Edit/Write guard in `.codex/hooks.json`.
   - [ ] **F3** — `/kb` refresh of `ai-docs/anthropic/hooks.md` (config-format
     section diverges from hooks-guide and repo practice).
+  - [ ] **F4** — (Codex round-2 advisory) consider per-rule compiled command
+    patterns instead of one monolithic alternation regex, for direct category
+    attribution and a simpler allowlist path; coverage-neutral refactor.
 
 ## KB References
 
