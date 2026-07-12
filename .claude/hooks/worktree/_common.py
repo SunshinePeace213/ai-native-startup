@@ -1,10 +1,10 @@
 """Shared helpers for the worktree lifecycle hooks in this directory.
 
 Plain importable module -- the sibling hook scripts do ``import _common``
-(Python puts the running script's directory on ``sys.path``). Everything
-here fails open: a hook built on these helpers must never wedge an edit
-over plumbing. Exit 2 belongs only to genuine unfixable lint errors, and
-that decision stays in the hooks themselves.
+(Python puts the running script's directory on ``sys.path``). These helpers
+back the WorktreeCreate/WorktreeRemove lifecycle hooks, and everything here
+fails open: a lifecycle hook must never block worktree creation or removal
+over plumbing.
 """
 
 import json
@@ -58,7 +58,7 @@ def read_payload() -> dict | None:
 def resolve_root() -> Path:
     """Project root: ``$CLAUDE_PROJECT_DIR`` when it is a directory, else script-relative.
 
-    The hooks live at ``<root>/.claude/hooks/auto-format/``, so the fallback
+    The hooks live at ``<root>/.claude/hooks/worktree/``, so the fallback
     is three directories above this file's own directory.
     """
     env_dir = os.environ.get("CLAUDE_PROJECT_DIR", "").strip()

@@ -200,7 +200,7 @@ def test_run_strips_color_forcing_env(monkeypatch):
 
 
 def test_note_prefixes_hook_name(capsys, monkeypatch):
-    """Six hooks share one stderr channel; the prefix says who is talking.
+    """Four hooks share one stderr channel; the prefix says who is talking.
     The default derives from the running script so hooks need no config."""
     _common.note("hello", hook="markdown")
     monkeypatch.setattr(sys, "argv", ["/repo/.claude/hooks/auto-format/js_ts.py"])
