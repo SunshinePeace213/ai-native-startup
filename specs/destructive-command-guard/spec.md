@@ -135,7 +135,7 @@ Ask (stdout JSON, exit 0):
 - **Branch:** feat/25-destructive-command-guard
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/destructive-command-guard
 - **Review profile:** kb-grounded
-- **PR:** <#M — filled by /harness-layer:harness-build>
+- **PR:** #27
 
 ## Relevant Files
 
