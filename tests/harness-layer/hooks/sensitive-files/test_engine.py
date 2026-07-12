@@ -19,6 +19,8 @@ guard matches names, never contents, so a secret literal would be pointless here
 (and the security scanner + GitHub push protection both read this file).
 """
 
+import sys
+
 import pytest
 
 # --- D3 template allowlist (spec-locked) --------------------------------------
@@ -323,3 +325,18 @@ def test_match_path_never_raises_on_weird_input(eng, value):
 def test_match_command_text_never_raises_on_weird_input(eng, value):
     """Same fail-open contract for the command matcher."""
     assert eng.match_command_text(value) is None
+
+
+def test_tty_stdin_yields_none(eng, monkeypatch):
+    """A human running a guard by hand must not hang it waiting on stdin. The
+    TTY branch is the only read_payload fail-open path run_hook can't exercise
+    in-process (a subprocess pipe is never a TTY), so it lives here."""
+
+    class TTYStdin:
+        closed = False
+
+        def isatty(self) -> bool:
+            return True
+
+    monkeypatch.setattr(sys, "stdin", TTYStdin())
+    assert eng.read_payload() is None
