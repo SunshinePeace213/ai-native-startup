@@ -116,17 +116,17 @@ _NAMED_ROOTS = (
     "opt", "proc", "root", "sbin", "srv", "sys", "usr", "var",
 )  # fmt: skip
 
-# Quote tolerance. Bash strips quotes before running a command, but this scanner
-# sees the raw string, so `rm "-rf" /tmp/x` and `mv "/etc" /tmp/x` must read the
-# same as their unquoted forms. Two shapes:
-#   _OB  -- an OPTION-token boundary: the flag is preceded by whitespace/start OR
-#           by an opening quote. Zero-width, so it never widens a filename match
-#           (a hyphen inside "my-report" is preceded by a letter -- neither
-#           whitespace nor a quote -- so it still isn't read as a flag).
-#   _Q   -- an optional opening quote consumed right before a path/target literal
-#           that follows an operator (`> "/dev/sda"`, `of="/etc/passwd"`).
-_OB = r"(?:(?<!\S)|(?<=['\"]))"
-_Q = r"['\"]?"
+# Quote handling. Bash concatenates adjacent quoted and unquoted fragments into
+# ONE word and strips the quotes before running the command; this scanner sees
+# the raw string. evaluate() reproduces that by removing every ' and " up front
+# (see _strip_quotes), so the patterns below scan a de-quoted copy and use STRICT
+# word boundaries -- a quote is never treated as a word boundary here.
+#   _OB  -- an OPTION-token boundary: the flag is preceded by whitespace or the
+#           start of the (de-quoted) string. Zero-width, so it never widens a
+#           filename match (a hyphen inside "my-report" is preceded by a letter,
+#           not whitespace, so it still isn't read as a flag) but a real ` -rf`
+#           token -- including one that was `-'r'f` before de-quoting -- is.
+_OB = r"(?<!\S)"
 
 # A protected-root TARGET, per the normalization rule: the bare root, the root
 # with a single trailing slash, or the root with a trailing /* -- but NOT a
@@ -134,25 +134,25 @@ _Q = r"['\"]?"
 # an optional trailing "/" or "/*"), and the bare filesystem root "/" (whose
 # "/" + trailing-slash + "/*" forms collapse to "/" or "/*"). Each branch
 # carries its own leading lookbehind (reject "./etc", "/home/x/etc") and
-# trailing lookahead (reject "/etc/nginx", "~/projects", "$HOMEDIR"). A leading
-# _Q consumes an optional surrounding quote (`"/etc"`); the lookbehind already
-# tolerates a preceding quote, so both quoted and pre-consumed-quote call sites
-# match.
+# trailing lookahead (reject "/etc/nginx", "~/projects", "$HOMEDIR"). Quotes are
+# already stripped before matching, so no quote-tolerance is baked in here.
 _PROTECTED_ROOT = (
-    _Q + r"(?:"
+    r"(?:"
     r"(?<![\w./~-])(?:/mnt/[A-Za-z]|/(?:" + "|".join(_NAMED_ROOTS) + r")"
     r"|~|\$\{HOME\}|\$HOME)(?:/\*|/)?(?![\w*./-])"
     r"|(?<![\w./~-])/\*?(?![\w*./-])"
     r")"
 )
 
-# A critical-file TARGET. Fixed names plus the sudoers.d/cron/boot wildcards.
-# A leading _Q consumes an optional surrounding quote (`> "/etc/passwd"`). Each
-# FIXED literal ends in (?![\w.-]) so a suffix like ".bak" does NOT match
-# (`/etc/passwd.bak` is not the real file); the intentional cron*/sudoers.d/boot
-# wildcards are left open so they still match their sub-paths.
+# A critical-file TARGET. Fixed names plus the sudoers.d/cron/boot wildcards. A
+# leading (?<![\w./~-]) rejects a longer host path (`x/etc/passwd`, `./etc/hosts`)
+# so only the real file matches -- quotes are already stripped, so a de-quoted
+# `truncate x/etc/passwd` correctly falls through. Each FIXED literal ends in
+# (?![\w.-]) so a suffix like ".bak" does NOT match (`/etc/passwd.bak` is not the
+# real file); the intentional cron*/sudoers.d/boot wildcards are left open so
+# they still match their sub-paths.
 _CRITICAL_FILE = (
-    _Q + r"(?:"
+    r"(?<![\w./~-])(?:"
     r"/etc/(?:"
     r"(?:passwd|shadow|group|fstab|hosts|ssh/sshd_config)(?![\w.-])"
     r"|sudoers(?:\.d(?:/[^\s;&|]+)?)?(?![\w.-])"
@@ -187,10 +187,9 @@ _SEGG = r"[^;&|\n]*"
 _REDIR_OR_TEE = r"(?:>{1,2}\s*|(?<!\S)tee\b" + _SEG + r")"
 
 # Recursive-flag and force-flag detectors. Each requires a real option token
-# (``_OB`` -- preceded by whitespace/start or an opening quote, so a filename
-# like "my-report" is never read as a flag but a quoted `"-rf"` is) and matches
-# combined clusters in any order: ``-rf``, ``-fr``, ``-vrf``, ``-r`` / ``-R``,
-# and the long ``--recursive`` / ``--force``.
+# (``_OB`` -- preceded by whitespace or start, so a filename like "my-report" is
+# never read as a flag) and matches combined clusters in any order: ``-rf``,
+# ``-fr``, ``-vrf``, ``-r`` / ``-R``, and the long ``--recursive`` / ``--force``.
 _REC = _OB + r"(?:--recursive|-[A-Za-z]*[rR][A-Za-z]*)\b"
 _FORCE = _OB + r"(?:--force|-[A-Za-z]*f[A-Za-z]*)\b"
 _REC_R = _OB + r"(?:--recursive|-[A-Za-z]*R[A-Za-z]*)\b"  # chmod/chown use -R
@@ -250,8 +249,12 @@ RULES: list[Rule] = [
         "Destructive File Operations",
         "deny",
         re.compile(
-            r"\bmv\b(?:(?:\s+-{1,2}\S+)*\s+" + _PROTECTED_ROOT + _Q + r"(?=\s)"
-            r"|" + _SEG + _OB + r"/dev/null\b" + _Q + r"\s*(?=[;&|\n]|$))"
+            r"\bmv\b(?:(?:\s+-{1,2}\S+)*\s+" + _PROTECTED_ROOT + r"(?=\s)"
+            # /dev/null must be the final destination: after it, only trailing
+            # redirections (`2>/tmp/err`) and/or a `# comment` may precede the
+            # segment end -- another positional arg means /dev/null was a source.
+            r"|" + _SEG + _OB + r"/dev/null\b"
+            r"(?:\s*\d*>>?&?\s*[^\s;&|#]*)*\s*(?:#[^\n]*)?(?=[;&|\n]|$))"
         ),
         "mv of a protected root, or mv into /dev/null (a silent delete)",
         "moving a protected root relocates the whole system/home tree, and "
@@ -263,7 +266,7 @@ RULES: list[Rule] = [
         "dd-to-block-device",
         "Disk Overwrite Operations",
         "deny",
-        re.compile(r"\bdd\b" + _SEG + r"(?<!\S)of=" + _Q + _BLOCKDEV),
+        re.compile(r"\bdd\b" + _SEG + r"(?<!\S)of=" + _BLOCKDEV),
         "dd writing directly to a raw block device (of=/dev/sdX ...)",
         "dd onto a disk device overwrites partitions and filesystems in place, "
         "regardless of count=, and is unrecoverable.",
@@ -273,7 +276,7 @@ RULES: list[Rule] = [
         "redirect-to-block-device",
         "Disk Overwrite Operations",
         "deny",
-        re.compile(r">{1,2}\s*" + _Q + _BLOCKDEV),
+        re.compile(r">{1,2}\s*" + _BLOCKDEV),
         "shell redirect onto a raw block device (> /dev/sdX)",
         "redirecting output onto a disk device corrupts its partition table "
         "and filesystems; /dev/null and /dev/stdout are never affected.",
@@ -341,13 +344,9 @@ RULES: list[Rule] = [
             + _SEGG
             + r"\bcount=)(?!"
             + _SEGG
-            + r"\bof="
-            + _Q
-            + r"/dev/null\b)"
+            + r"\bof=/dev/null\b)"
             + _SEG
-            + r"\bif="
-            + _Q
-            + r"/dev/(?:zero|urandom|random)\b"
+            + r"\bif=/dev/(?:zero|urandom|random)\b"
             r")"
         ),
         "unbounded write from an infinite source (fills the disk)",
@@ -514,7 +513,7 @@ RULES: list[Rule] = [
         "cron-write",
         "Cron & Scheduled Tasks",
         "deny",
-        re.compile(_REDIR_OR_TEE + _Q + r"/etc/cron[^\s;&|]*"),
+        re.compile(_REDIR_OR_TEE + r"/etc/cron[^\s;&|]*"),
         "redirect or tee into /etc/cron*",
         "writing system cron files installs or clobbers scheduled jobs that run "
         "as root, a persistence and privilege vector.",
@@ -605,9 +604,9 @@ RULES: list[Rule] = [
         "Kernel & System Operations",
         "deny",
         re.compile(
-            r"(?:>{1,2}\s*" + _Q + r"/dev/k?mem\b|\bof=" + _Q + r"/dev/k?mem\b"
+            r"(?:>{1,2}\s*/dev/k?mem\b|\bof=/dev/k?mem\b"
             r"|\bsysctl\b" + _SEG + _OB + r"-w\b"
-            r"|>{1,2}\s*" + _Q + r"/proc/sys/[^\s;&|]+)"
+            r"|>{1,2}\s*/proc/sys/[^\s;&|]+)"
         ),
         "writing kernel memory / tunables (/dev/mem, sysctl -w, /proc/sys/*)",
         "writing raw kernel memory or live tunables can corrupt kernel state "
@@ -717,13 +716,28 @@ RULES: list[Rule] = [
 # --- Evaluation ----------------------------------------------------------------
 
 
+def _strip_quotes(command: str) -> str:
+    """Drop shell quote characters so quoted/fragmented spellings scan like bare ones.
+
+    Bash concatenates adjacent quoted and unquoted fragments into ONE word and
+    strips the quotes before running the command, so ``rm -'r'f x`` runs as
+    ``rm -rf x`` and ``rm x"-rf" y`` runs as ``rm x-rf y``. This scanner sees the
+    raw string; removing every ``'`` and ``"`` reproduces Bash's in-word quote
+    removal closely enough that the strict-boundary patterns above then read the
+    same tokens Bash would. Pure string work -- it never shells out or executes.
+    """
+    return command.replace("'", "").replace('"', "")
+
+
 def evaluate(command: str) -> tuple[list[Rule], list[Rule]]:
     """Return ``(deny_matches, ask_matches)`` for ``command``, in rule-table order.
 
-    Pure inspection: every rule whose pattern is found in the command string is
-    collected into the list for its severity. Order is preserved so the
-    entrypoint reports the highest-priority (earliest) matches first.
+    The command is de-quoted first (see ``_strip_quotes``) so both tiers scan the
+    same shell-word-normalized copy. Pure inspection: every rule whose pattern is
+    found in that copy is collected into the list for its severity. Order is
+    preserved so the entrypoint reports the highest-priority (earliest) matches first.
     """
+    command = _strip_quotes(command)
     deny_matches: list[Rule] = []
     ask_matches: list[Rule] = []
     for rule in RULES:
