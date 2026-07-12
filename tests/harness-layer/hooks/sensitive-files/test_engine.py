@@ -473,6 +473,19 @@ def test_match_glob_allows_partial_suffix_before_broad_tail(eng):
     assert eng.match_glob("secret.pe*") is None
 
 
+# --- Grep glob matching: both-ends rule targeting (CX6-1) ---------------------
+
+
+@pytest.mark.parametrize("glob", ["terraform.*state.backup*", "prod*.tfstate.old"])
+def test_match_glob_denies_signaled_both_ends_targeting_globs(eng, glob):
+    """CX6-1: literals that carry a three-character `.tfstate.` family signal
+    enable exact intersection with internal stars intact, so constrained state
+    targeters deny as cicd instead of losing their internal-star semantics."""
+    rule = eng.match_glob(glob)
+    assert rule is not None, glob
+    assert rule.category_id == "cicd"
+
+
 # --- Grep glob matching: over-long globs don't fail the DP open (CX3-2) --------
 #
 # `_globs_intersect` is an iterative table DP, so an over-long user glob can't

@@ -329,6 +329,27 @@ def test_grep_partial_suffix_before_broad_tail_allows(run_hook):
     assert_allowed(res)
 
 
+# --- Grep: both-ends rule targeting (CX6-1) ----------------------------------
+
+
+@pytest.mark.parametrize("glob", ["terraform.*state.backup*", "prod*.tfstate.old"])
+def test_grep_signaled_both_ends_targeting_denies(run_hook, glob):
+    """CX6-1: constrained globs with visible `.tfstate.` family signal must
+    preserve internal-star intersection and deny through the real guard."""
+    res = run_hook(SCRIPT, grep_payload(glob=glob))
+    assert res.returncode == 2
+    assert "Blocked:" in res.stderr
+    assert glob in res.stderr
+
+
+@pytest.mark.parametrize("glob", ["a*.py", "data*log*"])
+def test_grep_no_signal_both_ends_overlap_allows(run_hook, glob):
+    """CX6-1 keeps the locked broad-search posture: without a three-character
+    catalog signal, possible wildcard overlap with `*.tfstate.*` still exits 0."""
+    res = run_hook(SCRIPT, grep_payload(glob=glob))
+    assert_allowed(res)
+
+
 # --- Grep: over-long globs don't fail the DP open (CX3-2) ------------------------
 
 

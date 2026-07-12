@@ -598,6 +598,18 @@ def _globs_intersect(glob: str, rule: str) -> bool:
     return dp[0][0]
 
 
+def _has_both_ends_rule_signal(glob: str, rule: str) -> bool:
+    """Whether ``glob`` literals visibly reference a ``*LIT*`` rule's family.
+
+    Three contiguous literal characters from LIT are enough to show targeting
+    intent without treating incidental one- or two-character overlap as signal.
+    Wildcards carry no signal, so broad searches such as ``x*y*`` stay allowed.
+    """
+    skeleton = glob.replace("*", "").replace("?", "")
+    literal = rule.strip("*")
+    return any(literal[i : i + 3] in skeleton for i in range(len(literal) - 2))
+
+
 def match_glob(pattern: object) -> Rule | None:
     """The catalog rule a Grep ``glob`` can select a cataloged file for, or None.
 
@@ -629,9 +641,18 @@ def match_glob(pattern: object) -> Rule | None:
     ``secret.p*m*`` -> core ``secret.p*m`` -> ``*.pem``; the empty literal-prefix
     return still allows broad suffix globs (``*.pem``), and cores without catalog
     overlap (``README*`` -> ``README`` and ``secret.pe*`` -> ``secret.pe``) stay
-    allowed. Rules broad at both ends (e.g. ``*.tfstate.*``) retain the star-empty
-    subset check so broad code globs such as ``a*.py`` stay allowed. Never raises:
-    weird input yields None (fail-open).
+    allowed. INVARIANT for rules broad at both ends (currently only
+    ``*.tfstate.*``): a non-wildcard-opening glob is guaranteed denied when its
+    terminal-star-stripped pattern intersects the rule with internal stars
+    honored AND its literal skeleton contains a contiguous three-character
+    substring of the rule's fixed middle literal (``.tfstate.``). This catches
+    unobfuscated targeters whose literals reference the protected name family
+    (``terraform.*state.backup*``) without denying unrelated broad searches
+    (``a*.py``). Three characters avoid incidental one- or two-character signal;
+    a glob carrying no such catalog signal (e.g. ``x*y*``) deliberately stays
+    allowed even if a wildcard expansion could select a state file, matching the
+    locked best-effort posture for ``README*``/``*.py``. Never raises: weird input
+    yields None (fail-open).
 
     Directory-fragment targeting via a glob (e.g. ``.ssh/*``) is out of scope
     here: like a bare Grep directory target it follows the allow posture, and a
@@ -657,10 +678,10 @@ def match_glob(pattern: object) -> Rule | None:
                 # The core is a subset of the rewritten superset; class-to-'?'
                 # widening may conservatively over-block the original class glob.
                 # Only the terminal star is a broad-search marker (CX5-1).
-                suffix_core = (
-                    core if not rule.pattern.endswith("*") else core.replace("*", "")
-                )
-                if _globs_intersect(suffix_core, rule.pattern):
+                both_ends = rule.pattern.endswith("*")
+                if both_ends and not _has_both_ends_rule_signal(core, rule.pattern):
+                    continue
+                if _globs_intersect(core, rule.pattern):
                     return rule
             elif _globs_intersect(seg_lower, rule.pattern):
                 return rule
