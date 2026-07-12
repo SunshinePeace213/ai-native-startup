@@ -1,7 +1,7 @@
 # Spec: Destructive-Command Guard Hook
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
   <!-- Lifecycle, set by /harness-layer:harness-plan: Drafted for Review → Approved (on a Codex
        `approved` verdict). If round 2 is still changes-requested, the over-cap gate records the exit
        status in ## Codex Verification — approved | accepted-with-unverified-fixes | needs-human. One value only. -->
@@ -195,8 +195,8 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** <approved at round N | accepted-with-unverified-fixes | needs-human>
-- **Rejected findings:** <any Codex finding Claude chose not to act on, each with a one-line rationale; "none" if all warranted findings were applied>
+- **Outcome:** approved at round 3 (user-approved delta round after the round-2 cap)
+- **Rejected findings:** none — all five blocking findings across rounds 1–2 were applied; the one standing advisory (`!`-prefix hook-bypass claim needs a cached KB citation) is recorded as a follow-up checklist item in decisions.md, per the advisories-never-spawn-rounds rule.
 
 ## References
 
@@ -216,4 +216,4 @@ specs/destructive-command-guard/
 - [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
 - [x] Acceptance criteria are specific and testable
 - [x] All four files exist under specs/destructive-command-guard/ and are saved in the repository
-- [ ] Codex has reviewed the spec and Status reflects the outcome
+- [x] Codex has reviewed the spec and Status reflects the outcome
