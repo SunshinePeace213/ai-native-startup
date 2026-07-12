@@ -15,7 +15,10 @@ noted to stderr.
 
 Path convention: see _common.py's "Git helpers" section -- baseline paths
 are stored absolute, resolved from git's root-relative output against the
-project root.
+project root. The write goes through ``_common.update_state`` (load-mutate-
+save under a per-session lock): baseline/last_head are overwritten with the
+freshly computed values, but any tracked set already on disk is merged
+forward, never clobbered.
 """
 
 import sys
@@ -30,22 +33,27 @@ def main() -> int:
         return 0  # nothing to key state on
 
     root = _common.resolve_root()
-    state = _common.load_state(root, session_id)
 
     dirty = _common.git_dirty_paths(root)
     if dirty is None:
         _common.note("git unavailable or not a repo; baseline left empty")
         dirty = []
-    state["baseline"] = dirty
 
     head = _common.git_head(root)
     if head is None:
         _common.note("HEAD unborn or unreadable; last_head left empty")
         head = ""
-    state["last_head"] = head
+
+    def _set_baseline(state: dict) -> dict:
+        # Overwrite baseline/last_head (freshly computed each SessionStart),
+        # but leave tracked as loaded -- never clobber tracked paths a
+        # parallel/earlier hook event already recorded for this session.
+        state["baseline"] = dirty
+        state["last_head"] = head
+        return state
 
     try:
-        _common.save_state(root, session_id, state)
+        _common.update_state(root, session_id, _set_baseline)
     except Exception as exc:  # noqa: BLE001
         _common.note(f"could not save session state: {exc}")
 

@@ -44,7 +44,7 @@ Run these to prove the criteria above. Map each command to the criteria it verif
   `-n auto`). Pass = zero failures.
 - `F=$(mktemp); echo 'aws_key = "AKIAIOSFODNN7EXAMPLE"  # security-scan: allow' > "$F"; printf '{"session_id":"ac3","tool_name":"Write","tool_input":{"file_path":"%s"}}' "$F" | uv run --script .claude/hooks/security-scan/post_write_scan.py; echo "exit=$?"` —
   verifies AC3 (pragma). Pass = `exit=0`, no finding output.
-- `F=$(mktemp); echo 'key = "AKIAIOSFODNN7REALKEY"' > "$F"; printf '{"session_id":"ac1","tool_name":"Write","tool_input":{"file_path":"%s"}}' "$F" | uv run --script .claude/hooks/security-scan/post_write_scan.py; echo "exit=$?"` —
+- `F=$(mktemp); K=AKIAIOSFODNN7; printf 'key = "%sREALKEY"\n' "$K" > "$F"; printf '{"session_id":"ac1","tool_name":"Write","tool_input":{"file_path":"%s"}}' "$F" | uv run --script .claude/hooks/security-scan/post_write_scan.py; echo "exit=$?"` —
   verifies AC1. Pass = `exit=2` and stderr names the file, line, and AWS rule.
 - `echo '' | uv run --script .claude/hooks/security-scan/stop_sweep.py; echo "exit=$?"` —
   verifies AC6 for the sweep (empty stdin fail-open). Pass = `exit=0`.

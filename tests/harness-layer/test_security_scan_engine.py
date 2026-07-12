@@ -15,6 +15,7 @@ secret-shaped fixture is assembled from pieces at runtime; the on-disk source
 never contains a matchable literal.
 """
 
+import concurrent.futures
 import importlib.util
 import os
 import time
@@ -116,10 +117,37 @@ def test_connection_string(scan):
     assert "connection-string" not in rule_ids(scan(kv("url", "https://" + "example.com/app")))
 
 
+def test_connection_string_punctuated_password_still_fires(scan):
+    # Punctuation (incl. ":") in the password is allowed; the userinfo
+    # boundary anchors on the LAST "@" before the host either way.
+    dsn = "postgres://" + "dbuser" + ":" + "p" + ":" + "ssword" + "@host/db"
+    assert "connection-string" in rule_ids(scan(kv("dsn", dsn)))
+
+
+def test_connection_string_placeholder_userinfo_is_clean(scan):
+    # Canonical doc examples: a password that's wholly a placeholder word
+    # (password/changeme/...) must not block.
+    assert scan(kv("dsn", "postgres://user:password@localhost:5432/mydb")) == []
+    assert scan(kv("dsn", "mysql://root:changeme@db/x")) == []
+
+
 def test_hardcoded_credential(scan):
     assert "hardcoded-credential" in rule_ids(scan(kv("access_token", "s3cretValue123")))
     # value under 8 chars is below the credential threshold
     assert "hardcoded-credential" not in rule_ids(scan(kv("token", "short12")))
+
+
+def test_hardcoded_credential_identifier_must_end_with_keyword(scan):
+    # The identifier must END with the keyword -- a keyword merely embedded
+    # inside a longer identifier (tokenizer_, secretary_, token_endpoint,
+    # password_algorithm) must not fire.
+    assert scan(kv("tokenizer_config", "bert-base-uncased")) == []
+    assert scan(kv("secretary_name", "Jane Smith Corp")) == []
+    assert scan(kv("token_endpoint", "authorization_code")) == []
+    assert scan(kv("password_algorithm", "pbkdf2_sha256")) == []
+    # A leading qualifier before the keyword is still fine.
+    assert "hardcoded-credential" in rule_ids(scan(kv("db_password", "s3cretValue1")))
+    assert "hardcoded-credential" in rule_ids(scan(kv("client_secret", "s3cretValue1")))
 
 
 # --- Vulnerability rules: one positive + one negative each --------------------
@@ -140,6 +168,15 @@ def test_pickle_load(scan):
 def test_yaml_unsafe_load(scan):
     assert "yaml-unsafe-load" in rule_ids(scan("cfg = yaml.load(text)"))
     assert "yaml-unsafe-load" not in rule_ids(scan("cfg = yaml.load(text, Loader=yaml.SafeLoader)"))
+
+
+def test_yaml_unsafe_load_trailing_comment_does_not_exempt(scan):
+    # A comment mentioning SafeLoader AFTER the call closes must not suppress
+    # the finding -- only SafeLoader/safe_load inside the call's own args does.
+    assert "yaml-unsafe-load" in rule_ids(scan("yaml.load(data)  # TODO: use SafeLoader"))
+    # The exempting forms stay clean.
+    assert "yaml-unsafe-load" not in rule_ids(scan("yaml.load(f, Loader=yaml.SafeLoader)"))
+    assert "yaml-unsafe-load" not in rule_ids(scan("yaml.safe_load(f)"))
 
 
 def test_sql_string_build(scan):
@@ -213,8 +250,11 @@ PLACEHOLDER_WORDS = [
 
 @pytest.mark.parametrize("word", PLACEHOLDER_WORDS)
 def test_placeholder_word_class_is_skipped(scan, word):
-    # A credential-shaped value containing a placeholder word must never fire.
-    value = "Pad" + word + "Val99"  # >= 8 chars, otherwise a real match
+    # A credential-shaped value containing a delimited placeholder word must
+    # never fire. Hyphen-delimited (not glued into one alnum run) because the
+    # heuristic is word-boundary matching, not substring containment -- see
+    # test_placeholder_substring_embedded_in_real_secret_not_suppressed below.
+    value = "pad-" + word + "-val99"  # >= 8 chars, otherwise a real match
     assert scan(kv("api_key", value)) == []
 
 
@@ -230,6 +270,14 @@ def test_placeholder_all_same_character_is_skipped(scan):
 def test_non_placeholder_credential_still_fires(scan):
     # Guards against the heuristics being so broad they swallow real secrets.
     assert "hardcoded-credential" in rule_ids(scan(kv("password", "Gh7pQ2wKz9")))
+
+
+def test_placeholder_substring_embedded_in_real_secret_not_suppressed(scan):
+    # "xxx" is embedded in a longer alnum run with no delimiter on either
+    # side -- a real high-entropy-looking secret shaped like this must still
+    # fire. Word-boundary matching (not substring containment) is what makes
+    # this the case; this is the false-negative the precision fix closes.
+    assert "hardcoded-credential" in rule_ids(scan(kv("api_key", "aB9kLmQxxxT4pZr2")))
 
 
 # --- Guards -------------------------------------------------------------------
@@ -326,6 +374,30 @@ def test_load_corrupt_state_is_empty(tmp_path):
     assert sec.load_state(tmp_path, "sess-3") == {"baseline": [], "tracked": [], "last_head": ""}
 
 
+def test_load_unreadable_state_notes_and_is_empty(tmp_path, monkeypatch, capsys):
+    # A permission/I/O error reading an existing state file is NOT the
+    # expected missing/corrupt case -- it must be noted (naming the path) so
+    # a silently-disabled sweep stays diagnosable, then fail open to empty.
+    path = sec.state_path(tmp_path, "sess-perm")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("{}")
+
+    real_read_text = Path.read_text
+
+    def fake_read_text(self, *args, **kwargs):
+        if self == path:
+            raise PermissionError(13, "Permission denied")
+        return real_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", fake_read_text)
+    assert sec.load_state(tmp_path, "sess-perm") == {
+        "baseline": [],
+        "tracked": [],
+        "last_head": "",
+    }
+    assert str(path) in capsys.readouterr().err
+
+
 def test_session_id_is_sanitized_to_one_safe_segment(tmp_path):
     path = sec.state_path(tmp_path, "../../etc/passwd")
     assert path.parent == tmp_path / ".claude" / ".security-scan"
@@ -343,3 +415,33 @@ def test_prune_removes_stale_keeps_fresh(tmp_path):
     sec.prune_stale_states(tmp_path)
     assert fresh_path.exists()
     assert not stale_path.exists()
+
+
+def test_update_state_serializes_concurrent_mutations(tmp_path):
+    # N concurrent load-mutate-save cycles for the SAME session, each adding
+    # one distinct tracked path -- the per-session lock must make these
+    # serialize rather than lose updates to a last-writer-wins race.
+    n = 16
+
+    def _add(i: int) -> None:
+        def mutate(state: dict) -> dict:
+            tracked = set(state.get("tracked", []))
+            tracked.add(f"file_{i}.py")
+            state["tracked"] = sorted(tracked)
+            return state
+
+        sec.update_state(tmp_path, "race", mutate)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=n) as pool:
+        list(pool.map(_add, range(n)))
+
+    tracked = sec.load_state(tmp_path, "race")["tracked"]
+    assert tracked == sorted(f"file_{i}.py" for i in range(n))
+
+
+def test_parse_porcelain_paths_z_rename_and_untracked():
+    # -z record shapes: "XY path\0" normally, plus an extra "\0origPath\0"
+    # field for a rename/copy -- only the NEW path is kept, verbatim (no
+    # quoting/escaping to undo in -z mode).
+    raw = "R  new-name.txt\x00old-name.txt\x00 M other.py\x00?? café.txt\x00"
+    assert sec.parse_porcelain_paths(raw) == ["new-name.txt", "other.py", "café.txt"]

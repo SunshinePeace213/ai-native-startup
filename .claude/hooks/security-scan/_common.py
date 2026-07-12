@@ -18,8 +18,14 @@ import select
 import subprocess
 import sys
 import time
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
+
+try:
+    import fcntl  # POSIX-only; guards session-state updates against races
+except ImportError:  # pragma: no cover - non-POSIX platform
+    fcntl = None
 
 VENDORED_DIRS = {"node_modules", ".venv", "dist"}
 DIAGNOSTIC_CAP = 10
@@ -201,14 +207,19 @@ SECRET_RULES: list[Rule] = [
     Rule(
         "connection-string",
         "block",
-        re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://[^\s:/@]+:(?P<val>[^\s:/@]+)@[^\s/]+"),
+        # Password portion allows punctuation (incl. ":") -- greedy backtracking
+        # naturally anchors the boundary on the LAST "@" before the host.
+        re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://[^\s:/@]+:(?P<val>[^\s/]+)@[^\s/]+"),
         "connection-string credential",
     ),
     Rule(
         "hardcoded-credential",
         "block",
+        # The identifier must END with the keyword (an optional leading
+        # qualifier like "db_"/"access_" is fine) -- no identifier chars may
+        # follow it, so "tokenizer_config"/"token_endpoint" etc. don't match.
         re.compile(
-            r"""(?i)[A-Za-z0-9_]*(?:api_?key|secret|token|password)[A-Za-z0-9_]*"""
+            r"""(?i)[A-Za-z0-9_]*(?:api_?key|secret|token|password)"""
             r"""\s*[:=]\s*(?P<q>['"`])(?P<val>[^'"`\n]{8,})(?P=q)"""
         ),
         "hardcoded credential assignment",
@@ -238,7 +249,10 @@ VULN_RULES: list[Rule] = [
     Rule(
         "yaml-unsafe-load",
         "warn",
-        re.compile(r"\byaml\.load\((?!.*(?:SafeLoader|CSafeLoader|safe_load))"),
+        # The exemption lookahead is bounded to "up to the next ')'" so it
+        # checks only the call's own arguments, not a trailing "# ...SafeLoader"
+        # comment sitting after the call closes.
+        re.compile(r"\byaml\.load\((?![^)]*(?:SafeLoader|CSafeLoader|safe_load))"),
         "yaml.load without SafeLoader",
     ),
     Rule(
@@ -298,6 +312,20 @@ PLACEHOLDER_TOKENS = (
     "fake",
     "xxx",
     "redacted",
+    "password",
+    "pass",
+    "pwd",
+    "secret",
+    "user",
+    "username",
+)
+# Word-boundary, not substring: a token must stand as its own delimited word
+# (e.g. the whole "password" in a connection-string password, or "xxx" set off
+# by punctuation) -- a token merely embedded in a longer alnum run (a real
+# high-entropy secret that happens to contain "xxx"/"fake"/"user") must not
+# match.
+_PLACEHOLDER_WORD = re.compile(
+    r"\b(?:" + "|".join(re.escape(tok) for tok in PLACEHOLDER_TOKENS) + r")\b"
 )
 _ANGLE_TEMPLATE = re.compile(r"<[^>]+>")
 
@@ -329,7 +357,7 @@ def is_placeholder(value: str) -> bool:
     if not value:
         return True
     low = value.lower()
-    if any(token in low for token in PLACEHOLDER_TOKENS):
+    if _PLACEHOLDER_WORD.search(low):
         return True
     if _ANGLE_TEMPLATE.search(value):
         return True
@@ -422,11 +450,25 @@ def state_path(root: Path | str, session_id: str) -> Path:
 
 
 def load_state(root: Path | str, session_id: str) -> dict:
-    """Load session state; return an empty state on a missing or corrupt file (fail-open)."""
+    """Load session state; return an empty state on a missing or corrupt file (fail-open).
+
+    A missing file is the expected common case and stays silent. Corrupt JSON
+    also fails open silently. Any other ``OSError`` (permission denied, I/O
+    error, ...) is unexpected plumbing trouble rather than an expected case, so
+    it's noted to stderr by path before falling back to empty -- otherwise the
+    sweep would be silently disabled with no diagnosable trace.
+    """
     path = state_path(root, session_id)
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        raw = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return _empty_state()
+    except OSError as exc:
+        note(f"could not read session state {path} ({exc}); treating as empty")
+        return _empty_state()
+    try:
+        data = json.loads(raw)
+    except ValueError:
         return _empty_state()
     if not isinstance(data, dict):
         return _empty_state()
@@ -441,8 +483,9 @@ def load_state(root: Path | str, session_id: str) -> dict:
 def save_state(root: Path | str, session_id: str, state: dict) -> None:
     """Write session state, deduping the sets. Creates the state dir as needed.
 
-    Writes to a temp file then ``os.replace`` -- atomic enough for the
-    single-writer-per-session use here.
+    Writes to a temp file then ``os.replace`` -- atomic enough that a reader
+    never sees a torn write, but this alone does not serialize concurrent
+    read-modify-write cycles across processes. Use ``update_state`` for that.
     """
     path = state_path(root, session_id)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -455,6 +498,58 @@ def save_state(root: Path | str, session_id: str, state: dict) -> None:
     tmp = path.parent / f".{path.name}.{os.getpid()}.tmp"
     tmp.write_text(json.dumps(payload), encoding="utf-8")
     os.replace(tmp, path)
+
+
+def _lock_path(root: Path | str, session_id: str) -> Path:
+    return _state_dir(root) / f"{_sanitize_session_id(session_id)}.lock"
+
+
+@contextlib.contextmanager
+def _session_lock(root: Path | str, session_id: str) -> Iterator[None]:
+    """Best-effort exclusive lock scoped to one session, for ``update_state``.
+
+    Fails open: no ``fcntl`` (non-POSIX platform) or any lock error (missing
+    dir, permission, I/O) yields an unlocked context with a stderr note --
+    it never raises, since plumbing must not wedge a hook.
+    """
+    if fcntl is None:
+        note(f"file locking unavailable for session {session_id}; proceeding unlocked")
+        yield
+        return
+    path = _lock_path(root, session_id)
+    handle = None
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = open(path, "w")  # noqa: SIM115 -- held across the yield, closed in finally
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+    except OSError as exc:
+        note(f"could not lock session state for {session_id} ({exc}); proceeding unlocked")
+        if handle is not None:
+            handle.close()
+        yield
+        return
+    try:
+        yield
+    finally:
+        with contextlib.suppress(OSError):
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        handle.close()
+
+
+def update_state(root: Path | str, session_id: str, mutate_fn: Callable[[dict], dict]) -> dict:
+    """Load -> mutate -> save session state, serialized against other processes.
+
+    Holds a per-session file lock (see ``_session_lock``) across a fresh
+    ``load_state``, ``mutate_fn(state)``, and ``save_state``, so concurrent
+    hook events for the same session merge instead of last-writer-wins
+    clobbering each other's updates. ``mutate_fn`` returns the state dict to
+    persist (it may mutate and return the one it was given).
+    """
+    with _session_lock(root, session_id):
+        state = load_state(root, session_id)
+        state = mutate_fn(state)
+        save_state(root, session_id, state)
+    return state
 
 
 def prune_stale_states(root: Path | str, max_age_seconds: int = STATE_MAX_AGE_SECONDS) -> None:
@@ -493,25 +588,27 @@ def run_git(args: list[str], cwd: Path | str) -> tuple[int, str, str] | None:
 
 
 def parse_porcelain_paths(output: str) -> list[str]:
-    """Root-relative paths from ``git status --porcelain`` text.
+    """Root-relative NEW paths from ``git status --porcelain -z`` NUL-delimited output.
 
-    Each line is ``XY path`` or, for a rename/copy, ``XY old -> new``; only
-    the new path is kept. A path git wrapped in double quotes (unusual
-    characters) is unwrapped as-is; escape sequences inside are not decoded
-    (not needed for this repo's filenames).
+    Each record is ``XY path\\0``. A rename/copy record (``R``/``C`` in either
+    status column) carries one extra NUL-terminated field right after it for
+    the original path, which is skipped -- only the new path is kept. -z mode
+    emits paths verbatim: no quoting and no C-style escaping to undo, unlike
+    the (unsuitable for this purpose) default text format.
     """
+    fields = output.split("\0")
     paths = []
-    for line in output.splitlines():
-        if len(line) < 4:
+    i = 0
+    while i < len(fields):
+        record = fields[i]
+        i += 1
+        if len(record) < 4:
             continue
-        rest = line[3:]
-        if " -> " in rest:
-            rest = rest.split(" -> ", 1)[1]
-        rest = rest.strip()
-        if len(rest) >= 2 and rest[0] == '"' and rest[-1] == '"':
-            rest = rest[1:-1]
-        if rest:
-            paths.append(rest)
+        status, path = record[:2], record[3:]
+        if path:
+            paths.append(path)
+        if "R" in status or "C" in status:
+            i += 1  # skip the accompanying original-path field
     return paths
 
 
@@ -521,7 +618,7 @@ def git_dirty_paths(root: Path | str) -> list[str] | None:
     None means git couldn't be spawned or ``root`` isn't a repo -- a
     fail-open signal distinct from "clean repo", which returns ``[]``.
     """
-    res = run_git(["status", "--porcelain"], root)
+    res = run_git(["status", "--porcelain", "-z"], root)
     if res is None:
         return None
     code, out, _err = res
@@ -545,11 +642,11 @@ def git_head(root: Path | str) -> str | None:
 
 def git_diff_paths(root: Path | str, old_rev: str, new_rev: str) -> list[str] | None:
     """Absolute paths changed between ``old_rev`` and ``new_rev``; None if the diff fails."""
-    res = run_git(["diff", "--name-only", f"{old_rev}..{new_rev}"], root)
+    res = run_git(["diff", "--name-only", "-z", f"{old_rev}..{new_rev}"], root)
     if res is None:
         return None
     code, out, _err = res
     if code != 0:
         return None
     root = Path(root)
-    return [str(root / line) for line in out.splitlines() if line.strip()]
+    return [str(root / p) for p in out.split("\0") if p]

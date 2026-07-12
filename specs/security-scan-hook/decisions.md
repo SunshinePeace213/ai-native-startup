@@ -71,7 +71,8 @@ pragma and built-in placeholder heuristics. Everything is stdlib-only regex — 
 - **Q:** (design, lead-resolved) Stop-loop posture when findings persist?
   - **A (revised, Codex round 1):** The sweep parses `stop_hook_active` exactly as the KB guide
     prescribes: when false/absent, block (exit 2) on secret findings with full diagnostics; when
-    true, print a final loud warning and exit 0. It blocks at most once per turn without
+    true, print a final loud warning and exit 0 — stderr only (user/debug log), since Stop has no
+    non-blocking channel to the agent per the KB. It blocks at most once per turn without
     progress.
   - **Why:** The original posture (keep blocking to the 8-cap) contradicted the cached guidance
     ("parse `stop_hook_active` and exit early if true") and could not deliver a hard gate anyway

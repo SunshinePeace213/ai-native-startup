@@ -151,8 +151,9 @@ Use these files to complete the task:
 - Corrupt or missing session-state file → treated as empty (sweep passes; tracking restarts)
 - Concurrent sessions/worktrees → state keyed by `session_id` under each project dir; no sharing
 - Stop-loop safety → the sweep parses `stop_hook_active` per the KB guide: false/absent → block
-  (exit 2) on secret findings; true → print a final loud warning and exit 0. It blocks at most
-  once per turn without progress, so the runtime's 8-block override never has to engage
+  (exit 2) on secret findings; true → print a final loud warning (stderr only — user/debug log,
+  not agent context; Stop has no non-blocking context channel per the KB) and exit 0. It blocks
+  at most once per turn without progress, so the runtime's 8-block override never has to engage
 - Re-run idempotency → scanning is pure (same content, same findings); tracked paths are deduped
 
 ## Red Flags
@@ -177,6 +178,9 @@ Use these files to complete the task:
   the KB-documented non-blocking path; the build's e2e task verifies the JSON shape lands on
   stdout. If a runtime version ignores it, warnings degrade silently — acceptable, since warnings
   are advisory by decision.
+- PostToolUse hooks run in parallel with the auto-format hooks (KB), so the per-write scan is
+  immediate best-effort feedback; the authoritative gate is the Stop sweep, which re-scans every
+  tracked file after the turn's tool hooks have settled.
 - Follow-up candidates live in decisions.md → Open Questions (e.g. rule-table extensions).
 
 ## Codex Verification

@@ -25,7 +25,10 @@ with a note and resets last_head to current HEAD.
 Never blocks: always exits 0. Path convention: see _common.py's "Git
 helpers" section -- tracked paths are stored absolute, resolved from git's
 root-relative output against the project root (matching post_write_scan.py,
-which stores the already-absolute tool_input.file_path as-is).
+which stores the already-absolute tool_input.file_path as-is). The state
+merge itself goes through ``_common.update_state`` (load-mutate-save under a
+per-session lock) so a concurrent hook event for the same session can't
+clobber this one's tracked/last_head update.
 """
 
 import sys
@@ -44,35 +47,37 @@ def main() -> int:
         return 0
 
     root = _common.resolve_root()
-    state = _common.load_state(root, session_id)
-    baseline = set(state.get("baseline", []))
-    tracked = set(state.get("tracked", []))
 
     dirty = _common.git_dirty_paths(root)
     if dirty is None:
         _common.note("git unavailable or not a repo; skipping Bash tracking")
         return 0
-    tracked |= set(dirty) - baseline
-
-    last_head = state.get("last_head") or ""
     head = _common.git_head(root)
-    if head is None:
-        _common.note("HEAD unborn or unreadable; skipping commit-diff union")
-    else:
-        if not last_head:
-            _common.note("no stored last_head; skipping commit-diff union")
-        elif head != last_head:
-            diff_paths = _common.git_diff_paths(root, last_head, head)
-            if diff_paths is None:
-                _common.note(f"stored last_head {last_head!r} unreachable; resetting to HEAD")
-            else:
-                tracked |= set(diff_paths)
-        state["last_head"] = head
 
-    state["tracked"] = sorted(tracked)
+    def _merge(state: dict) -> dict:
+        baseline = set(state.get("baseline", []))
+        tracked = set(state.get("tracked", []))
+        tracked |= set(dirty) - baseline
+
+        last_head = state.get("last_head") or ""
+        if head is None:
+            _common.note("HEAD unborn or unreadable; skipping commit-diff union")
+        else:
+            if not last_head:
+                _common.note("no stored last_head; skipping commit-diff union")
+            elif head != last_head:
+                diff_paths = _common.git_diff_paths(root, last_head, head)
+                if diff_paths is None:
+                    _common.note(f"stored last_head {last_head!r} unreachable; resetting to HEAD")
+                else:
+                    tracked |= set(diff_paths)
+            state["last_head"] = head
+
+        state["tracked"] = sorted(tracked)
+        return state
 
     try:
-        _common.save_state(root, session_id, state)
+        _common.update_state(root, session_id, _merge)
     except Exception as exc:  # noqa: BLE001
         _common.note(f"could not save session state: {exc}")
 

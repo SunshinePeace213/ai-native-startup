@@ -37,13 +37,16 @@ skill. Shared boilerplate lives in `_common.py`.
 Hooks under `.claude/hooks/security-scan/` scan agent-written content for secrets and
 common vulnerability patterns (stdlib regex, no external scanner):
 
-- `post_write_scan.py` — `Write|Edit|MultiEdit`: scans the saved file
+- `post_write_scan.py` — `Write|Edit|MultiEdit`: scans the saved file; PostToolUse hooks run in
+  parallel with the auto-format hooks (KB), so this is immediate best-effort feedback, not the
+  authoritative gate
 - `session_baseline.py` — SessionStart: records already-dirty files as a baseline so the
   user's own uncommitted work is never flagged
 - `track_bash_writes.py` — PostToolUse + PostToolUseFailure on `Bash`: tracks files newly
   dirtied or committed by shell commands (baseline files excluded)
-- `stop_sweep.py` — Stop/SubagentStop: re-scans every file tracked this session before the
-  turn may end
+- `stop_sweep.py` — Stop/SubagentStop: re-scans every file tracked this session before the turn
+  may end; this exit-2 block is the only agent-visible event — the `stop_hook_active` warning
+  and vuln-only findings print to stderr for the user/debug log only, never fed back to the agent
 
 Secret findings (API keys, tokens, private keys, credentials) exit 2 with `file:line rule
 message` diagnostics — remove the secret. Vulnerability findings (unsafe `yaml.load`,
@@ -86,7 +89,10 @@ lockfiles.
 │       └── stop_sweep.py          # Stop/SubagentStop sweep over the tracked set
 └── skills/
     └── meta-install/SKILL.md      # fresh-clone setup: bun install + uv sync
-tests/harness-layer/hooks/         # pytest suite for all hooks
+tests/harness-layer/
+├── hooks/                          # pytest suite for the attribution + auto-format hooks
+├── test_security_scan_engine.py    # engine unit tests: rules, suppression, guards
+└── test_security_scan_hooks.py     # e2e subprocess tests for the four security-scan scripts
 eslint.config.mjs                  # ESLint flat config (React-ready)
 .prettierrc.json                   # Prettier config
 .prettierignore

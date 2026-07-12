@@ -16,9 +16,10 @@ never mixed. No findings, no payload, or no file_path exit 0 silently.
 Path convention: ``tool_input.file_path`` arrives already absolute from
 Claude Code and is stored/scanned as-is (matching the auto-format hooks'
 convention) -- see _common.py's "Git helpers" section for how git-derived
-paths are made to match. State updates (load_state/save_state) are
-best-effort: any failure there is noted to stderr but never changes the
-exit code (fail-open).
+paths are made to match. State updates go through ``_common.update_state``
+(load-mutate-save under a per-session lock, so parallel hook events don't
+drop each other's tracked paths): best-effort, any failure there is noted to
+stderr but never changes the exit code (fail-open).
 """
 
 import json
@@ -37,18 +38,22 @@ def main() -> int:
         return 0
 
     root = _common.resolve_root()
-    findings = _common.scan_file(file_path, root)
 
     session_id = payload.get("session_id")
     if isinstance(session_id, str) and session_id.strip():
-        try:
-            state = _common.load_state(root, session_id)
+
+        def _add_tracked(state: dict) -> dict:
             tracked = set(state.get("tracked", []))
             tracked.add(file_path)
             state["tracked"] = sorted(tracked)
-            _common.save_state(root, session_id, state)
+            return state
+
+        try:
+            _common.update_state(root, session_id, _add_tracked)
         except Exception as exc:  # noqa: BLE001
             _common.note(f"could not update session state: {exc}")
+
+    findings = _common.scan_file(file_path, root)
 
     if not findings:
         return 0

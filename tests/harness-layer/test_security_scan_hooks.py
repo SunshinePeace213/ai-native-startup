@@ -193,6 +193,25 @@ def test_post_write_diagnostics_are_capped(project):
     assert "... and 4 more" in res.stderr  # 14 findings, cap 10 + tail
 
 
+def test_post_write_tracks_before_scan_survives_formatter_race(project):
+    # PostToolUse hooks run in parallel with the auto-format hooks, so the
+    # scan can race a formatter still writing the file and see it empty (or
+    # unreadable). The tracked-set update happens BEFORE the scan, so the
+    # path still lands in the tracked set for the Stop sweep even when this
+    # write's own scan finds nothing.
+    target = project / "racy.py"
+    target.write_text("")  # momentarily empty at scan time
+    res = run_hook("post_write_scan.py", write_payload("race1", target), project)
+    assert res.returncode == 0
+    assert str(target) in read_state(project, "race1")["tracked"]
+
+    # The real (secret-bearing) content lands after the racy scan settles.
+    target.write_text(secret_line())
+    res = run_hook("stop_sweep.py", stop_payload("race1"), project)
+    assert res.returncode == 2
+    assert f"{target}:1 aws-access-key" in res.stderr
+
+
 # --- Session tracking: baseline exclusion + round-2 cases (AC4) ----------------
 
 
@@ -261,6 +280,86 @@ def test_commit_within_bash_call_is_tracked_via_head_diff_and_swept(git_project)
     res = run_hook("stop_sweep.py", stop_payload(sid), git_project)
     assert res.returncode == 2
     assert "aws-access-key" in res.stderr
+
+
+# --- Session-state locking: no lost updates under parallel hook events ---------
+
+
+def test_concurrent_post_write_hooks_do_not_lose_tracked_updates(project):
+    # N real post_write_scan.py subprocesses, all for the SAME session, each
+    # tracking a distinct file concurrently. Without the per-session file
+    # lock this is a classic load-mutate-save race: last writer wins and
+    # earlier tracked paths silently vanish.
+    import concurrent.futures
+
+    sid = "race1"
+    n = 8
+    targets = []
+    for i in range(n):
+        target = project / f"concurrent_{i}.py"
+        target.write_text(f"value_{i} = 1\n")
+        targets.append(target)
+
+    def _run(target: Path) -> subprocess.CompletedProcess:
+        return run_hook("post_write_scan.py", write_payload(sid, target), project)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=n) as pool:
+        results = list(pool.map(_run, targets))
+
+    for res in results:
+        assert res.returncode == 0
+
+    tracked = set(read_state(project, sid)["tracked"])
+    assert tracked == {str(t) for t in targets}
+
+
+def test_session_baseline_merges_without_clobbering_existing_tracked(git_project):
+    # Simulate an in-flight tracked path already on disk (e.g. a parallel
+    # PostToolUse hook) before SessionStart (re-)runs. The baseline write
+    # must overwrite baseline/last_head but MERGE tracked, not clobber it.
+    sid = "merge1"
+    already = git_project / "already-tracked.py"
+    write_state(git_project, sid, [str(already)])
+
+    res = run_hook("session_baseline.py", json.dumps({"session_id": sid}), git_project)
+    assert res.returncode == 0
+    state = read_state(git_project, sid)
+    assert str(already) in state["tracked"]
+    assert state["last_head"]  # baseline/last_head are still freshly computed
+
+
+# --- Git path parsing: -z handles spaces, non-ASCII, and renames --------------
+
+
+def test_bash_tracks_filename_with_spaces(git_project):
+    sid = "sp1"
+    run_hook("session_baseline.py", json.dumps({"session_id": sid}), git_project)
+    weird = git_project / "a file with spaces.txt"
+    weird.write_text("hi\n")
+    res = run_hook("track_bash_writes.py", bash_payload(sid), git_project)
+    assert res.returncode == 0
+    assert str(weird) in read_state(git_project, sid)["tracked"]
+
+
+def test_bash_tracks_non_ascii_filename(git_project):
+    sid = "sp2"
+    run_hook("session_baseline.py", json.dumps({"session_id": sid}), git_project)
+    weird = git_project / "café.txt"
+    weird.write_text("hi\n")
+    res = run_hook("track_bash_writes.py", bash_payload(sid), git_project)
+    assert res.returncode == 0
+    assert str(weird) in read_state(git_project, sid)["tracked"]
+
+
+def test_bash_tracks_renamed_file_as_new_path(git_project):
+    sid = "sp3"
+    run_hook("session_baseline.py", json.dumps({"session_id": sid}), git_project)
+    renamed = git_project / "README-renamed.md"
+    git(git_project, "mv", "README.md", "README-renamed.md")
+    res = run_hook("track_bash_writes.py", bash_payload(sid), git_project)
+    assert res.returncode == 0
+    tracked = read_state(git_project, sid)["tracked"]
+    assert str(renamed) in tracked
 
 
 # --- Stop sweep: block-then-pass, stop_hook_active, fail-open (AC5) ------------
