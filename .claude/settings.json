@@ -15,6 +15,10 @@
           },
           {
             "type": "command",
+            "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/destructive-guard/block_destructive.py"
+          },
+          {
+            "type": "command",
             "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/sensitive-files/bash_guard.py"
           }
         ]

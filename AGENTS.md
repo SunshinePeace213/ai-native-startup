@@ -22,7 +22,7 @@ When writing test cases or running Python tests, use the installed pytest plugin
 
 ## Harness Development
 
-- **Hooks**: files Claude edits are auto-formatted in place (Prettier / ESLint / Ruff / markdownlint); unfixable lint errors come back as exit-2 diagnostics — fix them. New worktrees get `bun install` + `uv sync` automatically; on a fresh clone use the `meta-install` skill. Details: [HARNESS-LAYER.md](./HARNESS-LAYER.md)
+- **Hooks**: files Claude edits are auto-formatted in place (Prettier / ESLint / Ruff / markdownlint); unfixable lint errors come back as exit-2 diagnostics — fix them. New worktrees get `bun install` + `uv sync` automatically; on a fresh clone use the `meta-install` skill. Destructive Bash commands are blocked pre-execution by the destructive-guard hook (deny or ask). Details: [HARNESS-LAYER.md](./HARNESS-LAYER.md)
 - **Keep it short**: Write harness/prompt files (skills, agents, commands, and rules under `.claude/` and `.agents/`) in fluent, KISS prose. Every line loads into context — say it once, briefly, then stop. When in doubt, cut.
 - **Memory goes here**: Persist project memory and preferences in this `AGENTS.md`, not `CLAUDE.md` (which only `@`-imports this file).
 - **Memory series**: The root ALL-CAPS files are the project memory series; `AGENTS.md` is the hub. A genuinely new convention series → a new root `ALL-CAPS.md` referenced from here — brief and imperative, no rationale.

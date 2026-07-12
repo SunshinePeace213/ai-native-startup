@@ -46,6 +46,7 @@ FORMAT_MATCHER = ("Edit", "MultiEdit", "Write")
 EXPECTED_BINDINGS = Counter(
     {
         ("block_attribution.py", "PreToolUse", ("Bash",)): 1,
+        ("destructive-guard/block_destructive.py", "PreToolUse", ("Bash",)): 1,
         ("auto-format/js_ts.py", "PostToolUse", FORMAT_MATCHER): 1,
         ("auto-format/data.py", "PostToolUse", FORMAT_MATCHER): 1,
         ("auto-format/markdown.py", "PostToolUse", FORMAT_MATCHER): 1,
