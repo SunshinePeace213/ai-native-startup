@@ -23,39 +23,19 @@
           {
             "type": "command",
             "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format/js_ts.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
+          },
           {
             "type": "command",
             "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format/data.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
+          },
           {
             "type": "command",
             "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format/markdown.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
+          },
           {
             "type": "command",
             "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format/python.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
+          },
           {
             "type": "command",
             "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/security-scan/post_write_scan.py"
@@ -118,7 +98,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format/worktree_create.py"
+            "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree/worktree_create.py"
           }
         ]
       }
@@ -128,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format/worktree_remove.py"
+            "command": "uv run --script \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree/worktree_remove.py"
           }
         ]
       }
