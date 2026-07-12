@@ -12,18 +12,22 @@
 - **AC2** — Worktree is a real hook feature: `worktree_create.py` and `worktree_remove.py` move
   byte-identical (rename-only) to `.claude/hooks/worktree/`; the new `_common.py` there exposes
   exactly the five helpers `note`, `read_payload`, `resolve_root`, `run`, `tail` plus the
-  `STDIN_TIMEOUT = 5.0` constant and nothing else; no `worktree_*` files remain under
-  `auto-format/`; the hermetic worktree tests pass against the new location.
+  `STDIN_TIMEOUT = 5.0` constant and nothing else — the exact surface is AST-asserted by
+  [validate.py](./validate.py), which rejects any extra function, constant, or class; no
+  `worktree_*` files remain under `auto-format/`; the hermetic worktree tests pass against the
+  new location.
 - **AC3** — `settings.json` is consolidated and repointed: exactly one PostToolUse block with
   matcher `Write|Edit|MultiEdit` whose `hooks` array holds exactly the five known commands
   (js_ts, data, markdown, python, post_write_scan); exactly one PostToolUse `Bash` block; the
   WorktreeCreate/WorktreeRemove commands reference `.claude/hooks/worktree/`.
-- **AC4** — `harness-build.md` encodes the five upgrades, each provable by its anchor phrase:
-  fixer MODEL per issue difficulty with the effort tier stated in the task brief (old
-  "fixer subagent (effort per issue)" phrasing gone); parallel background fixers for disjoint
-  clusters with exactly ONE fix commit; concurrent launch of unblocked, file-disjoint tasks;
-  manifest keyed by kebab-case Task ID with the GitHub-autolinks warning; `gh pr create` with
-  `--assignee` and the issue's mirrored type + `priority:P<n>` labels read via `--json labels`.
+- **AC4** — `harness-build.md` encodes the five upgrades as complete clause relationships,
+  asserted by [validate.py](./validate.py): fixer MODEL per issue difficulty via the Agent tool's
+  `model` param with the effort tier stated in the task brief and inherited session reasoning
+  effort (old "fixer subagent (effort per issue)" phrasing gone; no effort key on any Agent
+  deployment); parallel background fixers for disjoint clusters with exactly ONE fix commit;
+  concurrent launch of unblocked, file-disjoint tasks; manifest keyed by kebab-case Task ID with
+  the GitHub-autolinks warning; `gh pr create` with `--assignee` and the issue's mirrored type +
+  `priority:P<n>` labels read via `--json labels`.
 - **AC5** — Memory is in sync: HARNESS-LAYER.md's files tree matches the real `.claude/hooks/` and
   `tests/harness-layer/` layout, its Worktree Lifecycle section points at
   `.claude/hooks/worktree/`, and it carries the one-matcher-block rule; AGENTS.md Python Testing
@@ -31,8 +35,9 @@
 
 ## Validation Commands
 
-Run these to prove the criteria above. Map each command to the criteria it verifies.
-`BUILD_MD=.claude/commands/harness-layer/harness-build.md` in the AC4 commands.
+Run these to prove the criteria above from the repo root. Every command is self-contained. The
+prose-heavy contracts (AC2 module surface, AC4 clause relationships) are asserted by the
+checked-in validator, which reports each missing clause by name.
 
 ### AC1 — per-feature selection, nothing lost
 
@@ -44,8 +49,7 @@ Run these to prove the criteria above. Map each command to the criteria it verif
 
 ### AC2 — worktree feature dir
 
-- `grep -E '^def ' .claude/hooks/worktree/_common.py | sort` — pass: exactly five lines, defining `note`, `read_payload`, `resolve_root`, `run`, `tail` and nothing else.
-- `grep -q '^STDIN_TIMEOUT = 5.0' .claude/hooks/worktree/_common.py && echo ok` — pass: `ok`.
+- `uv run python specs/per-feature-harness-restructure/validate.py` — pass: exit 0 with "spec validation OK". Asserts (via AST) that `.claude/hooks/worktree/_common.py` defines exactly `note`, `read_payload`, `resolve_root`, `run`, `tail`, exactly the constant `STDIN_TIMEOUT = 5.0`, and no classes — any extra symbol fails with a named message. (Also asserts all AC4 clauses; listed once more below.)
 - `git diff --name-status -M100% origin/main...HEAD -- .claude/hooks | grep -E '^R100'` — pass: exactly two lines, the R100 (byte-identical) renames of `worktree_create.py` and `worktree_remove.py`.
 - `ls .claude/hooks/worktree/` — pass: exactly `_common.py worktree_create.py worktree_remove.py`.
 - `ls .claude/hooks/auto-format/ | grep worktree` — pass: no output (grep exit 1).
@@ -59,18 +63,21 @@ Run these to prove the criteria above. Map each command to the criteria it verif
 - `jq -e '.hooks.WorktreeCreate[0].hooks[0].command | contains("hooks/worktree/worktree_create.py")' .claude/settings.json` — pass: `true`.
 - `jq -e '.hooks.WorktreeRemove[0].hooks[0].command | contains("hooks/worktree/worktree_remove.py")' .claude/settings.json` — pass: `true`.
 
-### AC4 — harness-build.md upgrades (one anchor per clause)
+### AC4 — harness-build.md upgrades (validator-asserted relationships)
 
-- `! grep -q "fixer subagent (effort per issue)" $BUILD_MD && echo ok` — pass: `ok` (hardcoded-sonnet fixer phrasing removed; clause: fixer routing).
-- `grep -q "per issue difficulty" $BUILD_MD && echo ok` — pass: `ok` (clause: model chosen per issue difficulty).
-- `grep -q "disjoint clusters" $BUILD_MD && echo ok` — pass: `ok` (clause: parallel fixers on disjoint finding clusters).
-- `grep -q "ONE fix commit" $BUILD_MD && echo ok` — pass: `ok` (clause: single fix commit preserved).
-- `grep -q "file-disjoint tasks" $BUILD_MD && echo ok` — pass: `ok` (clause: concurrent unblocked implement tasks).
-- `grep -q "kebab-case Task ID" $BUILD_MD && echo ok` — pass: `ok` (clause: manifest key).
-- `grep -q "GitHub autolinks" $BUILD_MD && echo ok` — pass: `ok` (clause: the never-`#N` warning).
-- `grep -q -- "--assignee" $BUILD_MD && echo ok` — pass: `ok` (clause: PR assignee).
-- `grep -q "priority:P" $BUILD_MD && echo ok` — pass: `ok` (clause: priority label mirrored).
-- `grep -q -- "--json labels" $BUILD_MD && echo ok` — pass: `ok` (clause: labels read from the issue).
+- `uv run python specs/per-feature-harness-restructure/validate.py` — pass: exit 0. One check per
+  clause, each a relationship (patterns tolerate markdown line-wrapping, required to co-occur
+  within a bounded window), with the failing clause named on miss:
+  1. **fixer model routing** — "model … per issue difficulty" AND "`model` param" present;
+     "fixer subagent(s) (effort per issue)" forbidden.
+  2. **effort mechanism** — "effort tier … task brief" AND "inherit… reasoning effort" present;
+     an `effort:`/`effort=` key within 80 chars after "Agent" forbidden (Codex's
+     `model_reasoning_effort=` config line stays legitimate).
+  3. **parallel fix clusters** — "disjoint clusters" AND "parallel … background fixer" AND
+     "ONE fix commit" present.
+  4. **concurrent implement** — "unblocked … file-disjoint tasks … concurrent*" within one window.
+  5. **manifest key** — "kebab-case Task ID" AND "GitHub autolinks" present.
+  6. **PR metadata** — "--assignee" AND "type label … priority:P" AND "--json labels" present.
 
 ### AC5 — memory sync
 

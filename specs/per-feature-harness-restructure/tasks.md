@@ -75,7 +75,8 @@ Memory sync (HARNESS-LAYER.md, AGENTS.md) documenting the final state, then full
   `run`, `tail` PLUS the module constant `STDIN_TIMEOUT = 5.0` (read by `read_payload`) from
   `auto-format/_common.py`, with only the imports those helpers need and the module docstring
   adapted; signatures and bodies unchanged. Nothing else — no `VENDORED_DIRS`, no
-  `DIAGNOSTIC_CAP`, none of the other helpers.
+  `DIAGNOSTIC_CAP`, none of the other helpers. The exact surface is AST-asserted by
+  `specs/per-feature-harness-restructure/validate.py` — run it before hand-off.
 - `.claude/settings.json`: repoint the `WorktreeCreate` and `WorktreeRemove` commands to
   `.claude/hooks/worktree/…`; replace the five PostToolUse `Write|Edit|MultiEdit` entries with ONE
   block whose `hooks` array lists the five commands in order js_ts, data, markdown, python,
@@ -111,6 +112,8 @@ Memory sync (HARNESS-LAYER.md, AGENTS.md) documenting the final state, then full
   the linked issue's type label and `priority:P<n>` label (read via
   `gh issue view <N> --json labels`).
 - Keep the command's KISS prose style; no other sections touched (R1-concurrency flow unchanged).
+- `specs/per-feature-harness-restructure/validate.py` is the executable contract for these edits —
+  its six AC4 clause checks (relationships, not fragments) must all pass; run it before hand-off.
 
 ### 3. Per-feature test tree + distributed conftests
 

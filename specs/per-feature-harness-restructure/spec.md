@@ -118,6 +118,7 @@ new convention is invented.
 - `tests/harness-layer/hooks/auto-format/conftest.py` — `hook_dir` → `.claude/hooks/auto-format`; `linter_root`
 - `tests/harness-layer/hooks/attribution/conftest.py` — `hook_dir` → `.claude/hooks` (script sits at hooks root)
 - `tests/harness-layer/hooks/worktree/conftest.py` — `hook_dir` → `.claude/hooks/worktree`; `wt_repo`, stub helpers
+- `specs/per-feature-harness-restructure/validate.py` — (already in this plan) deterministic AC2/AC4 validator: AST-asserts the trimmed module surface, checks each harness-build.md clause as a relationship
 
 ## Edge Cases
 
@@ -167,7 +168,8 @@ specs/per-feature-harness-restructure/
 ├── spec.md                 # this file — what & why, tracking, review record
 ├── decisions.md            # grilling record: resolved decisions, assumptions, out-of-scope
 ├── tasks.md                # how & who: phases, team, step-by-step tasks
-└── acceptance-criteria.md  # done: acceptance criteria + validation commands
+├── acceptance-criteria.md  # done: acceptance criteria + validation commands
+└── validate.py             # deterministic AC2/AC4 validator (module surface + clause checks)
 ```
 
 ## Self Validation
