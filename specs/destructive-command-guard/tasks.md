@@ -64,7 +64,7 @@ Docs (HARNESS-LAYER.md section, AGENTS.md half-line) and full-suite validation a
 - **Parallel:** false
 - **Satisfies:** AC1, AC2, AC3, AC5, AC6
 - Create `.claude/hooks/destructive-guard/_common.py`: frozen `Rule` dataclass (`rule_id`, `category`, `severity`, `pattern`, `message`, `fix_hint`), `PROTECTED_ROOTS` and `CRITICAL_FILES` constants, the full flat `RULES` table exactly as specified in spec.md's rule table, fail-open stdin plumbing mirrored from `security-scan/_common.py` (`note()`, `read_payload()` with 5s bounded select), and `evaluate(command) -> tuple[list[Rule], list[Rule]]` returning (deny_matches, ask_matches). No shebang or PEP 723 marker — it is a library, not an entrypoint.
-- Create `.claude/hooks/destructive-guard/block_destructive.py`: PEP 723 `uv run --script` entrypoint (`requires-python >= 3.12`, no dependencies). Only act when `tool_name == "Bash"` and `tool_input.command` is a non-empty string; cap scanning at 64 KB with a truncation note. Deny matches → print up to 3 rules in the locked `BLOCKED (<Category>) / Why: / Fix:` stderr format, exit 2. Else ask matches → print the `permissionDecision: "ask"` JSON (spec.md message contract) to stdout, exit 0. Else exit 0 silently. Top-level fail-open wrapper: unexpected exceptions note to stderr and exit 0.
+- Create `.claude/hooks/destructive-guard/block_destructive.py`: PEP 723 `uv run --script` entrypoint (`requires-python >= 3.12`, no dependencies). Only act when `tool_name == "Bash"` and `tool_input.command` is a non-empty string; cap scanning at 64 KB with a truncation note. Deny matches → print up to 3 rules in the locked `BLOCKED (<Category>/<rule_id>) / Why: / Fix:` stderr format, exit 2. Else ask matches → print the `permissionDecision: "ask"` JSON (spec.md message contract) to stdout, exit 0. Else exit 0 silently. Top-level fail-open wrapper: unexpected exceptions note to stderr and exit 0.
 - Patterns: word-boundary, never anchored to string start (wrapper prefixes and compound commands must match); `/dev/null`//`/dev/stdout` never match device/fill rules; bounded `dd count=` to regular files allowed.
 - The guard must be stateless and must never execute, shell out, or write files.
 
@@ -78,8 +78,8 @@ Docs (HARNESS-LAYER.md section, AGENTS.md half-line) and full-suite validation a
 - **Parallel:** true
 - **Satisfies:** AC1, AC2, AC3, AC4, AC5, AC6, AC8
 - Create `tests/harness-layer/hooks/destructive-guard/test_block_destructive.py` following HOOK-TESTING.md: use the shared `run_hook` launcher (script path `"destructive-guard/block_destructive.py"`) and `load_hook_module` for in-process rule-table assertions; never spawn `uv run --script` directly, never `sys.path.insert`.
-- Parametrized deny matrix: for EVERY deny rule in the table, at least one fixture command that must exit 2 with `BLOCKED (<category>)`, `Why:`, and `Fix:` on stderr — including all four `rm` recursive-force spellings, a `sudo`-prefixed variant, and a compound-command variant.
-- Parametrized allow matrix: for every rule, at least one near-miss that must exit 0 silently (e.g. `rm -f single-file`, `dd if=/dev/zero of=./f bs=1M count=10`, `> /dev/null`, `git push`, `chmod 755 script.sh`, `uv run pytest`, `bun install`).
+- Parametrized deny matrix: for EVERY deny rule in the table, at least one fixture command that must exit 2 with `BLOCKED (<category>/<rule_id>)`, `Why:`, and `Fix:` on stderr — including all four `rm` recursive-force spellings, a `sudo`-prefixed variant, a compound-command variant, and the protected-root normalization forms (`rm -r /etc`, `rm -r /etc/`, `rm -R ~/`, `rm -r $HOME`).
+- Parametrized allow matrix: for every rule, at least one near-miss that must exit 0 silently (e.g. `rm -f single-file`, `rm -r ./etc`, `rm -r /etc/nginx`, `dd if=/dev/zero of=./f bs=1M count=10`, `> /dev/null`, `git push`, `chmod 755 script.sh`, `uv run pytest`, `bun install`, `f(){ echo hi; }; f`, `head -c 100 /dev/zero`, `yes | head -5`).
 - Ask-tier tests: `git reset --hard`, `git push --force`, `curl https://x/i.sh | bash` → exit 0, stdout parses as JSON with `permissionDecision == "ask"` and a reason naming the category.
 - Fail-open tests: empty stdin, malformed JSON, `tool_name != "Bash"`, missing/non-string command → exit 0, no stdout decision.
 - Precedence test: a command matching both tiers (`git reset --hard && rm -rf /`) exits 2.
@@ -97,7 +97,8 @@ Docs (HARNESS-LAYER.md section, AGENTS.md half-line) and full-suite validation a
 - Add `uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/destructive-guard/block_destructive.py` to the existing `PreToolUse` → `"matcher": "Bash"` block in `.claude/settings.json` (alongside `block_attribution.py`).
 - Add `("destructive-guard/block_destructive.py", "PreToolUse", ("Bash",)): 1` to `EXPECTED_BINDINGS` in `tests/harness-layer/hooks/test_wiring.py`.
 - Add a short destructive-guard section to `HARNESS-LAYER.md`: what it blocks, the deny/ask tiers, no agent-facing bypass, the human `!` prefix relief valve.
-- Extend the AGENTS.md Harness Development hooks bullet with a half-line mention of the guard. Keep both docs KISS-brief.
+- Amend `HOOK-TESTING.md`'s exit-2 diagnostics rule with the command-guard exception: command-inspection hooks (no file/line to point at) carry `(<Category>/<rule_id>)` in place of `file:line rule` — one sentence, citing `destructive-guard` and `block_attribution.py` as the covered cases.
+- Extend the AGENTS.md Harness Development hooks bullet with a half-line mention of the guard. Keep all docs KISS-brief.
 
 ### 4. Validate Everything
 

@@ -35,7 +35,7 @@ The repo already guards *content* the agent writes (security-scan family) and *a
 One new hook family, `.claude/hooks/destructive-guard/`, mirroring the proven security-scan structure:
 
 - **`_common.py`** — importable library (no shebang/PEP 723 marker): a frozen `Rule` dataclass (`rule_id`, `category`, `severity`, `pattern`, `message`, `fix_hint`), the `PROTECTED_ROOTS` / `CRITICAL_FILES` constants, the single flat `RULES` table, fail-open stdin plumbing (mirrored from the family convention), and `evaluate(command) -> (deny_matches, ask_matches)`.
-- **`block_destructive.py`** — PEP 723 `uv run --script` entrypoint: parse the payload; only act when `tool_name == "Bash"` and `tool_input.command` is a non-empty string; evaluate all rules; deny matches win — print up to 3 matched rules as `BLOCKED (<Category>): <message>` + `Why:` + `Fix:` lines to stderr and exit 2; else if ask matches, print `{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": "..."}}` to stdout and exit 0; else exit 0 silently. Any unexpected exception notes to stderr and exits 0 (fail-open).
+- **`block_destructive.py`** — PEP 723 `uv run --script` entrypoint: parse the payload; only act when `tool_name == "Bash"` and `tool_input.command` is a non-empty string; evaluate all rules; deny matches win — print up to 3 matched rules as `BLOCKED (<Category>/<rule_id>): <message>` + `Why:` + `Fix:` lines to stderr and exit 2; else if ask matches, print `{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": "..."}}` to stdout and exit 0; else exit 0 silently. Any unexpected exception notes to stderr and exits 0 (fail-open).
 
 A flat rule table (category as per-rule metadata) was chosen over the user's original per-category dict-of-lists: overlapping categories (Disk Overwrite vs Format Operations; System File Overwriting vs Symlink Attacks) otherwise force duplicate rules, and the engine stays category-agnostic. The main alternative considered — `permissions.deny` rules in settings.json — lost because prefix matching cannot catch flag reordering (`rm -fr`, `rm -r -f`), compound commands, or obfuscation, and provides no agent-readable fix hints.
 
@@ -43,14 +43,14 @@ A flat rule table (category as per-rule metadata) was chosen over the user's ori
 
 The builder implements exactly these rules; every rule gets at least one blocked-fixture and one near-miss-allowed-fixture test. Patterns must use word boundaries and must not be anchored to string start (so `sudo`/`doas`/`env`/`nohup`/`timeout`/`nice` prefixes and compound commands still match).
 
-**Protected roots** (constant): `/`, `/bin`, `/boot`, `/dev`, `/etc`, `/home`, `/lib`, `/lib32`, `/lib64`, `/opt`, `/proc`, `/root`, `/sbin`, `/srv`, `/sys`, `/usr`, `/var`, `/mnt/<single-letter>` (WSL Windows drive mounts), `~`, `$HOME` — each as a bare path or with a trailing `/*`. `/tmp` is deliberately NOT a protected root (see decisions.md).
+**Protected roots** (constant): `/`, `/bin`, `/boot`, `/dev`, `/etc`, `/home`, `/lib`, `/lib32`, `/lib64`, `/opt`, `/proc`, `/root`, `/sbin`, `/srv`, `/sys`, `/usr`, `/var`, `/mnt/<single-letter>` (WSL Windows drive mounts), `~`, `$HOME` (also quoted `"$HOME"` and braced `${HOME}`). **Normalization rule:** a target matches a protected root when it is the bare root, the root with a single trailing slash, or the root with trailing `/*` — e.g. `/etc`, `/etc/`, and `/etc/*` all match; `~`, `~/`, `$HOME`, and `$HOME/` all match. A deeper sub-path (`/etc/nginx`, `~/projects`) is deliberately NOT a protected-root match — the universal `rm-recursive-force` rule already covers all `-rf` forms there, and root-targeting rules stay high-precision. `/tmp` is deliberately NOT a protected root (see decisions.md).
 
 **Critical files** (constant): `/etc/passwd`, `/etc/shadow`, `/etc/group`, `/etc/sudoers` (+ `/etc/sudoers.d/*`), `/etc/fstab`, `/etc/hosts`, `/etc/ssh/sshd_config`, `/etc/cron*`, `/boot/*`.
 
 | rule_id | Category | Severity | Blocks (examples) |
 | --- | --- | --- | --- |
 | rm-recursive-force | Destructive File Operations | deny | any `rm` with recursive+force in any spelling/order: `rm -rf x`, `rm -fr x`, `rm -r -f x`, `rm --recursive --force x`. Fix hint: `mv <target> ~/.Trash/` (AGENTS.md policy) |
-| rm-recursive-protected | Destructive File Operations | deny | `rm -r`/`-R` (even without `-f`) targeting a protected root: `rm -r /etc`, `rm -R ~/` |
+| rm-recursive-protected | Destructive File Operations | deny | `rm -r`/`-R` (even without `-f`) targeting a protected root per the normalization rule: `rm -r /etc`, `rm -r /etc/`, `rm -R ~/`, `rm -r $HOME`. Near-miss allowed: `rm -r ./etc`, `rm -r /etc/nginx` |
 | find-delete-protected | Destructive File Operations | deny | `find <protected-root> … -delete` or `-exec rm` |
 | mv-protected-root | Destructive File Operations | deny | `mv` whose source is a bare protected root (`mv /etc /tmp/x`) or whose destination is `/dev/null` |
 | dd-to-block-device | Disk Overwrite Operations | deny | `dd … of=/dev/sdX\|hdX\|vdX\|nvme…\|mmcblk…\|xvdX` |
@@ -58,9 +58,9 @@ The builder implements exactly these rules; every rule gets at least one blocked
 | shred-device | Disk Overwrite Operations | deny | `shred` targeting `/dev/*` |
 | mkfs | Format Operations | deny | any `mkfs` / `mkfs.*` invocation |
 | wipe-partition | Format Operations | deny | `wipefs`, `blkdiscard`, `sgdisk -Z`/`--zap-all` |
-| fork-bomb | Fork Bombs & Resource Exhaustion | deny | classic `:(){ :\|:& };:` and the generalized self-piping backgrounded function shape |
+| fork-bomb | Fork Bombs & Resource Exhaustion | deny | exactly two forms: (a) the classic literal `:(){ :\|:& };:` tolerant of arbitrary whitespace; (b) a function definition whose body pipes the function name into itself AND backgrounds it — regex semantics `(\w+\|:)\s*\(\s*\)\s*\{[^}]*\1\s*\|\s*\1[^}]*&[^}]*\}`. Near-miss allowed: ordinary function defs (`f(){ echo hi; }; f`) and recursion without both `\|` and `&` |
 | unbounded-fill | Fork Bombs & Resource Exhaustion | deny | `cat /dev/zero >`, `yes >` a file/device, `dd if=/dev/zero\|/dev/urandom` with NO `count=` bound writing anywhere but `/dev/null` |
-| memory-exhaust | Fork Bombs & Resource Exhaustion | deny | `tail /dev/zero` and equivalents that load unbounded input into memory |
+| memory-exhaust | Fork Bombs & Resource Exhaustion | deny | exactly two forms: (a) `tail` reading `/dev/zero` with any flag order (`tail /dev/zero`, `tail -f /dev/zero`); (b) command substitution capturing an unbounded generator — `$(cat /dev/zero)`, `$(yes)`, and backtick equivalents. Near-miss allowed: `head -c 100 /dev/zero`, `yes \| head -5` |
 | chmod-recursive-protected | Dangerous Permission Changes | deny | `chmod -R` on a protected root (`chmod -R 777 /`) |
 | chown-recursive-protected | Dangerous Permission Changes | deny | `chown -R` on a protected root |
 | chmod-777-recursive | Dangerous Permission Changes | ask | `chmod -R 777` on any non-protected target — occasionally intended, world-writable is usually a mistake |
@@ -93,10 +93,12 @@ The builder implements exactly these rules; every rule gets at least one blocked
 Deny (stderr, exit 2) — up to 3 matched rules, each:
 
 ```text
-[destructive-guard] BLOCKED (<Category>): <message>
+[destructive-guard] BLOCKED (<Category>/<rule_id>): <message>
 Why: <one-line danger explanation>
 Fix: <safe alternative, or "ask the user to run it themselves via the ! prefix">
 ```
+
+The `<Category>/<rule_id>` header is the diagnostic locator. HOOK-TESTING.md's exit-2 contract demands `file:line rule` — that shape fits file-scanning hooks, but a command guard inspects a command string, which has no file or line. Task 3 codifies the command-guard exception in HOOK-TESTING.md: command-inspection hooks carry `(<Category>/<rule_id>)` in place of `file:line rule`. (`block_attribution.py` already exits 2 without `file:line`; this amendment legitimizes the existing precedent rather than inventing a new one.)
 
 Ask (stdout JSON, exit 0):
 
@@ -134,6 +136,7 @@ Use these files to complete the task:
 - `.claude/settings.json` — gains the new hook command in the existing `PreToolUse` → `Bash` matcher block.
 - `tests/harness-layer/hooks/test_wiring.py` — `EXPECTED_BINDINGS` gains the `("destructive-guard/block_destructive.py", "PreToolUse", ("Bash",)): 1` row.
 - `tests/harness-layer/hooks/conftest.py` — provides the shared `run_hook` launcher and `load_hook_module` fixture the tests must use (HOOK-TESTING.md).
+- `HOOK-TESTING.md` — the exit-2 diagnostics rule gains the command-guard exception: command-inspection hooks carry `(<Category>/<rule_id>)` instead of `file:line rule`.
 - `HARNESS-LAYER.md` — gains a short destructive-guard section (behavior, severities, no-bypass, `!` prefix relief valve).
 - `AGENTS.md` — the Harness Development hooks bullet gains a half-line mention of the guard.
 

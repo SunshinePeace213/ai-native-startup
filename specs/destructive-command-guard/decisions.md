@@ -25,8 +25,8 @@ A `destructive-guard` PreToolUse hook family on the Bash matcher blocks destruct
   - **A:** None agent-facing — no pragma, no inline token, no env kill-switch.
   - **Why:** Anything the agent can type into the command string defeats the guard (unlike security-scan's write-time pragma, which reviews content, not actions). Humans already have the `!` prefix (never passes through hooks) and the ask tier.
 - **Q:** What must error messages look like?
-  - **A:** Agent-readable and actionable: `[destructive-guard] BLOCKED (<Category>): <message>` + `Why:` + `Fix:` per matched rule (max 3) on stderr; ask-tier reasons name the category and end "approve only if intended."
-  - **Why:** Explicit user requirement — the agent must understand what was blocked and what to do instead, so it self-corrects rather than retrying blindly.
+  - **A:** Agent-readable and actionable: `[destructive-guard] BLOCKED (<Category>/<rule_id>): <message>` + `Why:` + `Fix:` per matched rule (max 3) on stderr; ask-tier reasons name the category and end "approve only if intended."
+  - **Why:** Explicit user requirement — the agent must understand what was blocked and what to do instead, so it self-corrects rather than retrying blindly. The `<Category>/<rule_id>` locator (added reconciling Codex round 1) stands in for HOOK-TESTING.md's `file:line rule` shape, which cannot apply to command inspection; Task 3 codifies that exception in HOOK-TESTING.md.
 
 ## Assumptions
 
@@ -46,6 +46,10 @@ A `destructive-guard` PreToolUse hook family on the Bash matcher blocks destruct
 - **Out of scope:** non-Bash tools; PowerShell/Windows-native commands.
 - **Out of scope:** changes to `permissions` config or other hook families.
 - **Open question (follow-ups, future plan):** container/VM destruction rules (`docker system prune -af --volumes`, `docker rm -f $(docker ps -aq)`), database drops (`DROP DATABASE`, `dropdb`), `journalctl --vacuum-*`, `git branch -D` / `git stash clear` — owner: @SunshinePeace213, revisit after the guard has field time.
+
+### Follow-ups (Codex advisories — recorded, not fixed in this run)
+
+- [ ] Round 1: the claim that `!`-prefixed user commands bypass hooks is not grounded by a cached KB doc — `/kb add` the official interactive-mode page and cite it here.
 
 ## KB References
 
