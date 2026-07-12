@@ -72,8 +72,10 @@ Memory sync (HARNESS-LAYER.md, AGENTS.md) documenting the final state, then full
 - `git mv .claude/hooks/auto-format/worktree_create.py .claude/hooks/worktree/worktree_create.py`
   and likewise `worktree_remove.py` — no code edits; shebang blocks untouched.
 - Create `.claude/hooks/worktree/_common.py`: copy exactly `note`, `read_payload`, `resolve_root`,
-  `run`, `tail` (plus their imports and the module docstring adapted) from
-  `auto-format/_common.py`, signatures unchanged. Nothing else.
+  `run`, `tail` PLUS the module constant `STDIN_TIMEOUT = 5.0` (read by `read_payload`) from
+  `auto-format/_common.py`, with only the imports those helpers need and the module docstring
+  adapted; signatures and bodies unchanged. Nothing else — no `VENDORED_DIRS`, no
+  `DIAGNOSTIC_CAP`, none of the other helpers.
 - `.claude/settings.json`: repoint the `WorktreeCreate` and `WorktreeRemove` commands to
   `.claude/hooks/worktree/…`; replace the five PostToolUse `Write|Edit|MultiEdit` entries with ONE
   block whose `hooks` array lists the five commands in order js_ts, data, markdown, python,
@@ -90,9 +92,12 @@ Memory sync (HARNESS-LAYER.md, AGENTS.md) documenting the final state, then full
 - **Model / Effort:** `opus` / `high`
 - **Parallel:** true (file-disjoint from `worktree-hook-split`)
 - **Satisfies:** AC4
-- Fixer routing (Instructions bullet + Verification "Otherwise" paragraph): fixer subagents get
-  model AND effort chosen by the build lead per issue difficulty from the AGENTS.md table
-  (`opus` complex / `sonnet` standard) — remove both hardcoded "`sonnet` fixer" phrasings.
+- Fixer routing (Instructions bullet + Verification "Otherwise" paragraph): the build lead picks
+  each fixer's MODEL per issue difficulty from the AGENTS.md table (`opus` complex / `sonnet`
+  standard), passed via the Agent tool's `model` param, and states the AGENTS.md EFFORT tier in
+  the fixer's task brief as depth guidance — subagents inherit the session's reasoning effort
+  (KB: subagents), so the command must not claim an `effort` parameter. Remove both hardcoded
+  "fixer subagent (effort per issue)" phrasings.
 - Combined fix pass: cluster merged blockers by root cause + touched files; disjoint clusters run
   as parallel background fixer subagents in the same worktree, overlapping clusters sequenced;
   still exactly ONE fix commit after all fixers return (report-commit/fix-commit/single-push

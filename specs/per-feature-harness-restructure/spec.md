@@ -21,9 +21,12 @@ Restructure the harness layer along feature lines and tighten the build workflow
    only the feature under development. Distributed conftests: the shared
    `tests/harness-layer/hooks/conftest.py` keeps cross-feature helpers; each feature dir gets its
    own `conftest.py` for feature-specific fixtures.
-4. **harness-build.md workflow upgrades** — fixer subagents get model+effort per issue difficulty
-   (no hardcoded `sonnet`); the combined fix pass runs disjoint finding-clusters as parallel
-   background fixers; the Implement phase launches unblocked, file-disjoint tasks concurrently; the
+4. **harness-build.md workflow upgrades** — each fixer subagent's model is chosen per issue
+   difficulty (no hardcoded `sonnet`) via the Agent tool's `model` param, with the AGENTS.md effort
+   tier stated in the fixer's task brief as depth guidance — subagents inherit the session's
+   reasoning effort, so no `effort` API parameter is claimed (KB: subagents); the combined fix pass
+   runs disjoint finding-clusters as parallel background fixers; the Implement phase launches
+   unblocked, file-disjoint tasks concurrently; the
    Agent Task Manifest keys tasks by kebab-case Task ID (never `#N`, which GitHub autolinks to
    unrelated issues/PRs — visible on PR #22); `gh pr create` gains `--assignee` and mirrors the
    issue's type + priority labels.
@@ -73,10 +76,12 @@ new convention is invented.
   identical commands are deduplicated (hooks-guide KB line 442), so the five-into-one merge cannot
   change execution; nothing may rely on registration order.
 - **`worktree/_common.py` is a trimmed sibling copy** carrying exactly the five helpers the two
-  scripts use — `note`, `read_payload`, `resolve_root`, `run`, `tail` — with unchanged signatures
-  so the scripts move without edits (`uv run --script` resolves `import _common` from the script's
-  own dir). Duplication with `auto-format/_common.py` is the accepted cost of the standalone-script
-  pattern.
+  scripts use — `note`, `read_payload`, `resolve_root`, `run`, `tail` — PLUS the module constant
+  `STDIN_TIMEOUT = 5.0` that `read_payload` reads, and only the imports those helpers need.
+  Signatures and bodies unchanged so the scripts move without edits; sibling `import _common`
+  works because Python puts the running script's dir on `sys.path` — a runtime invariant the
+  hermetic worktree tests prove (the uv-scripts KB grounds only the `--script` execution mode).
+  Duplication with `auto-format/_common.py` is the accepted cost of the standalone-script pattern.
 - **Path-depth fixes are part of the move**: `test_block_attribution.py` `parents[3]` → `parents[4]`;
   both security-scan test files `parents[2]` → `parents[4]`; the shared conftest keeps `parents[3]`
   (it does not move). Test basenames stay unique (no `__init__.py` — pytest's default import mode
@@ -109,7 +114,7 @@ new convention is invented.
 
 ### New Files
 
-- `.claude/hooks/worktree/_common.py` — trimmed helpers: `note`, `read_payload`, `resolve_root`, `run`, `tail`
+- `.claude/hooks/worktree/_common.py` — trimmed helpers: `note`, `read_payload`, `resolve_root`, `run`, `tail` + the `STDIN_TIMEOUT = 5.0` constant
 - `tests/harness-layer/hooks/auto-format/conftest.py` — `hook_dir` → `.claude/hooks/auto-format`; `linter_root`
 - `tests/harness-layer/hooks/attribution/conftest.py` — `hook_dir` → `.claude/hooks` (script sits at hooks root)
 - `tests/harness-layer/hooks/worktree/conftest.py` — `hook_dir` → `.claude/hooks/worktree`; `wt_repo`, stub helpers
