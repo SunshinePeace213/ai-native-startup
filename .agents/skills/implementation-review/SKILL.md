@@ -142,11 +142,26 @@ Do NOT report: style nits, wording/formatting polish, optional nice-to-haves, sp
 "you could also" suggestions, or anything you cannot tie to both a plan line / lens / doc AND
 a code location. When in doubt, leave it out — a build that clears the bar should be **approved**.
 
+**Repair contract (mandatory on every blocker).** Each blocking finding states: the violated
+criterion or invariant, the affected location, a repro or proof command, and at least one
+viable fix direction — a literal patch sketch when the repair is mechanically clear; bounded
+alternatives when the design is genuinely ambiguous, never an unverified dictated patch. On
+delta rounds, a blocker dispositioned **not fixed** must also state why each prior attempt
+failed.
+
+**Spec-defect tag.** When a blocker's root cause is the plan, tag it `spec-defect` instead of
+re-blocking the implementation: conflicting acceptance criteria or locked decisions, an
+ambiguous or untestable requirement, a fix that would require changing a locked decision or
+non-goal, a Validation Command that tests the wrong behavior, or a dispute about what
+behavior is *required* rather than what the code *does*. A `spec-defect` blocker still forces
+`changes-requested`, but the caller routes it to planning, not to another fixer.
+
 ## Round cap
 
-The caller enforces the hard **max 2 rounds** cap and suffixes each report by N, so **round 2
-is the final automatic round** and a re-run never overwrites a prior round — you simply honor
-the injected N.
+The caller enforces the round budget: **2 automatic rounds**, then its escalation ladder may
+add user-gated rounds up to an absolute ceiling of 4. Round 2 is the final automatic round, a
+re-run never overwrites a prior round, and a new round is only valid on a new fix SHA with a
+material blocker-related delta — you simply honor the injected N.
 
 ## Verdict rule
 
@@ -177,7 +192,7 @@ Then, in order:
 
 Example (`changes-requested`):
 
-```
+```text
 ### Round 2 — Verdict: changes-requested
 
 Scope: delta
@@ -204,7 +219,7 @@ Findings:
 
 Example (`approved`):
 
-```
+```text
 ### Round 1 — Verdict: approved
 
 Scope: full
@@ -236,6 +251,6 @@ message — Claude reads those from the report **file**, not from your stdout.
 
 - **Write ONLY this round's report** at `specs/<plan>/reviews/codex-impl-review-round-N.md`. **Edit NO source.** The `-s workspace-write` grant exists solely to RUN the plan's Validation Commands and WRITE that one report — not to mutate any other file. Leave the rest of the working tree exactly as you found it.
 - `spec.md`, `tasks.md`, `decisions.md`, `acceptance-criteria.md`, and everything under `ai-docs/` are read-only — never edit them.
-- You report; Claude's builders apply every fix. Do not attempt to fix findings yourself.
+- You report; Claude's builders apply every fix. Do not attempt to fix findings yourself. Codex writes source only in a separate co-development or role-swap **writer invocation** from the build lead — never inside a review round — and never reviews a delta it wrote itself (Claude's internal review gates those).
 - A round that **cannot run, times out, or writes no report** is **re-run by the caller** — it is NEVER treated as an approval. Never emit `approved` to paper over a run that did not complete.
 - Never call `gh` or touch GitHub — the orchestrator relays every verdict.
