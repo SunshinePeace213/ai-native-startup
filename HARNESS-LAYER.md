@@ -21,6 +21,16 @@ that merely mention those strings pass. The `attribution` block in `.claude/sett
 turns attribution off at the source; this hook is the enforcement backstop.
 `.codex/hooks.json` registers the same guard for Codex sessions.
 
+### Destructive-Command Guard (PreToolUse)
+
+`.claude/hooks/destructive-guard/block_destructive.py` inspects every Bash command
+against a flat rule table before execution. Deny-tier matches (`rm -rf` on a protected
+root, disk overwrites, fork bombs, …) exit 2 with a `BLOCKED / Why: / Fix:` stderr block
+the agent can act on. Ask-tier matches (`git push --force`, `curl | bash`, …) return
+`permissionDecision: "ask"` so the human approves per call. No agent-facing bypass
+exists; the human's `!` prefix is the intended relief valve — prefixed commands never
+pass through hooks.
+
 ### Auto-Format (PostToolUse)
 
 Four hooks under `.claude/hooks/auto-format/` fire on `Write|Edit|MultiEdit`, self-filter

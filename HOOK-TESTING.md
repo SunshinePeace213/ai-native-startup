@@ -14,7 +14,9 @@ Rules for the hook test suite in `tests/harness-layer/hooks/`.
 - **Contract tests per feature dir**: `tests/harness-layer/hooks/<feature>/` mirrors
   `.claude/hooks/<feature>/`. Test block AND allow paths; malformed or empty stdin
   must fail open (exit 0). Exit 2 is reserved for agent-fixable findings and must
-  carry `file:line rule` diagnostics on stderr.
+  carry `file:line rule` diagnostics on stderr. Exception: command-inspection hooks
+  (no file/line to point at — e.g. `destructive-guard`, `block_attribution.py`) carry
+  `(<Category>/<rule_id>)` in place of `file:line rule`.
 - **Wiring is tested**: every executable hook (PEP 723 `# /// script` marker or
   shebang) must be registered — in `settings.json` or a command-frontmatter
   registrar — and bound in `test_wiring.py`'s `EXPECTED_BINDINGS`. Adding, moving,
