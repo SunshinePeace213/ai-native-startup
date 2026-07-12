@@ -312,6 +312,23 @@ def test_grep_trailing_star_without_suffix_overlap_allows(run_hook, glob):
     assert_allowed(res)
 
 
+@pytest.mark.parametrize("glob", ["secret.p*m*", "sec*ret.pe[m]*"])
+def test_grep_internal_star_suffix_targeting_denies(run_hook, glob):
+    """CX5-1: internal stars must be honored by suffix intersection; only the
+    terminal star is a broad-search marker, so these real guards must exit 2."""
+    res = run_hook(SCRIPT, grep_payload(glob=glob))
+    assert res.returncode == 2
+    assert "Blocked:" in res.stderr
+    assert glob in res.stderr
+
+
+def test_grep_partial_suffix_before_broad_tail_allows(run_hook):
+    """CX5-1 locks the broad-tail boundary: `secret.pe*` reduces to the
+    non-overlapping core `secret.pe`, so the real guard must still exit 0."""
+    res = run_hook(SCRIPT, grep_payload(glob="secret.pe*"))
+    assert_allowed(res)
+
+
 # --- Grep: over-long globs don't fail the DP open (CX3-2) ------------------------
 
 

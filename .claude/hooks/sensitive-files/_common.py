@@ -621,14 +621,17 @@ def match_glob(pattern: object) -> Rule | None:
     intersect via ``_globs_intersect`` (catches ``.env[.]local`` -> ``.env.*``,
     ``id_r[s]a[0-9]*`` -> ``id_rsa*``, ``service-[a]ccount[0-9]*.json`` ->
     ``service-account*.json``); and (c) for a SUFFIX-anchored rule (one opening
-    with ``*``, e.g. ``*.pem``/``*.env``), the intersection after removing every
-    ``*`` from the rewritten glob. Removing ``*`` is sound because each star can
-    match the empty string: every name selected by the star-free core is also
-    selected by the original glob. It catches trailing-star targeting such as
-    ``secret.pe?*`` -> core ``secret.pe?`` -> ``*.pem`` (CX4-1), while the empty
-    literal-prefix return still allows broad suffix globs (``*.pem``), and cores
-    without catalog overlap (``README*`` -> ``README``) stay allowed. Never
-    raises: weird input yields None (fail-open).
+    with ``*``, e.g. ``*.pem``/``*.env``), the intersection after removing only
+    the terminal broad-search ``*`` from the rewritten glob. The resulting core
+    is a sound subset check of the rewritten SUPERSET: class-to-``?`` widening may
+    conservatively over-block relative to the original class glob. Preserving
+    internal stars honors their exact intersection semantics (CX5-1), so
+    ``secret.p*m*`` -> core ``secret.p*m`` -> ``*.pem``; the empty literal-prefix
+    return still allows broad suffix globs (``*.pem``), and cores without catalog
+    overlap (``README*`` -> ``README`` and ``secret.pe*`` -> ``secret.pe``) stay
+    allowed. Rules broad at both ends (e.g. ``*.tfstate.*``) retain the star-empty
+    subset check so broad code globs such as ``a*.py`` stay allowed. Never raises:
+    weird input yields None (fail-open).
 
     Directory-fragment targeting via a glob (e.g. ``.ssh/*``) is out of scope
     here: like a bare Grep directory target it follows the allow posture, and a
@@ -645,15 +648,19 @@ def match_glob(pattern: object) -> Rule | None:
         if not _literal_prefix(segment):
             return None  # opens with a wildcard -> broad search -> allow
         seg_lower = segment.lower()
-        core = seg_lower.replace("*", "")
+        core = re.sub(r"\*+$", "", seg_lower)
         witness = segment.replace("*", "x").replace("?", "x")
         for rule in _BASENAME_RULES:
             if rule.path_re.match(witness):
                 return rule
             if rule.pattern.startswith("*"):
-                # A star can be empty, so every core match is a real glob match.
-                # The empty-prefix return above preserves the broad-glob boundary.
-                if _globs_intersect(core, rule.pattern):
+                # The core is a subset of the rewritten superset; class-to-'?'
+                # widening may conservatively over-block the original class glob.
+                # Only the terminal star is a broad-search marker (CX5-1).
+                suffix_core = (
+                    core if not rule.pattern.endswith("*") else core.replace("*", "")
+                )
+                if _globs_intersect(suffix_core, rule.pattern):
                     return rule
             elif _globs_intersect(seg_lower, rule.pattern):
                 return rule

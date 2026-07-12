@@ -421,8 +421,8 @@ GLOB_SUFFIX_ALLOW = ["*.pem", "*.key", "*.tfstate", "*.tfvars", "*.env", "README
 def test_match_glob_allows_bare_suffix_and_prefix_star_globs(eng, glob):
     """The preserved allow boundary the new suffix-rule intersection must not
     cross: a bare suffix glob (`*.pem`) opens with `*` (empty literal prefix ->
-    broad search), and `README*` keeps its own `*` so it is never treated as a
-    bounded targeter. Denying either would break Grep over a whole extension."""
+    broad search), and `README*` reduces to `README`, which has no cataloged-suffix
+    overlap. Denying either would break Grep over a whole extension."""
     assert eng.match_glob(glob) is None
 
 
@@ -453,6 +453,24 @@ def test_match_glob_allows_trailing_star_without_suffix_overlap(eng, glob):
     with no cataloged suffix overlap, so these ordinary prefix searches stay
     allowed even though trailing stars now participate in suffix detection."""
     assert eng.match_glob(glob) is None
+
+
+@pytest.mark.parametrize(
+    "glob,expected",
+    [("secret.p*m*", "certs"), ("sec*ret.pe[m]*", "certs")],
+)
+def test_match_glob_denies_internal_star_suffix_targeting_globs(eng, glob, expected):
+    """CX5-1: internal stars must retain their exact intersection semantics;
+    only the terminal star is the broad-search marker removed from the core."""
+    rule = eng.match_glob(glob)
+    assert rule is not None, glob
+    assert rule.category_id == expected
+
+
+def test_match_glob_allows_partial_suffix_before_broad_tail(eng):
+    """CX5-1 locks the broad-tail boundary: removing only the terminal star from
+    `secret.pe*` leaves `secret.pe`, which cannot overlap the cataloged `*.pem`."""
+    assert eng.match_glob("secret.pe*") is None
 
 
 # --- Grep glob matching: over-long globs don't fail the DP open (CX3-2) --------
