@@ -1,0 +1,11 @@
+### Round 1 — Verdict: changes-requested
+
+- **The locked deny diagnostic contradicts the repository hook-test contract.** `spec.md` requires only `BLOCKED / Why / Fix`, while `HOOK-TESTING.md` requires every exit-2 diagnostic to carry `file:line rule`; Task 2 simultaneously requires following `HOOK-TESTING.md`. A command inspection has no meaningful file/line, so the builder cannot satisfy both as written. Fix: explicitly define the command-guard exception in `HOOK-TESTING.md`, add that file to `spec.md`/Task 3/AC9, or revise the locked diagnostic and tests to a compatible command/rule locator.
+- **Protected-root syntax is internally inconsistent and leaves common spellings undefined.** The canonical root definition allows each root only bare or with trailing `/*`, but `rm-recursive-protected` explicitly requires `rm -R ~/`, which has a trailing slash; the plan never says whether `/etc/`, `/mnt/c/`, or `$HOME/` must match. Fix: define one normalization/matching rule for optional trailing slashes (and the permitted `/*` form) in `spec.md`, then add blocked and near-miss fixtures in Task 2 and AC1/AC2.
+- **Two canonical deny rules do not define a buildable detection boundary.** `fork-bomb` requires “the generalized self-piping backgrounded function shape” and `memory-exhaust` requires `tail /dev/zero “and equivalents”`, but neither enumerates accepted syntactic forms or near-misses even though Task 1 says to implement the table exactly and Task 2 requires allow fixtures per rule. Fix: replace those open-ended phrases in `spec.md` with explicit command forms/regex semantics and add corresponding blocked and allowed examples to Task 2 and AC2/AC4.
+
+**Recommendations (advisory, non-blocking):**
+
+- The claim that input-box `!` commands bypass hooks is not grounded by either referenced KB document. Add/cache the official interactive-mode page via `/kb add` and cite it in `decisions.md`; the cached settings doc only links to that page rather than documenting the hook interaction.
+
+**Issue-comment digest:** Round 1, changes-requested — 3 blocking: the deny-message contract conflicts with HOOK-TESTING.md, protected-root trailing-slash behavior is contradictory, and two canonical deny rules have undefined detection boundaries. Next: reconcile the test contract and make those rule boundaries explicit, then re-review.
