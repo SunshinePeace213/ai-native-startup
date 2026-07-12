@@ -1,7 +1,7 @@
 # Spec: Per-feature harness restructure — hooks, tests, build workflow
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
 
 ## Task Description
 
@@ -158,8 +158,10 @@ new convention is invented.
 
 ## Codex Verification
 
-- **Outcome:** <approved at round N | accepted-with-unverified-fixes | needs-human>
-- **Rejected findings:** <filled after the review loop>
+- **Outcome:** approved at round 4 (rounds 3 and 4 were user-authorized delta rounds past the
+  2-round cap; both over-cap gates were answered "one more delta round")
+- **Rejected findings:** none — all four blocking findings across rounds 1–3 were applied; the two
+  round-1 advisories are recorded as follow-ups in decisions.md, not fixed in this run
 
 ## References
 
@@ -178,4 +180,4 @@ specs/per-feature-harness-restructure/
 - [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
 - [x] Acceptance criteria are specific and testable
 - [x] All four files exist under specs/per-feature-harness-restructure/ and are saved in the repository
-- [ ] Codex has reviewed the spec and Status reflects the outcome
+- [x] Codex has reviewed the spec and Status reflects the outcome
