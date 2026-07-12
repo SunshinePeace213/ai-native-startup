@@ -535,8 +535,11 @@ def _rewrite_char_classes(segment: str) -> str:
     that selects a cataloged name must deny like its ``*``/``?`` cousin). Classes
     are parsed exactly as ``fnmatch.translate`` does -- ``!`` negation and a
     leading ``]`` as a class member (``[]]``) -- so ``]`` and backslashes inside a
-    class do not fool it. An UNCLOSED ``[`` is left as a literal ``[`` (the
-    fnmatch/ripgrep-lenient reading), which is also superset-safe.
+    class do not fool it. An UNCLOSED ``[`` is left as a literal ``[`` -- an
+    fnmatch-compatible fallback (Python ``fnmatch`` also reads a lone ``[``
+    literally) and superset-safe for us; ripgrep, by contrast, REJECTS such a glob
+    as an invalid character class (``rg --glob '[env.local'`` errors), so it
+    selects nothing, which makes treating it as a literal harmlessly conservative.
     """
     out: list[str] = []
     i, n = 0, len(segment)
@@ -567,34 +570,32 @@ def _globs_intersect(glob: str, rule: str) -> bool:
 
     Both sides use ``*`` (any run), ``?`` (one char), and literals only -- the
     caller has rewritten the glob's character classes to ``?`` and the catalog's
-    basename rules use only ``*``. This is the standard two-pattern intersection
-    DP: it is exact (never claims a false overlap) and complete (finds a shared
-    name whenever one exists), verified against brute-force enumeration.
-    O(len(glob) * len(rule)); the guard's outer ``try`` fails open on the (never
-    reached, given catalog/segment lengths) recursion limit.
+    basename rules use only ``*``. Standard two-pattern intersection, computed as
+    an ITERATIVE table DP (``dp[i][j]`` = can ``glob[i:]`` and ``rule[j:]`` match a
+    common tail?), filled from the end backward so each cell reads only
+    already-computed neighbours. Exact (never claims a false overlap) and complete
+    (finds a shared name whenever one exists), verified against brute-force
+    enumeration. Iterative on purpose: an earlier recursive version raised
+    ``RecursionError`` on an over-long user glob (e.g. ``.env`` + 1000 ``*``) and,
+    via the caller's broad ``except``, failed the guard OPEN -- a table has no such
+    limit. O(len(glob) * len(rule)) time and space.
     """
     a, b = glob.lower(), rule.lower()
     la, lb = len(a), len(b)
-    memo: dict[tuple[int, int], bool] = {}
-
-    def meet(i: int, j: int) -> bool:
-        cached = memo.get((i, j))
-        if cached is not None:
-            return cached
-        if i == la and j == lb:
-            res = True
-        elif i < la and a[i] == "*":  # '*' = empty, or absorb the char b emits
-            res = meet(i + 1, j) or (j < lb and meet(i, j + 1))
-        elif j < lb and b[j] == "*":
-            res = meet(i, j + 1) or (i < la and meet(i + 1, j))
-        elif i < la and j < lb and (a[i] == "?" or b[j] == "?" or a[i] == b[j]):
-            res = meet(i + 1, j + 1)
-        else:
-            res = False
-        memo[(i, j)] = res
-        return res
-
-    return meet(0, 0)
+    dp = [[False] * (lb + 1) for _ in range(la + 1)]
+    dp[la][lb] = True  # both patterns exhausted -> the empty string matches both
+    for i in range(la, -1, -1):
+        for j in range(lb, -1, -1):
+            if i == la and j == lb:
+                continue
+            if i < la and a[i] == "*":  # '*' = empty, or absorb the char b emits
+                dp[i][j] = dp[i + 1][j] or (j < lb and dp[i][j + 1])
+            elif j < lb and b[j] == "*":
+                dp[i][j] = dp[i][j + 1] or (i < la and dp[i + 1][j])
+            elif i < la and j < lb and (a[i] == "?" or b[j] == "?" or a[i] == b[j]):
+                dp[i][j] = dp[i + 1][j + 1]
+            # else: dp[i][j] stays False (a required literal/char cannot be matched)
+    return dp[0][0]
 
 
 def match_glob(pattern: object) -> Rule | None:
@@ -610,20 +611,25 @@ def match_glob(pattern: object) -> Rule | None:
     over a directory is allowed" posture (A5); a glob that is exactly a D3
     template name (``.env.example``) passes too. That allow boundary is unchanged.
 
-    Otherwise the glob's basename (classes rewritten to ``?``, a superset) is
-    tested against each catalog basename rule two ways: (a) a concrete instance of
-    the glob -- its wildcards filled -- is itself a cataloged name (this is what
-    catches suffix families such as ``bar.env`` -> ``*.env`` while leaving
-    ``README*`` alone, whose filled instance ends in the filler, not ``.env``); and
-    (b) for a PREFIX-anchored rule (one that does not open with ``*``) the glob's
-    strings and the rule's strings intersect, via ``_globs_intersect``. Restricting
-    (b) to prefix-anchored rules is what preserves the allow boundary: ``*.pem`` /
-    ``*.tfstate`` and a literal-prefix glob like ``README*`` intersect only ``*``
-    -leading (suffix) rules and stay allowed, while ``.env[.]local`` -> ``.env.*``,
-    ``.env?local`` -> ``.env.*``, ``id_r[s]a[0-9]*`` -> ``id_rsa*``, and
-    ``service-[a]ccount[0-9]*.json`` -> ``service-account*.json`` are denied (the
-    old sample/witness heuristic replaced only ``*``/``?`` and so missed every
-    character-class glob -- CX2-1). Never raises: weird input yields None
+    Otherwise the glob's basename (character classes rewritten to ``?`` and runs
+    of ``*`` collapsed to one -- together a superset of what it selects) is tested
+    against each catalog basename rule three ways: (a) a concrete instance of the
+    glob -- its wildcards filled with a filler char -- is itself a cataloged name
+    (catches ``bar.env`` -> ``*.env`` while leaving ``README*`` alone, whose filled
+    instance ends in the filler, not ``.env``); (b) for a PREFIX-anchored rule (one
+    that does not open with ``*``) the glob's strings and the rule's strings
+    intersect via ``_globs_intersect`` (catches ``.env[.]local`` -> ``.env.*``,
+    ``id_r[s]a[0-9]*`` -> ``id_rsa*``, ``service-[a]ccount[0-9]*.json`` ->
+    ``service-account*.json``); and (c) for a SUFFIX-anchored rule (one opening
+    with ``*``, e.g. ``*.pem``/``*.env``) the same intersection, but ONLY when the
+    rewritten glob has no ``*`` of its own -- a length-bounded, narrow targeter such
+    as ``secret.pe?`` -> ``*.pem`` or ``x.?nv`` -> ``*.env``. That ``*``-free gate
+    on (c) is what preserves the allow boundary: a glob that keeps a ``*``
+    (``README*``, ``*.py``, ``[a-z]*.py`` -> ``?*.py``) is a broad search, is never
+    intersected against a suffix rule, and stays allowed; a bare suffix glob
+    (``*.pem``) opens with ``*`` and never reaches this loop at all (empty literal
+    prefix). The old single-witness suffix check missed every constrained
+    class/``?`` glob (CX2-1/CX3-1). Never raises: weird input yields None
     (fail-open).
 
     Directory-fragment targeting via a glob (e.g. ``.ssh/*``) is out of scope
@@ -637,14 +643,22 @@ def match_glob(pattern: object) -> Rule | None:
         if is_allowlisted(segment):  # exact D3 template name (before any rewrite)
             return None
         segment = _rewrite_char_classes(segment)
+        segment = re.sub(r"\*+", "*", segment)  # collapse '*' runs (identical; shrinks the DP)
         if not _literal_prefix(segment):
             return None  # opens with a wildcard -> broad search -> allow
         seg_lower = segment.lower()
         witness = segment.replace("*", "x").replace("?", "x")
+        bounded = "*" not in segment  # no unbounded tail -> a narrow, length-bounded targeter
         for rule in _BASENAME_RULES:
             if rule.path_re.match(witness):
                 return rule
-            if not rule.pattern.startswith("*") and _globs_intersect(seg_lower, rule.pattern):
+            if rule.pattern.startswith("*"):
+                # Suffix-anchored rule: only a length-bounded glob (`secret.pe?`)
+                # is a narrow targeter; a glob keeping its own `*` (`README*`,
+                # `*.py`) is a broad search left allowed (the suffix-glob boundary).
+                if bounded and _globs_intersect(seg_lower, rule.pattern):
+                    return rule
+            elif _globs_intersect(seg_lower, rule.pattern):
                 return rule
     except Exception as exc:  # noqa: BLE001
         note(f"match_glob failed for {pattern!r} ({exc}); allowing (fail-open)")

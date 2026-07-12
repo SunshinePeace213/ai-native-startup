@@ -369,7 +369,7 @@ def test_match_glob_class_template_lookalike_is_not_allowlisted(eng):
 GLOB_CLASS_ALLOW = [
     "[a-z]*.py",  # opens with a class -> `?*.py` -> wildcard-opening -> allow
     "README[0-9].md",  # literal prefix `README`, no cataloged family overlaps it
-    "[env.local",  # unclosed `[` is a literal; `[env.local` matches no rule
+    "[env.local",  # unclosed `[`: fnmatch reads it literally; ripgrep rejects it as invalid
     "src/**/[Tt]est*.go",  # broad code search, no catalog overlap
 ]
 
@@ -378,9 +378,79 @@ GLOB_CLASS_ALLOW = [
 def test_match_glob_allows_class_globs_without_catalog_overlap(eng, glob):
     """The allow boundary is unchanged: a class that OPENS the segment leaves an
     empty literal prefix (broad search), and a literal-prefix glob whose family no
-    catalog rule shares stays allowed. An unclosed `[` is treated as a literal,
-    matching fnmatch."""
+    catalog rule shares stays allowed. An unclosed `[` is treated as a literal
+    here (fnmatch-compatible); ripgrep instead rejects such a glob as an invalid
+    character class, so it selects nothing either way."""
     assert eng.match_glob(glob) is None
+
+
+# --- Grep glob matching: suffix-anchored targeting + no-regression (CX3-1) -----
+#
+# A class/`?` glob with a literal prefix and NO `*` after class rewrite is a
+# length-bounded, narrow targeter: `secret.pe?` selects exactly the `secret.pe`+1
+# names, one of which (`secret.pem`) a suffix rule (`*.pem`) covers. Round 2 ran
+# only an x-filled witness for `*`-opening rules and skipped the intersection, so
+# each of these exited 0 -- a live bypass -- and the reverse-fnmatch removal also
+# regressed `x.?nv` (which selects `x.env`) from deny back to allow. Names only,
+# no secret VALUE.
+
+GLOB_SUFFIX_DENY = [
+    ("secret.pe[m]", "certs"),  # -> secret.pe? selects secret.pem (*.pem)
+    ("foo.ke[y]", "certs"),  # -> foo.ke? selects foo.key (*.key)
+    ("state.tfstat[e]", "cicd"),  # -> state.tfstat? selects state.tfstate (*.tfstate)
+    ("vars.tfvar[s]", "cicd"),  # -> vars.tfvar? selects vars.tfvars (*.tfvars)
+    ("x.?nv", "env"),  # -> x.?nv selects x.env (*.env); round-2 no-regression
+]
+
+
+@pytest.mark.parametrize("glob,expected", GLOB_SUFFIX_DENY)
+def test_match_glob_denies_bounded_suffix_targeting_globs(eng, glob, expected):
+    """A length-bounded class/`?` glob (no `*` after rewrite) is intersected
+    against suffix-anchored (`*`-opening) rules too, so a glob that can select a
+    cataloged file is denied even when the covering rule opens with `*` -- and
+    with the covering rule's category so the redirect is right."""
+    rule = eng.match_glob(glob)
+    assert rule is not None, glob
+    assert rule.category_id == expected
+
+
+GLOB_SUFFIX_ALLOW = ["*.pem", "*.key", "*.tfstate", "*.tfvars", "*.env", "README*"]
+
+
+@pytest.mark.parametrize("glob", GLOB_SUFFIX_ALLOW)
+def test_match_glob_allows_bare_suffix_and_prefix_star_globs(eng, glob):
+    """The preserved allow boundary the new suffix-rule intersection must not
+    cross: a bare suffix glob (`*.pem`) opens with `*` (empty literal prefix ->
+    broad search), and `README*` keeps its own `*` so it is never treated as a
+    bounded targeter. Denying either would break Grep over a whole extension."""
+    assert eng.match_glob(glob) is None
+
+
+# --- Grep glob matching: over-long globs don't fail the DP open (CX3-2) --------
+#
+# `_globs_intersect` is an iterative table DP, so an over-long user glob can't
+# raise RecursionError and (via the caller's broad except) fail the guard open.
+
+
+def test_globs_intersect_handles_long_glob_without_recursion(eng):
+    """A `.env`+1000-`*` glob would blow a recursive intersection's stack; the
+    iterative DP returns a plain bool. `.env`+N-`*` is semantically `.env*`, which
+    shares `.env` with the catalog's `.env` rule -> True."""
+    assert eng._globs_intersect(".env" + "*" * 1000, ".env") is True
+
+
+def test_match_glob_denies_unbounded_env_glob(eng):
+    """`.env` + 1000 `*` collapses to `.env*` and selects `.env`; the guard must
+    deny it (as env), not fail open on a recursion limit."""
+    rule = eng.match_glob(".env" + "*" * 1000)
+    assert rule is not None
+    assert rule.category_id == "env"
+
+
+def test_match_glob_allows_long_innocent_glob(eng):
+    """The mirror: an equally long glob with no catalog overlap still passes --
+    proof the DP doesn't crash either way, only denies real targeting."""
+    assert eng.match_glob("a" + "*" * 1000 + ".py") is None
 
 
 # --- Denial message builder ---------------------------------------------------

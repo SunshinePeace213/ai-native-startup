@@ -270,6 +270,43 @@ def test_grep_class_glob_without_catalog_overlap_allows(run_hook, glob):
     assert_allowed(res)
 
 
+# --- Grep: bounded suffix-anchored class/`?` globs (CX3-1) -----------------------
+
+
+@pytest.mark.parametrize(
+    "glob", ["secret.pe[m]", "foo.ke[y]", "state.tfstat[e]", "vars.tfvar[s]", "x.?nv"]
+)
+def test_grep_bounded_suffix_glob_targeting_catalog_denies(run_hook, glob):
+    """Each rewrites to a length-bounded targeter (`secret.pe?`) that selects a
+    name a suffix rule (`*.pem`, `*.key`, `*.tfstate`, `*.tfvars`, `*.env`) covers.
+    Round 2 skipped the intersection for `*`-opening rules, so all of these exited
+    0 -- and `x.?nv` regressed from a round-2 deny -- so they must deny end to end
+    through the real guard now."""
+    res = run_hook(SCRIPT, grep_payload(glob=glob))
+    assert res.returncode == 2
+    assert "Blocked:" in res.stderr
+    assert glob in res.stderr
+
+
+# --- Grep: over-long globs don't fail the DP open (CX3-2) ------------------------
+
+
+def test_grep_unbounded_env_glob_denies(run_hook):
+    """`.env` + 1000 `*` is semantically `.env*` and selects `.env`; a recursive
+    intersection hit RecursionError and failed the guard OPEN, but the iterative
+    DP denies it (exit 2)."""
+    res = run_hook(SCRIPT, grep_payload(glob=".env" + "*" * 1000))
+    assert res.returncode == 2
+    assert "Blocked:" in res.stderr
+
+
+def test_grep_long_innocent_glob_allows(run_hook):
+    """The mirror: an equally long innocent glob must pass cleanly -- proof the
+    DP doesn't crash on length either way, only denies real catalog targeting."""
+    res = run_hook(SCRIPT, grep_payload(glob="a" + "*" * 1000 + ".py"))
+    assert_allowed(res)
+
+
 # --- Symlink dodge (AC5) ----------------------------------------------------------
 
 
