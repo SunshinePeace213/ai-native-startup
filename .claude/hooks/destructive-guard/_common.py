@@ -158,6 +158,12 @@ _SEG = r"[^;&|\n]*?"
 _PIPE = r"[^;\n]*?"
 _SEGG = r"[^;&|\n]*"
 
+# A redirect (>, >>) or a tee writing into the TARGET that follows. The tee
+# branch spans one command segment up to that target; because (?:A|B)C matches
+# the same language as AC|BC, appending a TARGET yields "> TARGET" or
+# "tee ... TARGET" -- the shape the write rules below share.
+_REDIR_OR_TEE = r"(?:>{1,2}\s*|(?<!\S)tee\b" + _SEG + r")"
+
 # Recursive-flag and force-flag detectors. Each requires a real option token
 # (``(?<!\S)`` -- preceded by whitespace/start, so a filename like "my-report"
 # is never read as a flag) and matches combined clusters in any order:
@@ -377,9 +383,7 @@ RULES: list[Rule] = [
         "overwrite-critical-file",
         "System File Overwriting",
         "deny",
-        re.compile(
-            r"(?:>{1,2}\s*" + _CRITICAL_FILE + r"|(?<!\S)tee\b" + _SEG + _CRITICAL_FILE + r")"
-        ),
+        re.compile(_REDIR_OR_TEE + _CRITICAL_FILE),
         "redirect or tee onto a critical system file",
         "clobbering files like /etc/passwd, /etc/sudoers or /etc/fstab can lock "
         "you out, break boot, or grant unintended privileges.",
@@ -451,8 +455,7 @@ RULES: list[Rule] = [
         "Environment Manipulation",
         "ask",
         re.compile(
-            r"(?:>{1,2}\s*|(?<!\S)tee\b" + _SEG + r")"
-            r"(?:" + _HOME + r"/\.(?:bashrc|bash_profile|profile|zshrc)"
+            _REDIR_OR_TEE + r"(?:" + _HOME + r"/\.(?:bashrc|bash_profile|profile|zshrc)"
             r"|/etc/(?:profile|environment|bash\.bashrc))\b"
         ),
         "write into a shell profile / environment file",
@@ -484,7 +487,7 @@ RULES: list[Rule] = [
         "cron-write",
         "Cron & Scheduled Tasks",
         "deny",
-        re.compile(r"(?:>{1,2}\s*|(?<!\S)tee\b" + _SEG + r")/etc/cron[^\s;&|]*"),
+        re.compile(_REDIR_OR_TEE + r"/etc/cron[^\s;&|]*"),
         "redirect or tee into /etc/cron*",
         "writing system cron files installs or clobbers scheduled jobs that run "
         "as root, a persistence and privilege vector.",
