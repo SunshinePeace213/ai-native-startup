@@ -21,6 +21,13 @@
 
 - <assumption — and what would invalidate it>
 
+## Locked Boundaries
+
+<review-negotiated boundaries, appended by the build lead as rounds lock them — the reviews'
+normative reference. Delete this section if the build locks none.>
+
+- <locked allow/deny boundary, approved threshold, or excluded adversarial class — and the consult/round that locked it>
+
 ## Open Questions / Out of Scope
 
 <deferred questions and explicit non-goals. The Non-Goals here feed spec.md's `## Non-Goals` section.>

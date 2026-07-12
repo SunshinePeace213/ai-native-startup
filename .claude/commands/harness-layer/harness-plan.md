@@ -2,6 +2,7 @@
 description: Creates a concise engineering implementation plan for any coding OR harness-layer task — grounded in the ai-docs/ knowledge base when the work touches the harness — and saves it to the specs directory
 argument-hint: [user prompt] [orchestration prompt]
 model: fable
+effort: max
 disallowed-tools: Task, EnterPlanMode
 hooks:
   PostToolUse:
@@ -83,7 +84,7 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 5. Grill Requirements - Run the `Grilling Protocol`: interview the user one question at a time via AskUserQuestion until the coverage ledger is clear, then get final sign-off. Do NOT design or write files before this completes.
 6. Design Solution - Develop technical approach including architecture decisions and implementation strategy, grounded in the KB docs when the expert layer is active
 7. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `TEAM_MEMBERS` or use `GENERAL_PURPOSE_AGENT`. Document in plan.
-8. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments, and each task's model and effort — `opus` for complex tasks, `sonnet` otherwise; effort `low` mechanical, `medium` default, `high` complex, `xhigh` cross-cutting or harness-core. Document in plan.
+8. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments, and each task's model and effort per the AGENTS.md tables and selection principle (Quality > time > cost — when torn between tiers, take the higher; one agent, one purpose): `opus` for complex tasks, `sonnet` otherwise; effort `low` mechanical, `medium` default, `high` complex, `xhigh` cross-cutting or harness-core, `max` hardest single tasks. Stamp adversarial or algorithmic tasks (security boundaries, parsers/matchers, architectural redesigns) to Codex `gpt-5.6-sol` as implementer — Claude `opus` reviews all Codex-authored code. Document in plan.
 9. Name the Plan - Create a descriptive kebab-case name from the plan's main topic, and pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test)
 10. Create & Link Issue - File the GitHub issue from the grilling ledger and link its convention branch (see `Worktree & Handoff`). Do this before entering the worktree.
 11. Enter Worktree - BEFORE writing any file, call `EnterWorktree(name: "<slug>")` to branch from `origin/main` into `.claude/worktrees/` and draft inside it (see `Worktree & Handoff`)

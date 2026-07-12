@@ -22,7 +22,7 @@ contents:
 
 - `BASE_SHA` and `REVIEWED_HEAD_SHA` — the exact range to review (round 1: `BASE_SHA..REVIEWED_HEAD_SHA`). **Never infer a SHA;** both are mandatory report fields. On round N>1 the packet also carries the **prior reviewed head** and **prior finding IDs**.
 - The **round number N** — use it verbatim in the verdict header and filename; never infer or recompute it.
-- The **review profile** (`kb-grounded` or `standard`), a clean-tree attestation, a `git diff --numstat`/`--name-status` summary, validation results keyed to the frozen SHA, the caller's **EXPECTED lens list**, and — under the KB layer — a **KB claim map** (claim → ai-docs path → excerpt → fetched date). On round N>1 it also carries the **internal-review findings** for dedup.
+- The **review profile** (`kb-grounded` or `standard`), a clean-tree attestation, a `git diff --numstat`/`--name-status` summary, validation results keyed to the frozen SHA, the caller's **EXPECTED lens list**, and — under the KB layer — a **KB claim map** (claim → ai-docs path → excerpt → fetched date). On round N>1 it also carries the **internal-review findings** for dedup, the fix delta's **author** (`claude` or `codex`, keyed to the implementation code), and a pointer to `decisions.md` `## Locked Boundaries` when it exists. When the author is `codex`, add an `Author: codex` line after `Mode:` in the report — the internal Claude review is the primary gate for that delta and your verdict corroborates it; apply the same finding bar.
 
 Re-verify lens selection independently against the diff summary and report any disagreement
 with the caller's expected list.
@@ -119,6 +119,15 @@ aliases, MCP config — against the cached official docs (use the injected KB cl
 - **Ungrounded** — a load-bearing claim no cached doc covers → **advisory**; recommend `/kb add`.
 - **Stale grounding** — a cited doc fetched more than 30 days ago → **advisory**; recommend a `/kb` refresh.
 
+## Locked boundaries
+
+When `specs/<plan>/decisions.md` carries a `## Locked Boundaries` section, judge against it:
+behavior inside a locked allow/deny boundary, an approved threshold, or an explicitly excluded
+adversarial class is **conforming — never re-report it as a blocker**. If you believe a locked
+boundary is itself unsafe, report that as an **advisory** citing the boundary and recommend
+renegotiation; do not block on it. When resolving a finding requires a NEW boundary, propose it
+in the report — Claude records accepted boundaries in decisions.md; you never edit plan files.
+
 ## Finding bar
 
 Report ONLY findings you can ground in a specific plan line / criterion, review lens, or
@@ -177,7 +186,7 @@ Then, in order:
 
 Example (`changes-requested`):
 
-```
+```text
 ### Round 2 — Verdict: changes-requested
 
 Scope: delta
@@ -204,7 +213,7 @@ Findings:
 
 Example (`approved`):
 
-```
+```text
 ### Round 1 — Verdict: approved
 
 Scope: full

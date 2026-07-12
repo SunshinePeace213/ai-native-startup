@@ -30,14 +30,15 @@ When writing test cases or running Python tests, use the installed pytest plugin
 - **Instructions, not rationale**: State what to do, not why. No "chose A over B", no decision logs, no design history — that's context bloat the agent never acts on.
 - **No stray cross-refs**: Don't reference other commands or skills unless the file actually needs them to run. Mentions "for context" just add noise.
 - **Model selection**: Always pass **alias** (`opus`, `sonnet`, `haiku`, `fable`). Never hardcode a dated id like `claude-sonnet-4-6` or `claude-opus-4-8`
+- **Selection principle — Quality > time > cost**: pick the model and effort the task's difficulty demands; when torn between two tiers, take the higher. One agent, one purpose. A fix that failed a review round escalates a tier (model or effort) — never retry the same tier twice. In this repo this overrides the global per-task/per-session token budgets.
 - **Model & effort selection** — pick by the nature of the work
 
-| Model    | Choose for                                                                          |
-| -------- | ----------------------------------------------------------------------------------- |
-| `fable`  | Highest-judgment work — specs, build orchestration, consolidating review findings   |
-| `opus`   | Complex implementation; behavior-preserving refinement                              |
-| `sonnet` | Default workhorse — standard implementation, review fixes, guarded mechanical flows |
-| `haiku`  | Utility micro-tasks — eligibility, summaries, scoring                               |
+| Model    | Choose for                                                                                                                        |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `fable`  | Highest-judgment work — specs, build orchestration, consolidating review findings. Orchestrator only — never deploy as a subagent |
+| `opus`   | Complex implementation; behavior-preserving refinement                                                                            |
+| `sonnet` | Default workhorse — standard implementation, review fixes, guarded mechanical flows                                               |
+| `haiku`  | Utility micro-tasks — eligibility, summaries, scoring                                                                             |
 
 | Effort   | Choose for                                                |
 | -------- | --------------------------------------------------------- |
@@ -47,7 +48,8 @@ When writing test cases or running Python tests, use the installed pytest plugin
 | `xhigh`  | Cross-cutting or harness-core design; deep specs          |
 | `max`    | Hardest problems — maximum depth on a single task; rare   |
 
-- **Model & effort selection (Codex)** — never hardcode a Codex model or effort: before each peer review, pick both from the task at hand and pass them on `codex exec`:
+- **Codex partnership**: Codex is a design consultant and escalation implementer, not a general co-builder — it implements only when a plan explicitly stamps an adversarial or algorithmic task (security boundaries, parsers/matchers, architectural redesigns) to `gpt-5.6-sol`, or on reassignment after a repeat root-cause failure. Claude `opus` reviews every Codex-authored change; Codex never solely gates its own code.
+- **Model & effort selection (Codex)** — never hardcode a Codex model or effort: before each peer review or Codex-implemented task, pick both from the task at hand and pass them on `codex exec`:
 
 | Codex model     | Choose for                                                                                 |
 | --------------- | ------------------------------------------------------------------------------------------ |
