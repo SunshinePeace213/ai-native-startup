@@ -22,6 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 HOOKS_ROOT = REPO_ROOT / ".claude" / "hooks"
 SETTINGS = REPO_ROOT / ".claude" / "settings.json"
 COMMANDS_DIR = REPO_ROOT / ".claude" / "commands"
+CODEX_HOOKS = REPO_ROOT / ".codex" / "hooks.json"
 
 ALLOWED_EVENTS = {
     "PreToolUse",
@@ -57,6 +58,12 @@ EXPECTED_BINDINGS = Counter(
         ("security-scan/stop_sweep.py", "SubagentStop", ()): 1,
         ("worktree/worktree_create.py", "WorktreeCreate", ()): 1,
         ("worktree/worktree_remove.py", "WorktreeRemove", ()): 1,
+        ("sensitive-files/bash_guard.py", "PreToolUse", ("Bash",)): 1,
+        (
+            "sensitive-files/file_guard.py",
+            "PreToolUse",
+            ("Edit", "Grep", "MultiEdit", "Read", "Write"),
+        ): 1,
     }
 )
 
@@ -147,3 +154,21 @@ def test_command_scoped_references_point_at_real_files():
     time -- unless this pins it."""
     for script in command_scoped_scripts():
         assert (HOOKS_ROOT / script).is_file(), script
+
+
+def test_codex_bash_guard_binding_is_pinned():
+    """.codex/hooks.json is a separate registration surface from settings.json --
+    bash_guard.py's Codex parity (AC7) is invisible to every check above, so it
+    needs its own pin. Removing or malforming this entry must fail here."""
+    codex_config = json.loads(CODEX_HOOKS.read_text())["hooks"]
+    matches = [
+        hook
+        for block in codex_config["PreToolUse"]
+        if normalized(block.get("matcher")) == ("Bash",)
+        for hook in block["hooks"]
+        if script_of(hook["command"]) == "sensitive-files/bash_guard.py"
+    ]
+    assert len(matches) == 1, matches
+    command = matches[0]["command"]
+    assert "$(git rev-parse --show-toplevel)" in command, command
+    assert matches[0].get("statusMessage"), matches[0]
