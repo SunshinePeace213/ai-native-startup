@@ -61,15 +61,21 @@ Found during this plan's own blindspot pass; each dispositioned:
 - **Pre-worktree write restriction** — plan-phase interaction is needed before the worktree exists, but the plan command forbids project writes outside it and the Artifact contract publishes a project-local file. Resolved: inline presentation (text / AskUserQuestion previews) during grilling; durable artifacts authored post-worktree under `specs/<name>/artifacts/` and published from there.
 - **Stale ship brief after late fixes** — a brief authored once could describe a pre-fix tree. Resolved: the brief is authored fresh inside whichever round approves, immediately before that round's report commit — never reused from a failed round.
 
+## Locked Boundaries
+
+- The spec-completeness Stop gate blocks incomplete plans via exit code 2 with repair guidance on stderr, per `ai-docs/anthropic/hooks-guide.md` and observed harness behavior; it emits no structured stdout response (incomplete → exit 2 + stderr, complete → exit 0). Migration to JSON `approved:false` blocking is out of scope until `/kb` resolves the conflicting cached Stop-hook contracts; adopting it under the guide-observed contract risks silently failing open. — Locked by the round-1 fix-design consult.
+
 ## Open Questions / Out of Scope
 
 - **Out of scope:** any change to `/harness-layer:harness-ship`; new hooks; quiz-state recording/enforcement; 2×2 quadrant bookkeeping in spec files; mandatory artifacts on simple plans; artifact design-system work.
 - **Open question:** whether harness-supported AskUserQuestion previews can replace small design-directions pages over time — owner: ringo, revisit after a few real uses.
 - **Follow-up (advisory, Codex round 2):** harness-build.md should define the approval-finalization procedure (author fresh brief → commit report + brief as one commit) once, referenced from the round-1 both-clean, round-2 approved, and round-3 approved branches.
+- **Follow-up (build round 1):** run `/harness-layer:kb` to refresh `anthropic/hooks.md` — its exit-code table contradicts `hooks-guide.md`'s blocking contract.
 
 ## KB References
 
 - `ai-docs/anthropic/artifacts.md` — fetched 2026-07-05 (Artifact publishing, page constraints, availability, copy-back pattern)
 - `ai-docs/anthropic/skills.md` — fetched 2026-07-05 (commands-as-skills, frontmatter, invocation control)
-- `ai-docs/anthropic/hooks.md` — fetched 2026-07-05 (Stop hook event semantics, exit-code contract)
+- `ai-docs/anthropic/hooks-guide.md` — fetched 2026-07-05 (governing exit-code contract: "Exit 2: the action is blocked… stderr becomes Claude's feedback"; "Don't mix" exit 2 with stdout JSON)
+- `ai-docs/anthropic/hooks.md` — fetched 2026-07-05 (Stop event schema; NOTE: its exit-code table conflicts with hooks-guide.md — flagged for a `/kb` refresh)
 - `ai-docs/anthropic/agent-sdk/user-input.md` — fetched 2026-07-05 (AskUserQuestion preview support is SDK-host-conditional — the boundary behind the taste route's best-effort preview rule)

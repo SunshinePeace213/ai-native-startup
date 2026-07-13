@@ -103,6 +103,8 @@ def test_missing_blindspots_section_blocks(tmp_path, run_hook, sections):
     proc = gate(run_hook, tmp_path)
     assert proc.returncode == 2
     assert "decisions.md: missing section '## Blindspots'" in proc.stderr
+    # exit-2 blocking must not be mixed with structured stdout (hooks-guide contract)
+    assert proc.stdout == ""
 
 
 def test_newest_plan_folder_is_the_gated_one(tmp_path, run_hook, sections):
