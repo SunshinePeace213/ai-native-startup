@@ -21,6 +21,13 @@
 
 - <assumption — and what would invalidate it>
 
+## Blindspots
+
+<findings from the plan's blindspot pass, each with its disposition — resolved, accepted-as-risk,
+or deferred-with-owner. "None material — simple chore" is a valid single entry.>
+
+- **<blindspot>** — <what it is and why it matters>. <Disposition>: <how it was closed, or who owns it>.
+
 ## Locked Boundaries
 
 <review-negotiated boundaries, appended by the build lead as rounds lock them — the reviews'

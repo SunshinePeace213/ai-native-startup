@@ -45,6 +45,7 @@ REQUIRED_SECTIONS: dict[str, tuple[str, ...]] = {
         "Summary",
         "Resolved Decisions",
         "Assumptions",
+        "Blindspots",
         "Open Questions / Out of Scope",
     ),
 }

@@ -1,0 +1,558 @@
+<title>Unknowns-Aware Harness Pipeline — Proposal</title>
+<style>
+  :root {
+    --bg: #F7F8F6;
+    --surface: #FFFFFF;
+    --ink: #20302C;
+    --muted: #5C6B66;
+    --line: #DCE3DF;
+    --accent: #0E6E64;
+    --accent-soft: #E3F0EE;
+    --marker: #B07818;
+    --marker-soft: #F5EBD9;
+    --grey-soft: #EEF1EF;
+    --chip-on: #0E6E64;
+    --chip-on-ink: #FFFFFF;
+    --drop: #9A4B38;
+    --drop-soft: #F3E4DF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0F1A18;
+      --surface: #152220;
+      --ink: #E3EBE7;
+      --muted: #93A49E;
+      --line: #2A3B36;
+      --accent: #4FC1B0;
+      --accent-soft: #1B322E;
+      --marker: #D9A24A;
+      --marker-soft: #33291A;
+      --grey-soft: #1C2926;
+      --chip-on: #4FC1B0;
+      --chip-on-ink: #0F1A18;
+      --drop: #D98A73;
+      --drop-soft: #33211C;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1A18; --surface: #152220; --ink: #E3EBE7; --muted: #93A49E;
+    --line: #2A3B36; --accent: #4FC1B0; --accent-soft: #1B322E;
+    --marker: #D9A24A; --marker-soft: #33291A; --grey-soft: #1C2926;
+    --chip-on: #4FC1B0; --chip-on-ink: #0F1A18; --drop: #D98A73; --drop-soft: #33211C;
+  }
+  :root[data-theme="light"] {
+    --bg: #F7F8F6; --surface: #FFFFFF; --ink: #20302C; --muted: #5C6B66;
+    --line: #DCE3DF; --accent: #0E6E64; --accent-soft: #E3F0EE;
+    --marker: #B07818; --marker-soft: #F5EBD9; --grey-soft: #EEF1EF;
+    --chip-on: #0E6E64; --chip-on-ink: #FFFFFF; --drop: #9A4B38; --drop-soft: #F3E4DF;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    line-height: 1.6;
+    font-size: 17px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 14px;
+  }
+  h1 {
+    font-size: clamp(30px, 5vw, 42px); line-height: 1.15; font-weight: 600;
+    text-wrap: balance; margin-bottom: 16px;
+  }
+  .standfirst { font-size: 19px; color: var(--muted); max-width: 62ch; margin-bottom: 8px; }
+
+  h2 {
+    font-size: 24px; font-weight: 600; margin: 64px 0 6px; text-wrap: balance;
+  }
+  .h2-sub { color: var(--muted); margin-bottom: 22px; max-width: 65ch; }
+  p { max-width: 68ch; }
+
+  code, .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.86em;
+  }
+  code { background: var(--grey-soft); padding: 1px 5px; border-radius: 3px; }
+
+  /* ---- 2x2 matrix ---- */
+  .matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0 8px; }
+  .quad {
+    background: var(--surface); border: 1px solid var(--line); padding: 18px 18px 16px;
+  }
+  .quad.unknown { border-top: 3px solid var(--marker); }
+  .quad.known { border-top: 3px solid var(--accent); }
+  .quad h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .quad .tag {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    display: block; margin-bottom: 8px;
+  }
+  .quad p { font-size: 14.5px; color: var(--muted); margin-bottom: 8px; }
+  .quad .cure { font-size: 14px; }
+  .quad .cure strong { color: var(--accent); font-weight: 600; }
+  .quad.unknown .cure strong { color: var(--marker); }
+  @media (max-width: 620px) { .matrix { grid-template-columns: 1fr; } }
+
+  /* ---- pipeline ---- */
+  .pipeline { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px; }
+  @media (max-width: 720px) { .pipeline { grid-template-columns: 1fr; } }
+  .phase { background: var(--surface); border: 1px solid var(--line); padding: 18px; }
+  .phase h3 {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; letter-spacing: 0.08em; margin-bottom: 12px; color: var(--accent);
+  }
+  .phase ul { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  .phase li { font-size: 14.5px; padding-left: 14px; position: relative; }
+  .phase li::before { content: "·"; position: absolute; left: 0; color: var(--muted); }
+  .phase li.new::before { content: "▸"; color: var(--marker); }
+  .new-badge {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px; letter-spacing: 0.1em; color: var(--marker);
+    background: var(--marker-soft); padding: 1px 6px; border-radius: 3px;
+    margin-left: 6px; vertical-align: 1px;
+  }
+
+  /* ---- change cards ---- */
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    padding: 20px 20px 16px; margin-bottom: 14px;
+  }
+  .card-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .card-id {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; color: var(--muted);
+  }
+  .card h3 { font-size: 18px; font-weight: 600; }
+  .vol {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 3px; margin-left: auto; white-space: nowrap;
+  }
+  .vol.high { background: var(--marker-soft); color: var(--marker); }
+  .vol.settled { background: var(--accent-soft); color: var(--accent); }
+  .vol.mech { background: var(--grey-soft); color: var(--muted); }
+  .card p { font-size: 15px; margin-bottom: 10px; }
+  .files {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px; color: var(--muted); margin-bottom: 14px;
+    overflow-x: auto; white-space: nowrap; padding-bottom: 2px;
+  }
+  .chips { display: flex; gap: 8px; }
+  .chip {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 13px; font-weight: 500; padding: 5px 14px;
+    border: 1px solid var(--line); border-radius: 999px;
+    background: var(--surface); color: var(--ink); cursor: pointer;
+  }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chip[aria-pressed="true"].adopt { background: var(--chip-on); border-color: var(--chip-on); color: var(--chip-on-ink); }
+  .chip[aria-pressed="true"].drop { background: var(--drop-soft); border-color: var(--drop); color: var(--drop); }
+
+  /* ---- reply assembler ---- */
+  .assembler {
+    background: var(--surface); border: 1px solid var(--accent);
+    padding: 20px; margin-top: 28px;
+  }
+  .assembler h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .assembler .hint { font-size: 13.5px; color: var(--muted); margin-bottom: 12px; }
+  .assembler textarea {
+    width: 100%; min-height: 96px; resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+    background: var(--grey-soft); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 4px; padding: 12px; line-height: 1.5;
+  }
+  .assembler .row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+  .btn {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px; font-weight: 600; padding: 8px 18px;
+    background: var(--accent); color: var(--chip-on-ink);
+    border: none; border-radius: 4px; cursor: pointer;
+  }
+  :root[data-theme="light"] .btn, .btn { color: #fff; }
+  @media (prefers-color-scheme: dark) { .btn { color: #0F1A18; } }
+  :root[data-theme="dark"] .btn { color: #0F1A18; }
+  :root[data-theme="light"] .btn { color: #fff; }
+  .btn:focus-visible { outline: 2px solid var(--marker); outline-offset: 2px; }
+  .copied { font-size: 13px; color: var(--accent); }
+
+  /* ---- left out ---- */
+  .leftout { border-left: 3px solid var(--line); padding: 4px 0 4px 18px; margin-top: 18px; }
+  .leftout li { font-size: 15px; color: var(--muted); margin-bottom: 8px; list-style: none; max-width: 65ch; }
+  .leftout strong { color: var(--ink); font-weight: 600; }
+
+  /* ---- quiz ---- */
+  .quiz-q { background: var(--surface); border: 1px solid var(--line); padding: 18px 20px; margin-bottom: 12px; }
+  .quiz-q h3 { font-size: 15.5px; font-weight: 600; margin-bottom: 10px; }
+  .quiz-q label {
+    display: block; font-size: 14.5px; padding: 7px 10px; border-radius: 4px; cursor: pointer;
+  }
+  .quiz-q label:hover { background: var(--grey-soft); }
+  .quiz-q input { margin-right: 8px; accent-color: var(--accent); }
+  .feedback { font-size: 14px; margin-top: 10px; padding: 10px 12px; border-radius: 4px; display: none; }
+  .feedback.ok { display: block; background: var(--accent-soft); color: var(--accent); }
+  .feedback.miss { display: block; background: var(--marker-soft); color: var(--marker); }
+
+  .next {
+    margin-top: 56px; padding: 20px; background: var(--accent-soft);
+    border: 1px solid var(--accent); font-size: 15px;
+  }
+  .next code { background: transparent; padding: 0; font-weight: 600; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .chip, .btn { transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+  }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Proposal · Harness Layer · 2026-07-13</div>
+  <h1>The Unknowns-Aware Pipeline</h1>
+  <p class="standfirst">
+    Folding Thariq's field guide — blindspot passes, design directions, implementation notes,
+    and merge quizzes — into <span class="mono">plan → build → ship</span>. This page is itself
+    a demo of the medium: change cards ordered by how likely you are to tweak them, chips that
+    assemble your reply, and a three-question quiz at the end.
+  </p>
+
+  <h2>The idea in one matrix</h2>
+  <p class="h2-sub">Every failed agent run traces to a gap between the map (your prompt) and the
+  territory (the codebase, the users, your own taste). Each quadrant has a different cure — and
+  a different home in the pipeline.</p>
+  <div class="matrix">
+    <div class="quad known">
+      <span class="tag">You know it · you have it</span>
+      <h3>Known knowns</h3>
+      <p>What the prompt and spec already state.</p>
+      <div class="cure">Cure: <strong>the four-file spec</strong> — already strong today.</div>
+    </div>
+    <div class="quad known">
+      <span class="tag">You know it · you lack it</span>
+      <h3>Known unknowns</h3>
+      <p>Gaps you're aware of and can ask about.</p>
+      <div class="cure">Cure: <strong>the Grilling Protocol</strong> — your interview, already built.</div>
+    </div>
+    <div class="quad unknown">
+      <span class="tag">You don't know it · you have it</span>
+      <h3>Unknown knowns</h3>
+      <p>Taste — you'd recognize the right answer but can't specify it upfront.</p>
+      <div class="cure">Cure: <strong>design directions &amp; mocks</strong> — new, plan phase.</div>
+    </div>
+    <div class="quad unknown">
+      <span class="tag">You don't know it · you lack it</span>
+      <h3>Unknown unknowns</h3>
+      <p>Blind spots you don't even know to ask about.</p>
+      <div class="cure">Cure: <strong>blindspot pass + implementation notes</strong> — new, plan &amp; build.</div>
+    </div>
+  </div>
+
+  <h2>The enhanced pipeline</h2>
+  <p class="h2-sub">Existing steps stay; the unknowns layer threads through the seams.
+  Marked steps are new. Every artifact is a committed file in
+  <span class="mono">specs/&lt;name&gt;/artifacts/</span> and a published interactive page.</p>
+  <div class="pipeline">
+    <div class="phase">
+      <h3>/harness-plan</h3>
+      <ul>
+        <li>Preflight · codebase · KB profile</li>
+        <li class="new">Blindspot pass — unknown-unknown cards seed the ledger<span class="new-badge">NEW</span></li>
+        <li>Grilling Protocol, now ordered by architectural blast radius</li>
+        <li class="new">Taste-shaped decision → 2–4 rendered directions, steal/skip chips<span class="new-badge">NEW</span></li>
+        <li class="new">Spec decisions table gains volatility + alternatives<span class="new-badge">NEW</span></li>
+        <li>Worktree · issue · Codex spec review (unchanged)</li>
+      </ul>
+    </div>
+    <div class="phase">
+      <h3>/harness-build</h3>
+      <ul>
+        <li>Implement on the plan's worktree, draft PR (unchanged)</li>
+        <li class="new">implementation-notes.md — every builder reports deviations<span class="new-badge">NEW</span></li>
+        <li class="new">Deviation hits a locked decision → user gate<span class="new-badge">NEW</span></li>
+        <li>Internal ∥ Codex reviews; packet now carries the notes</li>
+        <li class="new">plan-fidelity lens — silent divergence is a finding<span class="new-badge">NEW</span></li>
+        <li class="new">On approval: ship brief + merge quiz, committed with the report<span class="new-badge">NEW</span></li>
+      </ul>
+    </div>
+    <div class="phase">
+      <h3>/harness-ship</h3>
+      <ul>
+        <li>Quiz is advisory — taken before you type the command</li>
+        <li>Verify ready + checks + approved head (unchanged)</li>
+        <li>Squash-merge · cleanup (unchanged)</li>
+        <li>Zero file changes to this command</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Changes, ordered by how likely you are to tweak them</h2>
+  <p class="h2-sub">The tweakable-plan pattern, applied to itself: decisions you might want to
+  change sit on top; mechanical work is at the bottom. Mark each card Adopt or Drop — the
+  assembler below writes your reply.</p>
+
+  <div id="cards">
+    <div class="card" data-id="C1" data-title="Ship brief + merge quiz in harness-build">
+      <div class="card-head">
+        <span class="card-id">C1</span>
+        <h3>Ship brief + merge quiz at end of build</h3>
+        <span class="vol high">likely to change</span>
+      </div>
+      <p>On approval the lead authors <code>artifacts/ship-brief.html</code> — leads with what
+      shipped, pre-answers reviewer objections with evidence links, ends in a short quiz
+      (medium/complex plans only). It is committed <em>together with</em> the approval-round
+      report commit, so that one commit is the approved head and the ship-time SHA guard still
+      holds. Delta reviews exclude <code>artifacts/</code> exactly as they exclude
+      <code>reviews/</code>. The build report says: take the quiz before /harness-ship.</p>
+      <div class="files">.claude/commands/harness-layer/harness-build.md</div>
+      <div class="chips">
+        <button class="chip adopt" aria-pressed="true">Adopt</button>
+        <button class="chip drop" aria-pressed="false">Drop</button>
+      </div>
+    </div>
+
+    <div class="card" data-id="C2" data-title="Design-directions channel in grilling">
+      <div class="card-head">
+        <span class="card-id">C2</span>
+        <h3>Design-directions channel in the Grilling Protocol</h3>
+        <span class="vol high">likely to change</span>
+      </div>
+      <p>When a ledger decision is taste-shaped — you'd recognize the right answer but can't
+      specify it (UX, output format, report layout) — the planner renders 2–4 alternatives as
+      an interactive artifact with steal/skip chips and a reply assembler, instead of a
+      text-only question. The choice is still confirmed via AskUserQuestion and recorded in
+      decisions.md, so the decision record stays canonical. The trigger definition of
+      "taste-shaped" is the part most worth tuning.</p>
+      <div class="files">.claude/commands/harness-layer/harness-plan.md</div>
+      <div class="chips">
+        <button class="chip adopt" aria-pressed="true">Adopt</button>
+        <button class="chip drop" aria-pressed="false">Drop</button>
+      </div>
+    </div>
+
+    <div class="card" data-id="C3" data-title="Blindspot pass in harness-plan">
+      <div class="card-head">
+        <span class="card-id">C3</span>
+        <h3>Blindspot pass before grilling</h3>
+        <span class="vol settled">settled</span>
+      </div>
+      <p>New workflow step after codebase/KB understanding: report the task's unknown unknowns
+      as cards — what it is, why it matters, proposed resolution — as an artifact for
+      medium/complex tasks, inline text for simple ones. Unresolved cards seed the grilling
+      ledger first, and grilling questions are explicitly ordered by architectural blast
+      radius. Findings land in decisions.md under <code>## Blindspots</code>.</p>
+      <div class="files">.claude/commands/harness-layer/harness-plan.md</div>
+      <div class="chips">
+        <button class="chip adopt" aria-pressed="true">Adopt</button>
+        <button class="chip drop" aria-pressed="false">Drop</button>
+      </div>
+    </div>
+
+    <div class="card" data-id="C4" data-title="Implementation notes + builder deviations contract">
+      <div class="card-head">
+        <span class="card-id">C4</span>
+        <h3>Implementation notes + builder deviations contract</h3>
+        <span class="vol settled">settled</span>
+      </div>
+      <p>Build creates <code>specs/&lt;name&gt;/implementation-notes.md</code> at implement
+      start. Every builder's hand-off gains a Deviations field: what diverged from the plan,
+      what forced it, the call made. The lead folds entries in at each checkpoint commit; a
+      deviation touching a locked decision or acceptance criterion stops for an AskUserQuestion
+      gate. The Codex review packet points at the file so divergence is dispositioned, not
+      rediscovered.</p>
+      <div class="files">.claude/commands/harness-layer/harness-build.md</div>
+      <div class="chips">
+        <button class="chip adopt" aria-pressed="true">Adopt</button>
+        <button class="chip drop" aria-pressed="false">Drop</button>
+      </div>
+    </div>
+
+    <div class="card" data-id="C5" data-title="plan-fidelity reviewer lens">
+      <div class="card-head">
+        <span class="card-id">C5</span>
+        <h3>plan-fidelity lens in harness-review</h3>
+        <span class="vol settled">settled</span>
+      </div>
+      <p>A seventh reviewer lens: diff versus spec.md, tasks.md, and implementation-notes.md.
+      A divergence from the plan with no implementation-notes entry is a finding —
+      confidence-scored and filtered like every other lens, so it can't pad reports.</p>
+      <div class="files">.claude/commands/harness-layer/harness-review.md</div>
+      <div class="chips">
+        <button class="chip adopt" aria-pressed="true">Adopt</button>
+        <button class="chip drop" aria-pressed="false">Drop</button>
+      </div>
+    </div>
+
+    <div class="card" data-id="C6" data-title="Templates + completeness hook sync">
+      <div class="card-head">
+        <span class="card-id">C6</span>
+        <h3>Templates + completeness hook sync</h3>
+        <span class="vol mech">mechanical</span>
+      </div>
+      <p>spec.md's decisions table gains volatility + alternatives columns (the tweakable
+      plan); decisions.md gains <code>## Blindspots</code>; a new implementation-notes
+      template joins the set. The spec-completeness Stop hook and its tests update in the same
+      change — templates and hook can never drift apart.</p>
+      <div class="files">specs/_templates/* · .claude/hooks/check_spec_completeness.py · tests/harness-layer/hooks/</div>
+      <div class="chips">
+        <button class="chip adopt" aria-pressed="true">Adopt</button>
+        <button class="chip drop" aria-pressed="false">Drop</button>
+      </div>
+    </div>
+
+    <div class="card" data-id="C7" data-title="Codex skill checklist extensions">
+      <div class="card-head">
+        <span class="card-id">C7</span>
+        <h3>Codex skill checklist extensions</h3>
+        <span class="vol mech">mechanical</span>
+      </div>
+      <p>spec-review verifies every blindspot card was dispositioned in the spec;
+      implementation-review reads implementation-notes.md and dispositions each recorded
+      deviation. Small additions to both Codex-side skills.</p>
+      <div class="files">.agents/skills/spec-review · .agents/skills/implementation-review</div>
+      <div class="chips">
+        <button class="chip adopt" aria-pressed="true">Adopt</button>
+        <button class="chip drop" aria-pressed="false">Drop</button>
+      </div>
+    </div>
+
+    <div class="card" data-id="C8" data-title="AGENTS.md memory line">
+      <div class="card-head">
+        <span class="card-id">C8</span>
+        <h3>AGENTS.md memory line</h3>
+        <span class="vol mech">mechanical</span>
+      </div>
+      <p>One or two imperative lines in the Harness-Layer Pipeline section: unknowns
+      checkpoints exist; artifacts live in <code>specs/&lt;name&gt;/artifacts/</code> and are
+      published as interactive pages. No rationale, per the memory rules.</p>
+      <div class="files">AGENTS.md</div>
+      <div class="chips">
+        <button class="chip adopt" aria-pressed="true">Adopt</button>
+        <button class="chip drop" aria-pressed="false">Drop</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="assembler">
+    <h3>Your reply, assembled</h3>
+    <div class="hint">Toggle the cards above, add anything else, then copy this back into the chat.</div>
+    <textarea id="reply" aria-label="Assembled reply"></textarea>
+    <div class="row">
+      <button class="btn" id="copyBtn">Copy reply</button>
+      <span class="copied" id="copiedNote"></span>
+    </div>
+  </div>
+
+  <h2>Deliberately left out</h2>
+  <p class="h2-sub">KISS guardrails — each of these was considered and cut.</p>
+  <ul class="leftout">
+    <li><strong>No changes to harness-ship.</strong> The quiz is advisory; ship stays a fast, mechanical sonnet/low merge with the same guards.</li>
+    <li><strong>No new hooks.</strong> Only the existing spec-completeness hook is updated; no artifact-presence or quiz-state enforcement.</li>
+    <li><strong>No quadrant bookkeeping.</strong> Decisions aren't classified into the 2×2 in writing — the matrix picks the technique, then disappears.</li>
+    <li><strong>No separate unknowns.md.</strong> Blindspots live in decisions.md; deviations live in implementation-notes.md. Two homes, no third file.</li>
+    <li><strong>No mandatory artifacts on trivial work.</strong> Simple chores grill lightly and skip the artifact set entirely, per the existing adaptive-depth rule.</li>
+  </ul>
+
+  <h2>Quiz me before I approve</h2>
+  <p class="h2-sub">Three questions — the same pattern the ship brief would end with.</p>
+
+  <div class="quiz-q" data-answer="b">
+    <h3>1. Why is the ship brief committed together with the approval-round report commit?</h3>
+    <label><input type="radio" name="q1" value="a">So Codex can review the brief's HTML in round 2</label>
+    <label><input type="radio" name="q1" value="b">So the approved-head SHA guard in harness-ship still holds — a later commit would move the head past the approved SHA</label>
+    <label><input type="radio" name="q1" value="c">Because artifacts must always be in the first commit of a branch</label>
+    <div class="feedback" data-ok="Right — harness-ship refuses any head that isn't the recorded approved commit, so the brief must be inside that commit, not after it." data-miss="Check card C1: harness-ship merges only when the PR head equals the approved head. A commit after approval would break that guard."></div>
+  </div>
+
+  <div class="quiz-q" data-answer="c">
+    <h3>2. Which quadrant does the design-directions channel target?</h3>
+    <label><input type="radio" name="q2" value="a">Known unknowns — gaps you can ask about</label>
+    <label><input type="radio" name="q2" value="b">Unknown unknowns — blind spots</label>
+    <label><input type="radio" name="q2" value="c">Unknown knowns — taste you'd recognize but can't articulate</label>
+    <div class="feedback" data-ok="Exactly — you can't specify the answer upfront, but you'll recognize it when it's rendered in front of you." data-miss="Revisit the matrix: rendered alternatives exist because you cannot articulate the requirement — you can only react to it. That's an unknown known."></div>
+  </div>
+
+  <div class="quiz-q" data-answer="a">
+    <h3>3. What happens when a builder's deviation touches a locked decision?</h3>
+    <label><input type="radio" name="q3" value="a">The build stops for an AskUserQuestion gate before proceeding</label>
+    <label><input type="radio" name="q3" value="b">It's logged in implementation-notes.md and the build continues</label>
+    <label><input type="radio" name="q3" value="c">Codex re-reviews the whole branch from scratch</label>
+    <div class="feedback" data-ok="Correct — ordinary deviations are logged and flow on; only ones that touch locked decisions or acceptance criteria escalate to you." data-miss="See card C4: routine deviations are just logged, but a locked decision is yours — the build must stop and ask."></div>
+  </div>
+
+  <div class="next">
+    Next step: reply here (or paste the assembled reply), then kick off
+    <code>/harness-layer:harness-plan "unknowns-aware pipeline"</code> — the enhancement ships
+    through the very pipeline it upgrades.
+  </div>
+</div>
+
+<script>
+  (function () {
+    var cards = Array.prototype.slice.call(document.querySelectorAll('#cards .card'));
+    var reply = document.getElementById('reply');
+
+    function assemble() {
+      var adopt = [], drop = [];
+      cards.forEach(function (card) {
+        var on = card.querySelector('.chip.adopt').getAttribute('aria-pressed') === 'true';
+        var label = card.getAttribute('data-id') + ' ' + card.getAttribute('data-title');
+        (on ? adopt : drop).push(label);
+      });
+      var lines = ['Proposal review — unknowns-aware pipeline:'];
+      lines.push(adopt.length ? 'Adopt: ' + adopt.map(function (s) { return s.split(' ')[0]; }).join(', ') : 'Adopt: none');
+      if (drop.length) {
+        lines.push('Drop: ' + drop.map(function (s) { return s.split(' ')[0]; }).join(', '));
+        drop.forEach(function (s) { lines.push('  - dropping ' + s); });
+      }
+      lines.push('Notes: ');
+      reply.value = lines.join('\n');
+    }
+
+    cards.forEach(function (card) {
+      var adoptChip = card.querySelector('.chip.adopt');
+      var dropChip = card.querySelector('.chip.drop');
+      adoptChip.addEventListener('click', function () {
+        adoptChip.setAttribute('aria-pressed', 'true');
+        dropChip.setAttribute('aria-pressed', 'false');
+        assemble();
+      });
+      dropChip.addEventListener('click', function () {
+        dropChip.setAttribute('aria-pressed', 'true');
+        adoptChip.setAttribute('aria-pressed', 'false');
+        assemble();
+      });
+    });
+    assemble();
+
+    document.getElementById('copyBtn').addEventListener('click', function () {
+      reply.select();
+      var note = document.getElementById('copiedNote');
+      try {
+        navigator.clipboard.writeText(reply.value).then(function () {
+          note.textContent = 'Copied.';
+        }, function () {
+          document.execCommand('copy');
+          note.textContent = 'Copied.';
+        });
+      } catch (e) {
+        document.execCommand('copy');
+        note.textContent = 'Copied.';
+      }
+      setTimeout(function () { note.textContent = ''; }, 2500);
+    });
+
+    document.querySelectorAll('.quiz-q').forEach(function (q) {
+      var answer = q.getAttribute('data-answer');
+      var feedback = q.querySelector('.feedback');
+      q.querySelectorAll('input[type="radio"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+          var ok = input.value === answer;
+          feedback.className = 'feedback ' + (ok ? 'ok' : 'miss');
+          feedback.textContent = ok ? feedback.getAttribute('data-ok') : feedback.getAttribute('data-miss');
+        });
+      });
+    });
+  })();
+</script>

@@ -1,0 +1,450 @@
+<title>Ship Brief — Unknowns-Aware Pipeline (PR #31)</title>
+<style>
+  :root {
+    --bg: #f7f8f6;
+    --surface: #ffffff;
+    --ink: #20302c;
+    --muted: #5c6b66;
+    --line: #dce3df;
+    --accent: #0e6e64;
+    --accent-soft: #e3f0ee;
+    --marker: #b07818;
+    --marker-soft: #f5ebd9;
+    --grey-soft: #eef1ef;
+    --ok: #0e6e64;
+    --miss: #b07818;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1a18;
+      --surface: #152220;
+      --ink: #e3ebe7;
+      --muted: #93a49e;
+      --line: #2a3b36;
+      --accent: #4fc1b0;
+      --accent-soft: #1b322e;
+      --marker: #d9a24a;
+      --marker-soft: #33291a;
+      --grey-soft: #1c2926;
+      --ok: #4fc1b0;
+      --miss: #d9a24a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1a18;
+    --surface: #152220;
+    --ink: #e3ebe7;
+    --muted: #93a49e;
+    --line: #2a3b36;
+    --accent: #4fc1b0;
+    --accent-soft: #1b322e;
+    --marker: #d9a24a;
+    --marker-soft: #33291a;
+    --grey-soft: #1c2926;
+    --ok: #4fc1b0;
+    --miss: #d9a24a;
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f8f6;
+    --surface: #ffffff;
+    --ink: #20302c;
+    --muted: #5c6b66;
+    --line: #dce3df;
+    --accent: #0e6e64;
+    --accent-soft: #e3f0ee;
+    --marker: #b07818;
+    --marker-soft: #f5ebd9;
+    --grey-soft: #eef1ef;
+    --ok: #0e6e64;
+    --miss: #b07818;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    line-height: 1.6;
+    font-size: 16.5px;
+  }
+  .wrap {
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 48px 24px 88px;
+  }
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: clamp(26px, 4.5vw, 36px);
+    line-height: 1.18;
+    font-weight: 600;
+    text-wrap: balance;
+    margin-bottom: 12px;
+  }
+  .standfirst {
+    font-size: 17.5px;
+    color: var(--muted);
+    max-width: 62ch;
+  }
+  h2 {
+    font-size: 21px;
+    font-weight: 600;
+    margin: 48px 0 14px;
+  }
+  code,
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.86em;
+  }
+  code {
+    background: var(--grey-soft);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  a {
+    color: var(--accent);
+  }
+  p {
+    max-width: 68ch;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 22px;
+  }
+  .fact {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 12px 14px;
+  }
+  .fact .k {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .fact .v {
+    font-size: 14.5px;
+    font-weight: 600;
+  }
+
+  ul.shipped {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  ul.shipped li {
+    font-size: 15px;
+    padding-left: 16px;
+    position: relative;
+    max-width: 72ch;
+  }
+  ul.shipped li::before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+
+  .obj {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--marker);
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .obj h3 {
+    font-size: 15.5px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .obj p {
+    font-size: 14.5px;
+    color: var(--muted);
+  }
+  .obj p strong {
+    color: var(--ink);
+  }
+
+  .quiz-q {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .quiz-q h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .quiz-q label {
+    display: block;
+    font-size: 14.5px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .quiz-q label:hover {
+    background: var(--grey-soft);
+  }
+  .quiz-q input {
+    margin-right: 8px;
+    accent-color: var(--accent);
+  }
+  .feedback {
+    font-size: 13.5px;
+    margin-top: 8px;
+    padding: 9px 12px;
+    border-radius: 4px;
+    display: none;
+  }
+  .feedback.ok {
+    display: block;
+    background: var(--accent-soft);
+    color: var(--ok);
+  }
+  .feedback.miss {
+    display: block;
+    background: var(--marker-soft);
+    color: var(--miss);
+  }
+  .score {
+    margin-top: 16px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .next {
+    margin-top: 40px;
+    padding: 16px 18px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    font-size: 14.5px;
+  }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Ship Brief · PR #31 · approved head f3fa58e→(this commit)</div>
+  <h1>Unknowns-Aware Pipeline</h1>
+  <p class="standfirst">
+    The plan/build/ship pipeline now hunts its own unknowns: a blindspot pass before grilling, a
+    deviation log during builds, a plan-fidelity review lens, and this very page — the first ship
+    brief the pipeline produced, quiz included. Take the quiz, then run
+    <span class="mono">/harness-layer:harness-ship unknowns-aware-pipeline</span>.
+  </p>
+  <div class="facts">
+    <div class="fact"><span class="k">Issue / PR</span><span class="v">#30 / #31</span></div>
+    <div class="fact">
+      <span class="k">Reviews</span
+      ><span class="v">Internal 1 finding · Codex R1 2 → R2 approved</span>
+    </div>
+    <div class="fact">
+      <span class="k">Tests</span><span class="v">622 passed (9 gate tests)</span>
+    </div>
+    <div class="fact">
+      <span class="k">Ship guard</span><span class="v">harness-ship untouched</span>
+    </div>
+  </div>
+
+  <h2>What shipped</h2>
+  <ul class="shipped">
+    <li>
+      <strong>harness-plan</strong> — Blindspot Pass step (unknown-unknown cards →
+      <code>decisions.md ## Blindspots</code>, gate-enforced), blast-radius question ordering, the
+      taste route, and in-worktree <code>Plan Artifacts</code> with best-effort publishing.
+    </li>
+    <li>
+      <strong>harness-build</strong> — builders report Deviations in hand-offs; the lead folds them
+      into <code>implementation-notes.md</code> under a narrow non-implementation-file exception;
+      locked-decision deviations stop for your approval; one
+      <code>Approval finalization</code> procedure authors a fresh ship brief and commits it with
+      the approving round's report — that single commit is the approved head, so the ship-time SHA
+      guard is intact.
+    </li>
+    <li>
+      <strong>harness-review</strong> — new <code>plan-fidelity</code> lens: silent divergence from
+      the plan is a finding; logged deviations are conforming context.
+    </li>
+    <li>
+      <strong>Codex skills</strong> — spec-review blocks on undispositioned blindspots;
+      implementation-review dispositions logged deviations and excludes <code>artifacts/</code> from
+      delta scope.
+    </li>
+    <li>
+      <strong>Templates + gate</strong> — <code>## Blindspots</code> required by the
+      spec-completeness Stop hook (intent test pins the exact stderr and the no-stdout contract);
+      new implementation-notes template; volatility-ordered decisions guidance; AGENTS.md memory
+      bullet.
+    </li>
+  </ul>
+
+  <h2>Objections, pre-answered</h2>
+  <div class="obj">
+    <h3>"Six builder subagents were planned — who actually wrote this?"</h3>
+    <p>
+      The session's permission layer denied every Agent call, so the
+      <strong>lead implemented directly</strong> — recorded as a deviation in
+      <a
+        href="https://github.com/SunshinePeace213/ai-native-startup/blob/feat/30-unknowns-aware-pipeline/specs/unknowns-aware-pipeline/implementation-notes.md"
+        >implementation-notes.md</a
+      >, dispositioned as conforming by Codex R1, and the independent cross-model Codex gate stayed
+      fully intact (it found 2 real blockers).
+    </p>
+  </div>
+  <div class="obj">
+    <h3>"Will the new required section break existing plan folders?"</h3>
+    <p>
+      The Stop gate only fires inside planning runs and only on the newest plan folder. Old specs
+      graded by spec-review get an <strong>advisory</strong>, not a block; a blocked new plan is
+      repaired by a one-line section named exactly in stderr.
+    </p>
+  </div>
+  <div class="obj">
+    <h3>"Codex said the exit-2 gate contradicts the docs."</h3>
+    <p>
+      The two cached docs <strong>contradict each other</strong>;
+      <code>hooks-guide.md</code> documents exit 2 = blocked + stderr feedback, matching observed
+      harness behavior and every hook in the repo. The contract is now a Locked Boundary, the stdout
+      half is pinned by a test, and refreshing <code>hooks.md</code> is a tracked follow-up.
+    </p>
+  </div>
+  <div class="obj">
+    <h3>"Does merging change how I ship?"</h3>
+    <p>
+      <strong>No.</strong> <code>harness-ship.md</code> has zero changes — same mechanical
+      squash-merge, same <code>--match-head-commit</code> guard. The quiz below is advisory.
+    </p>
+  </div>
+
+  <h2>Quiz me before I merge</h2>
+  <div class="quiz-q" data-answer="b">
+    <h3>1. A simple-complexity build reaches approval. What happens with the ship brief?</h3>
+    <label
+      ><input type="radio" name="q1" value="a" />It is published anyway from the template</label
+    >
+    <label
+      ><input type="radio" name="q1" value="b" />Nothing — simple plans never author a brief or
+      quiz; the report commit alone is the approved head</label
+    >
+    <label
+      ><input type="radio" name="q1" value="c" />The build stops and asks whether to write
+      one</label
+    >
+    <div
+      class="feedback"
+      data-ok="Right — Approval finalization and the Finish step both scope the brief to medium/complex (the RC-1 fix)."
+      data-miss="Re-read harness-build.md's Approval finalization paragraph and Finish step — simple plans skip the brief and quiz entirely."
+    ></div>
+  </div>
+  <div class="quiz-q" data-answer="c">
+    <h3>
+      2. Why does the spec-completeness gate still block with exit 2 instead of returning
+      {"approved": false}?
+    </h3>
+    <label><input type="radio" name="q2" value="a" />Exit codes are faster than JSON</label>
+    <label
+      ><input type="radio" name="q2" value="b" />The Codex reviewer approved the original design
+      unchanged</label
+    >
+    <label
+      ><input type="radio" name="q2" value="c" />hooks-guide.md and observed harness behavior
+      document exit 2 as the blocking contract; migrating while the cached docs conflict risks
+      silently failing open — locked as a boundary</label
+    >
+    <div
+      class="feedback"
+      data-ok="Exactly — see decisions.md ## Locked Boundaries and the KB References note flagging the hooks.md conflict for /kb refresh."
+      data-miss="Re-read decisions.md ## Locked Boundaries: the fix corrected the grounding (hooks-guide.md), not the working gate."
+    ></div>
+  </div>
+  <div class="quiz-q" data-answer="a">
+    <h3>
+      3. Mid-build, a builder discovers the plan's approach can't work for an edge case. What is the
+      contract?
+    </h3>
+    <label
+      ><input type="radio" name="q3" value="a" />Report it in the hand-off's Deviations field; the
+      lead folds it into implementation-notes.md at the next checkpoint — and if it touches a locked
+      decision or acceptance criterion, the build stops for the user first</label
+    >
+    <label
+      ><input type="radio" name="q3" value="b" />Fix it silently and mention it in the PR
+      description</label
+    >
+    <label
+      ><input type="radio" name="q3" value="c" />Open a new GitHub issue and pause the task</label
+    >
+    <div
+      class="feedback"
+      data-ok="Correct — and reviews then disposition each logged deviation instead of rediscovering it; an UNlogged divergence is a plan-fidelity finding."
+      data-miss="Re-read harness-build.md's Deviation log instruction and the builder hand-off contract."
+    ></div>
+  </div>
+  <div class="quiz-q" data-answer="b">
+    <h3>4. After this change, what exactly is the approved head that harness-ship verifies?</h3>
+    <label
+      ><input type="radio" name="q4" value="a" />The last fix commit before the review round</label
+    >
+    <label
+      ><input type="radio" name="q4" value="b" />The single commit that stages the approving round's
+      report — plus the fresh ship brief on medium/complex plans</label
+    >
+    <label
+      ><input type="radio" name="q4" value="c" />Whatever SHA the PR head points at when checks
+      pass</label
+    >
+    <div
+      class="feedback"
+      data-ok="Right — one commit, authored in whichever round approves, recorded in the stage table; the --match-head-commit guard is unchanged."
+      data-miss="Re-read Approval finalization in harness-build.md — report + brief land as ONE commit, and that commit is the approved head."
+    ></div>
+  </div>
+  <div class="score" id="score"></div>
+
+  <div class="next">
+    Passed all four? Then:
+    <span class="mono">/harness-layer:harness-ship unknowns-aware-pipeline</span> — it verifies
+    ready + checks + this approved head, squash-merges, and cleans up the worktree and branch.
+  </div>
+</div>
+
+<script>
+  (function () {
+    var total = 4,
+      done = {};
+    document.querySelectorAll(".quiz-q").forEach(function (q, i) {
+      var answer = q.getAttribute("data-answer");
+      var feedback = q.querySelector(".feedback");
+      q.querySelectorAll('input[type="radio"]').forEach(function (input) {
+        input.addEventListener("change", function () {
+          var ok = input.value === answer;
+          feedback.className = "feedback " + (ok ? "ok" : "miss");
+          feedback.textContent = ok
+            ? feedback.getAttribute("data-ok")
+            : feedback.getAttribute("data-miss");
+          done[i] = ok;
+          var right = Object.keys(done).filter(function (k) {
+            return done[k];
+          }).length;
+          var answered = Object.keys(done).length;
+          document.getElementById("score").textContent =
+            "Score: " +
+            right +
+            "/" +
+            total +
+            (answered === total && right === total ? " — ready to ship." : "");
+        });
+      });
+    });
+  })();
+</script>

@@ -37,6 +37,7 @@ REVIEWER_MODEL: `sonnet` — every reviewer agent; utility agents (eligibility, 
    - **history** — bugs visible in light of `git blame`/log context for the touched lines.
    - **prior-art** — comments on earlier PRs touching these files that apply again.
    - **comment-accuracy** — changes contradicting code comments or making them stale.
+   - **plan-fidelity** — when the branch carries a `specs/<name>/` plan folder: the diff vs spec.md, tasks.md, and (when present) implementation-notes.md — a divergence from the plan with NO implementation-notes entry is a finding; recorded deviations are conforming context, not findings. No plan folder → the lens reports nothing.
    - **memory-sync** — see `Memory Sync` below.
 5. **Score** — one Haiku agent per finding: 0–100 confidence that it is real and introduced by this diff; verify cited memory/rule text actually says what the finding claims.
 6. **Filter & consolidate** — drop findings under `CONFIDENCE_FLOOR`, merge duplicates sharing a root cause, order by severity.
