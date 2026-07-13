@@ -30,8 +30,8 @@ move in the same change.
   - **A:** In whichever round approves (round-1 both-clean, round-2 approved, or an approved round 3), the lead authors the brief after reading the `approved` verdict and BEFORE making that round's report commit; report + brief land as ONE commit — the approved head recorded in the stage table. The Finish step only publishes best-effort, adds `## Ship Brief` to the PR body, and verifies that exact head.
   - **Why:** A separate post-approval commit would move the PR head past the approved SHA and abort harness-ship; authoring inside the approving round also guarantees the brief describes the final tree. Same precedent as review reports (lead-committed, non-implementation content).
 - **Q:** Who maintains implementation-notes.md, given the build lead's never-edit-directly rule?
-  - **A:** The lead — harness-build.md scopes an explicit lead-owned ledger exception covering implementation-notes.md folding, alongside the existing `## Tracking` and `## Locked Boundaries` ledger edits.
-  - **Why:** The never-edit rule targets implementation code; ledger bookkeeping already has lead-edit precedent, and a dedicated recorder subagent adds a hop for no quality gain.
+  - **A:** The lead — harness-build.md scopes ONE narrow lead-owned exception for non-implementation plan files: creating AND folding `specs/<name>/implementation-notes.md`, authoring `specs/<name>/artifacts/ship-brief.html` in the approving round, and the existing `## Tracking` / `## Locked Boundaries` edits. Implementation files stay builder-only.
+  - **Why:** The never-edit rule targets implementation code; plan bookkeeping and presentation already have lead-edit precedent, and a dedicated recorder subagent adds a hop for no quality gain.
 - **Q:** What do reviews do with the new artifacts and deviations?
   - **A:** Delta reviews exclude `specs/<name>/artifacts/` exactly as they exclude `reviews/`; the review packet points at implementation-notes.md; harness-review gains a `plan-fidelity` lens (an undocumented divergence from the plan is a finding); implementation-review dispositions each recorded deviation; spec-review verifies each blindspot was dispositioned.
   - **Why:** Divergence becomes dispositionable evidence instead of being rediscovered or silently shipped.
@@ -45,7 +45,7 @@ move in the same change.
 ## Assumptions
 
 - Quiz shape: 3–6 questions keyed to the riskiest parts of the diff, each wrong answer pointing at the file/section to re-read. Invalidated if quizzes prove too long or too shallow in practice.
-- Taste-route trigger is planner judgment (recognition-over-specification decisions: UX, output format, report layout), plus explicit user request. Invalidated if the route over- or under-fires; the fallback is AskUserQuestion `preview` fields.
+- Taste-route mechanics: alternatives are presented inline via AskUserQuestion labels and rich descriptions; option `preview` renderings are used only where the running harness supports them (best-effort, never a contract requirement — the cached SDK doc scopes previews to configured SDK hosts). A decision that truly needs a rendered comparison is recorded as PROVISIONAL in the ledger and re-confirmed with one AskUserQuestion against the in-worktree design-directions page before the spec commit. Trigger stays planner judgment (recognition-over-specification: UX, output format, report layout) plus explicit user request. Invalidated if the route over- or under-fires.
 - Artifact publishing is best-effort: on any availability failure (login, plan, provider, org policy per `ai-docs/anthropic/artifacts.md`) the phase proceeds with the committed file only. Invalidated only if the team later requires shareable URLs as a hard deliverable.
 - Blindspot depth scaling: simple → ~3 cards inline (no artifact file); medium/complex → up to ~7 cards + artifact. Numbers are guidance, not enforced.
 - Pre-worktree interaction is inline: blindspot cards and design alternatives are presented as text or AskUserQuestion previews during grilling. The durable HTML artifacts are authored only after worktree entry, directly under `specs/<name>/artifacts/`, and published best-effort from those project-local files (`ai-docs/anthropic/artifacts.md`: the page is written to a project file, then published). Invalidated if pre-worktree interactive pages prove necessary in practice.
@@ -64,7 +64,8 @@ Found during this plan's own blindspot pass; each dispositioned:
 ## Open Questions / Out of Scope
 
 - **Out of scope:** any change to `/harness-layer:harness-ship`; new hooks; quiz-state recording/enforcement; 2×2 quadrant bookkeeping in spec files; mandatory artifacts on simple plans; artifact design-system work.
-- **Open question:** whether AskUserQuestion `preview` fields can replace small design-directions artifacts over time — owner: ringo, revisit after a few real uses.
+- **Open question:** whether harness-supported AskUserQuestion previews can replace small design-directions pages over time — owner: ringo, revisit after a few real uses.
+- **Follow-up (advisory, Codex round 2):** harness-build.md should define the approval-finalization procedure (author fresh brief → commit report + brief as one commit) once, referenced from the round-1 both-clean, round-2 approved, and round-3 approved branches.
 
 ## KB References
 

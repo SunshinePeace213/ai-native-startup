@@ -59,11 +59,13 @@ Ordered by volatility — most-likely-to-change first, each with its live altern
   head, so the harness-ship `--match-head-commit` guard holds. The Finish step only publishes
   best-effort, adds `## Ship Brief` to the PR body, and verifies that head. Alternative if this
   proves awkward: publish-only (no commit), linking the URL from the PR body.
-- **Taste-route trigger** (likely to tweak): the planner routes a grilling decision to a rendered
-  design-directions artifact when the user would recognize the answer but can't specify it (UX,
-  output format, report layout); the user can also request it explicitly. AskUserQuestion still
-  confirms; decisions.md still records. Alternative: AskUserQuestion `preview` fields for small
-  visual choices.
+- **Taste-route mechanics** (likely to tweak): when the user would recognize the answer but can't
+  specify it (UX, output format, report layout) or asks explicitly, present 2–4 concrete
+  alternatives via AskUserQuestion labels and rich descriptions — option previews only where the
+  running harness supports them (best-effort, never required); a decision that truly needs a
+  rendered comparison is recorded as provisional and re-confirmed against the in-worktree
+  design-directions page before the spec commit. AskUserQuestion always confirms; decisions.md
+  always records.
 - **Dual-homed artifacts** (settled): committed HTML under `specs/<name>/artifacts/` is the
   durable record; publishing via the Artifact tool is best-effort and never blocks a phase
   (availability is conditional — see `ai-docs/anthropic/artifacts.md` Availability).
@@ -84,7 +86,7 @@ Ordered by volatility — most-likely-to-change first, each with its live altern
 Use these files to complete the task:
 
 - `.claude/commands/harness-layer/harness-plan.md` — add the Blindspot Pass workflow step, blast-radius question ordering, the taste-route (design directions) in the Grilling Protocol, artifact handling (inline pre-worktree; durable artifacts authored in-worktree under `specs/<name>/artifacts/` and published from those project files), and Report additions
-- `.claude/commands/harness-layer/harness-build.md` — implementation-notes creation + builder Deviations hand-off field + locked-decision gate + lead-owned ledger exception, review-packet pointer, `specs/<name>/artifacts/` delta-review exclusion, approval-path ship brief + quiz, PR-body `## Ship Brief` entry
+- `.claude/commands/harness-layer/harness-build.md` — implementation-notes creation + builder Deviations hand-off field + locked-decision gate + the lead-owned non-implementation-file exception (notes creation/folding, ship-brief authoring, `## Tracking` / `## Locked Boundaries`), review-packet pointer, `specs/<name>/artifacts/` delta-review exclusion, approval-path ship brief + quiz, PR-body `## Ship Brief` entry
 - `.claude/commands/harness-layer/harness-review.md` — add the `plan-fidelity` reviewer lens
 - `specs/_templates/spec.md` — volatility-ordered guidance inside `## Requirements & Decisions` (no heading change)
 - `specs/_templates/decisions.md` — new `## Blindspots` section
