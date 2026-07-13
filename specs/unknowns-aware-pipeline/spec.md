@@ -1,7 +1,7 @@
 # Spec: Unknowns-Aware Pipeline
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
 
 ## Task Description
 
@@ -127,8 +127,8 @@ Use these files to complete the task:
 
 ## Codex Verification
 
-- **Outcome:** <pending — filled after the Codex spec-review loop>
-- **Rejected findings:** <pending>
+- **Outcome:** approved at round 3 (round-2 over-cap gate auto-resolved to "run one more delta round" under the session /goal directive — most conservative option, full verification retained)
+- **Rejected findings:** none — all five round-1 and both round-2 blockers were applied; round-2 and round-3 advisories recorded (follow-up in decisions.md; KB reference added)
 
 ## References
 
@@ -147,4 +147,4 @@ specs/unknowns-aware-pipeline/
 - [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
 - [x] Acceptance criteria are specific and testable
 - [x] All four files exist under specs/unknowns-aware-pipeline/ and are saved in the repository
-- [ ] Codex has reviewed the spec and Status reflects the outcome
+- [x] Codex has reviewed the spec and Status reflects the outcome

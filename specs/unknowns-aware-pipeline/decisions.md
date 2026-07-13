@@ -72,3 +72,4 @@ Found during this plan's own blindspot pass; each dispositioned:
 - `ai-docs/anthropic/artifacts.md` — fetched 2026-07-05 (Artifact publishing, page constraints, availability, copy-back pattern)
 - `ai-docs/anthropic/skills.md` — fetched 2026-07-05 (commands-as-skills, frontmatter, invocation control)
 - `ai-docs/anthropic/hooks.md` — fetched 2026-07-05 (Stop hook event semantics, exit-code contract)
+- `ai-docs/anthropic/agent-sdk/user-input.md` — fetched 2026-07-05 (AskUserQuestion preview support is SDK-host-conditional — the boundary behind the taste route's best-effort preview rule)
