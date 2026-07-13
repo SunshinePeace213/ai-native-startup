@@ -79,7 +79,7 @@ Ordered by volatility — most-likely-to-change first, each with its live altern
 - **Branch:** feat/30-unknowns-aware-pipeline
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/unknowns-aware-pipeline
 - **Review profile:** kb-grounded
-- **PR:** <#M — filled by /harness-layer:harness-build>
+- **PR:** #31
 
 ## Relevant Files
 
