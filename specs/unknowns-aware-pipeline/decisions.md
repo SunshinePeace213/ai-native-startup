@@ -27,8 +27,11 @@ move in the same change.
   - **A:** Conditional on signals — blindspot pass always (depth scaled by complexity); design directions only for taste-shaped decisions; ship brief + quiz only for medium/complex builds.
   - **Why:** Matches the adaptive-depth grilling rule and the repo's KISS harness conventions; rules out always-on (token waste on chores) and opt-in-only (forgotten when most needed).
 - **Q:** How does the ship brief coexist with the approved-head merge guard?
-  - **A:** The brief (+quiz) is committed together with the approval-round report commit; that single commit is the approved head recorded in the stage table.
-  - **Why:** A separate post-approval commit would move the PR head past the approved SHA and abort harness-ship. Same precedent as review reports (lead-authored, non-implementation content).
+  - **A:** In whichever round approves (round-1 both-clean, round-2 approved, or an approved round 3), the lead authors the brief after reading the `approved` verdict and BEFORE making that round's report commit; report + brief land as ONE commit — the approved head recorded in the stage table. The Finish step only publishes best-effort, adds `## Ship Brief` to the PR body, and verifies that exact head.
+  - **Why:** A separate post-approval commit would move the PR head past the approved SHA and abort harness-ship; authoring inside the approving round also guarantees the brief describes the final tree. Same precedent as review reports (lead-committed, non-implementation content).
+- **Q:** Who maintains implementation-notes.md, given the build lead's never-edit-directly rule?
+  - **A:** The lead — harness-build.md scopes an explicit lead-owned ledger exception covering implementation-notes.md folding, alongside the existing `## Tracking` and `## Locked Boundaries` ledger edits.
+  - **Why:** The never-edit rule targets implementation code; ledger bookkeeping already has lead-edit precedent, and a dedicated recorder subagent adds a hop for no quality gain.
 - **Q:** What do reviews do with the new artifacts and deviations?
   - **A:** Delta reviews exclude `specs/<name>/artifacts/` exactly as they exclude `reviews/`; the review packet points at implementation-notes.md; harness-review gains a `plan-fidelity` lens (an undocumented divergence from the plan is a finding); implementation-review dispositions each recorded deviation; spec-review verifies each blindspot was dispositioned.
   - **Why:** Divergence becomes dispositionable evidence instead of being rediscovered or silently shipped.
@@ -45,7 +48,7 @@ move in the same change.
 - Taste-route trigger is planner judgment (recognition-over-specification decisions: UX, output format, report layout), plus explicit user request. Invalidated if the route over- or under-fires; the fallback is AskUserQuestion `preview` fields.
 - Artifact publishing is best-effort: on any availability failure (login, plan, provider, org policy per `ai-docs/anthropic/artifacts.md`) the phase proceeds with the committed file only. Invalidated only if the team later requires shareable URLs as a hard deliverable.
 - Blindspot depth scaling: simple → ~3 cards inline (no artifact file); medium/complex → up to ~7 cards + artifact. Numbers are guidance, not enforced.
-- Pre-worktree artifacts (blindspot/design directions are produced before the worktree exists) are drafted in the session scratchpad and copied into `specs/<name>/artifacts/` at worktree entry — preserving the writes-only-in-worktree rule.
+- Pre-worktree interaction is inline: blindspot cards and design alternatives are presented as text or AskUserQuestion previews during grilling. The durable HTML artifacts are authored only after worktree entry, directly under `specs/<name>/artifacts/`, and published best-effort from those project-local files (`ai-docs/anthropic/artifacts.md`: the page is written to a project file, then published). Invalidated if pre-worktree interactive pages prove necessary in practice.
 - Final sign-off was given via the user's /goal directive ("follow the plan and implement the changes") after the four-question proposal interview and the published proposal artifact; remaining sub-decisions above are closed with recommended answers under the accept-all escape hatch.
 
 ## Blindspots
@@ -55,8 +58,8 @@ Found during this plan's own blindspot pass; each dispositioned:
 - **Ship-brief commit vs approved-head guard** — a post-approval artifact commit would break `--match-head-commit`. Resolved: combined commit with the approval-round report (locked decision above).
 - **Artifact availability is conditional** — publishing can legitimately fail (auth, plan, provider, org policy). Resolved: best-effort publishing; committed HTML is the durable record.
 - **Template/hook drift** — adding `## Blindspots` to the template without updating `check_spec_completeness.py` (or vice versa) would break every future plan run. Resolved: one task owns template + hook + test together.
-- **Pre-worktree write restriction** — plan-phase artifacts are needed before the worktree exists, but the plan command forbids writes outside it. Resolved: scratchpad drafts, copied in at worktree entry.
-- **Stale ship brief after late fixes** — an over-cap round-3 fix would invalidate an already-authored brief. Resolved: re-author before the new approval commit (spec.md edge case).
+- **Pre-worktree write restriction** — plan-phase interaction is needed before the worktree exists, but the plan command forbids project writes outside it and the Artifact contract publishes a project-local file. Resolved: inline presentation (text / AskUserQuestion previews) during grilling; durable artifacts authored post-worktree under `specs/<name>/artifacts/` and published from there.
+- **Stale ship brief after late fixes** — a brief authored once could describe a pre-fix tree. Resolved: the brief is authored fresh inside whichever round approves, immediately before that round's report commit — never reused from a failed round.
 
 ## Open Questions / Out of Scope
 

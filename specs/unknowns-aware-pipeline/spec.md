@@ -42,9 +42,10 @@ SHA-guarded but not understanding-guarded.
 
 Thread the four techniques through the existing command files rather than adding new commands:
 harness-plan gains a blindspot-pass step and a taste-route inside the Grilling Protocol;
-harness-build gains the implementation-notes contract, a review-packet pointer, and a finish-step
-ship brief whose commit is folded into the approval-round report commit (preserving the
-approved-head guard); harness-review gains a `plan-fidelity` lens. The main alternative — a hard
+harness-build gains the implementation-notes contract, a review-packet pointer, and a ship brief
+authored inside whichever review round approves — landing in that round's report commit, so the
+approved-head guard holds and the brief always describes the final tree; harness-review gains a
+`plan-fidelity` lens. The main alternative — a hard
 quiz gate inside harness-ship — lost because it adds state and a check to a deliberately
 mechanical, user-invoked-only command.
 
@@ -52,10 +53,12 @@ mechanical, user-invoked-only command.
 
 Ordered by volatility — most-likely-to-change first, each with its live alternative:
 
-- **Ship brief + quiz commit timing** (most likely to tweak): the brief (+quiz for medium/complex)
-  is committed TOGETHER WITH the approval-round report commit; that single commit is the approved
-  head, so the harness-ship `--match-head-commit` guard holds. Alternative if this proves awkward:
-  publish-only (no commit), linking the URL from the PR body.
+- **Ship brief + quiz commit timing** (most likely to tweak): in whichever round approves, the
+  lead authors the brief (+quiz for medium/complex) after reading the `approved` verdict and
+  BEFORE making that round's report commit; report + brief land as ONE commit — the approved
+  head, so the harness-ship `--match-head-commit` guard holds. The Finish step only publishes
+  best-effort, adds `## Ship Brief` to the PR body, and verifies that head. Alternative if this
+  proves awkward: publish-only (no commit), linking the URL from the PR body.
 - **Taste-route trigger** (likely to tweak): the planner routes a grilling decision to a rendered
   design-directions artifact when the user would recognize the answer but can't specify it (UX,
   output format, report layout); the user can also request it explicitly. AskUserQuestion still
@@ -80,8 +83,8 @@ Ordered by volatility — most-likely-to-change first, each with its live altern
 
 Use these files to complete the task:
 
-- `.claude/commands/harness-layer/harness-plan.md` — add the Blindspot Pass workflow step, blast-radius question ordering, the taste-route (design directions) in the Grilling Protocol, artifact handling (scratchpad → `specs/<name>/artifacts/` at worktree entry), and Report additions
-- `.claude/commands/harness-layer/harness-build.md` — implementation-notes creation + builder Deviations hand-off field + locked-decision gate, review-packet pointer, `specs/<name>/artifacts/` delta-review exclusion, finish-step ship brief + quiz, PR-body `## Ship Brief` entry
+- `.claude/commands/harness-layer/harness-plan.md` — add the Blindspot Pass workflow step, blast-radius question ordering, the taste-route (design directions) in the Grilling Protocol, artifact handling (inline pre-worktree; durable artifacts authored in-worktree under `specs/<name>/artifacts/` and published from those project files), and Report additions
+- `.claude/commands/harness-layer/harness-build.md` — implementation-notes creation + builder Deviations hand-off field + locked-decision gate + lead-owned ledger exception, review-packet pointer, `specs/<name>/artifacts/` delta-review exclusion, approval-path ship brief + quiz, PR-body `## Ship Brief` entry
 - `.claude/commands/harness-layer/harness-review.md` — add the `plan-fidelity` reviewer lens
 - `specs/_templates/spec.md` — volatility-ordered guidance inside `## Requirements & Decisions` (no heading change)
 - `specs/_templates/decisions.md` — new `## Blindspots` section
@@ -100,8 +103,8 @@ Use these files to complete the task:
 - **Artifact tool unavailable** (no `/login`, plan/provider/policy limits per `ai-docs/anthropic/artifacts.md`): keep the committed HTML as the record, note "publish skipped" in the report — never block or fail the phase.
 - **Simple-complexity plan**: blindspot pass runs inline (cards as text, no artifact file); ship brief + quiz are skipped; `## Blindspots` is still present (may record "none material — simple chore").
 - **Zero deviations during a build**: implementation-notes.md keeps its header plus "No deviations recorded"; reviews disposition nothing.
-- **Worktree restored from branch**: committed `artifacts/` travel with the branch; unpublished scratchpad drafts are regenerated only if still needed.
-- **Fixes after the brief is authored** (over-cap round-3 path): the brief is stale — re-author it before the new approval commit; never ship a brief describing a pre-fix tree.
+- **Worktree restored from branch**: committed `artifacts/` travel with the branch; republish from the project files if fresh URLs are needed.
+- **Approval after late fixes** (over-cap round-3 path): the brief is authored fresh inside the approving round, immediately before that round's report commit — never reuse a brief from a failed round or ship one describing a pre-fix tree.
 - **Re-run idempotency**: in-session republish keeps an artifact URL; a new session mints a new URL unless given the old one — the committed file is canonical, URLs are conveniences.
 
 ## Red Flags
@@ -112,7 +115,7 @@ Use these files to complete the task:
 - Making architectural decisions without documenting them
 - Skipping the spec because "it's obvious what to build"
 - Adding a required template section without updating `check_spec_completeness.py` AND its tests in the same task
-- Committing the ship brief as its own post-approval commit (breaks the approved-head guard)
+- Committing the ship brief as its own post-approval commit, or sequencing it after the approval report commit already exists (breaks the approved-head guard)
 - Any wording that makes the quiz a hard gate (locked: advisory) or artifact publishing mandatory (locked: best-effort)
 
 ## Notes
