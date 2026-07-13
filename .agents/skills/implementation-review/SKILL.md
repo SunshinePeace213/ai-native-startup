@@ -30,9 +30,12 @@ with the caller's expected list.
 On **round 1** read the plan: `spec.md` (especially **Acceptance Criteria**, **Step-by-Step
 Tasks**, **Validation Commands**) and its siblings `tasks.md`, `decisions.md`,
 `acceptance-criteria.md` in `specs/<plan>/`. `decisions.md` holds the locked decisions,
-assumptions, out-of-scope items, and (when present) the `## KB References` section. Judge the
-build against these; **never edit them**. On **delta rounds never re-read the full plan or
-KB** — consume the packet and the prior report.
+assumptions, out-of-scope items, and (when present) the `## KB References` section. When
+`specs/<plan>/implementation-notes.md` exists, read it too and **disposition each recorded
+deviation** — conforming / needs-fix / contradicts-a-locked-decision (blocking); an
+implementation divergence from the plan with NO notes entry remains a blocking
+plan-adherence finding. Judge the build against these; **never edit them**. On **delta
+rounds never re-read the full plan or KB** — consume the packet and the prior report.
 
 Confirm the tree is clean: run `git status --porcelain --untracked-files=all`. If empty,
 review only the injected range; a **dirty tree forces a full-scope review** of the range plus
@@ -41,7 +44,7 @@ the uncommitted work (`git diff` and `git diff --staged`), noted in the report.
 ## Procedure (the orchestrator owns the pipeline)
 
 1. **Read the plan** (round 1) per Inputs; on delta rounds use the packet + prior report instead.
-2. **Set the scope.** Round 1 is `Scope: full` over `BASE_SHA..REVIEWED_HEAD_SHA`. Round N>1 is `Scope: delta` over `<prior-reviewed-head>..REVIEWED_HEAD_SHA`, excluding `specs/<plan>/reviews/` (review reports are not implementation) — unless an escalation trigger fires, which forces `Scope: full`.
+2. **Set the scope.** Round 1 is `Scope: full` over `BASE_SHA..REVIEWED_HEAD_SHA`. Round N>1 is `Scope: delta` over `<prior-reviewed-head>..REVIEWED_HEAD_SHA`, excluding `specs/<plan>/reviews/` and `specs/<plan>/artifacts/` (review reports and presentation artifacts are not implementation) — unless an escalation trigger fires, which forces `Scope: full`.
 3. **Eligibility gate.** If the range under review is empty, STOP and write a `changes-requested` report noting there is nothing implemented to review — an empty range is never an approval.
 4. **Select the lenses** the diff warrants (see "Lens selection"), and re-verify against the caller's expected list.
 5. **Run lenses + Validation Commands.** Sequential by default, spawn above the threshold (see "Review mode"). Round 1: run the lenses, then run the plan's Validation Commands. Round N>1: re-run only the Validation Commands that failed last round or whose inputs changed, and invoke only the originating lens when a judgment call is needed. Record every command as `PASS` or `FAIL` from its **real** output — never fabricate or assume a pass. Any FAIL forces `changes-requested`.
@@ -71,7 +74,8 @@ stated reason is a contract violation.
 the plan's Validation Commands (never fabricate results).
 
 **Round N>1 — `Scope: delta`.** Read the prior round's report. Review exactly
-`<prior-reviewed-head>..REVIEWED_HEAD_SHA`, excluding `specs/<plan>/reviews/`. **Disposition
+`<prior-reviewed-head>..REVIEWED_HEAD_SHA`, excluding `specs/<plan>/reviews/` and
+`specs/<plan>/artifacts/`. **Disposition
 every prior blocker** as fixed / not fixed / regressed. Re-run only the Validation Commands
 that failed last round or whose inputs changed. Invoke only the originating lens when a
 judgment call is needed — do not re-run the full set.

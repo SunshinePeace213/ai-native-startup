@@ -30,7 +30,7 @@
 
 ## Requirements & Decisions
 
-<the 2-4 most important LOCKED decisions/constraints a builder must honor, as bullets. A summary — the full grilling record lives in decisions.md. Each bullet: the decision + a short why.>
+<the 2-4 most important LOCKED decisions/constraints a builder must honor, as bullets. A summary — the full grilling record lives in decisions.md. Order by volatility: most-likely-to-change decisions first, each stating the decision, a short why, AND its live alternative; mechanical constraints last.>
 
 ## Tracking
 
@@ -79,7 +79,7 @@ Use these files to complete the task:
 
 <a tree of the sibling plan files and their purpose, so the four files trace to each other:>
 
-```
+```text
 specs/<plan-name>/
 ├── spec.md                 # this file — what & why, tracking, review record
 ├── decisions.md            # grilling record: resolved decisions, assumptions, out-of-scope

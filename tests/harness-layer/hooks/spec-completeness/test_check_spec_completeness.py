@@ -92,6 +92,19 @@ def test_missing_section_blocks_naming_file_and_heading(tmp_path, run_hook, sect
     assert "spec.md: missing section '## Red Flags'" in proc.stderr
 
 
+def test_missing_blindspots_section_blocks(tmp_path, run_hook, sections):
+    """Blindspot findings are part of the immutable decision record: a plan
+    whose decisions.md lacks '## Blindspots' must not pass the gate, and the
+    stderr names the exact section -- pinned so the unknowns checkpoint cannot
+    be silently skipped and template/hook cannot drift apart."""
+    folder = write_plan(tmp_path / "specs", "my-plan", sections)
+    dec = folder / "decisions.md"
+    dec.write_text(dec.read_text().replace("## Blindspots", "## Renamed"))
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 2
+    assert "decisions.md: missing section '## Blindspots'" in proc.stderr
+
+
 def test_newest_plan_folder_is_the_gated_one(tmp_path, run_hook, sections):
     """Only the plan being drafted NOW is gated: an old complete plan must not
     mask a fresh incomplete one, and vice versa the old one is never re-gated."""

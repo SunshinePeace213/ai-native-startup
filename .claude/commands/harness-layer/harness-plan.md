@@ -66,7 +66,8 @@ Conditional expert layer. Run it only when the task touches the harness surface 
 Before designing anything, interview the user until every decision needed to build is settled — a shared written understanding, not a guess.
 
 - **Explore first.** Answer from the codebase and (when active) the KB whatever they can answer; ask the user only what they can't.
-- **One question at a time.** Use AskUserQuestion with 2-4 concrete options, your pick first and labeled "(Recommended)". Wait for the answer before the next question.
+- **One question at a time, biggest blast radius first.** Order questions by architectural blast radius — answers that would change the architecture come before ones that tune it. Use AskUserQuestion with 2-4 concrete options, your pick first and labeled "(Recommended)". Wait for the answer before the next question.
+- **Taste route.** When a decision is one the user would recognize but can't specify (UX, output format, report layout) — or the user asks — present 2-4 concrete alternatives via AskUserQuestion labels and rich descriptions; use option previews only where the running harness supports them (best-effort, never a required contract). A decision that truly needs a rendered comparison is recorded as PROVISIONAL and re-confirmed against the design-directions page (see `Plan Artifacts`) before the spec commit.
 - **Coverage ledger.** Track each decision dimension as resolved or open, and keep going until none are open. Cover as applicable: scope & non-goals, users, success criteria & acceptance tests, data model, interfaces/APIs, edge cases & errors, performance & scale, security & authz, observability, rollout/migration, dependencies, testing. When the expert layer is active, also cover the harness dimensions: invocation & trigger control (user-invoked vs auto-triggered vs disable-model-invocation), context budget (what loads always vs on demand), frontmatter (tools, model alias, effort), hook lifecycle & exit-code semantics, artifact choice (skill vs command vs subagent), and distribution (project vs user vs plugin). Mark irrelevant ones N/A.
 - **Adaptive depth.** Match complexity — a light pass for chores, a deep pass for complex features. Don't interrogate trivial tasks.
 - **Accept-all escape hatch.** Always offer an early exit: if the user picks "Accept all recommendations", close every open item with your recommended answers, record them as assumptions, and move on.
@@ -81,17 +82,18 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 2. Analyze Requirements - Parse the USER_PROMPT to understand the core problem and desired outcome
 3. Understand Codebase - Without subagents, directly understand the relevant code and any existing harness patterns under `.claude/` and `.agents/`
 4. Set Review Profile - Apply the `Domain Knowledge` trigger: if an expert-layer signal fires, load the KB docs and set the profile to `kb-grounded`; otherwise skip the layer and set `standard`.
-5. Grill Requirements - Run the `Grilling Protocol`: interview the user one question at a time via AskUserQuestion until the coverage ledger is clear, then get final sign-off. Do NOT design or write files before this completes.
-6. Design Solution - Develop technical approach including architecture decisions and implementation strategy, grounded in the KB docs when the expert layer is active
-7. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `TEAM_MEMBERS` or use `GENERAL_PURPOSE_AGENT`. Document in plan.
-8. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments, and each task's model and effort per the AGENTS.md tables and selection principle (Quality > time > cost — when torn between tiers, take the higher; one agent, one purpose): `opus` for complex tasks, `sonnet` otherwise; effort `low` mechanical, `medium` default, `high` complex, `xhigh` cross-cutting or harness-core, `max` hardest single tasks. Stamp adversarial or algorithmic tasks (security boundaries, parsers/matchers, architectural redesigns) to Codex `gpt-5.6-sol` as implementer — Claude `opus` reviews all Codex-authored code. Document in plan.
-9. Name the Plan - Create a descriptive kebab-case name from the plan's main topic, and pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test)
-10. Create & Link Issue - File the GitHub issue from the grilling ledger and link its convention branch (see `Worktree & Handoff`). Do this before entering the worktree.
-11. Enter Worktree - BEFORE writing any file, call `EnterWorktree(name: "<slug>")` to branch from `origin/main` into `.claude/worktrees/` and draft inside it (see `Worktree & Handoff`)
-12. Write the Spec Folder - Create `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and fill all four `SPEC_FILES` from `SPEC_TEMPLATES`; append `## KB References` to decisions.md when the expert layer is active; write any gap-filled KB docs and their `ai-docs/sources.yaml` entries inside the worktree; record the issue, branch, worktree path, and review profile in spec.md's `## Tracking`
-13. Commit & Push - Commit the spec folder (plus gap-filled KB docs) with a `Refs #N` footer, push its branch to `origin`, then post the plan-links comment on the issue (see `Worktree & Handoff`)
-14. Cross-Review - Have Codex review the spec with `CROSS_REVIEW_SKILL`, up to `MAX_REVIEW_ROUNDS`, fixing blocking findings each round (see `Codex Cross-Review`). Gate the hand-off on the outcome.
-15. Report - Follow the `Report` section to summarize the spec folder and its key components
+5. Blindspot Pass - Report the task's top unknown unknowns as inline cards — what / why it matters / proposed resolution — scanned from the codebase and (when active) the KB: ~3 cards for simple tasks, up to ~7 for medium/complex. Unresolved cards seed the grilling ledger first; record every card and its disposition in decisions.md `## Blindspots`.
+6. Grill Requirements - Run the `Grilling Protocol`: interview the user one question at a time via AskUserQuestion until the coverage ledger is clear, then get final sign-off. Do NOT design or write files before this completes.
+7. Design Solution - Develop technical approach including architecture decisions and implementation strategy, grounded in the KB docs when the expert layer is active
+8. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Identify from `TEAM_MEMBERS` or use `GENERAL_PURPOSE_AGENT`. Document in plan.
+9. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments, and each task's model and effort per the AGENTS.md tables and selection principle (Quality > time > cost — when torn between tiers, take the higher; one agent, one purpose): `opus` for complex tasks, `sonnet` otherwise; effort `low` mechanical, `medium` default, `high` complex, `xhigh` cross-cutting or harness-core, `max` hardest single tasks. Stamp adversarial or algorithmic tasks (security boundaries, parsers/matchers, architectural redesigns) to Codex `gpt-5.6-sol` as implementer — Claude `opus` reviews all Codex-authored code. Document in plan.
+10. Name the Plan - Create a descriptive kebab-case name from the plan's main topic, and pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test)
+11. Create & Link Issue - File the GitHub issue from the grilling ledger and link its convention branch (see `Worktree & Handoff`). Do this before entering the worktree.
+12. Enter Worktree - BEFORE writing any file, call `EnterWorktree(name: "<slug>")` to branch from `origin/main` into `.claude/worktrees/` and draft inside it (see `Worktree & Handoff`)
+13. Write the Spec Folder - Create `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and fill all four `SPEC_FILES` from `SPEC_TEMPLATES`; author the plan artifacts per `Plan Artifacts`; append `## KB References` to decisions.md when the expert layer is active; write any gap-filled KB docs and their `ai-docs/sources.yaml` entries inside the worktree; record the issue, branch, worktree path, and review profile in spec.md's `## Tracking`
+14. Commit & Push - Commit the spec folder (plus gap-filled KB docs) with a `Refs #N` footer, push its branch to `origin`, then post the plan-links comment on the issue (see `Worktree & Handoff`)
+15. Cross-Review - Have Codex review the spec with `CROSS_REVIEW_SKILL`, up to `MAX_REVIEW_ROUNDS`, fixing blocking findings each round (see `Codex Cross-Review`). Gate the hand-off on the outcome.
+16. Report - Follow the `Report` section to summarize the spec folder and its key components
 
 ## Output: Spec Folder
 
@@ -102,7 +104,8 @@ specs/<name-of-plan>/
 ├── spec.md                # what & why: task, objective, non-goals, locked decisions, tracking, review record
 ├── tasks.md               # how & who: phases, team members, step-by-step tasks
 ├── decisions.md           # the grilling record (+ ## KB References when the expert layer is active)
-└── acceptance-criteria.md # done: testable criteria + validation commands
+├── acceptance-criteria.md # done: testable criteria + validation commands
+└── artifacts/             # medium/complex only: blindspot cards, design directions (see Plan Artifacts)
 ```
 
 When filling them:
@@ -110,6 +113,10 @@ When filling them:
 - Include the conditional sections (`## Problem Statement` and `## Solution Approach` in spec.md, `## Implementation Phases` in tasks.md) only when task_type is feature or complexity is medium/complex.
 - Trace requirements end to end: each requirement in spec.md maps to a task in tasks.md, and each task names the `AC#` from acceptance-criteria.md that it satisfies.
 - Codex writes its verdicts under `reviews/`, never into the spec.
+
+## Plan Artifacts
+
+For medium/complex plans, author durable pages inside the worktree under `specs/<name-of-plan>/artifacts/` while writing the spec folder — a blindspot-cards page, plus a design-directions page rendering the alternatives and the chosen one when the taste route fired. Publish each best-effort via the Artifact tool FROM those project-local files; on any availability failure keep the file, note "publish skipped", and continue — publishing never blocks. Re-confirm any PROVISIONAL taste decision with one AskUserQuestion against the design-directions page before the spec commit. The artifacts live inside the spec folder, so the spec commit ships them. Simple plans skip artifacts.
 
 ## Worktree & Handoff
 
@@ -157,6 +164,7 @@ Worktree: <absolute worktree path>
 Review profile: <kb-grounded | standard>
 Codex Review: <approved at round N | accepted-with-unverified-fixes | needs-human>
 KB Grounding: <N docs consulted, M gap-filled — or "none (standard profile)">
+Artifacts: <committed paths + published URLs, or "none — simple plan">
 Topic: <brief description of what the plan covers>
 Key Components:
 - <main component 1>
