@@ -1,34 +1,17 @@
 ## Tooling & Runtime
 
-- **Python**: Always use `uv` (Astral UV), never raw `python` or `pip`
+- **Python**: Always use `uv` (Astral UV), never raw `python` or `pip`. Full general + testing conventions live in [python-practice.md](.claude/rules/python-practice.md)
 - **JavaScript/TypeScript**: Always use `bun`, never raw `npm` or `npx`
-- **Python rich panels**: Always full width panels
 - **Safe delete**: NEVER use `rm -rf` directly. Use `mv <target> ~/.Trash/` instead of permanent deletion to prevent accidental data loss
-
-## Python Testing
-
-When writing test cases or running Python tests, use the installed pytest plugins — don't reinvent what they provide:
-
-- **Run**: `uv run pytest` from the repo root — runs `tests/` in parallel (`-n auto`, pytest-xdist) with pytest-sugar output and a 60s per-test timeout (pytest-timeout); config in `pyproject.toml`
-- **Per-feature runs**: during feature work run `uv run pytest tests/harness-layer/hooks/<feature>`; run the full suite before hand-off
-- **Debug one test**: `uv run pytest <file>::<test> -n 0` — disables workers so `-s`, breakpoints, and ordered output work
-- **Timeouts**: a hung test is killed at 60s; mark a known-slow test `@pytest.mark.timeout(120)` — never raise the global value
-- **Coverage**: `uv run pytest --cov=<path> --cov-report=term-missing` (pytest-cov) — measures in-process code only; code exercised via subprocess (e.g. the hooks) reports 0%
-- **Mocking**: use the `mocker` fixture (pytest-mock; patches auto-undo at teardown) or built-in `monkeypatch`; never import `unittest.mock` directly
-- **New tests must be parallel-safe**: isolate all state per test (`tmp_path`, `monkeypatch`); never rely on test order, shared globals, or fixed paths/ports
-- **UI**: sugar theme lives in `pytest-sugar.conf` (repo root, loaded from cwd); `-p no:sugar` for plain output; the live bar only renders on a TTY — non-TTY runs (agents, CI) fall back to plain dots, which is correct for log parsing
-- **No flake-retry plugins**: a failing test fails the run — fix it, don't auto-rerun it
-- **Hook tests**: follow [HOOK-TESTING.md](./HOOK-TESTING.md) — one shared launcher, wiring matrix, fail-open contracts
 
 ## Harness Development
 
-- **Hooks**: files Claude edits are auto-formatted in place (Prettier / ESLint / Ruff / markdownlint); unfixable lint errors come back as exit-2 diagnostics — fix them. New worktrees get `bun install` + `uv sync` automatically; on a fresh clone use the `meta-install` skill. Destructive Bash commands are blocked pre-execution by the destructive-guard hook (deny or ask). Details: [HARNESS-LAYER.md](./HARNESS-LAYER.md)
-- **Keep it short**: Write harness/prompt files (skills, agents, commands, and rules under `.claude/` and `.agents/`) in fluent, KISS prose. Every line loads into context — say it once, briefly, then stop. When in doubt, cut.
-- **Memory goes here**: Persist project memory and preferences in this `AGENTS.md`, not `CLAUDE.md` (which only `@`-imports this file).
-- **Memory series**: The root ALL-CAPS files are the project memory series; `AGENTS.md` is the hub. A genuinely new convention series → a new root `ALL-CAPS.md` referenced from here — brief and imperative, no rationale.
-- **Settings sync**: Experiment in `.claude/settings.local.json` (untracked, personal, overrides in-session). Before merging to main, fold changes that should ship into the tracked `.claude/settings.json`.
 - **Instructions, not rationale**: State what to do, not why. No "chose A over B", no decision logs, no design history — that's context bloat the agent never acts on.
 - **No stray cross-refs**: Don't reference other commands or skills unless the file actually needs them to run. Mentions "for context" just add noise.
+- **Keep it short**: Write harness/prompt files (skills, agents, commands, and rules under `.claude/` and `.agents/`) in fluent, KISS prose. Every line loads into context — say it once, briefly, then stop. When in doubt, cut.
+- **Hooks**: [harness-hooks.md](.claude/rules/harness-hooks.md) is the authoritative catalog of every hook — event/matcher, contract, files, and the hook-test rules. Read it before any hook work; never re-summarize hook behavior elsewhere or re-derive it from memory.
+- **Memory goes here**: Persist project memory and preferences in this `AGENTS.md`, not `CLAUDE.md` (which only `@`-imports this file).
+- **Memory series**: `AGENTS.md` is the hub. Topic rules live in `.claude/rules/<kebab-case>.md`, path-scoped via `paths:` frontmatter so they load only when relevant. A genuinely new convention series → a new rule file there, referenced from here — brief and imperative, no rationale.
 - **Model selection**: Always pass **alias** (`opus`, `sonnet`, `haiku`, `fable`). Never hardcode a dated id like `claude-sonnet-4-6` or `claude-opus-4-8`
 - **Selection principle — Quality > time > cost**: pick the model and effort the task's difficulty demands; when torn between two tiers, take the higher. One agent, one purpose. A fix that failed a review round escalates a tier (model or effort) — never retry the same tier twice. In this repo this overrides the global per-task/per-session token budgets.
 - **Model & effort selection** — pick by the nature of the work
@@ -72,10 +55,10 @@ When writing test cases or running Python tests, use the installed pytest plugin
 
 ## Project Structure
 
-- `.agents/` -- Codex Skills Confiugration
+- `.agents/` -- Codex Skills Configuration
+- `.claude/rules/` — path-scoped project rules
 - `ai-docs/` — cached official docs KB managed by `/kb` (catalog: `ai-docs/index.md`), plus hand-written project notes
 - `specs/` — planning files
-- `HARNESS-LAYER.md` — how the project's auto-format/lint hooks work (format-on-save, linter install)
 
 ## Harness-Layer Pipeline
 

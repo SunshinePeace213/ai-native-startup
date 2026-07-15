@@ -11,7 +11,7 @@ must fail open (exit 0, no stderr), because a guard that wedges an unrelated
 tool call is worse than the risk it defends against.
 
 Every test launches the real script through the shared `run_hook` fixture
-(the ONE launcher; see HOOK-TESTING.md), so this exercises the exact
+(the ONE launcher; see harness-hooks.md), so this exercises the exact
 `uv run --script` invocation Claude Code uses. Parallel-safe: every fixture is
 tmp_path-scoped and nothing depends on order or shared state. No test ever
 writes a secret VALUE -- the guard matches names/paths, never contents.

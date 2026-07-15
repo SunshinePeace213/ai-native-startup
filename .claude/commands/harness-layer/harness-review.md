@@ -16,7 +16,7 @@ fixes and posts reports.
 
 TARGET: $ARGUMENTS — a PR number or branch. Empty → the current branch's diff against `origin/main`.
 REVIEWED_HEAD_SHA: `git rev-parse HEAD` (or the PR head) — stated in the findings report.
-MEMORY_FILES: the capital-letter memory files at the repo root — `AGENTS.md` (imported by `CLAUDE.md`), `HARNESS-LAYER.md`, `GIT-COMMIT-PR-MESSAGE.md`, and any sibling `ALL-CAPS.md`.
+MEMORY_FILES: the capital-letter memory files — root `AGENTS.md` (imported by `CLAUDE.md`) and `GIT-COMMIT-PR-MESSAGE.md`, plus the rule files under `.claude/rules/`.
 CONFIDENCE_FLOOR: `80` — findings scoring below this are dropped.
 REVIEWER_MODEL: `sonnet` — every reviewer agent; utility agents (eligibility, context, summary, scoring) run on `haiku`. Nothing above `sonnet` is spawned.
 
@@ -45,14 +45,14 @@ REVIEWER_MODEL: `sonnet` — every reviewer agent; utility agents (eligibility, 
 
 ## Memory Sync
 
-The root ALL-CAPS files are the repo's memory series and its durable conventions; a
+The ALL-CAPS memory files are the repo's memory series and its durable conventions; a
 diff that changes what they document must update them in the same branch. `AGENTS.md`
 is the hub — `CLAUDE.md` only `@`-imports it. Ownership map:
 
 - **AGENTS.md** — agent and pipeline conventions.
-- **HARNESS-LAYER.md** — hook and format mechanics.
+- **.claude/rules/harness-hooks.md** — hook and format mechanics.
 - **GIT-COMMIT-PR-MESSAGE.md** — git, PR, and issue policy.
-- A genuinely new convention series → a new root `ALL-CAPS.md`, referenced from `AGENTS.md`.
+- A genuinely new convention series → a new `kebab-case.md` under `.claude/rules/`, referenced from `AGENTS.md`.
 
 The memory-sync reviewer maps each gap to its owner file above and tags severity so
 the caller can route it:

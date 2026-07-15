@@ -54,7 +54,7 @@ GENERAL_PURPOSE_AGENT: `general-purpose`
 
 ## Domain Knowledge
 
-Conditional expert layer. Run it only when the task touches the harness surface — any of `.claude/`, `.agents/`, `.codex/`, `ai-docs/`, the root memory files (CLAUDE.md, AGENTS.md, HARNESS-LAYER.md, GIT-COMMIT-PR-MESSAGE.md), or a domain that has an `ai-docs/index.md` entry. When no signal fires, state that the expert layer is skipped, read no KB docs, and set the review profile to `standard`. When a signal fires, set the profile to `kb-grounded` and:
+Conditional expert layer. Run it only when the task touches the harness surface — any of `.claude/`, `.agents/`, `.codex/`, `ai-docs/`, the root memory files (CLAUDE.md, AGENTS.md, GIT-COMMIT-PR-MESSAGE.md), or a domain that has an `ai-docs/index.md` entry. When no signal fires, state that the expert layer is skipped, read no KB docs, and set the review profile to `standard`. When a signal fires, set the profile to `kb-grounded` and:
 
 1. Read `ai-docs/index.md` and open every cached doc relevant to the request's surface (hooks work → hooks.md; a new command → skills-and-commands.md; and so on).
 2. If a doc you load is older than `STALE_AFTER`, warn the user and suggest running `/harness-layer:kb` first; continue with the stale copy only if they accept.

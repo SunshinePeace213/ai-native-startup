@@ -109,7 +109,7 @@ Omitting the mode or its reason is a failure — never let a degraded run look l
 
 Run the KB-grounding pass when the injected profile is `kb-grounded`, OR decisions.md has a
 `## KB References` section, OR the reviewed range / target paths touch `.claude/`, `.agents/`,
-`.codex/`, `ai-docs/`, a root memory file (CLAUDE.md, AGENTS.md, HARNESS-LAYER.md,
+`.codex/`, `ai-docs/`, a root memory file (CLAUDE.md, AGENTS.md,
 GIT-COMMIT-PR-MESSAGE.md), or a domain with an `ai-docs/index.md` entry. Any signal wins. If
 the profile disagrees with the signals, run the pass AND record the profile/signal mismatch
 as a **blocking** contract defect.
