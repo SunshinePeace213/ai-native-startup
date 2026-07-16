@@ -95,6 +95,7 @@ Hub wiring (AGENTS.md pointers), the command-resolution and skill-invocation smo
 - **Parallel:** true
 - **Satisfies:** AC5, AC7
 - Create `.claude/skills/cpo-question-bank/SKILL.md`: the discovery expertise — dimensions (business & goals, audience & users, brand & voice, content & assets, structure & pages, features & functionality, integrations & data, technical & hosting constraints, budget & timeline, success metrics, references & competitors, legal/compliance), per-dimension question templates with why-we-ask lines, and per-dimension "locked when" criteria. Bundle `templates/question-list.md` (client-ready document skeleton, grouped by topic), `templates/requirements.md` (locked-requirements skeleton keyed by the same dimensions), `templates/status.md` (the engagement ledger skeleton).
+- `templates/status.md` carries, per stage (`intake`, `prd`, `brief`): the state field, a log line for each run (date, commits pushed, lessons-check result — "none" allowed), plus engagement-level fields for the issue `#N`, branch name, and (after brief) the PR URL — so ledger greps can prove the GitHub trail.
 - Create `.claude/skills/cpo-prd-standard/SKILL.md`: the Soriza PRD structure (overview, goals & measurable success metrics, users/personas, scope & non-goals, user stories with acceptance criteria, functional requirements per feature/section, content requirements, technical constraints, risks, open questions), the quality bar, and how each PRD section maps from `requirements.md`. Bundle `templates/prd.md`.
 - Create `.claude/skills/cpo-design-standard/SKILL.md`: the section catalog (hero, navigation, social proof, features, case study, pricing, FAQ, CTA, footer, about, contact — each with purpose, content fields, common variants), wireframe conventions (lo-fi HTML: grayscale, layout-only, self-contained, annotation comments), copy-deck format, brand-inputs format (client-provided tokens/assets inventory + gap list for the human designer), and the Design-Lead package-review checklist. Bundle `templates/project-brief.md` (with design-constraints section), `templates/sitemap-and-flows.md` (mermaid skeleton), `templates/section-briefs.md`, `templates/copy-deck.md`, `templates/brand-inputs.md`.
 - All three skills: `autoInvoke: false` frontmatter (never auto-fire; loaded by the stage commands), descriptions written per the meta-skills standard, bodies in KISS prose. Skills reference their bundled files via `${CLAUDE_SKILL_DIR}`.
@@ -114,6 +115,7 @@ Hub wiring (AGENTS.md pointers), the command-resolution and skill-invocation smo
   - `cpo-ux-designer.md` — Jonas Weber, UX Designer (`sonnet`): drafts `sitemap-and-flows.md`, the structural skeleton of `section-briefs.md`, and the lo-fi `wireframes/<page>.html`.
   - `cpo-ui-designer.md` — Yuki Tanaka, UI Designer (`sonnet`): drafts `brand-inputs.md`, the visual-direction section of the project brief, and the visual-guidance notes inside `section-briefs.md` — brainstorming W2 materials with Jonas; never hi-fi design.
   - `cpo-design-lead.md` — Daniel Osei, Design Lead (`opus`): reviews the full six-file package against the cpo-design-standard checklist and returns blocking findings or approval.
+- Every persona declares its knowledge skill(s) in `skills:` frontmatter so the content is preloaded into its fresh context (KB: subagents.md "Preload skills into subagents"): cpo-pm → `cpo-prd-standard`, `cpo-design-standard`; cpo-ux-researcher → `cpo-question-bank`; cpo-ux-designer, cpo-ui-designer, cpo-design-lead → `cpo-design-standard`.
 - None interviews the user (AskUserQuestion is unavailable to subagents); each returns files plus a short hand-off. Persona voice: name signs the report, content stays professional.
 
 ### 4. Codex prd-review skill
@@ -129,22 +131,37 @@ Hub wiring (AGENTS.md pointers), the command-resolution and skill-invocation smo
 - PRD-specific blocking criteria: a requirement in `requirements.md` with no PRD coverage; a PRD claim contradicting a locked requirement; unmeasurable success metrics; user stories without acceptance criteria; scope drift beyond the locked requirements; missing PRD sections per the cpo-prd-standard structure; infeasible features given the recorded technical constraints; security/data risks. Advisory (non-blocking): simpler product shape, cut-scope suggestions.
 - Inputs it reads: `prd.md`, `discovery/requirements.md`, and the cpo-prd-standard skill for the structure bar.
 
-### 5. Stage commands
+### 5. Command-naming probe
+
+- **Task ID:** naming-probe
+- **Depends On:** none
+- **Assigned To:** validator
+- **Agent Type:** general-purpose
+- **Model / Effort:** `sonnet` / `low`
+- **Parallel:** true
+- **Satisfies:** AC2
+- Create a stub command file `.claude/commands/c-suite/cpo-probe.md` (frontmatter description + one-line body), then read its resolved name from a headless listing: `claude -p 'Reply with only the names of available skills or commands containing "cpo-probe".'`.
+- Record the winning canonical prefix (`/c-suite:cpo-<stage>` if the listing shows `c-suite:cpo-probe`, else `/cpo-<stage>`) in the naming section of `.claude/rules/c-suite/cpo-operations.md` (coordinate with builder-rules if it lands first), then delete the stub (`mv` to trash, never `rm -rf`).
+- Report the winner in the hand-off — `stage-commands` and all user-facing text use it verbatim.
+
+### 6. Stage commands
 
 - **Task ID:** stage-commands
-- **Depends On:** c-suite-rules, knowledge-skills, persona-agents, prd-review-skill
+- **Depends On:** c-suite-rules, knowledge-skills, persona-agents, prd-review-skill, naming-probe
 - **Assigned To:** builder-commands
 - **Agent Type:** general-purpose
 - **Model / Effort:** `opus` / `high`
 - **Parallel:** false
-- **Satisfies:** AC1, AC2, AC3, AC4
+- **Satisfies:** AC1, AC2, AC3, AC4, AC12
 - Create the three commands in `.claude/commands/c-suite/`, each following the house five-section format (`command-format.md`) with a frontmatter `description` and `argument-hint`:
-  - `cpo-intake.md` (`/c-suite:cpo-intake <client-slug> [request…]`): preflight (`gh` auth; detect existing engagement → resume, else scaffold `products/<client-slug>/` from the question-bank skill's templates, create the engagement issue + linked branch + worktree); mode check via AskUserQuestion (client live vs async); LIVE → grill dimension by dimension from the question bank until each is locked; ASYNC → deploy Priya to generate `discovery/question-list.md` and stop with send-to-client instructions; re-entrant runs ingest answers into `discovery/client-answers.md`, deploy Priya for gap analysis, and continue until `requirements.md` locks; every exit updates `status.md`, commits and pushes with `Refs #N`, and runs the lessons check.
-  - `cpo-prd.md` (`/c-suite:cpo-prd <client-slug>`): preflight (intake `done`, else STOP; stale → confirm); deploy Ethan to draft `prd.md`; CPO (session) consistency pass against `requirements.md`; run the Codex `prd-review` gate — max 2 rounds, verdict read from the report file (never stdout, silence ≠ approval), digest upserted as an idempotent engagement-issue comment (`<!-- prd-review-round-N -->`), over-cap AskUserQuestion gate (one more round / accept-with-noted-gaps / needs-human label); update `status.md`, commit+push, lessons check.
-  - `cpo-brief.md` (`/c-suite:cpo-brief <client-slug>`): preflight (PRD approved, else STOP); deploy Ethan (project brief, copy deck), Jonas (sitemap & flows, section-brief structure, wireframes), Yuki (brand inputs, visual guidance) — parallel where file-disjoint, Jonas→Yuki sequenced on `section-briefs.md`; Daniel reviews the package against the design-standard checklist (blocking findings routed back once); on approval set `handed-off`, commit+push, open the engagement PR (`Closes #N`), lessons check.
+  - `cpo-intake.md` (`cpo-intake <client-slug> [request…]`): preflight (`gh` auth; validate the slug against `^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$` — fixtures `_example-` + valid slug — STOP on violation, quote every interpolation; detect existing engagement → resume, else scaffold `products/<client-slug>/` from the question-bank skill's templates, create the engagement issue + linked branch + worktree); mode check via AskUserQuestion (client live vs async); LIVE → grill dimension by dimension from the question bank until each is locked; ASYNC → deploy Priya to generate `discovery/question-list.md` and stop with send-to-client instructions; re-entrant runs ingest answers into `discovery/client-answers.md`, deploy Priya for gap analysis, and continue until `requirements.md` locks; every exit updates `status.md` (state + run log + issue/branch fields), commits and pushes with `Refs #N`, and runs the lessons check.
+  - `cpo-prd.md` (`cpo-prd <client-slug>`): preflight (intake `done`, else STOP; stale → confirm); deploy Ethan to draft `prd.md`; CPO (session) consistency pass against `requirements.md`; run the Codex `prd-review` gate — TWO automatic rounds, verdict read from the report file (never stdout, silence ≠ approval), digest upserted as an idempotent engagement-issue comment (`<!-- prd-review-round-N -->`); if round 2 is still `changes-requested`, the over-cap AskUserQuestion gate offers exactly: ONE user-authorized final delta round (round 3 is last — a round-3 `changes-requested` re-presents the gate WITHOUT this option), accept-with-noted-gaps, or needs-human label; update `status.md`, commit+push, lessons check.
+  - `cpo-brief.md` (`cpo-brief <client-slug>`): preflight (PRD approved, else STOP); deploy Ethan (project brief, copy deck), Jonas (sitemap & flows, section-brief structure, wireframes), Yuki (brand inputs, visual guidance) — parallel where file-disjoint, Jonas→Yuki sequenced on `section-briefs.md`; Daniel reviews the package against the design-standard checklist (blocking findings routed back once); on approval set `handed-off`, record the PR URL in `status.md`, commit+push, open the engagement PR (`Closes #N`), lessons check.
+- Command invocations above are written prefix-less: use the `naming-probe` winner (`/c-suite:cpo-<stage>` or `/cpo-<stage>`) verbatim in every user-facing mention.
+- Every delegation brief passes the explicit `${CLAUDE_PROJECT_DIR}`-rooted paths of the skill templates the task needs (fallback channel if `skills:` preloading is unsupported: the persona Reads them first).
 - Commands pick Codex model/effort per `.claude/rules/model-selection.md` at run time — never hardcoded. Deliverables stay professional prose; persona names sign reports only.
 
-### 6. Memory hub update
+### 7. Memory hub update
 
 - **Task ID:** memory-hub-update
 - **Depends On:** c-suite-rules
@@ -155,7 +172,7 @@ Hub wiring (AGENTS.md pointers), the command-resolution and skill-invocation smo
 - **Satisfies:** AC10
 - Add to `AGENTS.md`: a `products/` line in Project Structure (client engagements; fixture convention), and a c-suite section pointing to the three `.claude/rules/c-suite/` files and the `/c-suite:cpo-*` pipeline — one short block, per the memory-series contract (hub points, rules carry the content).
 
-### 7. Resolution & invocation smoke check
+### 8. Resolution & invocation smoke check
 
 - **Task ID:** resolution-smoke-check
 - **Depends On:** stage-commands
@@ -164,9 +181,9 @@ Hub wiring (AGENTS.md pointers), the command-resolution and skill-invocation smo
 - **Model / Effort:** `sonnet` / `low`
 - **Parallel:** false
 - **Satisfies:** AC2
-- Verify the three commands resolve as `/c-suite:cpo-intake|prd|brief` via a headless `claude -p` listing; verify the knowledge skills do NOT auto-fire and ARE loadable by name. If `autoInvoke: false` is not honored in this Claude Code version, switch the three skills to the repo's proven `disable-model-invocation: true` (the recorded fallback) and note the deviation.
+- Verify the three commands resolve under the probe-confirmed prefix via a headless `claude -p` listing; verify the knowledge skills do NOT auto-fire and ARE loadable by name; verify each persona agent's `skills:` preload takes effect (spot-check one persona sees its skill content). If `autoInvoke: false` is not honored in this Claude Code version, switch the three skills to the repo's proven `disable-model-invocation: true` (the recorded fallback) and note the deviation.
 
-### 8. Dry-run engagement (Bluebird Bakery)
+### 9. Dry-run engagement (Bluebird Bakery)
 
 - **Task ID:** dry-run-engagement
 - **Depends On:** stage-commands, resolution-smoke-check
@@ -174,14 +191,14 @@ Hub wiring (AGENTS.md pointers), the command-resolution and skill-invocation smo
 - **Agent Type:** n/a — lead-run
 - **Model / Effort:** session model / `high`
 - **Parallel:** false
-- **Satisfies:** AC3, AC11
+- **Satisfies:** AC3, AC11, AC13
 - Run the full pipeline for the fictional client `_example-bluebird-bakery` (a bakery wanting a brochure website): one ASYNC intake round (scripted answers file exercises question-list generation + re-entrant ingestion), then LIVE grilling with the user playing the owner until requirements lock; `cpo-prd` through the Codex gate; `cpo-brief` to the full six-file package with Daniel's approval.
 - Keep the finished engagement as the fixture; its wireframes must open offline (no external references).
 
-### 9. Validate Everything
+### 10. Validate Everything
 
 - **Task ID:** validate-all
-- **Depends On:** c-suite-rules, knowledge-skills, persona-agents, prd-review-skill, stage-commands, memory-hub-update, resolution-smoke-check, dry-run-engagement
+- **Depends On:** c-suite-rules, knowledge-skills, persona-agents, prd-review-skill, naming-probe, stage-commands, memory-hub-update, resolution-smoke-check, dry-run-engagement
 - **Assigned To:** validator
 - **Agent Type:** general-purpose
 - **Model / Effort:** `sonnet` / `medium`

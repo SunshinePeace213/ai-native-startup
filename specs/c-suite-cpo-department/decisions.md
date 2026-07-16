@@ -16,8 +16,8 @@ Soriza's first c-suite department. The AI owns Workflow 1 (client discovery → 
   - **A:** Six files: `project-brief.md` (with design-constraints section), `sitemap-and-flows.md` (mermaid), `section-briefs.md`, `copy-deck.md`, `brand-inputs.md`, `wireframes/<page>.html` (lo-fi, unstyled, self-contained).
   - **Why:** Matches a professional product→design handoff; the copy deck and brand-inputs inventory are the two most commonly skipped files and the top cause of designer→client re-contact. Rules out the 3-file minimum.
 - **Q:** How many stage commands, and how are they named?
-  - **A:** Three — `.claude/commands/c-suite/cpo-intake.md`, `cpo-prd.md`, `cpo-brief.md` → `/c-suite:cpo-intake`, `/c-suite:cpo-prd`, `/c-suite:cpo-brief`.
-  - **Why:** One directory level is the only namespacing proven in this repo (`/harness-layer:*`); two-level (`/c-suite:cpo:intake`) appears in no official doc. Three commands = one fresh session per stage (context management) and a pause point for async clients. Rules out a centralized mega-command and two-level nesting.
+  - **A:** Three — `.claude/commands/c-suite/cpo-intake.md`, `cpo-prd.md`, `cpo-brief.md`. The canonical slash prefix is settled by the `naming-probe` build task before the commands are authored: a stub command file in `.claude/commands/c-suite/` is created and its resolved name read from a headless `claude -p` listing. Observed repo behavior predicts `/c-suite:cpo-<stage>`; the cached SDK contract predicts bare `/cpo-<stage>`. Both are unique and workable — the probe's winner is recorded in `cpo-operations.md` and used everywhere user-facing.
+  - **Why:** The two doc sources conflict (see KB References), so the name is proven, not assumed. Three commands = one fresh session per stage (context management) and a pause point for async clients. Rules out a centralized mega-command and two-level nesting (`/c-suite:cpo:intake`).
 - **Q:** How are commands, skills, rules, templates, and agents divided so future departments don't accrue debt?
   - **A:** The six-layer architecture: commands own sequence, skills own knowledge, rules own memory, agents own labor, Codex owns cross-model QA, `products/` owns client work. Locked as the department pattern.
   - **Why:** The user explicitly asked for a clear commands-vs-skills division now "for preventing the debt in the future"; each layer has exactly one kind of content, so a CTO department adds files beside CPO's with zero collisions.
@@ -27,6 +27,12 @@ Soriza's first c-suite department. The AI owns Workflow 1 (client discovery → 
 - **Q:** Where do the persona subagent files live?
   - **A:** `.claude/agents/cpo/` — one agents folder per department (`cto/`, `cmo/` later), filenames matching the `name` field (`cpo-pm.md` → `name: cpo-pm`).
   - **Why:** User revision during spec drafting, for better management. Safe per the KB: `.claude/agents/` is scanned recursively and identity comes only from the `name` frontmatter; the `cpo-` name prefix prevents cross-department collisions.
+- **Q:** How do fresh-context persona subagents get the department knowledge the commands loaded?
+  - **A:** Two channels, both mandatory: each persona declares its knowledge skill(s) in `skills:` frontmatter (preloaded into its context at startup — Ethan: cpo-prd-standard + cpo-design-standard; Priya: cpo-question-bank; Jonas, Yuki, Daniel: cpo-design-standard), AND every delegation brief passes the explicit `${CLAUDE_PROJECT_DIR}`-rooted paths of the templates the task needs. If this Claude Code version ignores the `skills` field, the brief-carried paths are the working fallback — the persona Reads them first.
+  - **Why:** Subagents never see skills invoked only by the parent session (KB: subagents.md); relying on parent context would silently strip the personas of their standards.
+- **Q:** How are client slugs kept safe across filesystem, branch, worktree, and `gh` operations?
+  - **A:** Canonical rule `^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$` (kebab-case, 2–40 chars); fixtures use the `_example-` prefix followed by a valid slug. `cpo-intake` validates BEFORE any side effect and STOPs on violation; every interpolation is quoted.
+  - **Why:** The slug feeds `products/<slug>/`, `feat/<N>-<slug>`, worktree names, and shell commands — an unvalidated slug can escape the folder, corrupt a ref, or alter a command.
 - **Q:** How does an engagement flow through git/GitHub?
   - **A:** One issue + branch `feat/<N>-<client-slug>` per engagement; every stage commits and pushes with `Refs #N`; Codex PRD digests land as issue comments; ONE PR opens after the Design Lead approves the W2 package and closes the issue.
   - **Why:** Durable tracking (the user's "hard to track" worry) without a draft PR sitting open for weeks while an async client answers. Rules out committing to main and the intake-time draft PR.
@@ -34,7 +40,7 @@ Soriza's first c-suite department. The AI owns Workflow 1 (client discovery → 
   - **A:** Dual-mode. LIVE → grilling protocol via AskUserQuestion until every dimension locks. ASYNC → the UX Researcher persona generates `discovery/question-list.md`, a client-ready document (grouped by topic, each question with a why-we-ask line); re-running `cpo-intake` ingests returned answers into `discovery/client-answers.md` and continues until `requirements.md` locks.
   - **Why:** The user's two explicit cases; interviews ensure the design team has enough information before any design work. Re-entrancy is what makes async possible at all.
 - **Q:** How is the PRD quality-gated?
-  - **A:** A new Codex skill `.agents/skills/prd-review/` mirroring `spec-review` mechanics — `### Round N — Verdict:` first line, report file `products/<slug>/prd/reviews/codex-prd-review-round-N.md`, terse CLI return, issue-comment digest relayed by the orchestrator, max 2 rounds, over-cap AskUserQuestion gate (one more round / accept-with-noted-gaps / needs-human).
+  - **A:** A new Codex skill `.agents/skills/prd-review/` mirroring `spec-review` mechanics — `### Round N — Verdict:` first line, report file `products/<slug>/prd/reviews/codex-prd-review-round-N.md`, terse CLI return, issue-comment digest relayed by the orchestrator. Round budget: **two automatic rounds**; if round 2 is still `changes-requested`, the over-cap AskUserQuestion gate offers exactly three exits — ONE user-authorized final delta round (round 3 is last, no further gate re-offer of this option), accept-with-noted-gaps, or needs-human.
   - **Why:** The user wants Claude-created files cross-reviewed by another model against domain knowledge, "like what we have mentioned before" — the same trust model as harness specs. Rules out reusing `spec-review` (wrong criteria) and unbounded rounds.
 - **Q:** How does the department remember mistakes?
   - **A:** Every CPO command ends with a lessons check: a pitfall hit during the run is appended as a one-line prevention rule to `.claude/rules/c-suite/cpo-lessons.md`.
@@ -68,17 +74,26 @@ Soriza's first c-suite department. The AI owns Workflow 1 (client discovery → 
 
 ## KB References
 
-- `ai-docs/anthropic/subagents.md` (fetched 2026-07-05) — AskUserQuestion (with EnterPlanMode, ScheduleWakeup…) is unavailable to subagents even when listed in `tools`; `.claude/agents/` is scanned recursively with identity from the `name` field (subfolder `c-suite/` is safe); model frontmatter accepts aliases with documented resolution order.
+- `ai-docs/anthropic/subagents.md` (fetched 2026-07-05) — AskUserQuestion (with EnterPlanMode, ScheduleWakeup…) is unavailable to subagents even when listed in `tools`; `.claude/agents/` is scanned recursively with identity from the `name` field (subfolder `cpo/` is safe); model frontmatter accepts aliases with documented resolution order; the `skills` frontmatter field preloads skill content into a subagent's context at startup ("Preload skills into subagents") — the mechanism the persona agents use, since subagents never see skills invoked only by the parent session.
+- `ai-docs/anthropic/agent-sdk/slash-commands.md` (fetched 2026-07-05) — states command subdirectories appear in the description but do not affect the command name; conflicts with this repo's observed `/harness-layer:harness-plan` resolution. Resolution: the `naming-probe` build task settles the canonical name empirically before the commands are authored (see the naming decision above).
+- `ai-docs/anthropic/headless.md` (fetched 2026-07-05) — `claude -p` runs non-interactively and, without `--bare`, loads the same project context as an interactive session (commands, skills, plugins) — the surface the naming probe and AC2 rely on.
 - `ai-docs/anthropic/skills.md` (fetched 2026-07-05) — custom commands are merged into skills (both create `/name`); skill frontmatter surface: `description`, `autoInvoke`, `invoke`, `runAs`, `model`, `dependencies`, `tags`; project skills override personal; `.claude/commands/` files keep working.
 - Live re-fetch of <https://code.claude.com/docs/en/skills> (2026-07-17) — the command-name table maps `.claude/commands/<file>.md` → `/<file>` and documents no subdirectory namespacing for the commands dir, while this repo's live behavior resolves `.claude/commands/harness-layer/harness-plan.md` as `/harness-layer:harness-plan`. **Conflict resolution:** treat one-level `dir:name` as proven-by-observation in this repo, treat two-level as unsupported until tested, and keep a build-time resolution smoke check (AC2). KB mirror is 12 days old (not stale) and consistent with the live page — no refresh committed.
 - `ai-docs/anthropic/html-artifacts-workflows.md` (fetched 2026-07-16) — interactive-page patterns backing the blindspot board artifact.
 - Field-name conflict: this repo's existing skills use the legacy `disable-model-invocation: true`, the current doc documents `autoInvoke`/`invoke`. Resolution: new skills use the current documented fields with a build-time fallback to the legacy field (see Assumptions); existing files untouched.
 
+## Follow-ups
+
+Advisory recommendations from Codex review — recorded to feed a future plan, not fixed in this one:
+
+- [ ] Consider reducing the seven-builder team to 3–5 file-disjoint roles at build time (agent-teams guidance: coordination overhead rises with team size; hub and validation roles may not need dedicated teammates).
+- [ ] Add `ai-docs/anthropic/agent-teams.md` to the KB-consulted set if the build leans on multi-session teamwork beyond the plan's current shape.
+
 ## Open Questions / Out of Scope
 
 - **Out of scope:** Workflow 3 (human prototyping in Claude Design) and anything after the final prototype, including any CTO handoff packet.
 - **Out of scope:** CTO, CMO, CEO departments — future plans that copy this pattern.
-- **Out of scope:** real client engagements under `products/` (only `_templates/` and the `_example-bluebird-bakery/` fixture ship).
+- **Out of scope:** real client engagements under `products/` (only the `_example-bluebird-bakery/` fixture ships there; templates live inside their owning skills).
 - **Out of scope:** two-level command namespacing — optional future chore to test `/c-suite:cpo:intake` empirically.
 - **Open question:** question-bank depth per project type (brochure site vs web app) — owner: first real engagement's lessons check.
 - **Open question:** whether the design package later gains a moodboard/inspiration file — owner: the human designer after the first Workflow 3 run.

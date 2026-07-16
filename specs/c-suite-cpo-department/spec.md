@@ -10,7 +10,7 @@
 
 Soriza is being run like a real company, and this plan builds its first operating department: the CPO (product) department of the new **c-suite** series. Clients arrive with vague requests ("I want a website"); the department's job is to turn that into buildable product definition through two AI-owned workflows, then hand a complete design package to the human designer:
 
-- **Workflow 1 — discovery → PRD.** `/c-suite:cpo-intake` interviews the client until every requirement dimension is locked — live (grilling protocol via AskUserQuestion) or async (a client-ready question-list document to send out, with re-entrant runs when answers return). `/c-suite:cpo-prd` then has the PM persona draft the PRD and gates it with a Codex cross-model review (`prd-review`, ≤2 rounds).
+- **Workflow 1 — discovery → PRD.** `/c-suite:cpo-intake` interviews the client until every requirement dimension is locked — live (grilling protocol via AskUserQuestion) or async (a client-ready question-list document to send out, with re-entrant runs when answers return). `/c-suite:cpo-prd` then has the PM persona draft the PRD and gates it with a Codex cross-model review (`prd-review`: two automatic rounds, then an over-cap user gate that may authorize at most one final delta round).
 - **Workflow 2 — design package.** `/c-suite:cpo-brief` produces the six-file design handoff package (project brief, sitemap & user flows, section briefs, copy deck, brand inputs, lo-fi HTML wireframes), reviewed for coherence by the Design Lead persona.
 - **Workflow 3 — human.** The human designer prototypes in Claude Design (a Claude App feature the human drives). The department's output must be complete enough that this needs no further client contact. Nothing past the design package is automated.
 
@@ -39,6 +39,7 @@ Mirror the harness-layer architecture the repo already trusts, one layer per con
 
 - Three stage commands at `.claude/commands/c-suite/cpo-*.md` (one proven directory level → `/c-suite:cpo-intake|prd|brief`), each a fresh-session SOP that reads the previous stage's committed files plus the engagement `status.md` ledger — the context-management answer: no state lives only in a chat.
 - Because subagents cannot use AskUserQuestion (KB-verified), all client interviewing happens in the main session; personas do the isolated heavy work (drafting, gap analysis, wireframes) and return files.
+- Persona subagents get their department knowledge deterministically: each declares the knowledge skill(s) it depends on in `skills:` frontmatter (KB: "Preload skills into subagents"), and every delegation brief additionally passes the explicit template paths — so a fresh-context subagent never depends on skills loaded only in the parent session.
 - The PRD is gated exactly like harness specs: a Codex skill (`.agents/skills/prd-review/`) with the same verdict-file contract, round cap, digest relay, and over-cap user gate as `spec-review`.
 - The main alternative — one centralized department command — lost on context exhaustion and the impossibility of pausing for an async client mid-session.
 
@@ -46,7 +47,7 @@ Mirror the harness-layer architecture the repo already trusts, one layer per con
 
 - **AI/human boundary (most volatile):** AI owns Workflow 1 + Workflow 2; the human owns prototyping in Claude Design. Alternative still live: automating wireframe→prototype variants later, if Claude Design's workflow changes.
 - **W2 package is six files** — `project-brief.md` (incl. design-constraints section), `sitemap-and-flows.md` (mermaid), `section-briefs.md`, `copy-deck.md`, `brand-inputs.md`, `wireframes/<page>.html` (lo-fi, unstyled, self-contained). Why: what a professional design team actually needs; copy deck and brand inventory prevent the most common re-contact with clients. Alternative: 3-file core, rejected as designer-hostile.
-- **Command naming:** files `cpo-intake.md`, `cpo-prd.md`, `cpo-brief.md` in `.claude/commands/c-suite/` → `/c-suite:cpo-<stage>`. Why: one directory level is the only namespacing proven in this repo; docs don't document two-level. Alternative (verify `/c-suite:cpo:intake` empirically) deferred to a future chore if ever wanted.
+- **Command naming:** files live at `.claude/commands/c-suite/cpo-intake.md`, `cpo-prd.md`, `cpo-brief.md`. The canonical slash prefix is settled by a deterministic **naming probe** (tasks.md `naming-probe`) BEFORE the commands are authored: this repo's live behavior resolves one-level command dirs as `/c-suite:<file>`, while the cached SDK contract (`ai-docs/anthropic/agent-sdk/slash-commands.md`) predicts a bare `/<file>`. Both candidates (`/c-suite:cpo-intake` or `/cpo-intake`) are unique and workable; the probe's winner is recorded in `cpo-operations.md` and used in every user-facing mention, and AC2 asserts it. Two-level nesting (`/c-suite:cpo:intake`) stays a non-goal.
 - **Engagement git flow:** one issue + branch `feat/<N>-<client-slug>` per engagement, stage commits with `Refs #N`, Codex digests as issue comments, ONE PR opened after the Design Lead approves the W2 package; the PR closes the issue. Why: durable tracking without a weeks-open draft PR.
 - **Persona economics:** five AI persona subagents + the CPO as the session's own hat; persona names sign reports, documents stay professional (no role-play dialogue in deliverables).
 - **Knowledge skills never auto-fire** (`autoInvoke: false`); only the commands load them. Why: client-domain knowledge must not leak into unrelated sessions' context.
@@ -97,6 +98,7 @@ Use these files to complete the task:
 - **Stage run out of order** — every command preflights the ledger: `cpo-prd` STOPs unless intake is `done`; `cpo-brief` STOPs unless the PRD is approved.
 - **Re-running a completed stage** — the command detects the done state and asks (AskUserQuestion) before overwriting prior outputs.
 - **Duplicate engagement slug** — `cpo-intake` detects the existing `products/<slug>/` and resumes it rather than scaffolding a second copy.
+- **Malformed client slug** — `cpo-intake` validates `<client-slug>` against the canonical rule `^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$` (fixtures: `_example-` + a valid slug) BEFORE any filesystem, branch, worktree, or `gh` use; an invalid slug STOPs with guidance, and slugs are always quoted in shell commands.
 - **`gh`/`codex` unavailable** — preflight STOP with fix guidance, mirroring the harness commands; never proceed degraded.
 - **Codex round writes no verdict line** — re-run the round; never treat silence as approval (same rule as harness-plan).
 - **Wireframes must open offline** — self-contained HTML, no external assets; a page with remote references fails the Design-Lead checklist.
