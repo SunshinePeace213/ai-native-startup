@@ -24,7 +24,7 @@ PR: none
 ## Stage state
 
 intake: done
-prd: not-started
+prd: done
 brief: not-started
 engagement: not-yet
 
@@ -32,5 +32,5 @@ engagement: not-yet
 
 intake-run: date=2026-07-17; sha=d53956e; lessons=persona-type fallback lesson recorded
 intake-run: date=2026-07-17; sha=fa32998; lessons=none
-prd-run: date=<date>; sha=<sha>; lessons=<result>
+prd-run: date=2026-07-17; sha=b94cc0d; lessons=none
 brief-run: date=<date>; sha=<sha>; lessons=<result>
