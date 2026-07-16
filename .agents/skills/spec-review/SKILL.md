@@ -27,10 +27,9 @@ number N**. Use N verbatim — never infer it.
 
 Run the KB-grounding pass when the injected profile is `kb-grounded`, OR decisions.md has a
 `## KB References` section, OR the reviewed target paths touch `.claude/`, `.agents/`,
-`.codex/`, `ai-docs/`, a memory file (CLAUDE.md, AGENTS.md,
-GIT-COMMIT-PR-MESSAGE.md), or a domain with an `ai-docs/index.md` entry. Any signal wins. If
-the profile says `standard` but a signal fires (or the reverse), run the pass AND record the
-profile/signal mismatch as a **blocking** contract defect.
+`.codex/`, `ai-docs/`, a memory file (CLAUDE.md, AGENTS.md), or a domain with an `ai-docs/index.md`
+entry. Any signal wins. If the profile says `standard` but a signal fires (or the reverse), run
+the pass AND record the profile/signal mismatch as a **blocking** contract defect.
 
 When the pass runs, also read every doc listed in decisions.md `## KB References` (paths
 relative to `ai-docs/`) and `ai-docs/index.md`, to find cached docs covering harness topics

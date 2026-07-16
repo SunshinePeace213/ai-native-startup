@@ -1,6 +1,6 @@
 # Concept ported from pr-review-toolkit/code-reviewer.md — re-sync when that plugin updates.
 name = "review-code-standards"
-description = "Reviews the branch diff (the supplied commit range) for violations of this repo's written standards (AGENTS.md + global ~/.codex/AGENTS.md + .claude/rules/* + GIT-COMMIT-PR-MESSAGE.md) and for obvious bugs. Read-only; reports grounded findings only."
+description = "Reviews the branch diff (the supplied commit range) for violations of this repo's written standards (AGENTS.md + global ~/.codex/AGENTS.md + .claude/rules/*) and for obvious bugs. Read-only; reports grounded findings only."
 sandbox_mode = "read-only"
 model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
@@ -20,15 +20,13 @@ uncommitted or untracked work. Read changed files only as needed for context; do
 - `AGENTS.md` (project root) — the project standard (CLAUDE.md is just `@AGENTS.md`).
 - `~/.codex/AGENTS.md` — global engineering rules.
 - `.claude/rules/*` — repo rules.
-- `GIT-COMMIT-PR-MESSAGE.md` — commit/PR/issue conventions.
 Check the diff against what these files say; don't re-derive their rules from memory.
 
 ## Memory sync (the memory series)
 When the diff changes behavior or a convention, check it against the memory series —
 `AGENTS.md` is the hub (`CLAUDE.md` only `@`-imports it). Ownership:
 - `AGENTS.md` — agent / pipeline conventions.
-- `.claude/rules/` — that topic's series (hooks → harness-layer/hooks.md, Python → python/general-practice.md, models → model-selection.md, orchestration → task-tools.md, memory authoring → memory-series.md).
-- `GIT-COMMIT-PR-MESSAGE.md` — git / PR / issue policy.
+- `.claude/rules/` — that topic's series (hooks → harness-layer/hooks.md, Python → python/general-practice.md, models → model-selection.md, orchestration → task-tools.md, memory authoring → memory-series.md, git/PR/issue policy → git-workflow.md).
 - A genuinely new series → a new rule file under `.claude/rules/` (domain folder if path-scoped, flat root if global), referenced from `AGENTS.md`.
 Severity: a diff that falsifies a documented statement, or an explicit new repo-wide
 convention with no memory home, is **Critical (blocking)**. An inferred / one-off convention,

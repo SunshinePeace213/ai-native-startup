@@ -13,8 +13,7 @@ the hub or in `.claude/rules/` — never create a new root-level memory markdown
 ## Layout
 
 - `AGENTS.md` (root) — the hub: tooling, pipeline, and a pointer to every rule. `CLAUDE.md` only `@`-imports it — never write memory into `CLAUDE.md`.
-- `.claude/rules/` — one file per convention series. Domain families live in folders (`harness-layer/hooks.md`, `python/general-practice.md`), scoped via `paths:` frontmatter; rules every session needs stay flat at the root with no `paths:` (`model-selection.md`, `task-tools.md`).
-- `GIT-COMMIT-PR-MESSAGE.md` (root) — git, PR, and issue policy.
+- `.claude/rules/` — one file per convention series. Domain families live in folders (`harness-layer/hooks.md`, `python/general-practice.md`), scoped via `paths:` frontmatter; rules every session needs stay flat at the root with no `paths:` (`model-selection.md`, `task-tools.md`, `git-workflow.md`).
 
 ## Record & edit
 

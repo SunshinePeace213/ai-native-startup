@@ -81,7 +81,7 @@ def main() -> int:
         if pattern.search(command):
             note(f"Blocked: this git/gh command contains a {form}.")
             note(
-                "Repo policy (GIT-COMMIT-PR-MESSAGE.md): commit/PR messages "
+                "Repo policy (.claude/rules/git-workflow.md): commit/PR messages "
                 "must carry no Claude attribution."
             )
             note("Fix: remove the attribution line and rerun the command.")

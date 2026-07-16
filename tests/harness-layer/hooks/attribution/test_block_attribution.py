@@ -1,6 +1,6 @@
 """Block/allow matrix for the PreToolUse attribution guard.
 
-The repo policy (GIT-COMMIT-PR-MESSAGE.md) forbids Claude attribution in commit
+The repo policy (.claude/rules/git-workflow.md) forbids Claude attribution in commit
 and PR messages. These tests encode the guard's contract: git/gh commands that
 carry any default Claude attribution form are denied (exit 2, corrective
 stderr), while everything else — clean commits, non-Claude co-authors, non-git
@@ -23,7 +23,7 @@ def bash_payload(command: str) -> str:
 def assert_blocked(proc: subprocess.CompletedProcess) -> None:
     """A block must exit 2 AND tell Claude the policy source and the fix."""
     assert proc.returncode == 2
-    assert "GIT-COMMIT-PR-MESSAGE.md" in proc.stderr
+    assert ".claude/rules/git-workflow.md" in proc.stderr
     assert "remove the attribution line" in proc.stderr
 
 
