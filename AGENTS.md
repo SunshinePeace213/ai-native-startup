@@ -27,4 +27,4 @@
 ## Harness-Layer Pipeline
 
 - **Pipeline** — every task, application code or harness work: `/harness-layer:harness-plan` → `/harness-layer:harness-build` → `/harness-layer:harness-ship`. The domain-expert KB layer engages automatically when the work touches the harness. Keep the `ai-docs/` KB fresh with `/harness-layer:kb`.
-- **Unknowns checkpoints** — the pipeline commands fire them conditionally: blindspot pass and taste route at plan time, deviation logging in `specs/<name>/implementation-notes.md` at build time, ship brief + quiz at approval. Pipeline artifacts live committed under `specs/<name>/artifacts/` and publish best-effort as interactive pages.
+- **Artifacts** — pipeline stages publish interactive pages committed under `specs/<name>/artifacts/`; crafting rules: [artifacts.md](.claude/rules/harness-layer/artifacts.md).

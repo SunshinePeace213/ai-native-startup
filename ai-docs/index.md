@@ -32,6 +32,7 @@ and run `/kb`.
 | Agent Skills via the Messages API — custom and managed skills | [anthropic/skills-api-guide.md](./anthropic/skills-api-guide.md) | 2026-07-05 |
 | Agent Skills — authoring best practices for concise, effective skills | [anthropic/skills-best-practices.md](./anthropic/skills-best-practices.md) | 2026-07-05 |
 | Writing tools for agents — designing tools & evals (engineering post) | [anthropic/writing-tools-for-agents.md](./anthropic/writing-tools-for-agents.md) | 2026-07-05 |
+| HTML artifacts — interactive two-way pages, copy-as-prompt loops, use-case patterns | [anthropic/html-artifacts-workflows.md](./anthropic/html-artifacts-workflows.md) | 2026-07-16 |
 | Agent SDK — overview: build agents with tools, hooks, subagents | [anthropic/agent-sdk/overview.md](./anthropic/agent-sdk/overview.md) | 2026-07-05 |
 | Agent SDK — agent loop: message types, turns, context & budget | [anthropic/agent-sdk/agent-loop.md](./anthropic/agent-sdk/agent-loop.md) | 2026-07-05 |
 | Agent SDK — load Claude Code features via filesystem settings | [anthropic/agent-sdk/claude-code-features.md](./anthropic/agent-sdk/claude-code-features.md) | 2026-07-05 |

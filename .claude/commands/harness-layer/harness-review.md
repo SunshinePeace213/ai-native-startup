@@ -75,3 +75,5 @@ Memory sync: <clean | N findings above, each tagged blocking or advisory>
 
 No findings → `Findings: 0` with the eligibility and lens list confirmed — never
 invent findings to pad the report.
+
+The caller renders the confirmed findings as the Findings page per `.claude/rules/harness-layer/artifacts.md`, saved under `specs/<name>/artifacts/`, and links it from the PR's Review Reports section.

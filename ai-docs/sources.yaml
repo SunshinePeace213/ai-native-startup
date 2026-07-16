@@ -101,6 +101,10 @@ anthropic:
     file: anthropic/writing-tools-for-agents.md
     topic: Writing tools for agents — designing tools & evals (engineering post)
     fetched: 2026-07-05
+  - url: https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html
+    file: anthropic/html-artifacts-workflows.md
+    topic: HTML artifacts — interactive two-way pages, copy-as-prompt loops, use-case patterns
+    fetched: 2026-07-16
 anthropic/agent-sdk:
   - url: https://code.claude.com/docs/en/agent-sdk/overview
     file: anthropic/agent-sdk/overview.md
