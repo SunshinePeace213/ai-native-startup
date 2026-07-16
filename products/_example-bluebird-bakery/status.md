@@ -25,8 +25,8 @@ PR: none
 
 intake: done
 prd: done
-brief: not-started
-engagement: not-yet
+brief: done
+engagement: handed-off
 
 ## Run log
 

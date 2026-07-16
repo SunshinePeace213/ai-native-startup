@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe — Home — Bluebird Bakery</title>
+<style>
+  /* Lo-fi wireframe styles. Inline only, grayscale only, no external references. */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #d9d9d9;
+    font-family: Georgia, "Times New Roman", serif;
+    color: #222222;
+  }
+  .page {
+    max-width: 430px;
+    margin: 24px auto;
+    background: #ffffff;
+    border: 2px solid #333333;
+  }
+  .tag {
+    font-family: Consolas, Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #666666;
+    padding: 3px 8px;
+    background: #eeeeee;
+    border-bottom: 1px solid #bbbbbb;
+  }
+  .block {
+    padding: 16px;
+    border-bottom: 1px dashed #999999;
+  }
+  .box {
+    border: 1px solid #999999;
+    background: #e4e4e4;
+    padding: 10px;
+    text-align: center;
+    font-size: 12px;
+    color: #555555;
+  }
+  .photo {
+    background: repeating-linear-gradient(45deg, #cccccc, #cccccc 6px, #e6e6e6 6px, #e6e6e6 12px);
+    border: 1px solid #999999;
+    min-height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 12px;
+    color: #444444;
+    padding: 8px;
+  }
+  .headline {
+    font-size: 20px;
+    font-weight: bold;
+    border: 1px dashed #999999;
+    padding: 8px;
+    margin: 8px 0;
+    color: #333333;
+  }
+  .subhead, .line {
+    font-size: 13px;
+    border: 1px dashed #bbbbbb;
+    padding: 6px;
+    margin: 6px 0;
+    color: #555555;
+  }
+  .btn {
+    display: block;
+    text-align: center;
+    border: 1px solid #333333;
+    background: #d5d5d5;
+    padding: 10px;
+    font-weight: bold;
+    font-size: 13px;
+    margin-top: 8px;
+    color: #222222;
+    text-decoration: none;
+  }
+  .btn-secondary {
+    border: 1px solid #777777;
+    background: #ececec;
+    font-weight: normal;
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 2px solid #333333;
+    background: #f0f0f0;
+  }
+  .nav .box { flex: 1; margin-right: 8px; }
+  .nav .box:last-child { margin-right: 0; max-width: 90px; }
+  .strip {
+    background: #ededed;
+  }
+  .strip-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    border: 1px dashed #bbbbbb;
+    padding: 6px 8px;
+    margin: 4px 0;
+    color: #444444;
+  }
+  footer.block {
+    background: #eaeaea;
+    border-bottom: none;
+  }
+  .footer-cols {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .footer-col {
+    flex: 1;
+    min-width: 110px;
+    border: 1px dashed #bbbbbb;
+    padding: 8px;
+    font-size: 11px;
+    color: #555555;
+  }
+  .placeholder-link {
+    border: 1px dashed #999999;
+    background: #e0e0e0;
+    padding: 6px;
+    font-size: 11px;
+    text-align: center;
+    color: #444444;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+<!--
+  LO-FI WIREFRAME — HOME
+  Grayscale, layout-and-hierarchy only. Self-contained (inline CSS only) and offline —
+  no CDN, no web font, no remote image, no URL anywhere in this file.
+  Section order and content fields follow design/section-briefs.md, page "Home".
+  Mobile-first single column shown (PRD §8 mobile-first requirement is the primary
+  breakpoint). Desktop reflow is called out per section as a comment; no second
+  layout is drawn at this lo-fi stage.
+-->
+<div class="page">
+
+  <!-- note: NAVIGATION (shared chrome, not its own section-brief entry) — logo + links to
+       Menu, Our Story, Custom Cakes, Visit Us, present on every page. Desktop: full
+       horizontal bar. Mobile (shown): logo + collapsed hamburger. -->
+  <div class="tag">navigation (shared)</div>
+  <div class="nav">
+    <div class="box">LOGO — placeholder (no digital file yet; see brand-inputs gap list)</div>
+    <div class="box">&#9776; MENU</div>
+  </div>
+
+  <!-- note: HOURS/LOCATION STRIP — see section-briefs.md § Home / Hours-location strip.
+       Purpose: immediate hours/location visibility for regulars, no digging (US-3 AC1) —
+       sits directly under the nav, above the hero, so it is "visible immediately at the
+       top" per PRD. Content fields: today's hours (CMS-editable), address, one-line
+       parking note, link to Visit Us for full detail. -->
+  <div class="tag">section: hours / location strip (top of page, above hero)</div>
+  <section class="block strip">
+    <div class="strip-row">TODAY'S HOURS (CMS-editable) — e.g. open / close time</div>
+    <div class="strip-row">ADDRESS — street, neighborhood</div>
+    <div class="strip-row">PARKING — one-line note</div>
+    <div class="placeholder-link">LINK — full details on Visit Us</div>
+  </section>
+
+  <!-- note: HERO — see section-briefs.md § Home / Hero. Purpose: land brand intro, warm
+       scratch-made identity. Content fields: headline, subhead, one client-supplied photo.
+       Variant: split text-and-image, stacked on mobile (desktop: photo and text side by
+       side). Copy-deck entry: Home / Hero (not yet authored this wave). -->
+  <div class="tag">section: hero</div>
+  <section class="block">
+    <div class="photo">PHOTO PLACEHOLDER — bakery / sourdough loaves (client-supplied, no stock imagery)</div>
+    <div class="headline">HEADLINE — warm brand intro (e.g. "since 2018")</div>
+    <div class="subhead">Subhead — scratch-made, neighborhood bakery</div>
+  </section>
+
+  <!-- note: FRESH-TODAY HIGHLIGHT — see section-briefs.md § Home / Fresh-today highlight.
+       Purpose: at-a-glance read of what's fresh today; surfaces the CMS-editable
+       daily/seasonal specials. Content fields: static heading/body (to-write), a clearly
+       separate CMS-editable specials text field, optional small photo, link to Menu. -->
+  <div class="tag">section: fresh-today highlight</div>
+  <section class="block">
+    <div class="headline">HEADING — Fresh today</div>
+    <div class="subhead">BODY — from morning sourdough to the day's pastries (static, to-write)</div>
+    <!-- note: CMS-EDITABLE specials text field, deliberately boxed apart from the static
+         heading/body above so it reads as the one part of this card that changes daily.
+         Staff update this text directly — no developer involvement. -->
+    <div class="box">CMS-EDITABLE FIELD — today's specials / seasonal highlight text (staff-updated)</div>
+    <div class="placeholder-link">LINK — see full Menu</div>
+  </section>
+
+  <!-- note: CAKE CTA — see section-briefs.md § Home / Cake CTA. Purpose: PRIMARY action —
+       route cake customers to Custom Cakes + inquiry form in one click (US-1 AC1).
+       Content fields: headline, one supporting line, one button, optional supporting
+       photo. Variant: CTA banner / centered block. -->
+  <div class="tag">section: cake cta (primary action)</div>
+  <section class="block">
+    <div class="headline">HEADLINE — custom cakes, made to order</div>
+    <div class="subhead">Supporting line — hand-decorated by Maria, no two alike</div>
+    <a class="btn" href="#">BUTTON — Start a Cake Inquiry &rarr; Custom Cakes page</a>
+  </section>
+
+  <!-- note: OUR STORY TEASER — see section-briefs.md § Home / Our Story teaser. Purpose:
+       tease the since-2018, warm/personal story for the new-visitor persona (US-4),
+       linking through to the full Our Story page. Content fields: heading, one-line
+       teaser body, link to Our Story. Copy-deck entry: Home / Our Story teaser. -->
+  <div class="tag">section: our story teaser</div>
+  <section class="block">
+    <div class="headline">HEADING — Made from scratch, the slow way</div>
+    <div class="line">TEASER — one-line story teaser (since 2018, sourdough starter, hand-made)</div>
+    <div class="placeholder-link">LINK — Read our story &rarr; Our Story page</div>
+  </section>
+
+  <!-- note: FOOTER (shared) — see section-briefs.md § Home / Footer, identical on every
+       page. Content fields: nav links, legal links (Privacy, Terms), contact info, Google
+       Business Profile link-out. Variant: minimal footer. The Google link-out is a
+       wireframe-only placeholder box with no destination — the real URL is set by the
+       developer/CMS at build time, never represented in design assets. -->
+  <div class="tag">section: footer (shared, every page)</div>
+  <footer class="block">
+    <div class="footer-cols">
+      <div class="footer-col">NAV — Menu / Our Story / Custom Cakes / Visit Us</div>
+      <div class="footer-col">LEGAL — Privacy Policy / Terms of Use</div>
+      <div class="footer-col">CONTACT — phone / email</div>
+    </div>
+    <!-- note: Google Business Profile link-out placeholder. No real destination in this
+         file by design — annotated box only, href left as "#". -->
+    <a class="btn btn-secondary" href="#">GOOGLE BUSINESS PROFILE — link-out (external, destination set at build time)</a>
+  </footer>
+
+</div>
+</body>
+</html>

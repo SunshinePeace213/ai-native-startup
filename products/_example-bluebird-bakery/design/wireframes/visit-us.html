@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe — Visit Us / Contact — Bluebird Bakery</title>
+<style>
+  /* Lo-fi wireframe styles. Inline only, grayscale only, no external references. */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #d9d9d9;
+    font-family: Georgia, "Times New Roman", serif;
+    color: #222222;
+  }
+  .page {
+    max-width: 430px;
+    margin: 24px auto;
+    background: #ffffff;
+    border: 2px solid #333333;
+  }
+  .tag {
+    font-family: Consolas, Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #666666;
+    padding: 3px 8px;
+    background: #eeeeee;
+    border-bottom: 1px solid #bbbbbb;
+  }
+  .block {
+    padding: 16px;
+    border-bottom: 1px dashed #999999;
+  }
+  .box {
+    border: 1px solid #999999;
+    background: #e4e4e4;
+    padding: 10px;
+    text-align: center;
+    font-size: 12px;
+    color: #555555;
+  }
+  .headline {
+    font-size: 18px;
+    font-weight: bold;
+    border: 1px dashed #999999;
+    padding: 8px;
+    margin: 8px 0;
+    color: #333333;
+  }
+  .subhead, .line {
+    font-size: 13px;
+    border: 1px dashed #bbbbbb;
+    padding: 6px;
+    margin: 6px 0;
+    color: #555555;
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 2px solid #333333;
+    background: #f0f0f0;
+  }
+  .nav .box { flex: 1; margin-right: 8px; }
+  .nav .box:last-child { margin-right: 0; max-width: 90px; }
+  .strip { background: #ededed; }
+  .strip-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    border: 1px dashed #bbbbbb;
+    padding: 6px 8px;
+    margin: 4px 0;
+    color: #444444;
+  }
+  .map-box {
+    background: repeating-linear-gradient(45deg, #cccccc, #cccccc 6px, #e6e6e6 6px, #e6e6e6 12px);
+    border: 1px solid #999999;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 11px;
+    color: #444444;
+    padding: 8px;
+  }
+  .btn-secondary {
+    display: block;
+    text-align: center;
+    border: 1px solid #777777;
+    background: #ececec;
+    padding: 10px;
+    font-size: 13px;
+    margin-top: 8px;
+    color: #222222;
+    text-decoration: none;
+  }
+  .footer-cols {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .footer-col {
+    flex: 1;
+    min-width: 110px;
+    border: 1px dashed #bbbbbb;
+    padding: 8px;
+    font-size: 11px;
+    color: #555555;
+  }
+</style>
+</head>
+<body>
+<!--
+  LO-FI WIREFRAME — VISIT US / CONTACT
+  Grayscale, layout-and-hierarchy only. Self-contained (inline CSS only) and offline —
+  no CDN, no web font, no remote image, no URL anywhere in this file.
+  Section order and content fields follow design/section-briefs.md, page "Visit Us / Contact".
+  Mobile-first single column shown; desktop reflow noted per section as a comment.
+  See sitemap-and-flows.md Flow 2 for the hours-check user flow this page serves.
+-->
+<div class="page">
+
+  <!-- note: NAVIGATION (shared chrome) — same as every page, see home.html. -->
+  <div class="tag">navigation (shared)</div>
+  <div class="nav">
+    <div class="box">LOGO — placeholder (no digital file yet; see brand-inputs gap list)</div>
+    <div class="box">&#9776; MENU</div>
+  </div>
+
+  <!-- note: INTRO — see section-briefs.md § Visit Us / Intro. Purpose: brief framing line
+       before the hours/location detail. Variant: minimal text-only hero. -->
+  <div class="tag">section: intro</div>
+  <section class="block">
+    <div class="headline">HEADLINE — Visit us</div>
+  </section>
+
+  <!-- note: HOURS-LOCATION-PARKING — see section-briefs.md § Visit Us /
+       Hours-location-parking. Purpose: present hours, location, and parking prominently
+       (US-3 AC1, AC2), the core job of this page for the regulars persona. Content:
+       full hours table (CMS-editable), address, parking instructions. Variant: details
+       block (no form here — the inquiry form lives on Custom Cakes, not this page). -->
+  <div class="tag">section: hours / location / parking</div>
+  <section class="block strip">
+    <div class="strip-row">HOURS TABLE (CMS-editable) — Mon-Sun, open/close per day</div>
+    <div class="strip-row">ADDRESS — full street address</div>
+    <div class="strip-row">PARKING — instructions / nearby lot note</div>
+    <!-- note: map/location visual placeholder. Google Business Profile is a link-out only
+         (below) — no embedded map, no site-side directions logic, per PRD §8. -->
+    <div class="map-box">MAP/LOCATION VISUAL PLACEHOLDER (illustrative only — no embedded map; directions are handled by the Google link-out below)</div>
+  </section>
+
+  <!-- note: CONTACT DETAILS — see section-briefs.md § Visit Us / Contact details.
+       Purpose: a way to reach the bakery directly, separate from the cake inquiry form. -->
+  <div class="tag">section: contact details</div>
+  <section class="block">
+    <div class="line">PHONE — placeholder</div>
+    <div class="line">EMAIL — placeholder</div>
+    <div class="line">SOCIAL — placeholder (if supplied by client)</div>
+  </section>
+
+  <!-- note: GOOGLE LINK-OUT — see section-briefs.md § Visit Us / Google link-out.
+       Purpose: send visitors to the Google Business Profile for directions and reviews
+       (US-3 AC3); link-out only, no embedded map. No destination URL is represented in
+       design assets — set by the developer/CMS at build time. -->
+  <div class="tag">section: google link-out</div>
+  <section class="block">
+    <a class="btn-secondary" href="#">BUTTON — View on Google (directions &amp; reviews, opens off-site)</a>
+  </section>
+
+  <!-- note: FOOTER (shared) — identical to home.html § Footer. See that file's comment
+       for the full spec; the Google link-out below is the same wireframe-only placeholder
+       with no destination URL as the one above (footer carries it on every page too). -->
+  <div class="tag">section: footer (shared, every page)</div>
+  <footer class="block">
+    <div class="footer-cols">
+      <div class="footer-col">NAV — Menu / Our Story / Custom Cakes / Visit Us</div>
+      <div class="footer-col">LEGAL — Privacy Policy / Terms of Use</div>
+      <div class="footer-col">CONTACT — phone / email</div>
+    </div>
+    <a class="btn-secondary" href="#">GOOGLE BUSINESS PROFILE — link-out (external, destination set at build time)</a>
+  </footer>
+
+</div>
+</body>
+</html>
