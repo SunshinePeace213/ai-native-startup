@@ -5,7 +5,7 @@
 
 ## Summary
 
-Soriza's first c-suite department. The AI owns Workflow 1 (client discovery → cross-reviewed PRD) and Workflow 2 (six-file design handoff package); the human owns Workflow 3 (prototyping in Claude Design) and everything after it. The department ships as three stage commands, three knowledge skills (each bundling the templates for the files it teaches), one Codex review skill, three rules files (roster/operations/lessons), and five persona subagents — the six-layer pattern every future department copies. Each client engagement lives in `products/<client-slug>/` with its own issue, branch, status ledger, and end-of-department PR.
+Soriza's first c-suite department. The AI owns Workflow 1 (client discovery → cross-reviewed PRD) and Workflow 2 (six-file design handoff package); the human owns Workflow 3 (prototyping in Claude Design) and everything after it. The department ships as three stage commands, three knowledge skills (each bundling the templates for the files it teaches), one Codex review skill, three rules files (roster/operations/lessons), and five persona subagents — the six-layer pattern every future department copies. Each client engagement lives in `products/<client-slug>/` with a status ledger; real engagements add their own issue, branch, and end-of-department PR, while fixtures do not.
 
 ## Resolved Decisions
 
@@ -58,7 +58,7 @@ Soriza's first c-suite department. The AI owns Workflow 1 (client discovery → 
 - Knowledge skills use the currently documented frontmatter (`autoInvoke: false`) and are loaded by the commands (Skill tool or `dependencies:`); the repo's older `disable-model-invocation` field is left untouched in existing skills. Invalidated if the build's smoke check shows `autoInvoke` unsupported in this Claude Code version — fall back to the repo's proven `disable-model-invocation: true`.
 - The question bank's dimension list (business & goals, audience, brand & voice, content & assets, structure & pages, features, integrations & data, technical/hosting constraints, budget & timeline, success metrics, references & competitors, legal/compliance) is authored at build time from industry practice — tuned after the first real engagement.
 - Status-ledger stage states are `not-started | in-progress | blocked-on-client | stale | done` per stage (`intake`, `prd`, `brief`), plus the engagement-level `handed-off` marker — invalidated if the dry run shows a needed state is missing.
-- Engagement work happens on the engagement's own worktree/branch with the explicit push refspec, mirroring `.claude/rules/git-workflow.md`'s worktree rule.
+- Real engagement work happens on the engagement's own worktree/branch with the explicit push refspec, mirroring `.claude/rules/git-workflow.md`'s worktree rule; fixture work stays on its recorded hosting branch without a push.
 - The dry-run fixture is allowed under `products/` despite "no real client content" — it is a fictional client marked by the `_example-` prefix.
 - `status.md`'s template lives in `cpo-question-bank/templates/` because intake is the stage that scaffolds an engagement — invalidated if a later department needs the ledger without the question bank (then it moves to a shared location).
 

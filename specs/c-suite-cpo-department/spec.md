@@ -14,11 +14,11 @@ Soriza is being run like a real company, and this plan builds its first operatin
 - **Workflow 2 — design package.** `/c-suite:cpo-brief` produces the six-file design handoff package (project brief, sitemap & user flows, section briefs, copy deck, brand inputs, lo-fi HTML wireframes), reviewed for coherence by the Design Lead persona.
 - **Workflow 3 — human.** The human designer prototypes in Claude Design (a Claude App feature the human drives). The department's output must be complete enough that this needs no further client contact. Nothing past the design package is automated.
 
-The department is staffed by named persona subagents (Ethan Park/PM, Priya Nair/UX Researcher, Jonas Weber/UX Designer, Yuki Tanaka/UI Designer, Daniel Osei/Design Lead) with the CPO (Sofia Reyes) as the orchestrating session itself. Knowledge lives in three skills — each bundling the templates for the files it teaches, per the meta-skills supporting-files standard — memory lives in `.claude/rules/c-suite/` (roster, operations, lessons-learned), and each client engagement lives in `products/<client-slug>/` with its own GitHub issue and branch.
+The department is staffed by named persona subagents (Ethan Park/PM, Priya Nair/UX Researcher, Jonas Weber/UX Designer, Yuki Tanaka/UI Designer, Daniel Osei/Design Lead) with the CPO (Sofia Reyes) as the orchestrating session itself. Knowledge lives in three skills — each bundling the templates for the files it teaches, per the meta-skills supporting-files standard — memory lives in `.claude/rules/c-suite/` (roster, operations, lessons-learned), and each client engagement lives in `products/<client-slug>/`; real engagements get their own GitHub issue and branch, while fixtures stay on their hosting branch without GitHub engagement objects.
 
 ## Objective
 
-A fresh session can run a fictional client through `/c-suite:cpo-intake` → `/c-suite:cpo-prd` → `/c-suite:cpo-brief` and end with a locked `requirements.md`, a Codex-approved `prd.md`, and all six design-package files in the engagement folder — with the status ledger, engagement issue, and lessons file updated at every stage.
+A fresh session can run a fictional client through `/c-suite:cpo-intake` → `/c-suite:cpo-prd` → `/c-suite:cpo-brief` and end with a locked `requirements.md`, a Codex-approved `prd.md`, and all six design-package files in the engagement folder — with the status ledger and lessons file updated at every stage, plus the engagement issue in real mode only.
 
 ## Non-Goals
 
@@ -100,7 +100,7 @@ Use these files to complete the task:
 - **Duplicate engagement slug** — `cpo-intake` detects the existing `products/<slug>/` and resumes it rather than scaffolding a second copy.
 - **Malformed client slug** — `cpo-intake` validates `<client-slug>` against the canonical rule `^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$` (fixtures: `_example-` + a valid slug) BEFORE any filesystem, branch, worktree, or `gh` use; an invalid slug STOPs with guidance, and slugs are always quoted in shell commands.
 - **Fixture engagement (`_example-` slug)** — runs entirely on the current branch: no engagement issue, branch, worktree, or PR is created; the ledger records `mode: fixture`, the hosting branch, and per-stage commit SHAs instead of the real GitHub trail.
-- **`gh`/`codex` unavailable** — preflight STOP with fix guidance, mirroring the harness commands; never proceed degraded.
+- **`gh`/`codex` unavailable** — missing `codex` always STOPs with fix guidance; missing `gh` STOPs real mode only because fixture mode performs no GitHub action. Never proceed degraded when a selected mode needs the missing tool.
 - **Codex round writes no verdict line** — re-run the round; never treat silence as approval (same rule as harness-plan).
 - **Wireframes must open offline** — self-contained HTML, no external assets; a page with remote references fails the Design-Lead checklist.
 
@@ -125,8 +125,8 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** needs-human — `changes-requested` after 3 rounds (2 automatic + 1 user-authorized delta); user chose human review at the final gate. Two mechanical blockers remain (mode-conditional GitHub actions in tasks.md Task 6; deterministic validation assertions per round-3 finding 2). Remove `status:needs-human` on issue #35 when cleared.
-- **Rejected findings:** none — every warranted finding was either fixed (rounds 1–2 deltas) or stands as a named open blocker awaiting human disposition; advisories are recorded in decisions.md `## Follow-ups`.
+- **Outcome:** needs-human — `changes-requested` after 3 rounds (2 automatic + 1 user-authorized delta); user chose human review at the final gate. The two round-3 mechanical blockers were remediated by user-directed plan edits; remove `status:needs-human` on issue #35 after re-review clears them.
+- **Rejected findings:** none — every warranted finding was fixed in the review deltas or the user-directed round-3 remediation; advisories are recorded in decisions.md `## Follow-ups`.
 
 ## References
 
