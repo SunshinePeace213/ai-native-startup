@@ -14,6 +14,15 @@
   - **The call made:** The lead flips board statuses from builder hand-offs; briefs after wave 1 drop the TaskUpdate instruction.
   - **Spec impact:** none.
 
+- **What diverged:** `prd-review` omits spec-review's conditional `## KB grounding` section.
+  - **What forced it:** That section verifies harness-behavior claims against `ai-docs/` — spec-review-specific; task 4's enumerated mechanics exclude it and the PRD review's inputs are product documents (prd.md, requirements.md, cpo-prd-standard).
+  - **The call made:** Mirror every enumerated mechanic one-to-one; replace spec-only blocking types with the PRD-specific criteria.
+  - **Spec impact:** none.
+- **What diverged:** AC8's literal validation command (`uv run .claude/skills/meta-agent/scripts/validate_agent.py .claude/agents/cpo/*.md && ...`) fails on green files: the script needs `--with pyyaml` (its documented usage) and accepts exactly one path per call, rejecting the glob.
+  - **What forced it:** `validate_agent.py`'s own arg guard (`len(argv) != 2`) and missing pyyaml in the project env.
+  - **The call made:** Agents verified with the script's real contract — a per-file loop `uv run --with pyyaml python .claude/skills/meta-agent/scripts/validate_agent.py <path>`; all five pass. `validate.sh` must use the loop form.
+  - **Spec impact:** acceptance-criterion validation command touched (mechanical invocation fix, checks unchanged) → bundled into the user gate queued before validate.sh.
+
 ## Fold-Forward
 
 - `quick_validate.py` vs Claude Code-only frontmatter keys (`autoInvoke`, `disable-model-invocation`): consider a follow-up chore aligning the packaging validator or the meta-skills docs on which validator gates project-internal skills.
