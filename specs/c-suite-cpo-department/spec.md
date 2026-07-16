@@ -125,7 +125,7 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** needs-human — `changes-requested` after 3 rounds (2 automatic + 1 user-authorized delta); user chose human review at the final gate. The two round-3 mechanical blockers were remediated by user-directed plan edits; remove `status:needs-human` on issue #35 after re-review clears them.
+- **Outcome:** accepted-with-unverified-fixes — `changes-requested` after 3 rounds (2 automatic + 1 user-authorized delta); the user first chose needs-human at the final gate, then directed Codex (the reviewer, gpt-5.6-sol) to author its own two prescribed round-3 fixes and close without a fourth verdict round. The Codex-authored delta was reviewed and approved by the plan lead (Claude); `status:needs-human` removed from issue #35 on that user disposition.
 - **Rejected findings:** none — every warranted finding was fixed in the review deltas or the user-directed round-3 remediation; advisories are recorded in decisions.md `## Follow-ups`.
 
 ## References
