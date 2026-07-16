@@ -23,11 +23,11 @@ uncommitted or untracked work. Read changed files only as needed for context; do
 - `GIT-COMMIT-PR-MESSAGE.md` — commit/PR/issue conventions.
 Check the diff against what these files say; don't re-derive their rules from memory.
 
-## Memory sync (root ALL-CAPS memory files)
+## Memory sync (the memory series)
 When the diff changes behavior or a convention, check it against the memory series —
 `AGENTS.md` is the hub (`CLAUDE.md` only `@`-imports it). Ownership:
 - `AGENTS.md` — agent / pipeline conventions.
-- `.claude/rules/harness-hooks.md` — hook / format mechanics.
+- `.claude/rules/<topic>.md` — that topic's series (hooks → harness-hooks.md, Python → python-practice.md, orchestration → task-tools.md, memory authoring → memory-series.md).
 - `GIT-COMMIT-PR-MESSAGE.md` — git / PR / issue policy.
 - A genuinely new series → a new `kebab-case.md` under `.claude/rules/`, referenced from `AGENTS.md`.
 Severity: a diff that falsifies a documented statement, or an explicit new repo-wide

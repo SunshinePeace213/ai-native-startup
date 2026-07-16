@@ -1,5 +1,5 @@
 ---
-description: Internal review of a build's branch diff — parallel read-only reviewer agents with confidence-filtered findings, plus a memory-sync check on the capital-letter memory files. Invoked in-session (Skill tool) by the /harness-layer:harness-build lead; runs standalone on a PR or branch without posting anything.
+description: Internal review of a build's branch diff — parallel read-only reviewer agents with confidence-filtered findings, plus a memory-sync check on the memory series (AGENTS.md, .claude/rules/, GIT-COMMIT-PR-MESSAGE.md). Invoked in-session (Skill tool) by the /harness-layer:harness-build lead; runs standalone on a PR or branch without posting anything.
 argument-hint: [PR number | branch]
 allowed-tools: Read, Grep, Glob, Agent, Bash(git *), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh pr list:*), Bash(gh issue view:*), Bash(gh search:*)
 ---
@@ -16,7 +16,7 @@ fixes and posts reports.
 
 TARGET: $ARGUMENTS — a PR number or branch. Empty → the current branch's diff against `origin/main`.
 REVIEWED_HEAD_SHA: `git rev-parse HEAD` (or the PR head) — stated in the findings report.
-MEMORY_FILES: the capital-letter memory files — root `AGENTS.md` (imported by `CLAUDE.md`) and `GIT-COMMIT-PR-MESSAGE.md`, plus the rule files under `.claude/rules/`.
+MEMORY_FILES: the memory series — hub `AGENTS.md` (imported by `CLAUDE.md`), the rule files under `.claude/rules/`, and `GIT-COMMIT-PR-MESSAGE.md`.
 CONFIDENCE_FLOOR: `80` — findings scoring below this are dropped.
 REVIEWER_MODEL: `sonnet` — every reviewer agent; utility agents (eligibility, context, summary, scoring) run on `haiku`. Nothing above `sonnet` is spawned.
 
@@ -45,14 +45,14 @@ REVIEWER_MODEL: `sonnet` — every reviewer agent; utility agents (eligibility, 
 
 ## Memory Sync
 
-The ALL-CAPS memory files are the repo's memory series and its durable conventions; a
-diff that changes what they document must update them in the same branch. `AGENTS.md`
+The memory series holds the repo's durable conventions; a
+diff that changes what it documents must update it in the same branch. `AGENTS.md`
 is the hub — `CLAUDE.md` only `@`-imports it. Ownership map:
 
-- **AGENTS.md** — agent and pipeline conventions.
-- **.claude/rules/harness-hooks.md** — hook and format mechanics.
+- **AGENTS.md** — agent and pipeline conventions, plus a pointer to every rule.
+- **`.claude/rules/<topic>.md`** — that topic's series (hooks → `harness-hooks.md`, Python → `python-practice.md`, orchestration → `task-tools.md`, memory authoring → `memory-series.md`).
 - **GIT-COMMIT-PR-MESSAGE.md** — git, PR, and issue policy.
-- A genuinely new convention series → a new `kebab-case.md` under `.claude/rules/`, referenced from `AGENTS.md`.
+- A genuinely new convention series → a new `kebab-case.md` under `.claude/rules/`, referenced from `AGENTS.md` — contract in `.claude/rules/memory-series.md`.
 
 The memory-sync reviewer maps each gap to its owner file above and tags severity so
 the caller can route it:

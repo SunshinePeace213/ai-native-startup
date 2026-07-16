@@ -27,7 +27,7 @@ number N**. Use N verbatim — never infer it.
 
 Run the KB-grounding pass when the injected profile is `kb-grounded`, OR decisions.md has a
 `## KB References` section, OR the reviewed target paths touch `.claude/`, `.agents/`,
-`.codex/`, `ai-docs/`, a root memory file (CLAUDE.md, AGENTS.md,
+`.codex/`, `ai-docs/`, a memory file (CLAUDE.md, AGENTS.md,
 GIT-COMMIT-PR-MESSAGE.md), or a domain with an `ai-docs/index.md` entry. Any signal wins. If
 the profile says `standard` but a signal fires (or the reverse), run the pass AND record the
 profile/signal mismatch as a **blocking** contract defect.

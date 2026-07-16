@@ -1,7 +1,8 @@
 ---
 paths:
-  - ".claude/hooks/*"
-  - "tests/harness-layer/hooks/*"
+  - ".claude/hooks/**/*"
+  - "tests/harness-layer/hooks/**/*"
+  - ".claude/settings.json"
 ---
 
 # Harness Hooks
