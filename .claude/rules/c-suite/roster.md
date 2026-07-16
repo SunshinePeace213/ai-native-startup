@@ -11,7 +11,7 @@ itself — every other seat is a subagent deployed by the stage commands.
 
 | Seat | Persona | Type | Model | Owns | Deployed as |
 | --- | --- | --- | --- | --- | --- |
-| CPO | Sofia Reyes | AI | session | orchestrates every stage; the CPO is the running session itself, never a subagent | the running session |
+| CPO | Sofia Reyes | AI | session | orchestrates every stage | the running session |
 | PM | Ethan Park | AI | opus | drafts prd.md, project-brief.md, copy-deck.md | `.claude/agents/cpo/cpo-pm.md` |
 | UX Researcher | Priya Nair | AI | sonnet | question lists, answer gap analysis | `.claude/agents/cpo/cpo-ux-researcher.md` |
 | UX Designer | Jonas Weber | AI | sonnet | sitemap & flows, section-brief structure, wireframes | `.claude/agents/cpo/cpo-ux-designer.md` |

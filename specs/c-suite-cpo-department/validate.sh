@@ -14,6 +14,9 @@ cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
+# Print a file's YAML frontmatter body (between the opening/closing --- lines).
+frontmatter() { awk 'NR==1 && $0=="---"{next} /^---$/{exit} {print}' "$1"; }
+
 # ---------------------------------------------------------------------------
 # Shared helper: assert every knowledge skill's frontmatter blocks
 # auto-invocation (autoInvoke: false, or the legacy disable-model-invocation:
@@ -21,7 +24,6 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 # ---------------------------------------------------------------------------
 skills_block_autoinvoke() {
   local fail=0
-  frontmatter() { awk 'NR==1 && $0=="---"{next} /^---$/{exit} {print}' "$1"; }
   for s in cpo-question-bank cpo-prd-standard cpo-design-standard; do
     p=".claude/skills/$s/SKILL.md"
     frontmatter "$p" | grep -Eq '^autoInvoke: *false$|^disable-model-invocation: *true$' || { echo "FAIL $s auto-invocation"; fail=1; }
@@ -225,7 +227,6 @@ check_ac8() {
     fail=1
   fi
 
-  frontmatter() { awk 'NR==1 && $0=="---"{next} /^---$/{exit} {print}' "$1"; }
   check_agent() {
     local p=".claude/agents/cpo/$1.md" actual
     actual=$(frontmatter "$p" | grep -oE 'cpo-(question-bank|prd-standard|design-standard)' | sort -u | paste -sd, -)
