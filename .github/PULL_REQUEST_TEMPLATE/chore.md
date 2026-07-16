@@ -52,7 +52,6 @@ Closes #<issue>
 | --- | --- | --- |
 | Implementation | pending | |
 | Tidy | pending | |
-| Internal code-review | pending | |
 | Codex R1 | pending | |
 | Fixes (if required) | pending | |
 | Codex R2+ delta (if required) | pending | |
@@ -63,7 +62,6 @@ Closes #<issue>
 <!-- Links to the marker comments on this PR (upserted, each states the reviewed head SHA). -->
 
 - Tidy — `<!-- report:tidy -->`
-- Code review — `<!-- report:code-review -->`
 - Codex R1 — `<!-- report:codex-round-1 -->`
 - Codex R2+ — `<!-- report:codex-round-N -->` — one entry per delta round (if required)
 
