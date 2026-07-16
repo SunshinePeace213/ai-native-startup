@@ -23,6 +23,11 @@
   - **The call made:** Agents verified with the script's real contract — a per-file loop `uv run --with pyyaml python .claude/skills/meta-agent/scripts/validate_agent.py <path>`; all five pass. `validate.sh` must use the loop form.
   - **Spec impact:** acceptance-criterion validation command touched (mechanical invocation fix, checks unchanged) → bundled into the user gate queued before validate.sh.
 
+- **What diverged:** The smoke check could not positively confirm `skills:` preloading end to end: on the `claude --agent cpo-ux-researcher -p` headless surface the persona activated (tools restricted correctly) but no skill content was in its context, and the true Agent-tool delegation path was unreachable from the probe's nested session (custom cpo-* agents not exposed there).
+  - **What forced it:** `--agent` runs the persona as the main-session agent — the KB documents `skills:` preloading for subagent startup, a different mode; no probe surface for real delegation existed inside the smoke-check session.
+  - **The call made:** `autoInvoke: false` is confirmed honored (no auto-fire; skills loadable by name), so no field fallback was triggered. The delegation-brief channel (personas Read the brief-carried SKILL.md first) is the plan's designed complete fallback and every stage-command brief carries it; the dry run observes persona knowledge in practice.
+  - **Spec impact:** none — AC2/AC8's required coverage is met; preload-in-delegation remains unverified-by-probe, noted for the first real engagement.
+
 ## Fold-Forward
 
 - `quick_validate.py` vs Claude Code-only frontmatter keys (`autoInvoke`, `disable-model-invocation`): consider a follow-up chore aligning the packaging validator or the meta-skills docs on which validator gates project-internal skills.
