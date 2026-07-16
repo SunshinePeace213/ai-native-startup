@@ -89,6 +89,10 @@ Advisory recommendations from Codex review — recorded to feed a future plan, n
 - [ ] Consider reducing the seven-builder team to 3–5 file-disjoint roles at build time (agent-teams guidance: coordination overhead rises with team size; hub and validation roles may not need dedicated teammates).
 - [ ] Add `ai-docs/anthropic/agent-teams.md` to the KB-consulted set if the build leans on multi-session teamwork beyond the plan's current shape.
 
+## Locked Boundaries
+
+- **Validation-command invocations amended (user-approved 2026-07-17, build gate):** `validate.sh` encodes AC7's skill validation via the meta-skills authoring validator (`uv run --with pyyaml python .claude/skills/meta-skills/scripts/validate.py <SKILL.md>`, per skill) instead of `quick_validate.py` (whose packaging allow-list rejects every auto-invocation-blocking frontmatter key and takes one path per call), and AC8's agent validation as a per-file loop `uv run --with pyyaml python .claude/skills/meta-agent/scripts/validate_agent.py <path>` (the script's real contract) instead of the glob form. Check intent is unchanged — skills validated, frontmatter blocks auto-fire, exact agent mappings asserted. Reviews judge validate.sh against this boundary, not the literal command text in acceptance-criteria.md.
+
 ## Open Questions / Out of Scope
 
 - **Out of scope:** Workflow 3 (human prototyping in Claude Design) and anything after the final prototype, including any CTO handoff packet.
