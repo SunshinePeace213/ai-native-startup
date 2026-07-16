@@ -125,8 +125,8 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** <approved at round N | accepted-with-unverified-fixes | needs-human>
-- **Rejected findings:** <any Codex finding Claude chose not to act on, each with a one-line rationale; "none" if all warranted findings were applied>
+- **Outcome:** needs-human — `changes-requested` after 3 rounds (2 automatic + 1 user-authorized delta); user chose human review at the final gate. Two mechanical blockers remain (mode-conditional GitHub actions in tasks.md Task 6; deterministic validation assertions per round-3 finding 2). Remove `status:needs-human` on issue #35 when cleared.
+- **Rejected findings:** none — every warranted finding was either fixed (rounds 1–2 deltas) or stands as a named open blocker awaiting human disposition; advisories are recorded in decisions.md `## Follow-ups`.
 
 ## References
 
