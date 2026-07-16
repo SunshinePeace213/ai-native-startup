@@ -55,7 +55,7 @@ Refs #42
 - The PR body carries `Closes #N` — the PR is the **only** artifact that closes an issue.
 - Fill out the Summary and Test Evidence, and keep the linked-issue line accurate.
 - The PR body carries the **stage table** (Implementation → Ready) and the **Agent Task Manifest** table (copied from `TaskList`) — the single durable audit point for the ephemeral Agent Tasks.
-- Each review posts a **marker comment** — `<!-- report:tidy -->`, `<!-- report:code-review -->`, `<!-- report:codex-round-N -->` — upserted in place (never stacked), each stating the reviewed head SHA; the `Review Reports` section links them.
+- Each review posts a **marker comment** — `<!-- report:tidy -->`, `<!-- report:codex-round-N -->` — upserted in place (never stacked), each stating the reviewed head SHA; the `Review Reports` section links them.
 - The PR flips from draft to **ready only when its head commit equals the Codex-approved SHA**; `/harness-layer:harness-ship` then merges with `gh pr merge --squash --match-head-commit <approved-sha>` (no local squash-merge).
 - If a task requires a bypass (e.g. emergency hotfix), carry over `[skip-ci]` or `[skip-drift-check]` tokens as required.
 - If modifying user-facing UI, include structural text maps or mock descriptions.
