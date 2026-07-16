@@ -50,9 +50,9 @@ diff that changes what it documents must update it in the same branch. `AGENTS.m
 is the hub — `CLAUDE.md` only `@`-imports it. Ownership map:
 
 - **AGENTS.md** — agent and pipeline conventions, plus a pointer to every rule.
-- **`.claude/rules/<topic>.md`** — that topic's series (hooks → `harness-hooks.md`, Python → `python-practice.md`, orchestration → `task-tools.md`, memory authoring → `memory-series.md`).
+- **`.claude/rules/`** — that topic's series (hooks → `harness-layer/hooks.md`, Python → `python/general-practice.md`, models → `model-selection.md`, orchestration → `task-tools.md`, memory authoring → `memory-series.md`).
 - **GIT-COMMIT-PR-MESSAGE.md** — git, PR, and issue policy.
-- A genuinely new convention series → a new `kebab-case.md` under `.claude/rules/`, referenced from `AGENTS.md` — contract in `.claude/rules/memory-series.md`.
+- A genuinely new convention series → a new rule file under `.claude/rules/` (domain folder if path-scoped, flat root if global), referenced from `AGENTS.md` — contract in `.claude/rules/memory-series.md`.
 
 The memory-sync reviewer maps each gap to its owner file above and tags severity so
 the caller can route it:
