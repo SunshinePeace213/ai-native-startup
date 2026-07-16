@@ -23,7 +23,7 @@ PR: none
 
 ## Stage state
 
-intake: blocked-on-client
+intake: done
 prd: not-started
 brief: not-started
 engagement: not-yet
