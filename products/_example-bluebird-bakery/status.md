@@ -33,4 +33,4 @@ engagement: handed-off
 intake-run: date=2026-07-17; sha=d53956e; lessons=persona-type fallback lesson recorded
 intake-run: date=2026-07-17; sha=fa32998; lessons=none
 prd-run: date=2026-07-17; sha=b94cc0d; lessons=none
-brief-run: date=<date>; sha=<sha>; lessons=<result>
+brief-run: date=2026-07-17; sha=78889a3; lessons=fix-pass regression lesson recorded
