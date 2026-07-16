@@ -62,7 +62,7 @@ Mirror the harness-layer architecture the repo already trusts, one layer per con
 - **Branch:** feat/35-c-suite-cpo-department
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/c-suite-cpo-department
 - **Review profile:** kb-grounded
-- **PR:** <#M — filled by /harness-layer:harness-build>
+- **PR:** #36
 
 ## Relevant Files
 
