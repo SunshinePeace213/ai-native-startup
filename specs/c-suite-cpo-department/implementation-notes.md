@@ -28,6 +28,15 @@
   - **The call made:** `autoInvoke: false` is confirmed honored (no auto-fire; skills loadable by name), so no field fallback was triggered. The delegation-brief channel (personas Read the brief-carried SKILL.md first) is the plan's designed complete fallback and every stage-command brief carries it; the dry run observes persona knowledge in practice.
   - **Spec impact:** none — AC2/AC8's required coverage is met; preload-in-delegation remains unverified-by-probe, noted for the first real engagement.
 
+- **What diverged:** The dry run's Design-Lead gate needed a second, targeted fix pass: the SOP routes blocking findings back once, but the route-back fix itself introduced a new blocker (the copy-deck's `Email *` label contradicting the package's at-least-one contact rule and PRD US-1).
+  - **What forced it:** A fix pass can introduce defects the original review never saw; leaving a package that literally violates the PRD was not an option.
+  - **The call made:** One surgical follow-up fix (drop the asterisk) plus a confirmation re-review, then approval. Recorded as a department lesson in `cpo-lessons.md` (re-verify contract lines a fix touches; budget re-reviews per finding generation).
+  - **Spec impact:** none — the once-routed rule governs the original finding set; the follow-up addressed a regression, not a surviving finding.
+- **What diverged:** Fixture stage commits carry no `Refs #35` footer while build checkpoint commits do.
+  - **What forced it:** The fixture trail contract (`commit=current branch + recorded SHA`, no engagement issue exists) is itself under test in the dry run; stamping the build issue onto SOP-governed commits would falsify the trail being validated.
+  - **The call made:** SOP commits follow the fixture contract; lead checkpoint commits (specs/, pushes) keep `Refs #35`.
+  - **Spec impact:** none.
+
 ## Fold-Forward
 
 - `quick_validate.py` vs Claude Code-only frontmatter keys (`autoInvoke`, `disable-model-invocation`): consider a follow-up chore aligning the packaging validator or the meta-skills docs on which validator gates project-internal skills.
