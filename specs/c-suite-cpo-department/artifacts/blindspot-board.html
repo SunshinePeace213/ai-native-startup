@@ -1,0 +1,199 @@
+<title>Soriza CPO — Blindspot Board</title>
+<style>
+  .bb-root {
+    --bg: #FAF8F5; --surface: #F0EDE5; --border: #D4CFC7; --ink: #2C2825;
+    --accent: #B8602A; --muted: #8A837A; --ok: #4A7C59;
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; padding: 2.5rem 1.25rem 11rem;
+  }
+  .bb-root * { box-sizing: border-box; }
+  .bb-wrap { max-width: 860px; margin: 0 auto; }
+  .bb-eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; color: var(--accent); font-weight: 600; }
+  .bb-root h1 { font-size: 1.7rem; line-height: 1.2; margin: .3rem 0 .4rem; text-wrap: balance; font-weight: 700; }
+  .bb-lede { color: var(--muted); max-width: 62ch; margin: 0 0 1.1rem; }
+  .bb-counts { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.6rem; }
+  .bb-pill { font-size: .78rem; padding: .22rem .7rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-variant-numeric: tabular-nums; }
+  .bb-pill b { font-weight: 700; }
+  .bb-card { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 8px; padding: 1.1rem 1.2rem 1rem; margin-bottom: 1rem; transition: border-color .15s; }
+  .bb-card.is-accepted { border-left-color: var(--ok); }
+  .bb-card.is-discuss { border-left-color: var(--accent); }
+  .bb-card-top { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+  .bb-num { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; color: var(--muted); }
+  .bb-tag { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: .1rem .55rem; background: var(--bg); }
+  .bb-state { margin-left: auto; font-size: .74rem; font-weight: 600; }
+  .bb-card.is-accepted .bb-state { color: var(--ok); }
+  .bb-card.is-discuss .bb-state { color: var(--accent); }
+  .bb-card.is-pending .bb-state { color: var(--muted); font-weight: 400; }
+  .bb-card h2 { font-size: 1.06rem; margin: .35rem 0 .55rem; font-weight: 700; }
+  .bb-field { margin: 0 0 .5rem; font-size: .92rem; }
+  .bb-field b { display: block; font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: .1rem; }
+  .bb-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .75rem; }
+  .bb-btn { font: inherit; font-size: .84rem; font-weight: 600; padding: .38rem .85rem; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--ink); cursor: pointer; }
+  .bb-btn:hover { border-color: var(--muted); }
+  .bb-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .bb-btn.on-ok { background: var(--ok); border-color: var(--ok); color: #FAF8F5; }
+  .bb-btn.on-discuss { background: var(--accent); border-color: var(--accent); color: #FAF8F5; }
+  .bb-note { width: 100%; margin-top: .55rem; font: inherit; font-size: .88rem; padding: .5rem .65rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--ink); resize: vertical; min-height: 2.4rem; }
+  .bb-note:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .bb-out { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); padding: .9rem 1.25rem 1rem; }
+  .bb-out-in { max-width: 860px; margin: 0 auto; }
+  .bb-out-head { display: flex; align-items: center; gap: .8rem; margin-bottom: .45rem; }
+  .bb-out-head b { font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+  .bb-copy { margin-left: auto; font: inherit; font-size: .84rem; font-weight: 700; padding: .4rem 1rem; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #FAF8F5; cursor: pointer; }
+  .bb-copy:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .bb-prompt { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; line-height: 1.5; max-height: 6.2rem; overflow-y: auto; white-space: pre-wrap; margin: 0; color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: .6rem .75rem; }
+  @media (max-width: 640px) { .bb-root { padding-bottom: 14rem; } }
+</style>
+<div class="bb-root">
+  <div class="bb-wrap">
+    <div class="bb-eyebrow">Soriza · C-Suite · CPO Department Plan</div>
+    <h1>Blindspot board — final state: all seven resolved</h1>
+    <p class="bb-lede">Resolved during grilling on 2026-07-17. Each card shows its locked resolution; the authoritative record is decisions.md in this spec folder. Controls stay interactive for re-reading, but the dispositions below are the committed outcome.</p>
+    <div class="bb-counts" id="bbCounts"></div>
+    <div id="bbCards"></div>
+  </div>
+  <div class="bb-out">
+    <div class="bb-out-in">
+      <div class="bb-out-head"><b>Copy back to Claude</b><button class="bb-copy" id="bbCopy">Copy prompt</button></div>
+      <pre class="bb-prompt" id="bbPrompt"></pre>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const cards = [
+    { id: 1, tag: "repo layout", title: "Where does client work live?",
+      what: "PRDs, briefs, wireframes and prototypes need a durable home. specs/ is reserved for harness plans, so client engagements have no defined folder, git, or issue convention yet.",
+      why: "Every CPO command reads and writes this contract; changing it after stage 1 ships breaks every later stage.",
+      proposal: "LOCKED: products/<client-slug>/ with discovery/, prd/, design/ subfolders plus a status.md ledger; one GitHub issue and branch per engagement; one PR after Design-Lead approval closes the issue." },
+    { id: 2, tag: "architecture", title: "The client interview can't be delegated to a persona subagent",
+      what: "Claude Code subagents cannot use AskUserQuestion — only the main session can talk to the client (ai-docs/anthropic/subagents.md).",
+      why: "The 'UX Researcher grills the client' role-play must be restructured, or the discovery stage silently fails.",
+      proposal: "LOCKED: the session interviews the client (live grilling or async question list); Priya Nair (UX Researcher) generates question lists and gap-analyzes returned answers between rounds — never interviews directly." },
+    { id: 3, tag: "mechanics", title: "Two-level command namespacing is unverified",
+      what: "Official docs map .claude/commands/<file>.md to /<file>; this repo proves one directory level works (/harness-layer:…), but commands/c-suite/cpo/x.md → /c-suite:cpo:x appears in no doc.",
+      why: "If two-level nesting silently flattens or fails, the whole command series is mis-addressed at build time.",
+      proposal: "LOCKED: flat one-level naming — .claude/commands/c-suite/cpo-<stage>.md → /c-suite:cpo-intake, /c-suite:cpo-prd, /c-suite:cpo-brief. Two-level testing deferred to an optional future chore." },
+    { id: 4, tag: "architecture", title: "Stage handoffs and the final CTO packet",
+      what: "Running intake → PRD → briefs → wireframes → prototype → handoff in one session will exhaust context; and the CTO department (future plan) needs a defined input format.",
+      why: "Without a per-stage artifact + status contract, stages can't resume across sessions and nothing downstream is buildable.",
+      proposal: "LOCKED: one command per stage with committed artifacts + the status.md ledger between sessions, and preflight gates on predecessor state. The CTO packet fell out of scope — the department ends at the design package." },
+    { id: 5, tag: "quality gate", title: "The PRD needs its own Codex review skill",
+      what: "The existing spec-review skill judges harness plan specs (Tracking blocks, KB grounding). A client PRD has different bars: user stories, measurable success metrics, scope/non-goals, feasibility.",
+      why: "Reusing spec-review judges the wrong criteria; skipping the gate ships weak PRDs to the design team.",
+      proposal: "LOCKED: new Codex skill .agents/skills/prd-review/ mirroring spec-review mechanics (verdict line, report file, ≤2 rounds, issue digest) with PRD-specific criteria judged against requirements.md." },
+    { id: 6, tag: "mechanics", title: "What “Claude Design” actually is here",
+      what: "The DesignSync tool syncs a local component library with a claude.ai/design design-system project. It is not a variant-generating canvas inside Claude Code.",
+      why: "The prototype stage (client gives CSS → gets versions → picks one) needs a concrete, proven mechanism.",
+      proposal: "LOCKED: Claude Design is a Claude App feature the human drives — Workflow 3 is human-owned. The department ends at a six-file design package complete enough to need no further client contact." },
+    { id: 7, tag: "scope", title: "Persona economics and how much theater",
+      what: "Six-plus persona subagents each cost context and maintenance; some roles (CPO, Head of Product) may be better as the orchestrating session's own hat. Output voice is also undecided: staff speaking in first person vs. plain professional deliverables.",
+      why: "An over-cast department burns tokens without adding judgment; deliverables must stay client-grade.",
+      proposal: "LOCKED: five AI personas (Ethan Park, Priya Nair, Jonas Weber, Yuki Tanaka, Daniel Osei) + Sofia Reyes as the session; the human holds the prototype-owner seat; roster/operations/lessons rules under .claude/rules/c-suite/; names sign reports, documents stay professional." }
+  ];
+  const state = {}; cards.forEach(c => state[c.id] = { status: "accepted", note: "" });
+
+  function mk(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text) n.textContent = text;
+    return n;
+  }
+  function field(label, text) {
+    const p = mk("p", "bb-field");
+    p.appendChild(mk("b", "", label));
+    p.appendChild(document.createTextNode(text));
+    return p;
+  }
+  const $cards = document.getElementById("bbCards");
+  cards.forEach(c => {
+    const el = mk("div", "bb-card is-pending"); el.id = "card" + c.id;
+    const top = mk("div", "bb-card-top");
+    top.appendChild(mk("span", "bb-num", c.id + "/7"));
+    top.appendChild(mk("span", "bb-tag", c.tag));
+    top.appendChild(mk("span", "bb-state"));
+    el.appendChild(top);
+    el.appendChild(mk("h2", "", c.title));
+    el.appendChild(field("What", c.what));
+    el.appendChild(field("Why it matters", c.why));
+    el.appendChild(field("Resolution (locked)", c.proposal));
+    const acts = mk("div", "bb-actions");
+    [["accepted", "Accept proposal"], ["discuss", "Needs discussion"]].forEach(([act, lbl]) => {
+      const b = mk("button", "bb-btn", lbl);
+      b.dataset.act = act; b.dataset.id = c.id;
+      acts.appendChild(b);
+    });
+    el.appendChild(acts);
+    const note = mk("textarea", "bb-note");
+    note.dataset.id = c.id;
+    note.placeholder = "Optional note — your own resolution, a constraint, or what to discuss";
+    el.appendChild(note);
+    $cards.appendChild(el);
+  });
+
+  function render() {
+    let nOk = 0, nDis = 0, nPend = 0;
+    cards.forEach(c => {
+      const s = state[c.id], el = document.getElementById("card" + c.id);
+      el.className = "bb-card is-" + (s.status === "accepted" ? "accepted" : s.status === "discuss" ? "discuss" : "pending");
+      el.querySelector(".bb-state").textContent =
+        s.status === "accepted" ? "accepted" : s.status === "discuss" ? "needs discussion" : "pending";
+      el.querySelectorAll(".bb-btn").forEach(b => {
+        const on = b.dataset.act === s.status;
+        b.className = "bb-btn" + (on ? (s.status === "accepted" ? " on-ok" : " on-discuss") : "");
+      });
+      if (s.status === "accepted") nOk++; else if (s.status === "discuss") nDis++; else nPend++;
+    });
+    const $counts = document.getElementById("bbCounts");
+    $counts.textContent = "";
+    [[nOk, " accepted"], [nDis, " needs discussion"], [nPend, " pending"]].forEach(([n, lbl]) => {
+      const pill = mk("span", "bb-pill");
+      pill.appendChild(mk("b", "", String(n)));
+      pill.appendChild(document.createTextNode(lbl));
+      $counts.appendChild(pill);
+    });
+    prompt_();
+  }
+
+  function prompt_() {
+    const done = cards.filter(c => state[c.id].status !== "pending" || state[c.id].note.trim());
+    let out;
+    if (!done.length) {
+      out = "No dispositions yet — click Accept proposal or Needs discussion on each card, then copy this prompt back to Claude.";
+    } else {
+      const lines = done.map(c => {
+        const s = state[c.id];
+        let l = "- Blindspot " + c.id + " (" + c.title + "): ";
+        if (s.status === "accepted") l += "accept the proposed resolution";
+        else if (s.status === "discuss") l += "needs discussion before you lock it";
+        else l += "no verdict yet";
+        if (s.note.trim()) l += " — note: " + s.note.trim();
+        return l + ".";
+      });
+      const pend = cards.length - cards.filter(c => state[c.id].status !== "pending").length;
+      out = "Blindspot dispositions for the Soriza CPO department plan:\n" + lines.join("\n") +
+        (pend > 0 ? "\nThe remaining " + pend + " card(s) are still undecided — keep them open in the grilling ledger." : "\nAll seven cards are dispositioned — fold these into the grilling ledger.");
+    }
+    document.getElementById("bbPrompt").textContent = out;
+  }
+
+  $cards.addEventListener("click", e => {
+    const b = e.target.closest(".bb-btn"); if (!b) return;
+    const s = state[b.dataset.id];
+    s.status = s.status === b.dataset.act ? "pending" : b.dataset.act;
+    render();
+  });
+  $cards.addEventListener("input", e => {
+    const t = e.target.closest(".bb-note"); if (!t) return;
+    state[t.dataset.id].note = t.value; prompt_();
+  });
+  document.getElementById("bbCopy").addEventListener("click", () => {
+    navigator.clipboard.writeText(document.getElementById("bbPrompt").textContent).then(() => {
+      const b = document.getElementById("bbCopy"); b.textContent = "Copied!";
+      setTimeout(() => { b.textContent = "Copy prompt"; }, 1400);
+    });
+  });
+  render();
+})();
+</script>
