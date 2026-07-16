@@ -1,6 +1,6 @@
 ---
 name: spec-review
-description: "Adversarially review a spec — the four files under specs/<plan-name>/ (spec.md plus decisions.md, tasks.md, acceptance-criteria.md) produced by /harness-layer:harness-plan — before /harness-layer:harness-build, and write a per-round approved/changes-requested verdict to its own report file specs/<plan-name>/reviews/codex-spec-review-round-N.md. Use to review, verify, or gate a plan before build; typically run via codex exec once per round with the round number injected. When the caller's review profile is kb-grounded or a KB signal fires, also verifies every claim about harness behavior against the cached official docs in ai-docs/. Blocks only on real defects (missing/contradictory requirements, infeasible or mis-ordered steps, untestable acceptance criteria, security/data risks, scope drift, and — under the KB layer — claims contradicting documented behavior) and additionally challenges the approach for a simpler design as advisory, non-blocking recommendations. Edits only its one report file and returns a terse verdict summary."
+description: "Adversarially review a spec — the four files under specs/<plan-name>/ (spec.md plus decisions.md, tasks.md, acceptance-criteria.md) produced by /harness-layer:harness-plan — before /harness-layer:harness-build, and write a per-round approved/changes-requested verdict to its own report file specs/<plan-name>/reviews/codex-spec-review-round-N.md. Use to review, verify, or gate a plan before build; typically run via codex exec once per round with the round number injected. When the spec's recorded review profile is kb-grounded or a KB signal fires, also verifies every claim about harness behavior against the cached official docs in ai-docs/. Blocks only on real defects (missing/contradictory requirements, infeasible or mis-ordered steps, untestable acceptance criteria, security/data risks, scope drift, and — under the KB layer — claims contradicting documented behavior) and additionally challenges the approach for a simpler design as advisory, non-blocking recommendations. Edits only its one report file and returns a terse verdict summary."
 ---
 
 # Spec Review
@@ -20,12 +20,17 @@ Read all four in full before judging:
 - **tasks.md** — phases, team, and step-by-step tasks.
 - **acceptance-criteria.md** — numbered, testable criteria and their validation commands.
 
-The caller injects the **review profile** (`kb-grounded` or `standard`) and the **round
-number N**. Use N verbatim — never infer it.
+The caller injects only the **round number N** — use it verbatim, never infer it. The
+**review profile** (`kb-grounded` or `standard`) is read from the `Review profile:` line in
+spec.md's `## Tracking`, not injected by the caller.
+
+Medium/complex plans also commit presentation pages under `specs/<plan-name>/artifacts/`
+(Blindspot board; Design directions when the taste route fired). Their substance lives in
+decisions.md — never content-review the pages themselves.
 
 ## KB grounding (conditional — run when any signal fires)
 
-Run the KB-grounding pass when the injected profile is `kb-grounded`, OR decisions.md has a
+Run the KB-grounding pass when the recorded profile is `kb-grounded`, OR decisions.md has a
 `## KB References` section, OR the reviewed target paths touch `.claude/`, `.agents/`,
 `.codex/`, `ai-docs/`, a memory file (CLAUDE.md, AGENTS.md), or a domain with an `ai-docs/index.md`
 entry. Any signal wins. If the profile says `standard` but a signal fires (or the reverse), run
@@ -47,13 +52,15 @@ the build produce the wrong thing or get stuck:
 - **Untestable acceptance criteria** — a criterion with no observable check, or a validation command that doesn't verify what it claims.
 - **Security / data risks** — destructive ops, secret exposure, or data-loss paths.
 - **Scope drift** — work beyond the locked decisions, or marked out of scope / non-goal.
-- **Untracked or mismatched spec** — spec.md's `## Tracking` MUST name `Issue #N` and a branch `<type>/<N>-<slug>` carrying that SAME number. Missing, placeholder, or number-mismatched tracking is blocking.
+- **Untracked or mismatched spec** — spec.md's `## Tracking` MUST name `Issue #N`, a branch `<type>/<N>-<slug>` carrying that SAME number, and a `Review profile:` of `kb-grounded` or `standard`. Missing, placeholder, or number-mismatched tracking is blocking.
 - **Undispositioned blindspot** — every entry in decisions.md `## Blindspots` must carry a disposition (resolved, accepted-as-risk, or deferred-with-owner); an entry without one is blocking. A spec written before the section existed (no `## Blindspots` at all) is advisory, not blocking.
 - **Contradicts documented behavior** (KB layer only) — a spec claim about hooks, frontmatter, subagents, skills/commands, MCP, or model aliases that a cached ai-docs doc contradicts. Cite the ai-docs file and the contradicting passage.
-- **Profile/signal mismatch** (KB layer only) — the injected profile disagrees with the KB signals (see KB grounding).
+- **Profile/signal mismatch** (KB layer only) — the recorded profile disagrees with the KB signals (see KB grounding).
 
 **Adversarial challenge (advisory).** Also ask: is this the simplest approach that meets the
-objective? Is there a cleaner design, or unnecessary complexity to cut? Under the KB layer,
+objective? Is there a cleaner design, or unnecessary complexity to cut? Flag a plan that
+reads medium/complex (multi-phase tasks.md, a multi-member team) yet commits nothing under
+`artifacts/`. Under the KB layer,
 also flag an ungrounded load-bearing claim (recommend `/kb add`) and stale grounding — a
 referenced doc fetched more than 30 days ago (recommend a `/kb` refresh). Record all of these
 as non-blocking recommendations — they NEVER change the verdict.
@@ -106,5 +113,5 @@ round never floods the orchestrator:
 
 ## Never touch
 
-- Write ONLY this round's report at `specs/<plan-name>/reviews/codex-spec-review-round-N.md`. Edit nothing else — spec.md, decisions.md, tasks.md, acceptance-criteria.md, and everything under `ai-docs/` are read-only.
+- Write ONLY this round's report at `specs/<plan-name>/reviews/codex-spec-review-round-N.md`. Edit nothing else — spec.md, decisions.md, tasks.md, acceptance-criteria.md, everything under `specs/<plan-name>/artifacts/`, and everything under `ai-docs/` are read-only.
 - Never call `gh` — the orchestrator relays every verdict.
