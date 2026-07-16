@@ -22,7 +22,13 @@
 - `.agents/` -- Codex Skills Configuration
 - `.claude/rules/` — path-scoped project rules
 - `ai-docs/` — cached official docs KB managed by `/kb` (catalog: `ai-docs/index.md`), plus hand-written project notes
+- `products/` — client engagements at `products/<client-slug>/`; the `_example-` prefix marks fixtures
 - `specs/` — planning files
+
+## C-Suite CPO Department
+
+- **Memory** — `.claude/rules/c-suite/`: [roster.md](.claude/rules/c-suite/roster.md) (org chart), [cpo-operations.md](.claude/rules/c-suite/cpo-operations.md) (engagement schema, git flow), [cpo-lessons.md](.claude/rules/c-suite/cpo-lessons.md) (append-only lessons).
+- **Pipeline** — `/c-suite:cpo-intake` → `/c-suite:cpo-prd` → `/c-suite:cpo-brief`, under `.claude/commands/c-suite/`.
 
 ## Harness-Layer Pipeline
 
