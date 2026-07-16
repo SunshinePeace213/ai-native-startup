@@ -31,5 +31,6 @@ engagement: not-yet
 ## Run log
 
 intake-run: date=2026-07-17; sha=d53956e; lessons=persona-type fallback lesson recorded
+intake-run: date=2026-07-17; sha=fa32998; lessons=none
 prd-run: date=<date>; sha=<sha>; lessons=<result>
 brief-run: date=<date>; sha=<sha>; lessons=<result>
