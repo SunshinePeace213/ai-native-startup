@@ -67,10 +67,6 @@ fixed_count() {
   ' "$1"
 }
 
-fixed_first_line() {
-  awk -v wanted="$2" 'index($0,wanted) {print NR; exit}' "$1"
-}
-
 # ---------------------------------------------------------------------------
 # Shared helper: assert every knowledge skill's frontmatter blocks
 # auto-invocation (autoInvoke: false, or the legacy disable-model-invocation:
@@ -445,37 +441,28 @@ check_ac9() {
     fi
   done
 
-  # Inputs caller contract: unique contextual fragments and strict line order.
-  local input_folder='The caller injects both the **engagement folder path**'
-  local input_round='**round number N**'
-  local input_verbatim='use both verbatim'
-  local folder_ln round_ln verbatim_ln
-  if [ "$(fixed_count "$inputs" "$input_folder")" -ne 1 ]; then
-    echo "FAIL AC9 Inputs unique fragment: engagement folder path"
-    fail=1
-  else
-    folder_ln=$(fixed_first_line "$inputs" "$input_folder")
-  fi
-  if [ "$(fixed_count "$inputs" "$input_round")" -ne 1 ]; then
-    echo "FAIL AC9 Inputs unique fragment: round number N"
-    fail=1
-  else
-    round_ln=$(fixed_first_line "$inputs" "$input_round")
-  fi
-  if [ "$(fixed_count "$inputs" "$input_verbatim")" -ne 1 ]; then
-    echo "FAIL AC9 Inputs unique fragment: use both verbatim"
-    fail=1
-  else
-    verbatim_ln=$(fixed_first_line "$inputs" "$input_verbatim")
-  fi
-  if [ -n "${folder_ln:-}" ] && [ -n "${round_ln:-}" ] && [ "$folder_ln" -ge "$round_ln" ]; then
-    echo "FAIL AC9 Inputs fragment order"
-    fail=1
-  fi
-  if [ -n "${round_ln:-}" ] && [ -n "${verbatim_ln:-}" ] && [ "$round_ln" -ne "$verbatim_ln" ]; then
-    echo "FAIL AC9 Inputs round/verbatim physical-line contract"
-    fail=1
-  fi
+  # Inputs caller contract: both canonical physical lines occur exactly once
+  # inside the bounded Inputs section, in strict canonical order (the injects
+  # line before the round-number line).
+  local input_lines=(
+    'The caller injects both the **engagement folder path** (`products/<client-slug>/`) and the'
+    '**round number N** — use both verbatim, never infer either.'
+  )
+  local input_line input_ln input_prev=0
+  for input_line in "${input_lines[@]}"; do
+    if [ "$(exact_line_count "$inputs" "$input_line")" -ne 1 ]; then
+      echo "FAIL AC9 Inputs caller contract exact cardinality: $input_line"
+      fail=1
+    else
+      input_ln=$(exact_line_number "$inputs" "$input_line")
+      if [ "$input_ln" -le "$input_prev" ]; then
+        echo "FAIL AC9 Inputs caller contract order: $input_line"
+        fail=1
+      else
+        input_prev="$input_ln"
+      fi
+    fi
+  done
 
   # Return contract: both exact physical lines are unique and strictly ordered;
   # their required fragments must also be unique within the bounded section.

@@ -33,7 +33,8 @@ LESSONS_FILE: `.claude/rules/c-suite/cpo-lessons.md`
   `^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$`; a fixture slug is `_example-` followed by an
   otherwise-valid slug (e.g. `_example-bluebird-bakery`). Run this check BEFORE any
   filesystem, branch, worktree, or `gh` action — no scaffolding, no `gh auth`, nothing.
-  On violation STOP, show the rule and the offending value, and create nothing.
+  On violation, create nothing and reply with a line beginning with the literal token
+  `STOP:` followed by the rule `^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$` and the offending value.
 - **Quote every interpolation.** Every shell use of the slug is double-quoted
   (`"$CLIENT_SLUG"`, `products/"$CLIENT_SLUG"/`) so a hostile value can never break out.
 - **Mode detection.** A leading `_example-` means fixture mode; any other valid slug

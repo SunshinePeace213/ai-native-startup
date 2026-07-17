@@ -51,6 +51,11 @@
   - **The call made:** Over-cap gate exit (a) — the single permitted redesigned round 3 — taken under the user's standing instruction to fix the Codex findings and finish the workflow; the redesign boundaries were consulted and recorded in `## Locked Boundaries` before authoring, and an internal Claude `opus` review of the Codex delta returned clean (2 non-blocking advisories) before the round-3 delta review.
   - **Spec impact:** none beyond the recorded Locked Boundaries refinements; if round 3 is still changes-requested the build stops for an explicit user decision.
 
+- **What diverged (post-round-3 residual):** the residual fix touched `.claude/commands/c-suite/cpo-intake.md` in addition to validate.sh — the intake violation reply now mandates a literal `STOP:` line carrying the rule and the offending value.
+  - **What forced it:** a full validate.sh re-run failed AC12 on "reply missing standalone STOP": the reply carried the complete slug rule and the offending value but phrased the refusal without a standalone STOP token — the locked AC12 boundary requires that token, and the source contract never mandated it, so LLM phrasing drifted between runs.
+  - **The call made:** the "Round-3 redesign refinements" scope boundary permits source edits when the exact assertions reveal a real source-contract mismatch — this is that case; the SOP's reply shape was made deterministic rather than weakening the validator.
+  - **Spec impact:** none — AC3/AC12 markers and trail contracts unchanged.
+
 ## Fold-Forward
 
 - `quick_validate.py` vs Claude Code-only frontmatter keys (`autoInvoke`, `disable-model-invocation`): consider a follow-up chore aligning the packaging validator or the meta-skills docs on which validator gates project-internal skills.
