@@ -1,6 +1,6 @@
 ---
 name: prd-review
-description: "Adversarially review a client PRD — products/<client-slug>/prd/prd.md produced by the /c-suite cpo-prd stage — against the locked discovery requirements (products/<client-slug>/discovery/requirements.md) and the cpo-prd-standard structure, and write a per-round approved/changes-requested verdict to its own report file products/<client-slug>/prd/reviews/codex-prd-review-round-N.md. Use to review, verify, or gate a PRD before the design brief; typically run via codex exec once per round with the round number injected. Blocks only on real defects — a locked requirement with no PRD coverage, a PRD claim contradicting a locked requirement, unmeasurable success metrics, user stories without acceptance criteria, scope drift, missing PRD sections, infeasible features given the recorded technical constraints, and security/data risks — and additionally challenges the product shape for a simpler design as advisory, non-blocking recommendations. Edits only its one report file and returns a terse verdict summary."
+description: "Adversarially review a client PRD — products/<client-slug>/prd/prd.md produced by the /c-suite cpo-prd stage — against the locked discovery requirements (products/<client-slug>/discovery/requirements.md) and the cpo-prd-standard structure, and write a per-round approved/changes-requested verdict to its own report file products/<client-slug>/prd/reviews/codex-prd-review-round-N.md. Use to review, verify, or gate a PRD before the design brief; typically run via codex exec once per round with the engagement folder path and round number injected. Blocks only on real defects — a locked requirement with no PRD coverage, a PRD claim contradicting a locked requirement, unmeasurable success metrics, user stories without acceptance criteria, scope drift, missing PRD sections, infeasible features given the recorded technical constraints, and security/data risks — and additionally challenges the product shape for a simpler design as advisory, non-blocking recommendations. Edits only its one report file and returns a terse verdict summary."
 ---
 
 # PRD Review
@@ -19,7 +19,8 @@ three in full before judging:
 - **`products/<client-slug>/discovery/requirements.md`** — the frozen discovery record. Each of the twelve dimensions carries a `- <dimension>: <state>` marker. Only dimensions marked `locked` are binding; a dimension still marked `open` is not yet safe to build against — judge PRD coverage against the **locked** ones. Judge the PRD against these facts.
 - **`.claude/skills/cpo-prd-standard/SKILL.md`** — the required PRD structure and the traceability quality bar. Judge section completeness and measurability against it.
 
-The caller injects only the **round number N** — use it verbatim, never infer it.
+The caller injects both the **engagement folder path** (`products/<client-slug>/`) and the
+**round number N** — use both verbatim, never infer either.
 
 ## What to judge
 

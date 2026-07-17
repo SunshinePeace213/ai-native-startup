@@ -16,7 +16,9 @@ a persona itself.
 ## Variables
 
 CLIENT_SLUG: $1 — engagement slug; must match `^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$`
-REQUEST: $2 — (optional) the client's opening request, free text
+REQUEST: the remainder of `$ARGUMENTS` after CLIENT_SLUG — (optional) the client's
+  opening request, free text. Bind it from `$ARGUMENTS` (the full argument text), not `$2`,
+  which captures only the first token; an omitted request stays valid.
 QUESTION_BANK_SKILL: `${CLAUDE_PROJECT_DIR}/.claude/skills/cpo-question-bank/SKILL.md`
 TEMPLATE_QUESTION_LIST: `${CLAUDE_PROJECT_DIR}/.claude/skills/cpo-question-bank/templates/question-list.md`
 TEMPLATE_REQUIREMENTS: `${CLAUDE_PROJECT_DIR}/.claude/skills/cpo-question-bank/templates/requirements.md`
@@ -42,6 +44,9 @@ LESSONS_FILE: `.claude/rules/c-suite/cpo-lessons.md`
   "locked when" criterion.
 - **Never invent answers.** An unanswered dimension stays `open`; when the client owes
   it, the stage is `blocked-on-client`.
+- **Consume the opening request.** When `REQUEST` is present, record it into the
+  engagement's discovery record and use it to seed or pre-answer dimensions in both LIVE
+  grilling and the ASYNC question list; an omitted request stays valid.
 - Deliverables stay professional client-grade prose; persona names sign reports only.
 
 ## Workflow
@@ -50,26 +55,40 @@ LESSONS_FILE: `.claude/rules/c-suite/cpo-lessons.md`
    anything.
 2. **Detect mode and preflight tools.** Fixture (`_example-`) vs real. STOP if `codex`
    is missing (both modes); in real mode also STOP if `gh auth status` fails.
-3. **Resume existing engagement** or scaffold. If `products/<client-slug>/` already
-   exists, resume it — read `status.md`, keep its recorded mode and trail, and continue
-   from where discovery stands. Otherwise scaffold `products/<client-slug>/` (`status.md`,
-   `discovery/`, `prd/`, `design/`) from the question-bank templates: `status.md` from
-   `TEMPLATE_STATUS`, and the `discovery/question-list.md` and `discovery/requirements.md`
-   skeletons from `TEMPLATE_QUESTION_LIST` and `TEMPLATE_REQUIREMENTS`.
-4. **Set the mode trail.**
-   - **Real mode:** create the engagement issue, its linked branch
-     `feat/<N>-<client-slug>`, and a worktree; fill the ledger `mode: real`, `issue: #N`,
-     `branch: feat/<N>-<client-slug>`, `hosting-branch: none`. Create no comment, label,
-     or PR.
-   - **Fixture mode:** create no issue, comment, label, branch, worktree, or PR and run
-     no `gh` action; stay on the current branch; fill `mode: fixture`, `issue: none`,
-     `branch: none`, `PR: none`, and the current branch under `hosting-branch:`.
-5. **Choose the discovery mode.** AskUserQuestion: **LIVE** or **ASYNC**.
+3. **Resume existing engagement** — mode-aware resume lookup, run BEFORE any creation.
+   - **Fixture:** if `products/<client-slug>/` exists on the current branch, resume it —
+     read `status.md`, keep its recorded mode and trail, and continue from where discovery
+     stands.
+   - **Real:** resume only when exactly ONE matching engagement surface exists — an existing
+     engagement worktree, or a local/remote `feat/*-<client-slug>` branch; enter that
+     worktree and continue from its `status.md`. A real `products/<client-slug>/` found
+     outside its engagement worktree is never resumable → STOP for reconciliation. More than
+     one match → STOP.
+4. **Scaffold a new engagement and set the mode trail.** Only when step 3 found nothing to
+   resume.
+   - **Real mode:** create the engagement issue, its linked branch `feat/<N>-<client-slug>`,
+     and its worktree; ENTER that worktree; only THEN scaffold `products/<client-slug>/`
+     there. Fill the ledger `mode: real`, `issue: #N`, `branch: feat/<N>-<client-slug>`,
+     `hosting-branch: none`. Create no comment, label, or PR.
+   - **Fixture mode:** stay on the current branch — create no issue, comment, label, branch,
+     worktree, or PR and run no `gh` action — then scaffold `products/<client-slug>/` on the
+     current branch. Fill `mode: fixture`, `issue: none`, `branch: none`, `PR: none`, and the
+     current branch under `hosting-branch:`.
+   Scaffold `products/<client-slug>/` (`status.md`, `discovery/`, `prd/`, `design/`) from the
+   question-bank templates: `status.md` from `TEMPLATE_STATUS`, and the
+   `discovery/question-list.md` and `discovery/requirements.md` skeletons from
+   `TEMPLATE_QUESTION_LIST` and `TEMPLATE_REQUIREMENTS`. Record `REQUEST` (when present) into
+   the discovery record as the client's opening request, so both discovery modes seed from it.
+5. **Choose the discovery mode.** AskUserQuestion: **LIVE** or **ASYNC**. Seed both from
+   `REQUEST` when present — pre-answer or narrow any dimension the opening request already
+   speaks to, and never re-ask what it settles.
    - **LIVE:** grill every question-bank dimension via AskUserQuestion — batched, the
-     recommended answer first — until each dimension meets its "locked when" criterion,
-     writing each into `discovery/requirements.md` as `- <dimension>: locked`.
+     recommended answer first, `REQUEST`-seeded dimensions pre-filled for confirmation —
+     until each dimension meets its "locked when" criterion, writing each into
+     `discovery/requirements.md` as `- <dimension>: locked`.
    - **ASYNC:** deploy `UX_RESEARCHER` (Priya Nair) to generate
-     `discovery/question-list.md`, then STOP with send-to-client instructions: hand the
+     `discovery/question-list.md` — seeded from `REQUEST` so it omits or pre-answers what the
+     opening request already covers — then STOP with send-to-client instructions: hand the
      client the question list and wait for `discovery/client-answers.md`.
 6. **Ingest returned answers: discovery/client-answers.md.** On a re-entrant run with a
    `discovery/client-answers.md` present, deploy `UX_RESEARCHER` for gap analysis against
@@ -86,9 +105,10 @@ LESSONS_FILE: `.claude/rules/c-suite/cpo-lessons.md`
      footer, and push the explicit engagement refspec
      `git push origin HEAD:refs/heads/feat/<N>-<client-slug>`; create no comment, label,
      or PR.
-   - **Fixture mode:** update the ledger state and `intake-run` log, commit on the current
-     branch WITHOUT `Refs #N` and without pushing, and record that commit's SHA in the
-     `intake-run` log.
+   - **Fixture mode:** two commits on the current branch, neither pushed and both WITHOUT
+     `Refs #N` — first the deliverable commit carrying this run's discovery artifacts, then
+     the ledger commit carrying the state and `intake-run` log update. The `intake-run`
+     `sha=` names the DELIVERABLE commit, never the ledger commit.
 
 ## Trail contract
 

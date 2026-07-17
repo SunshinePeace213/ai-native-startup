@@ -37,6 +37,15 @@
   - **The call made:** SOP commits follow the fixture contract; lead checkpoint commits (specs/, pushes) keep `Refs #35`.
   - **Spec impact:** none.
 
+- **What diverged (R1 fix pass):** validate.sh's new section-scoped assertions match `## <heading>` by prefix, not exact equality (so `## Return to the caller (short)` resolves under the canonical name `## Return to the caller`).
+  - **What forced it:** The shipped prd-review heading carries a `(short)` qualifier the canonical scoping name omits; exact matching would fail on green files.
+  - **The call made:** Prefix matching per the fixer's judgment; assertion strength unchanged (fragments still asserted inside the resolved section).
+  - **Spec impact:** none.
+- **What diverged (R1 fix pass):** the wireframe desktop-reflow notes were added to EVERY per-section annotation including the shared nav/footer comments, not only page-specific content sections.
+  - **What forced it:** The wireframe header claim ("noted per section") is unqualified; a partial reading would leave the claim half-true.
+  - **The call made:** One concise `(desktop: …)` clause per section tag, one-to-one, in all four flagged pages.
+  - **Spec impact:** none.
+
 ## Fold-Forward
 
 - `quick_validate.py` vs Claude Code-only frontmatter keys (`autoInvoke`, `disable-model-invocation`): consider a follow-up chore aligning the packaging validator or the meta-skills docs on which validator gates project-internal skills.

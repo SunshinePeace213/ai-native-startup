@@ -3,19 +3,49 @@
 #
 # One check_ac<N> function per AC (AC1..AC13), mirroring the per-AC checks in
 # acceptance-criteria.md "## Validation Commands" verbatim, except where
-# decisions.md "## Locked Boundaries" records a user-approved amendment
-# (AC7's skill validator call, AC8's per-file agent validator loop). Each
-# function is independent — one AC failing never blocks another from
-# running. Exits non-zero if any AC fails.
+# decisions.md "## Locked Boundaries" records a user-approved amendment. Four
+# amendments are encoded here:
+#   - AC7  — skill validation via the meta-skills authoring validator.
+#   - AC8  — per-file agent validator loop.
+#   - AC12 — zero-side-effect proof standard: exact before/after equality of
+#            git status, tracked binary diff, an untracked content-hash
+#            manifest, refs, and worktree list, plus PATH-prepended gh/codex
+#            fail-stubs whose invocation logs must stay empty.
+#   - AC4/AC9 — structural validation bar: exact, section-scoped, order-aware
+#            assertions of the gate contract and the prd-review contract.
+# (AC13's run-log sha= is the deliverable commit per the two-commit protocol;
+# the AC13 check itself is unchanged.) Each function is independent — one AC
+# failing never blocks another from running. Exits non-zero if any AC fails.
 set -u
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1
 
 TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
+# Safe-delete cleanup (AGENTS.md: never rm -rf). Move TMP_DIR into ~/.Trash
+# under a unique name; preserve the script's exit status and surface any
+# cleanup failure on stderr without changing the exit code.
+cleanup() {
+  local status=$?
+  mkdir -p "$HOME/.Trash" 2>/dev/null || echo "cleanup: mkdir $HOME/.Trash failed" >&2
+  mv "$TMP_DIR" "$HOME/.Trash/$(basename "$TMP_DIR").$$" 2>/dev/null \
+    || echo "cleanup: failed to move $TMP_DIR to $HOME/.Trash" >&2
+  return $status
+}
+trap cleanup EXIT
 
 # Print a file's YAML frontmatter body (between the opening/closing --- lines).
 frontmatter() { awk 'NR==1 && $0=="---"{next} /^---$/{exit} {print}' "$1"; }
+
+# Print a markdown section: the "## <heading>" line (matched by prefix, so a
+# trailing qualifier like "(short)" still resolves) through the line before the
+# next "## " heading. Args: <file> <heading-text-without-##>.
+section() {
+  awk -v h="## $2" 'BEGIN{n=length(h)}
+    !infl && substr($0,1,n)==h {infl=1; print; next}
+    infl && /^## / {exit}
+    infl {print}
+  ' "$1"
+}
 
 # ---------------------------------------------------------------------------
 # Shared helper: assert every knowledge skill's frontmatter blocks
@@ -123,14 +153,66 @@ check_ac3() {
 }
 
 # ---------------------------------------------------------------------------
-# AC4 — cpo-prd.md: verdict-source/gate control-flow markers + mode trails.
+# AC4 — cpo-prd.md gate contract, section-scoped + order-aware (Locked
+# Boundaries: AC4/AC9 structural validation bar). The "## Gate contract"
+# section must carry every review-input/output and gate-transition line, in
+# order; plus the digest key + trail lines, and prd-gate persistence
+# (status.md) and consumption (cpo-brief.md).
 # ---------------------------------------------------------------------------
 check_ac4() {
   local fail=0
   local p=.claude/commands/c-suite/cpo-prd.md
-  for marker in "Automatic rounds: 1, 2" "Verdict source: report file only" "Silence: not approval" "Round 2 options: final-delta-round | accept-with-noted-gaps | needs-human" "Round 3 options: accept-with-noted-gaps | needs-human" "<!-- prd-review-round-N -->" "Real trail: issue=existing; comments=upsert review digest; labels=needs-human only; commit=Refs #N; push=engagement branch; PR=none" "Fixture trail: issue=none; comments=none; labels=none; commit=current branch + recorded SHA; push=none; PR=none"; do
-    grep -Fq "$marker" "$p" || { echo "FAIL PRD contract: $marker"; fail=1; }
+
+  # (a) "## Gate contract" section exists and carries these exact inner-text
+  # lines (each wrapped in backticks in the file) in strictly increasing order.
+  local sec="$TMP_DIR/ac4-gate-contract.txt"
+  section "$p" "Gate contract" > "$sec"
+  if [ ! -s "$sec" ]; then
+    echo "FAIL AC4 Gate contract section missing"
+    fail=1
+  else
+    local gate_lines=(
+      "Review input: quoted engagement folder products/<client-slug>/ + round N"
+      "Verdict source: report file only"
+      "Silence: not approval"
+      "Missing verdict: re-run the same round"
+      "Automatic rounds: 1, 2"
+      "Round 1: approved -> exit | changes-requested -> PM fix pass -> round 2"
+      "Round 2: approved -> exit | changes-requested -> over-cap gate"
+      "Round 2 options: final-delta-round | accept-with-noted-gaps | needs-human"
+      "Round 3: final — no further round"
+      "Round 3 options: accept-with-noted-gaps | needs-human"
+      "Gate ledger: prd-gate=<approved | accepted-with-noted-gaps | needs-human>; gaps under ## PRD gate gaps; reset to none on review restart or stale PRD"
+    )
+    local prev=0 ln l
+    for l in "${gate_lines[@]}"; do
+      ln=$(grep -nFm1 -- "$l" "$sec" | cut -d: -f1)
+      if [ -z "$ln" ]; then
+        echo "FAIL AC4 Gate contract missing line: $l"
+        fail=1
+      elif [ "$ln" -le "$prev" ]; then
+        echo "FAIL AC4 Gate contract out of order: $l"
+        fail=1
+      else
+        prev="$ln"
+      fi
+    done
+  fi
+
+  # (b) whole-file greps from acceptance-criteria.md: digest key + trail lines.
+  for marker in "<!-- prd-review-round-N -->" "Real trail: issue=existing; comments=upsert review digest; labels=needs-human only; commit=Refs #N; push=engagement branch; PR=none" "Fixture trail: issue=none; comments=none; labels=none; commit=current branch + recorded SHA; push=none; PR=none"; do
+    grep -Fq -- "$marker" "$p" || { echo "FAIL AC4 marker: $marker"; fail=1; }
   done
+
+  # (c) prd-gate persistence (status template) + consumption (cpo-brief).
+  local status_t=.claude/skills/cpo-question-bank/templates/status.md
+  grep -Fq -- "prd-gate: <none | approved | accepted-with-noted-gaps | needs-human>" "$status_t" \
+    || { echo "FAIL AC4 status.md prd-gate line"; fail=1; }
+  grep -q "^## PRD gate gaps" "$status_t" \
+    || { echo "FAIL AC4 status.md ## PRD gate gaps section"; fail=1; }
+  grep -Fq -- "Brief preflight: prd: done AND (prd-gate=approved + approved verdict report | prd-gate=accepted-with-noted-gaps); none/needs-human never pass" .claude/commands/c-suite/cpo-brief.md \
+    || { echo "FAIL AC4 cpo-brief preflight line"; fail=1; }
+
   [ $fail -eq 0 ] && echo "PASS"
   return $fail
 }
@@ -267,16 +349,46 @@ check_ac8() {
 }
 
 # ---------------------------------------------------------------------------
-# AC9 — prd-review skill mirrors the spec-review contract.
+# AC9 — prd-review skill contract, section-scoped structural assertion (Locked
+# Boundaries: AC4/AC9 structural validation bar). Every review input/output
+# line is asserted exactly, in its own section where the brief scopes it.
 # ---------------------------------------------------------------------------
 check_ac9() {
+  local fail=0
   local p=.agents/skills/prd-review/SKILL.md
-  if head -1 "$p" >/dev/null && grep -q "Verdict: approved" "$p" && grep -q "codex-prd-review-round" "$p" && grep -q "Issue-comment digest" "$p" && grep -qi "never call" "$p"; then
-    echo "PASS"
-    return 0
-  fi
-  echo "FAIL AC9 prd-review skill contract"
-  return 1
+
+  # Exact verdict lines (em-dash U+2014).
+  grep -Fq -- "### Round N — Verdict: approved" "$p" \
+    || { echo "FAIL AC9 approved verdict line"; fail=1; }
+  grep -Fq -- "### Round N — Verdict: changes-requested" "$p" \
+    || { echo "FAIL AC9 changes-requested verdict line"; fail=1; }
+
+  # Exact report-path template.
+  grep -Fq -- "products/<client-slug>/prd/reviews/codex-prd-review-round-N.md" "$p" \
+    || { echo "FAIL AC9 report path template"; fail=1; }
+
+  # "## Inputs" section fragments.
+  local inputs="$TMP_DIR/ac9-inputs.txt"
+  section "$p" "Inputs" > "$inputs"
+  for frag in "engagement folder path" "round number N" "use both verbatim"; do
+    grep -Fq -- "$frag" "$inputs" || { echo "FAIL AC9 Inputs fragment: $frag"; fail=1; }
+  done
+
+  # "## Return to the caller" section fragments.
+  local ret="$TMP_DIR/ac9-return.txt"
+  section "$p" "Return to the caller" > "$ret"
+  for frag in "**Line 1**" "**Line 2**" "verdict line, verbatim"; do
+    grep -Fq -- "$frag" "$ret" || { echo "FAIL AC9 Return fragment: $frag"; fail=1; }
+  done
+
+  # Issue-comment digest marker + never-call-gh line.
+  grep -Fq -- "**Issue-comment digest:**" "$p" \
+    || { echo "FAIL AC9 issue-comment digest marker"; fail=1; }
+  grep -qi "never call" "$p" \
+    || { echo "FAIL AC9 never-call-gh line"; fail=1; }
+
+  [ $fail -eq 0 ] && echo "PASS"
+  return $fail
 }
 
 # ---------------------------------------------------------------------------
@@ -339,9 +451,14 @@ check_ac11() {
 
 # ---------------------------------------------------------------------------
 # AC12 — structural: slug regex + _example- exception in cpo-intake.md.
-# Behavioral: headless negative test — a malformed slug STOPs with zero
-# products/ side effects. Guarded so any stray folder is trashed, never
-# rm -rf'd.
+# Behavioral (Locked Boundaries: AC12 zero-side-effect proof standard): a
+# malformed slug STOPs with zero side effects. Prove it by exact before/after
+# equality of every in-scope mutable surface — repo-wide git status, tracked
+# index/worktree content (binary diff vs HEAD), an untracked path+content-hash
+# manifest, all refs, and the worktree list — plus PATH-prepended gh/codex
+# fail-stubs whose invocation logs must stay empty. The reply must contain STOP
+# AND the slug rule AND the offending value. Top-level products/ listing and a
+# checked quarantine (never rm -rf'd) remain additional safeguards.
 # ---------------------------------------------------------------------------
 check_ac12() {
   local p=.claude/commands/c-suite/cpo-intake.md
@@ -350,36 +467,101 @@ check_ac12() {
   grep -q '\^\[a-z0-9\]\[a-z0-9-\]{0,38}\[a-z0-9\]\$' "$p" || { echo "FAIL AC12 slug regex"; fail=1; }
   grep -q "_example-" "$p" || { echo "FAIL AC12 _example- fixture exception"; fail=1; }
 
-  local before="$TMP_DIR/ac12-before.txt" after="$TMP_DIR/ac12-after.txt" outfile="$TMP_DIR/ac12-output.jsonl"
-  ls products/ 2>/dev/null | sort > "$before"
+  # Snapshot every in-scope mutable surface to files prefixed by $1.
+  snapshot_state() {
+    local pfx="$1"
+    git status --porcelain=v1 --untracked-files=all > "$pfx-status.txt" 2>/dev/null
+    git diff HEAD --binary > "$pfx-diff.bin" 2>/dev/null
+    git for-each-ref > "$pfx-refs.txt" 2>/dev/null
+    git worktree list --porcelain > "$pfx-worktrees.txt" 2>/dev/null
+    # Stable path+content-hash manifest of every untracked file.
+    while IFS= read -r -d '' f; do
+      sha256sum "$f"
+    done < <(git ls-files --others --exclude-standard -z 2>/dev/null) | sort > "$pfx-untracked.txt"
+  }
+
+  # Fail-stubs: any gh/codex call during the negative run logs its invocation.
+  local shim="$TMP_DIR/ac12-shim"
+  local gh_log="$TMP_DIR/ac12-gh.log" codex_log="$TMP_DIR/ac12-codex.log"
+  mkdir -p "$shim"
+  cat > "$shim/gh" <<EOF
+#!/usr/bin/env bash
+printf '%s %s\n' "\$0" "\$*" >> "$gh_log"
+exit 1
+EOF
+  cat > "$shim/codex" <<EOF
+#!/usr/bin/env bash
+printf '%s %s\n' "\$0" "\$*" >> "$codex_log"
+exit 1
+EOF
+  chmod +x "$shim/gh" "$shim/codex"
+
+  local before="$TMP_DIR/ac12-before" after="$TMP_DIR/ac12-after"
+  local outfile="$TMP_DIR/ac12-output.jsonl"
+  local products_before="$TMP_DIR/ac12-products-before.txt"
+  local products_after="$TMP_DIR/ac12-products-after.txt"
+
+  snapshot_state "$before"
+  ls products/ 2>/dev/null | sort > "$products_before"
 
   local rc=0
-  timeout 180 claude -p '/c-suite:cpo-intake bad_slug!! test request' --output-format stream-json --max-turns 25 > "$outfile" 2>&1 || rc=$?
+  PATH="$shim:$PATH" timeout 180 claude -p '/c-suite:cpo-intake bad_slug!! test request' --output-format stream-json --max-turns 25 > "$outfile" 2>&1 || rc=$?
   if [ "$rc" -ne 0 ]; then
     echo "FAIL AC12 headless invocation errored (exit $rc)"
     fail=1
   fi
 
-  ls products/ 2>/dev/null | sort > "$after"
+  snapshot_state "$after"
+  ls products/ 2>/dev/null | sort > "$products_after"
+
+  # Compare every snapshotted surface; name each that differs.
+  compare_surface() {
+    if ! cmp -s "$2" "$3"; then
+      echo "FAIL AC12 side effect: $1 differs before/after"
+      return 1
+    fi
+    return 0
+  }
+  compare_surface "git status" "$before-status.txt" "$after-status.txt" || fail=1
+  compare_surface "tracked diff (git diff HEAD --binary)" "$before-diff.bin" "$after-diff.bin" || fail=1
+  compare_surface "refs (git for-each-ref)" "$before-refs.txt" "$after-refs.txt" || fail=1
+  compare_surface "worktree list" "$before-worktrees.txt" "$after-worktrees.txt" || fail=1
+  compare_surface "untracked manifest" "$before-untracked.txt" "$after-untracked.txt" || fail=1
+
+  # Additional safeguard: top-level products/ listing + checked quarantine.
   local new_entries
-  new_entries=$(comm -13 "$before" "$after")
+  new_entries=$(comm -13 "$products_before" "$products_after")
   if [ -n "$new_entries" ]; then
     echo "FAIL AC12 products/ gained an entry: $new_entries"
     fail=1
-    mkdir -p "$HOME/.Trash"
-    while IFS= read -r entry; do
-      [ -n "$entry" ] && mv "products/$entry" "$HOME/.Trash/" 2>/dev/null
-    done <<< "$new_entries"
+    if ! mkdir -p "$HOME/.Trash"; then
+      echo "FAIL AC12 quarantine: mkdir $HOME/.Trash failed"
+    else
+      while IFS= read -r entry; do
+        [ -z "$entry" ] && continue
+        if ! mv "products/$entry" "$HOME/.Trash/"; then
+          echo "FAIL AC12 quarantine: products/$entry -> $HOME/.Trash/ failed"
+        fi
+      done <<< "$new_entries"
+    fi
   fi
 
-  local reply
-  reply=$(jq -r 'select(.type=="result") | .result' "$outfile" 2>/dev/null)
-  if printf '%s' "$reply" | grep -qi "stop" || printf '%s' "$reply" | grep -q '\[a-z0-9\]\[a-z0-9-\]'; then
-    :
-  else
-    echo "FAIL AC12 reply missing STOP / slug-rule mention"
+  # No gh/codex may have been invoked.
+  if [ -s "$gh_log" ]; then
+    echo "FAIL AC12 gh invoked during negative test:"; cat "$gh_log"
     fail=1
   fi
+  if [ -s "$codex_log" ]; then
+    echo "FAIL AC12 codex invoked during negative test:"; cat "$codex_log"
+    fail=1
+  fi
+
+  # Reply must contain STOP AND the slug rule AND the offending value.
+  local reply
+  reply=$(jq -r 'select(.type=="result") | .result' "$outfile" 2>/dev/null)
+  printf '%s' "$reply" | grep -qi "stop" || { echo "FAIL AC12 reply missing STOP"; fail=1; }
+  printf '%s' "$reply" | grep -q '\[a-z0-9\]\[a-z0-9-\]' || { echo "FAIL AC12 reply missing slug rule"; fail=1; }
+  printf '%s' "$reply" | grep -qF -- 'bad_slug!!' || { echo "FAIL AC12 reply missing offending value bad_slug!!"; fail=1; }
 
   [ $fail -eq 0 ] && echo "PASS"
   return $fail

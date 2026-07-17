@@ -28,9 +28,12 @@ LESSONS_FILE: `.claude/rules/c-suite/cpo-lessons.md`
 
 ## Instructions
 
-- **Preflight.** The PRD must be approved — an `approved` verdict report exists under
-  `products/<client-slug>/prd/reviews/` — else STOP. If any stage is `stale`, get explicit
-  user confirmation (AskUserQuestion) before proceeding.
+- **Preflight the PRD gate.** Proceed only when `status.md` shows `prd: done` AND either
+  `prd-gate: approved` with an `approved` verdict report under
+  `products/<client-slug>/prd/reviews/`, or `prd-gate: accepted-with-noted-gaps`;
+  `prd-gate: none` and `prd-gate: needs-human` never pass — else STOP. If any stage is
+  `stale`, get explicit user confirmation (AskUserQuestion) before proceeding.
+  `Brief preflight: prd: done AND (prd-gate=approved + approved verdict report | prd-gate=accepted-with-noted-gaps); none/needs-human never pass`
 - **Validate the slug** with intake's rule `^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$` (fixture
   `_example-` exception) before any side effect, and double-quote every interpolation.
 - **Every delegation brief** carries `DESIGN_STANDARD_SKILL` plus the exact template paths
@@ -68,9 +71,11 @@ LESSONS_FILE: `.claude/rules/c-suite/cpo-lessons.md`
      with `Closes #N` in its body, and record its URL in the ledger. Create no issue comment
      or label.
    - **Fixture mode:** create no issue, comment, label, or PR and run no `gh` action; set
-     `engagement: handed-off`; keep `issue: none`, `branch: none`, `PR: none`; commit on the
-     recorded hosting branch WITHOUT `Refs #N` or push; record the commit SHA in the
-     `brief-run` log.
+     `engagement: handed-off`; keep `issue: none`, `branch: none`, `PR: none`. Two commits on
+     the recorded hosting branch, neither pushed and both WITHOUT `Refs #N` — first the
+     deliverable commit carrying this run's six design files, then the ledger commit carrying
+     the state and `brief-run` log update. The `brief-run` `sha=` names the DELIVERABLE
+     commit, never the ledger commit.
 
 ## Trail contract
 
