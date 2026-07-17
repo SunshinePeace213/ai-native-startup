@@ -10,7 +10,8 @@ Two checks only: (1) all four files exist, (2) each file has its required
 '##' sections. Exit 2 => deny stop; stderr is fed back to Claude so it
 completes the gaps. The gated folder is the newest-modified plan folder
 across the main specs/ and any worktree's specs/ (/harness-layer:harness-plan
-drafts in a worktree), excluding the _templates dir.
+drafts in a worktree), excluding underscore-prefixed dirs (_templates,
+_explorations).
 """
 
 import os
@@ -45,7 +46,6 @@ REQUIRED_SECTIONS: dict[str, tuple[str, ...]] = {
         "Summary",
         "Resolved Decisions",
         "Assumptions",
-        "Blindspots",
         "Open Questions / Out of Scope",
     ),
 }
@@ -68,7 +68,7 @@ def newest_plan_folder(root: Path) -> Path | None:
         for specs in specs_dirs
         if specs.is_dir()
         for folder in specs.iterdir()
-        if folder.is_dir() and folder.name != "_templates"
+        if folder.is_dir() and not folder.name.startswith("_")
     ]
     return max(folders, key=lambda folder: folder.stat().st_mtime, default=None)
 

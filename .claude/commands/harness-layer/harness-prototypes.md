@@ -1,0 +1,59 @@
+---
+description: Pre-plan discovery pass — throwaway HTML prototypes to react to before planning: several wildly different design directions, or a single mock of a feature with fake data
+argument-hint: [description]
+model: fable
+effort: high
+disallowed-tools: Task, EnterPlanMode, EnterWorktree
+---
+
+# Harness Prototypes
+
+Render it before anyone builds it. Before any spec exists, prototype what the user can only judge by seeing — wildly different design directions, or a throwaway mock with fake data — so taste is exercised while changes are still free. Discovery only: prototypes live in `specs/_explorations/` (gitignored, never committed); the improved prompt names the chosen direction and references the prototype file so `/harness-layer:harness-plan` can adopt it into the spec's artifacts.
+
+## Variables
+
+DESCRIPTION: $1 — the feature to prototype, or a prior pass's improved prompt
+EXPLORATIONS_DIR: `specs/_explorations/<slug>/` — gitignored local scratch (no worktree, no issue); safe to trash anytime
+ARTIFACT_RULES: `.claude/rules/harness-layer/artifacts.md` — craft, palette, and publish rules for the page
+
+## Instructions
+
+- **DISCOVERY ONLY** — no commits, no worktree, no spec files, no issues; write only under `EXPLORATIONS_DIR`. Never touch the real app — no backend routes, no frontend state, no real wiring.
+- If no `DESCRIPTION` is provided, stop and ask the user for one.
+- Classify the mode (see `Modes`).
+- Fake data only, but make it plausible: read enough of the real app first (existing UI conventions, real feature names and data shapes) that the prototype reads as native.
+- Do not interview the user or lock decisions — that is `/harness-layer:harness-plan`'s grilling. This pass only renders prototypes to react to.
+
+## Modes
+
+- **Directions** — the user can't say what they want but will know it when they see it ("I have no visual taste / don't know what's possible"). One page, 2–4 wildly different design directions side by side with tweak controls; copy-as-prompt returns the chosen direction plus tweaks.
+- **Mockup** — the user knows roughly what they want and needs to react to it before it touches the real app ("mock the new toolbar with fake data"). A single throwaway mock of the feature; copy-as-prompt returns the user's reactions and requested changes.
+
+## Workflow
+
+1. Parse `DESCRIPTION`; classify the mode (directions | mockup) and derive a kebab-case `<slug>`.
+2. Read the real app's surface the prototype imitates — UI conventions, naming, data shapes — and invent realistic fake data from it.
+3. Author the page per `ARTIFACT_RULES` into `EXPLORATIONS_DIR` — directions → **Design directions** page; mockup → **Mockup** page.
+4. Publish the page best-effort via the Artifact tool; on failure note "publish skipped" and continue with the local file.
+5. Report per `Report` — the baseline improved prompt and the hand-off line.
+
+## Improved Prompt
+
+The deliverable. It must stand alone without the page: the task, the chosen direction described in words (layout, hierarchy, tone, components), the prototype's `EXPLORATIONS_DIR` path as the visual reference for the plan to adopt into `specs/<name>/artifacts/`, and what still needs deciding. When `DESCRIPTION` is a prior pass's improved prompt, carry its constraints forward — enrich them with the chosen direction, never drop them.
+
+## Report
+
+```text
+🎨 Prototypes Ready
+
+Mode: <directions | mockup>
+Page: <published URL — or local path (publish skipped)>
+Prototype file: <EXPLORATIONS_DIR path — reference it in the plan prompt>
+
+Improved prompt (baseline — the page's copy-as-prompt refines it with your reactions):
+
+<the improved prompt>
+
+When you're ready, plan with:
+/harness-layer:harness-plan "<improved prompt>"
+```

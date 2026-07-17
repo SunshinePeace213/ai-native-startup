@@ -55,10 +55,15 @@ def test_no_specs_dir_allows_stop(tmp_path, run_hook):
     assert proc.stderr == ""
 
 
-def test_specs_with_only_templates_blocks_as_no_plan(tmp_path, run_hook):
-    """_templates is scaffolding, not a plan: a planning run that produced no
-    plan folder must not be allowed to end."""
+def test_specs_with_only_underscore_dirs_blocks_as_no_plan(tmp_path, run_hook):
+    """_templates is scaffolding and _explorations is pre-plan discovery
+    scratch — neither is a plan: a planning run that produced no plan folder
+    must not be allowed to end, and discovery pages must never be gated as a
+    spec."""
     (tmp_path / "specs" / "_templates").mkdir(parents=True)
+    exploration = tmp_path / "specs" / "_explorations" / "some-pass"
+    exploration.mkdir(parents=True)
+    (exploration / "page.html").write_text("<p>mock</p>")
     proc = gate(run_hook, tmp_path)
     assert proc.returncode == 2
     assert "no plan folder found" in proc.stderr
@@ -90,19 +95,6 @@ def test_missing_section_blocks_naming_file_and_heading(tmp_path, run_hook, sect
     proc = gate(run_hook, tmp_path)
     assert proc.returncode == 2
     assert "spec.md: missing section '## Red Flags'" in proc.stderr
-
-
-def test_missing_blindspots_section_blocks(tmp_path, run_hook, sections):
-    """Blindspot findings are part of the immutable decision record: a plan
-    whose decisions.md lacks '## Blindspots' must not pass the gate, and the
-    stderr names the exact section -- pinned so the unknowns checkpoint cannot
-    be silently skipped and template/hook cannot drift apart."""
-    folder = write_plan(tmp_path / "specs", "my-plan", sections)
-    dec = folder / "decisions.md"
-    dec.write_text(dec.read_text().replace("## Blindspots", "## Renamed"))
-    proc = gate(run_hook, tmp_path)
-    assert proc.returncode == 2
-    assert "decisions.md: missing section '## Blindspots'" in proc.stderr
     # exit-2 blocking must not be mixed with structured stdout (hooks-guide contract)
     assert proc.stdout == ""
 

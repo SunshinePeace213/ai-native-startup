@@ -16,7 +16,7 @@ All four files live side by side in `specs/<plan-name>/`; the prompt gives spec.
 Read all four in full before judging:
 
 - **spec.md** — what & why, plus the `## Tracking` block (Issue #N, branch, `Review profile:`).
-- **decisions.md** — locked requirements, assumptions, blindspots (`## Blindspots`), out-of-scope / non-goals, and (when present) a `## KB References` section listing the ai-docs files that ground the plan. Judge the spec against these.
+- **decisions.md** — locked requirements, assumptions, out-of-scope / non-goals, and (when present) a `## KB References` section listing the ai-docs files that ground the plan. Judge the spec against these.
 - **tasks.md** — phases, team, and step-by-step tasks.
 - **acceptance-criteria.md** — numbered, testable criteria and their validation commands.
 
@@ -25,7 +25,7 @@ The caller injects only the **round number N** — use it verbatim, never infer 
 spec.md's `## Tracking`, not injected by the caller.
 
 Medium/complex plans also commit presentation pages under `specs/<plan-name>/artifacts/`
-(Blindspot board; Design directions when the taste route fired). Their substance lives in
+(Design directions when the taste route fired). Their substance lives in
 decisions.md — never content-review the pages themselves.
 
 ## KB grounding (conditional — run when any signal fires)
@@ -53,7 +53,6 @@ the build produce the wrong thing or get stuck:
 - **Security / data risks** — destructive ops, secret exposure, or data-loss paths.
 - **Scope drift** — work beyond the locked decisions, or marked out of scope / non-goal.
 - **Untracked or mismatched spec** — spec.md's `## Tracking` MUST name `Issue #N`, a branch `<type>/<N>-<slug>` carrying that SAME number, and a `Review profile:` of `kb-grounded` or `standard`. Missing, placeholder, or number-mismatched tracking is blocking.
-- **Undispositioned blindspot** — every entry in decisions.md `## Blindspots` must carry a disposition (resolved, accepted-as-risk, or deferred-with-owner); an entry without one is blocking. A spec written before the section existed (no `## Blindspots` at all) is advisory, not blocking.
 - **Contradicts documented behavior** (KB layer only) — a spec claim about hooks, frontmatter, subagents, skills/commands, MCP, or model aliases that a cached ai-docs doc contradicts. Cite the ai-docs file and the contradicting passage.
 - **Profile/signal mismatch** (KB layer only) — the recorded profile disagrees with the KB signals (see KB grounding).
 

@@ -76,18 +76,17 @@ IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a pla
 2. Analyze Requirements - Parse the USER_PROMPT to understand the core problem and desired outcome
 3. Understand Codebase - Without subagents (except the `claude-code-guide` subagent the expert layer uses to cross-check harness claims), directly understand the relevant code and any existing harness patterns under `.claude/` and `.agents/`
 4. Set Review Profile - Apply the `Domain Knowledge` trigger: if an expert-layer signal fires, load the KB docs and set the profile to `kb-grounded`; otherwise skip the layer and set `standard`.
-5. Blindspot Pass - Report the task's top unknown unknowns — what / why it matters / proposed resolution — scanned from the codebase and (when active) the KB: ~3 for simple tasks, up to ~7 for medium/complex. For medium/complex tasks, author the Blindspot board per `.claude/rules/harness-layer/artifacts.md` in the session temp dir (no repo writes before the worktree exists) and publish it best-effort; the user's copy-as-prompt dispositions seed the grilling ledger. Simple tasks keep inline cards only. Unresolved cards seed the grilling ledger first; record every card and its disposition in decisions.md `## Blindspots`.
-6. Grill Requirements - Run the `Grilling Protocol`: interview the user one question at a time via AskUserQuestion until the coverage ledger is clear, then get final sign-off. Do NOT design or write files before this completes.
-7. Design Solution - Develop technical approach including architecture decisions and implementation strategy, grounded in the KB docs when the expert layer is active
-8. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Draw team members from the available agent types, defaulting to `GENERAL_PURPOSE_AGENT`. Document in plan.
-9. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments, and each task's model and effort stamped per the model-selection rule (it loads every session). Document in plan.
-10. Name the Plan - Create a descriptive kebab-case name from the plan's main topic, and pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test)
-11. Create & Link Issue - File the GitHub issue from the grilling ledger and link its convention branch (see `Worktree & Handoff`). Do this before entering the worktree.
-12. Enter Worktree - BEFORE writing any file, call `EnterWorktree(name: "<slug>")` to branch from `origin/main` into `.claude/worktrees/` and draft inside it (see `Worktree & Handoff`)
-13. Write the Spec Folder - Create `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and fill all four `SPEC_FILES` from `SPEC_TEMPLATES`; author the plan artifacts per `Plan Artifacts`; append `## KB References` to decisions.md when the expert layer is active; write any gap-filled KB docs and their `ai-docs/sources.yaml` entries inside the worktree; record the issue, branch, worktree path, and review profile in spec.md's `## Tracking`
-14. Commit & Push - Commit the spec folder (plus gap-filled KB docs) with a `Refs #N` footer, push its branch to `origin`, then post the plan-links comment on the issue (see `Worktree & Handoff`)
-15. Cross-Review - Have Codex review the spec with `CROSS_REVIEW_SKILL`, up to `MAX_REVIEW_ROUNDS`, fixing blocking findings each round (see `Codex Cross-Review`). Gate the hand-off on the outcome.
-16. Report - Follow the `Report` section to summarize the spec folder and its key components
+5. Grill Requirements - Run the `Grilling Protocol`: interview the user one question at a time via AskUserQuestion until the coverage ledger is clear, then get final sign-off. Do NOT design or write files before this completes.
+6. Design Solution - Develop technical approach including architecture decisions and implementation strategy, grounded in the KB docs when the expert layer is active
+7. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Draw team members from the available agent types, defaulting to `GENERAL_PURPOSE_AGENT`. Document in plan.
+8. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments, and each task's model and effort stamped per the model-selection rule (it loads every session). Document in plan.
+9. Name the Plan - Create a descriptive kebab-case name from the plan's main topic, and pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test)
+10. Create & Link Issue - File the GitHub issue from the grilling ledger and link its convention branch (see `Worktree & Handoff`). Do this before entering the worktree.
+11. Enter Worktree - BEFORE writing any file, call `EnterWorktree(name: "<slug>")` to branch from `origin/main` into `.claude/worktrees/` and draft inside it (see `Worktree & Handoff`)
+12. Write the Spec Folder - Create `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and fill all four `SPEC_FILES` from `SPEC_TEMPLATES`; author the plan artifacts per `Plan Artifacts`; append `## KB References` to decisions.md when the expert layer is active; write any gap-filled KB docs and their `ai-docs/sources.yaml` entries inside the worktree; record the issue, branch, worktree path, and review profile in spec.md's `## Tracking`
+13. Commit & Push - Commit the spec folder (plus gap-filled KB docs) with a `Refs #N` footer, push its branch to `origin`, then post the plan-links comment on the issue (see `Worktree & Handoff`)
+14. Cross-Review - Have Codex review the spec with `CROSS_REVIEW_SKILL`, up to `MAX_REVIEW_ROUNDS`, fixing blocking findings each round (see `Codex Cross-Review`). Gate the hand-off on the outcome.
+15. Report - Follow the `Report` section to summarize the spec folder and its key components
 
 ## Output: Spec Folder
 
@@ -99,7 +98,7 @@ specs/<name-of-plan>/
 ├── tasks.md               # how & who: phases, team members, step-by-step tasks
 ├── decisions.md           # the grilling record (+ ## KB References when the expert layer is active)
 ├── acceptance-criteria.md # done: testable criteria + validation commands
-└── artifacts/             # medium/complex only: Blindspot board, Design directions page (see Plan Artifacts)
+└── artifacts/             # taste route only: Design directions page (see Plan Artifacts)
 ```
 
 When filling them:
@@ -111,7 +110,7 @@ When filling them:
 
 ## Plan Artifacts
 
-Medium/complex plans write the final state of the Blindspot board and (when the taste route fired) the Design directions page into `specs/<name-of-plan>/artifacts/` while writing the spec folder, committed with the spec. Crafting and publish rules live in `.claude/rules/harness-layer/artifacts.md` (it also auto-loads on `specs/**`); publishing never blocks. Simple plans skip artifacts.
+When the taste route fired, medium/complex plans write the final state of the Design directions page into `specs/<name-of-plan>/artifacts/` while writing the spec folder, committed with the spec. When the incoming prompt references pages under `specs/_explorations/` (e.g. a chosen prototype), copy them into `specs/<name-of-plan>/artifacts/` too, at any complexity. Crafting and publish rules live in `.claude/rules/harness-layer/artifacts.md` (it also auto-loads on `specs/**`); publishing never blocks. Simple plans skip artifacts.
 
 ## Worktree & Handoff
 
