@@ -1,0 +1,183 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CPO Department — Ship Brief</title>
+<style>
+  :root{
+    --bg:#FAF8F5; --surface:#F0EDE5; --border:#D4CFC7; --text:#2C2825;
+    --accent:#B8602A; --muted:#8A837A;
+    --good:#4a6b4f; --bad:#9c3f2e;
+    --serif:"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:ui-monospace,"Cascadia Code",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{color-scheme:light}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.55;font-size:16px}
+  .wrap{max-width:56rem;margin:0 auto;padding:2.5rem 1.25rem 4rem}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.875em;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:.08em .35em;white-space:nowrap}
+  .eyebrow{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 .4rem}
+  h1{font-family:var(--serif);font-size:clamp(1.9rem,4.5vw,2.6rem);line-height:1.15;margin:0 0 .75rem;text-wrap:balance}
+  h2{font-family:var(--serif);font-size:1.35rem;margin:2.75rem 0 .9rem;padding-top:1.6rem;border-top:1px solid var(--border);text-wrap:balance}
+  .lede{font-size:1.06rem;max-width:44rem}
+  .stamp{display:inline-block;font-family:var(--mono);font-size:.8rem;color:var(--accent);border:1.5px solid var(--accent);border-radius:4px;padding:.3rem .6rem;margin-top:1rem;letter-spacing:.03em}
+  /* gate trail */
+  .trail{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.75rem 0 0;align-items:stretch}
+  .round{flex:1 1 9.5rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.7rem .8rem;min-width:9rem}
+  .round .n{font-family:var(--mono);font-size:.7rem;color:var(--muted);display:block}
+  .round .v{font-weight:600;font-size:.9rem}
+  .round .b{font-family:var(--mono);font-size:1.5rem;color:var(--accent);font-variant-numeric:tabular-nums}
+  .round.exit{border-color:var(--accent)}
+  ul.ship{padding-left:1.2rem;margin:.5rem 0}
+  ul.ship li{margin:.45rem 0}
+  /* evidence ledger */
+  .obj{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.9rem 1rem;margin:.7rem 0}
+  .obj p{margin:.35rem 0}
+  .obj .q{font-weight:600}
+  /* quiz */
+  .qcard{border:1px solid var(--border);border-radius:6px;padding:1rem 1.1rem;margin:.9rem 0;background:#fff9f2}
+  .qcard .qq{font-weight:600;margin:0 0 .6rem}
+  .opt{display:block;width:100%;text-align:left;font:inherit;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:.5rem .7rem;margin:.35rem 0;cursor:pointer;color:var(--text)}
+  .opt:hover{border-color:var(--accent)}
+  .opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .opt.right{border-color:var(--good);background:#eef2ec}
+  .opt.wrong{border-color:var(--bad);background:#f6e9e5}
+  .verdictline{font-size:.9rem;margin:.5rem 0 0;display:none}
+  .verdictline.show{display:block}
+  .verdictline .ok{color:var(--good);font-weight:600}
+  .verdictline .no{color:var(--bad);font-weight:600}
+  .score{font-family:var(--mono);font-size:.9rem;color:var(--muted);margin-top:1rem;font-variant-numeric:tabular-nums}
+  /* prompt block */
+  .promptbox{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1rem;margin-top:1rem}
+  .promptbox pre{margin:0 0 .8rem;white-space:pre-wrap;font-family:var(--mono);font-size:.85rem;line-height:1.5}
+  .copybtn{font:inherit;font-weight:600;background:var(--accent);color:#fff;border:none;border-radius:5px;padding:.5rem 1rem;cursor:pointer}
+  .copybtn:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:.9rem}
+  th,td{text-align:left;border-bottom:1px solid var(--border);padding:.45rem .6rem;vertical-align:top}
+  th{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  td code{white-space:nowrap}
+  @media (prefers-reduced-motion:no-preference){.opt{transition:border-color .12s,background .12s}}
+</style>
+<div class="wrap">
+  <p class="eyebrow">Soriza · harness-build ship brief · PR #36 · issue #35</p>
+  <h1>The CPO department is staffed, proven on a live fixture, and gated across two models.</h1>
+  <p class="lede">This build ships Soriza's first operating department: three stage commands drive a client from a vague request to a locked <code>requirements.md</code>, a Codex-gated PRD, and a six-file design package a human designer can run with — knowledge in three skills, memory in three rules files, labor in five persona subagents, and every engagement ledgered under <code>products/&lt;client-slug&gt;/</code>. The Bluebird Bakery fixture ran the whole pipeline end to end and ships as re-checkable documentation.</p>
+  <p class="stamp">exit: accepted-with-unverified-fixes @ 9bc0c3b</p>
+
+  <div class="trail" role="list" aria-label="Review gate trail">
+    <div class="round" role="listitem"><span class="n">Codex R1 · full</span><span class="b">11</span> <span class="v">blockers</span><br><a href="https://github.com/SunshinePeace213/ai-native-startup/pull/36#issuecomment-4997362935">report</a></div>
+    <div class="round" role="listitem"><span class="n">Codex R2 · delta</span><span class="b">4</span> <span class="v">blockers</span><br><a href="https://github.com/SunshinePeace213/ai-native-startup/pull/36#issuecomment-4999328845">report</a></div>
+    <div class="round" role="listitem"><span class="n">Codex R3 · final</span><span class="b">1</span> <span class="v">residual</span><br><a href="https://github.com/SunshinePeace213/ai-native-startup/pull/36#issuecomment-4999620920">report</a></div>
+    <div class="round exit" role="listitem"><span class="n">post-R3 · fixed</span><span class="b">0</span> <span class="v">open</span><br>13/13 ACs green</div>
+  </div>
+
+  <h2>What shipped</h2>
+  <ul class="ship">
+    <li><strong>Three stage commands</strong> — <code>/c-suite:cpo-intake</code> (dual-mode discovery, re-entrant, worktree-first for new real engagements), <code>/c-suite:cpo-prd</code> (PM draft → capped Codex <code>prd-review</code> gate with a canonical <code>## Gate contract</code> block and a persisted <code>prd-gate:</code> ledger state), <code>/c-suite:cpo-brief</code> (six-file package through the Design-Lead gate).</li>
+    <li><strong>Three knowledge skills</strong> with bundled engagement templates; the status ledger carries the <code>prd-gate:</code> outcome and the fixture two-commit run-log protocol.</li>
+    <li><strong>Five persona subagents</strong> under <code>.claude/agents/cpo/</code>, roster-matched models, <code>skills:</code> preloading plus the brief-carried fallback.</li>
+    <li><strong>Cross-model QA</strong> — <code>.agents/skills/prd-review/</code>, invoked with the quoted engagement folder + round number.</li>
+    <li><strong>Department memory</strong> — roster, operations, and a lessons file that already carries two real lessons from the dry run.</li>
+    <li><strong>The Bluebird Bakery fixture</strong> — locked requirements, Codex-approved PRD, Design-Lead-approved package, five offline wireframes.</li>
+    <li><strong>validate.sh</strong> — all 13 acceptance criteria as fail-closed check functions, including the five-surface AC12 zero-side-effect proof and exact/unique/ordered contract assertions.</li>
+  </ul>
+
+  <h2>Objections, pre-answered</h2>
+  <div class="obj"><p class="q">"Round 3 ended changes-requested — why is this shipping?"</p>
+    <p>The residual was one mechanical assertion (AC9 Inputs fragments → exact physical lines). It was fixed at <code>9bc0c3b</code> exactly as the finding prescribed, mutation-probed (an altered canonical line now fails), and the full suite re-ran 13/13 green. Round 3 was the last permitted round, so the user explicitly chose <code>accepted-with-unverified-fixes</code> at the over-cap gate — the status is recorded in the <a href="https://github.com/SunshinePeace213/ai-native-startup/pull/36">PR</a>.</p></div>
+  <div class="obj"><p class="q">"Codex wrote the round-3 fix. Who reviewed Codex?"</p>
+    <p>An internal Claude <code>opus</code> review gated the Codex-authored delta before the round-3 review ran — verdict clean, two advisories (recorded in the PR Follow-ups). Codex never solely gated its own code; authorship is stamped in the Agent Task Manifest and <code>implementation-notes.md</code>.</p></div>
+  <div class="obj"><p class="q">"Do the validation results actually prove anything?"</p>
+    <p><code>bash specs/c-suite-cpo-department/validate.sh</code> ran live at every freeze — including the headless AC2 resolution probe and the AC12 negative test under the locked proof standard (five-surface snapshot equality, empty <code>gh</code>/<code>codex</code> shim logs, and a deterministic <code>STOP:</code> reply contract). The proof standards themselves are locked boundaries in <a href="https://github.com/SunshinePeace213/ai-native-startup/blob/feat/35-c-suite-cpo-department/specs/c-suite-cpo-department/decisions.md">decisions.md</a>.</p></div>
+  <div class="obj"><p class="q">"What is knowingly not proven?"</p>
+    <p>Two recorded residuals, accepted in the plan: fixture mode never exercises the real-engagement GitHub trail (the first real engagement owns it, with a lessons check), and <code>skills:</code> preloading is unverified on the true delegation path (the brief-carried skill fallback is what the dry run exercised).</p></div>
+
+  <h2>The review trail</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Round</th><th>Verdict</th><th>Head</th><th>Outcome</th></tr>
+    <tr><td>R1 · full, 6 lenses</td><td>changes-requested</td><td><code>33192f0</code></td><td>11 blockers → fixed in <code>2056249</code> under 5 consulted boundaries</td></tr>
+    <tr><td>R2 · delta</td><td>changes-requested</td><td><code>2056249</code></td><td>9/11 confirmed fixed; F8/F9 survived → redesigned R3 (root-cause rule)</td></tr>
+    <tr><td>R3 · final delta, author codex</td><td>changes-requested</td><td><code>696d31b</code></td><td>G1–G3 fixed; 1 mechanical residual → fixed @ <code>9bc0c3b</code>, user-accepted</td></tr>
+  </table></div>
+
+  <h2>Prove you read it</h2>
+  <p>Six questions. A wrong answer tells you exactly what to re-read.</p>
+  <div id="quiz"></div>
+  <p class="score" id="score">0 / 6 answered</p>
+
+  <h2>Take it back to Claude</h2>
+  <div class="promptbox">
+    <pre id="prompt"></pre>
+    <button class="copybtn" id="copy">Copy prompt</button>
+  </div>
+</div>
+<script>
+  const QUESTIONS=[
+    {q:"A NEW real engagement arrives. Where does intake scaffold products/<client-slug>/?",
+     opts:["In the hosting worktree, then move it later","Inside the engagement worktree, entered before scaffolding","Wherever the session happens to be — the ledger records it"],
+     right:1, reread:".claude/commands/c-suite/cpo-intake.md steps 3–4 and the 'Real-engagement worktree ordering' boundary in decisions.md"},
+    {q:"When does cpo-brief's preflight pass?",
+     opts:["Only when an approved prd-review verdict report exists","When prd: done AND (prd-gate: approved with its report, or prd-gate: accepted-with-noted-gaps)","Whenever prd: done, regardless of the gate outcome"],
+     right:1, reread:".claude/commands/c-suite/cpo-brief.md Instructions and the 'PRD gate ledger' boundary in decisions.md"},
+    {q:"In a fixture run log, sha= names which commit?",
+     opts:["The ledger-update commit that writes the run log","The stage's deliverable commit — the ledger update is a second, separate commit","The hosting branch's current tip at run time"],
+     right:1, reread:"cpo-question-bank/templates/status.md legend and the 'Fixture two-commit protocol' boundary in decisions.md"},
+    {q:"What does AC12 accept as proof of 'zero side effects' on the malformed-slug run?",
+     opts:["The reply says STOP and products/ gained no new top-level entry","Exact before/after equality of five surfaces, empty gh/codex shim logs, and a STOP: line carrying the rule and offending value — all fail-closed","The headless run exits 0 with no stderr"],
+     right:1, reread:"specs/c-suite-cpo-department/validate.sh check_ac12 and the 'AC12 zero-side-effect proof standard' boundary"},
+    {q:"Who authored the round-3 fix delta, and who gated it?",
+     opts:["Claude opus authored; Codex reviewed it in round 3 only","Codex gpt-5.6-sol authored; an internal Claude opus review gated it clean before the round-3 delta review","The build lead authored it directly"],
+     right:1, reread:"specs/c-suite-cpo-department/implementation-notes.md (round-3 entry) and reviews/codex-impl-review-round-3.md"},
+    {q:"Which exit status did the build record, and why?",
+     opts:["approved — round 3 confirmed every fix","accepted-with-unverified-fixes — the last mechanical residual was fixed and mechanically verified after round 3, the final round, and the user explicitly accepted","needs-human — the residual awaits a human reviewer"],
+     right:1, reread:"PR #36 Follow-ups and reviews/codex-impl-review-round-3.md"}
+  ];
+  const state={answers:Array(QUESTIONS.length).fill(null)};
+  const quiz=document.getElementById("quiz");
+  QUESTIONS.forEach((item,qi)=>{
+    const card=document.createElement("div");card.className="qcard";
+    const p=document.createElement("p");p.className="qq";p.textContent=(qi+1)+". "+item.q;card.appendChild(p);
+    item.opts.forEach((opt,oi)=>{
+      const b=document.createElement("button");b.className="opt";b.type="button";b.textContent=opt;
+      b.addEventListener("click",()=>{
+        if(state.answers[qi]!==null)return;
+        state.answers[qi]=oi;
+        card.querySelectorAll(".opt").forEach((el,i)=>{
+          if(i===item.right)el.classList.add("right");
+          else if(i===oi)el.classList.add("wrong");
+          el.disabled=true;
+        });
+        const v=card.querySelector(".verdictline");v.classList.add("show");
+        v.textContent="";
+        const tag=document.createElement("span");
+        if(oi===item.right){tag.className="ok";tag.textContent="Correct.";v.appendChild(tag);}
+        else{tag.className="no";tag.textContent="Not quite.";v.appendChild(tag);v.appendChild(document.createTextNode(" Re-read: "+item.reread));}
+        updateAll();
+      });
+      card.appendChild(b);
+    });
+    const v=document.createElement("p");v.className="verdictline";card.appendChild(v);
+    quiz.appendChild(card);
+  });
+  function updateAll(){
+    const done=state.answers.filter(a=>a!==null).length;
+    const correct=state.answers.filter((a,i)=>a===QUESTIONS[i].right).length;
+    document.getElementById("score").textContent=done+" / "+QUESTIONS.length+" answered · "+correct+" correct";
+    const missed=state.answers.map((a,i)=>(a!==null&&a!==QUESTIONS[i].right)?i:null).filter(x=>x!==null);
+    let text="I read the c-suite-cpo-department ship brief";
+    if(done===0){text+=" (quiz not taken yet).";}
+    else{
+      text+=" and scored "+correct+"/"+QUESTIONS.length+" on the quiz.";
+      if(missed.length)text+=" Before shipping I am re-reading: "+missed.map(i=>QUESTIONS[i].reread).join("; ")+".";
+    }
+    text+="\n\nThe build exited accepted-with-unverified-fixes at 9bc0c3b (recorded in PR #36). Proceed with /harness-layer:harness-ship c-suite-cpo-department.";
+    document.getElementById("prompt").textContent=text;
+  }
+  document.getElementById("copy").addEventListener("click",()=>{
+    navigator.clipboard.writeText(document.getElementById("prompt").textContent).then(()=>{
+      const b=document.getElementById("copy");b.textContent="Copied!";setTimeout(()=>b.textContent="Copy prompt",1500);
+    });
+  });
+  updateAll();
+</script>
