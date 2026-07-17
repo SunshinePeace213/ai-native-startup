@@ -1,6 +1,6 @@
 # Decisions: <task name>
 
-> The grilling record for [spec.md](./spec.md) — why the plan is the way it is. Lifecycle tracking and
+> The interview record for [spec.md](./spec.md) — why the plan is the way it is. Lifecycle tracking and
 > the Codex review record live in spec.md, NOT here; this file is the immutable decision history.
 
 ## Summary
@@ -9,7 +9,7 @@
 
 ## Resolved Decisions
 
-<one entry per locked decision from the grilling:>
+<one entry per locked decision from the interview:>
 
 - **Q:** <the question that was open>
   - **A:** <the decision>

@@ -3,8 +3,8 @@
 - **Owner:** <github handle of the human owner, e.g. @ringo>
 - **Status:** Drafted for Review
   <!-- Lifecycle, set by /harness-layer:harness-plan: Drafted for Review → Approved (on a Codex
-       `approved` verdict). If round 2 is still changes-requested, the over-cap gate records the exit
-       status in ## Codex Verification — approved | accepted-with-unverified-fixes | needs-human. One value only. -->
+       `approved` verdict). A cycle that ends still changes-requested — or with Codex unavailable —
+       records needs-human in ## Codex Verification and keeps this status. One value only. -->
 
 ## Task Description
 
@@ -30,7 +30,7 @@
 
 ## Requirements & Decisions
 
-<the 2-4 most important LOCKED decisions/constraints a builder must honor, as bullets. A summary — the full grilling record lives in decisions.md. Order by volatility: most-likely-to-change decisions first, each stating the decision, a short why, AND its live alternative; mechanical constraints last.>
+<the 2-4 most important LOCKED decisions/constraints a builder must honor, as bullets. A summary — the full interview record lives in decisions.md. Order by volatility: most-likely-to-change decisions first, each stating the decision, a short why, AND its live alternative; mechanical constraints last.>
 
 ## Tracking
 
@@ -38,7 +38,7 @@
      /harness-layer:harness-build reads — it NEVER re-derives #N from the local `worktree-<slug>`
      branch name. spec.md is the single home for this block; decisions.md does not duplicate it. -->
 
-- **Issue:** <#N — mandatory; every plan is filed as an issue before its worktree exists>
+- **Issue:** <#N — mandatory; every plan is filed as an issue before its first push>
 - **Branch:** <convention branch `<type>/<N>-<slug>`>
 - **Worktree:** <absolute worktree path>
 - **Review profile:** <kb-grounded | standard>
@@ -72,7 +72,7 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** <approved at round N | accepted-with-unverified-fixes | needs-human>
+- **Outcome:** <approved at round N | needs-human (blockers | codex-unavailable)>
 - **Rejected findings:** <any Codex finding Claude chose not to act on, each with a one-line rationale; "none" if all warranted findings were applied>
 
 ## References
@@ -81,10 +81,12 @@ Use these files to complete the task:
 
 ```text
 specs/<plan-name>/
+├── discovery/              # pre-plan pass pages + decisions-draft.md (when the chain ran)
 ├── spec.md                 # this file — what & why, tracking, review record
-├── decisions.md            # grilling record: resolved decisions, assumptions, out-of-scope
+├── decisions.md            # interview record: resolved decisions, assumptions, out-of-scope
 ├── tasks.md                # how & who: phases, team, step-by-step tasks
-└── acceptance-criteria.md  # done: acceptance criteria + validation commands
+├── acceptance-criteria.md  # done: acceptance criteria + validation commands
+└── artifacts/              # implementation-plan page (+ reference map when porting semantics)
 ```
 
 ## Self Validation

@@ -10,8 +10,8 @@ Two checks only: (1) all four files exist, (2) each file has its required
 '##' sections. Exit 2 => deny stop; stderr is fed back to Claude so it
 completes the gaps. The gated folder is the newest-modified plan folder
 across the main specs/ and any worktree's specs/ (/harness-layer:harness-plan
-drafts in a worktree), excluding underscore-prefixed dirs (_templates,
-_explorations).
+drafts in a worktree), excluding underscore-prefixed dirs (_templates) and
+discovery-only chain folders (a discovery/ subdir with no spec files yet).
 """
 
 import os
@@ -61,6 +61,13 @@ def resolve_root() -> Path:
     return Path.cwd()
 
 
+def discovery_only(folder: Path) -> bool:
+    """A chain folder holding only pre-plan discovery output — not yet a plan."""
+    return (folder / "discovery").is_dir() and not any(
+        (folder / name).is_file() for name in REQUIRED_SECTIONS
+    )
+
+
 def newest_plan_folder(root: Path) -> Path | None:
     specs_dirs = [root / "specs", *sorted((root / ".claude" / "worktrees").glob("*/specs"))]
     folders = [
@@ -68,7 +75,7 @@ def newest_plan_folder(root: Path) -> Path | None:
         for specs in specs_dirs
         if specs.is_dir()
         for folder in specs.iterdir()
-        if folder.is_dir() and not folder.name.startswith("_")
+        if folder.is_dir() and not folder.name.startswith("_") and not discovery_only(folder)
     ]
     return max(folders, key=lambda folder: folder.stat().st_mtime, default=None)
 

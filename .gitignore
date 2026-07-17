@@ -368,9 +368,3 @@ dist
 .claude/worktrees
 .claude/settings.local.json
 .claude/.security-scan/
-
-# =============================================================================
-# Pre-plan discovery scratch (harness-unknowns / brainstorm / prototypes) —
-# local reactable pages; the plan copies adopted ones into specs/<name>/artifacts/
-# =============================================================================
-specs/_explorations/

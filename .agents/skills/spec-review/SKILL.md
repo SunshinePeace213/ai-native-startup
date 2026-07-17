@@ -24,9 +24,10 @@ The caller injects only the **round number N** — use it verbatim, never infer 
 **review profile** (`kb-grounded` or `standard`) is read from the `Review profile:` line in
 spec.md's `## Tracking`, not injected by the caller.
 
-Medium/complex plans also commit presentation pages under `specs/<plan-name>/artifacts/`
-(Design directions when the taste route fired). Their substance lives in
-decisions.md — never content-review the pages themselves.
+Plans may also carry committed HTML pages — pre-plan passes under
+`specs/<plan-name>/discovery/`, and `specs/<plan-name>/artifacts/` pages the plan
+authors after this review. Their substance lives in decisions.md — never
+content-review the pages themselves.
 
 ## KB grounding (conditional — run when any signal fires)
 
@@ -57,9 +58,7 @@ the build produce the wrong thing or get stuck:
 - **Profile/signal mismatch** (KB layer only) — the recorded profile disagrees with the KB signals (see KB grounding).
 
 **Adversarial challenge (advisory).** Also ask: is this the simplest approach that meets the
-objective? Is there a cleaner design, or unnecessary complexity to cut? Flag a plan that
-reads medium/complex (multi-phase tasks.md, a multi-member team) yet commits nothing under
-`artifacts/`. Under the KB layer,
+objective? Is there a cleaner design, or unnecessary complexity to cut? Under the KB layer,
 also flag an ungrounded load-bearing claim (recommend `/kb add`) and stale grounding — a
 referenced doc fetched more than 30 days ago (recommend a `/kb` refresh). Record all of these
 as non-blocking recommendations — they NEVER change the verdict.

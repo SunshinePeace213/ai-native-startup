@@ -4,7 +4,8 @@ The gate is command-scoped (registered by /harness-layer:harness-plan, NOT in
 settings.json), so it must never fire outside a planning run -- a root with no
 specs/ dir passes silently. Inside a run it gates the NEWEST plan folder across
 the main specs/ AND every worktree's specs/ (plans draft in a worktree; missing
-the worktree dirs was a real shipped bug), excluding _templates. Exit 2 must
+the worktree dirs was a real shipped bug), excluding _templates and
+discovery-only chain folders. Exit 2 must
 name exactly what is missing -- file or '## section' -- because stderr is the
 agent's only repair instruction. Complete plans are built from the hook's own
 REQUIRED_SECTIONS via load_hook_module, so a rule change cannot silently
@@ -55,18 +56,46 @@ def test_no_specs_dir_allows_stop(tmp_path, run_hook):
     assert proc.stderr == ""
 
 
-def test_specs_with_only_underscore_dirs_blocks_as_no_plan(tmp_path, run_hook):
-    """_templates is scaffolding and _explorations is pre-plan discovery
-    scratch — neither is a plan: a planning run that produced no plan folder
-    must not be allowed to end, and discovery pages must never be gated as a
-    spec."""
+def test_underscore_and_discovery_only_folders_block_as_no_plan(tmp_path, run_hook):
+    """_templates is scaffolding and a folder holding only discovery/ pages is
+    a pre-plan chain still in progress — neither is a plan: a planning run that
+    produced no spec files must not be allowed to end, and discovery pages must
+    never be gated as a spec."""
     (tmp_path / "specs" / "_templates").mkdir(parents=True)
-    exploration = tmp_path / "specs" / "_explorations" / "some-pass"
-    exploration.mkdir(parents=True)
-    (exploration / "page.html").write_text("<p>mock</p>")
+    discovery = tmp_path / "specs" / "some-chain" / "discovery"
+    discovery.mkdir(parents=True)
+    (discovery / "page.html").write_text("<p>mock</p>")
     proc = gate(run_hook, tmp_path)
     assert proc.returncode == 2
     assert "no plan folder found" in proc.stderr
+
+
+def test_newer_discovery_only_folder_does_not_mask_the_plan(tmp_path, run_hook, sections):
+    """A parallel chain's discovery-only folder can be newer than the plan
+    being drafted; picking it as "newest" would gate HTML pages as a spec and
+    block every planning run — the newest folder with spec files must win."""
+    specs = tmp_path / "specs"
+    plan = write_plan(specs, "the-plan", sections)
+    discovery = specs / "newer-chain" / "discovery"
+    discovery.mkdir(parents=True)
+    (discovery / "page.html").write_text("<p>mock</p>")
+    set_mtime(plan, 1_000_000_000)
+    set_mtime(specs / "newer-chain", 2_000_000_000)
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 0
+
+
+def test_plan_folder_with_discovery_pages_is_gated_normally(tmp_path, run_hook, sections):
+    """After the chain, discovery/ lives INSIDE the plan folder; its presence
+    must not exempt a folder that already has spec files from the completeness
+    gate, or an incomplete post-chain plan would slip through."""
+    folder = write_plan(tmp_path / "specs", "my-plan", sections)
+    (folder / "discovery").mkdir()
+    (folder / "discovery" / "interview.html").write_text("<p>page</p>")
+    (folder / "tasks.md").unlink()
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 2
+    assert "MISSING FILE: tasks.md" in proc.stderr
 
 
 def test_complete_plan_allows_stop(tmp_path, run_hook, sections):
