@@ -46,6 +46,11 @@
   - **The call made:** One concise `(desktop: …)` clause per section tag, one-to-one, in all four flagged pages.
   - **Spec impact:** none.
 
+- **What diverged (R2 over-cap, round 3):** the round-3 fix delta is Codex-authored (`gpt-5.6-sol`), not Claude-authored — validate.sh's AC12/AC4/AC9 redesign plus the cpo-prd.md canonical-line dedupe.
+  - **What forced it:** Round 2 dispositioned F8/F9 as not fixed — repeat root-cause failures after the opus round-1 fix; the root-cause rule reassigns those across providers, and the redesign (fail-closed snapshot engine, exact/unique/ordered assertion parsing) is exactly the algorithmic class stamped for sol.
+  - **The call made:** Over-cap gate exit (a) — the single permitted redesigned round 3 — taken under the user's standing instruction to fix the Codex findings and finish the workflow; the redesign boundaries were consulted and recorded in `## Locked Boundaries` before authoring, and an internal Claude `opus` review of the Codex delta returned clean (2 non-blocking advisories) before the round-3 delta review.
+  - **Spec impact:** none beyond the recorded Locked Boundaries refinements; if round 3 is still changes-requested the build stops for an explicit user decision.
+
 ## Fold-Forward
 
 - `quick_validate.py` vs Claude Code-only frontmatter keys (`autoInvoke`, `disable-model-invocation`): consider a follow-up chore aligning the packaging validator or the meta-skills docs on which validator gates project-internal skills.

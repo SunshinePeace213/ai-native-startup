@@ -32,9 +32,8 @@ LESSONS_FILE: `.claude/rules/c-suite/cpo-lessons.md`
   `_example-` exception) before any side effect, and double-quote every interpolation.
 - **Codex model and effort** for `REVIEW_SKILL` come from `.claude/rules/model-selection.md`
   at run time — pick per the PRD's complexity, never hardcoded.
-- `Verdict source: report file only` — read each round's verdict from `REPORT_FILE` (grep
-  its first line), NEVER from stdout. `Silence: not approval` — a round that writes no
-  verdict line is re-run, never treated as approval.
+- Read each round's verdict only from `REPORT_FILE` (grep its first line), NEVER from
+  stdout; see `## Gate contract`. Re-run a round that writes no verdict line.
 - **Persist the gate ledger.** `status.md` carries one `prd-gate: <none | approved |
   accepted-with-noted-gaps | needs-human>` line and a `## PRD gate gaps` list (default
   `- none`). An approved report sets `approved`; only explicit user authorization sets
@@ -56,7 +55,7 @@ LESSONS_FILE: `.claude/rules/c-suite/cpo-lessons.md`
 3. **CPO consistency pass.** The CPO (this session) checks `prd/prd.md` against
    `REQUIREMENTS` — every locked dimension covered, no scope drift, metrics measurable,
    stories carrying acceptance criteria — before review.
-4. **Codex gate — `Automatic rounds: 1, 2`.** For each round N in 1, 2: run `codex exec`
+4. **Codex gate — two automatic rounds.** For each round N in 1, 2: run `codex exec`
    with `REVIEW_SKILL`, injecting BOTH the quoted engagement folder `products/<client-slug>/`
    and the round number N — the skill uses both verbatim; pick the Codex model/effort from
    model-selection at run time. Read the verdict from `REPORT_FILE`
@@ -68,10 +67,10 @@ LESSONS_FILE: `.claude/rules/c-suite/cpo-lessons.md`
    - Round 2 `approved` → gate passes; set `prd-gate: approved` and `prd: done`.
    - Round 2 `changes-requested` → the over-cap gate.
 5. **Over-cap gate.** Round 2 still `changes-requested` → STOP and AskUserQuestion with
-   exactly `Round 2 options: final-delta-round | accept-with-noted-gaps | needs-human`.
+   exactly the three round-2 choices in `## Gate contract`.
    - `final-delta-round` → run round 3, the LAST round (no further gate re-offer), on the
      fix delta. Round 3 `approved` → set `prd-gate: approved` and `prd: done`; still
-     `changes-requested` → re-present only `Round 3 options: accept-with-noted-gaps | needs-human`.
+     `changes-requested` → re-present only the two round-3 choices in `## Gate contract`.
    - `accept-with-noted-gaps` → list the noted gaps under `## PRD gate gaps` in `status.md`,
      set `prd-gate: accepted-with-noted-gaps` and `prd: done`, and pass with them.
    - `needs-human` → set `prd-gate: needs-human` (real mode adds the label) and escalate;
