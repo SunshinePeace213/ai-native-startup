@@ -50,7 +50,7 @@ Refs #42
 ## Pull Request Requirements
 
 - Use **one PR template per commit type**. The 8 templates live under `.github/PULL_REQUEST_TEMPLATE/`: `feat.md`, `fix.md`, `docs.md`, `style.md`, `refactor.md`, `perf.md`, `test.md`, `chore.md`. Each is tailored to its type (e.g. `feat` carries Breaking-changes + Screenshots; `fix` carries Root-cause + Regression-test) and all 8 share the stage table, Test Evidence, Risk & Rollback, Review Reports, and Reviewer Checklist.
-- `/harness-layer:harness-build` opens a **draft** PR right after the first implementation checkpoint, filling the body from the matching template with `gh pr create --draft --body-file <type>.md` (not `--template`).
+- `/harness-layer:harness-build` opens a **draft** PR right after the tidy checkpoint, filling the body from the matching template with `gh pr create --draft --body-file <type>.md` (not `--template`).
 - PR title carries the emoji to mirror the commit, e.g. `✨ feat(api): user login`.
 - The PR body carries `Closes #N` — the PR is the **only** artifact that closes an issue.
 - Fill out the Summary and Test Evidence, and keep the linked-issue line accurate.

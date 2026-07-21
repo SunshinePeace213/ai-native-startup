@@ -1,19 +1,15 @@
 # Implementation Notes: <task name>
 
-> Running deviation log for [spec.md](./spec.md), kept by `/harness-layer:harness-build` — created
-> from this template at implement start, folded by the lead at each checkpoint commit.
+> Chronological dev log for [spec.md](./spec.md), created from this template at
+> `/harness-layer:harness-build` implement start and appended by both
+> `/harness-layer:harness-build` and `/harness-layer:harness-review` as the work
+> proceeds.
+>
+> Boundary: per-plan phases, hand-offs, deviations, fixes, and lessons live here.
+> Cross-plan one-liners go to `.claude/rules/development-log.md` instead.
 
-## Deviations
+## Log
 
-<one entry per deviation builders report in their hand-offs. "No deviations recorded" is a valid body.>
+<append-only; one entry per phase, hand-off, deviation, fix, or lesson — never edit or delete a prior entry. "No entries yet" is a valid starting body.>
 
-- **What diverged:** <the plan said X; the build did Y>
-  - **What forced it:** <the edge case, constraint, or discovery>
-  - **The call made:** <the conservative choice taken>
-  - **Spec impact:** <none | locked-decision or acceptance-criterion touched → user gate outcome>
-
-## Fold-Forward
-
-<bullets worth carrying into a future attempt or follow-up plan; delete if empty.>
-
-- <lesson or leftover>
+- **<date> · <phase|event>** — <what happened; deviations state plan-said-X / did-Y / why>
