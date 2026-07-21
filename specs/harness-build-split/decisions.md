@@ -86,4 +86,10 @@ brief.
 - `ai-docs/anthropic/agent-sdk/slash-commands.md` (fetched 2026-07-05) — command file format, `argument-hint`, `allowed-tools`, `$ARGUMENTS` substitution.
 - `ai-docs/openai/codex/config-basic.md` (fetched 2026-07-05) — `model_reasoning_effort` config override used by the runner's `codex exec -c` flag.
 - `ai-docs/openai/codex/models.md` (fetched 2026-07-11) — Codex model catalog + effort guidance backing model-selection.md's Codex rows.
+- `ai-docs/anthropic/agent-teams.md` (fetched 2026-07-05) — Task\* tools coordinate the board but deploy nobody; teammates are spawned separately (repo contract: the Agent tool per task-tools.md). Grounds tasks.md § Team Orchestration after the round-1 fix.
 - **Cross-check note:** the `claude-code-guide` subagent cross-check was denied this session; the reconcile step used a direct WebFetch of the official memory page instead (fresh fetch is authoritative — it became the gap-filled mirror above). No conflicts between cached docs and fetched content were found.
+
+## Follow-ups (advisory, non-blocking — feed a future plan)
+
+- [ ] Cache the official Codex CLI reference (`codex exec` flags: `-C`, `-s workspace-write`, `--model`, `-c model_reasoning_effort`) via `/kb add` — the invocation currently rests on working sibling commands, not a cached doc. (Codex spec review R1)
+- [ ] harness-ship.md's description still says "after harness-build marks the PR ready" — a future docs pass should say harness-review. (This plan's Non-Goals)
