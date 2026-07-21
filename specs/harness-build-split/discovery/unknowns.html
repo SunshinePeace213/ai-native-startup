@@ -1,0 +1,345 @@
+<title>Unknowns · harness-build split</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --resolve: #4A6B4A;
+    --accept: #8A6D3B;
+    --discuss: #B8602A;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding-bottom: 4rem;
+  }
+  code {
+    font: 0.86em ui-monospace, "SF Mono", Menlo, monospace;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.05em 0.35em;
+    white-space: nowrap;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 1.25rem; }
+
+  /* ---- header ---- */
+  header { border-bottom: 1px solid var(--border); padding: 2.2rem 0 1.6rem; }
+  .eyebrow {
+    font: 600 0.72rem/1 ui-monospace, Menlo, monospace;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
+  }
+  h1 {
+    font: 600 2rem/1.15 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    margin: 0.5rem 0 0.6rem;
+  }
+  .lede { max-width: 62ch; color: var(--muted); }
+  .lede strong { color: var(--text); font-weight: 600; }
+  .tally { display: flex; gap: 0.5rem; margin-top: 1.1rem; flex-wrap: wrap; }
+  .chip {
+    font: 600 0.72rem/1 ui-monospace, Menlo, monospace;
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 0.45em 0.9em; background: var(--surface); color: var(--muted);
+  }
+  .chip b { color: var(--text); }
+  .chip.c-resolve b { color: var(--resolve); }
+  .chip.c-accept b { color: var(--accept); }
+  .chip.c-discuss b { color: var(--discuss); }
+
+  /* ---- layout ---- */
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 2rem; align-items: start; padding-top: 1.8rem; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } .side { position: static !important; } }
+
+  /* ---- cards ---- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+    border-radius: 10px;
+    padding: 1.15rem 1.25rem 1.05rem;
+    margin-bottom: 1.1rem;
+    transition: border-color 0.15s;
+  }
+  .card[data-status="resolve"] { border-left-color: var(--resolve); }
+  .card[data-status="accept"]  { border-left-color: var(--accept); }
+  .card[data-status="discuss"] { border-left-color: var(--discuss); }
+  .card-head { display: flex; align-items: baseline; gap: 0.7rem; }
+  .num {
+    font: 700 0.78rem/1 ui-monospace, Menlo, monospace;
+    color: var(--accent); flex: none;
+  }
+  .card h2 { font: 600 1.05rem/1.3 -apple-system, sans-serif; }
+  .facet { margin-top: 0.7rem; display: grid; grid-template-columns: 6.4rem 1fr; gap: 0.15rem 0.8rem; }
+  .facet dt {
+    font: 600 0.68rem/1.9 ui-monospace, Menlo, monospace;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  .facet dd { font-size: 0.92rem; }
+  .refs { margin-top: 0.65rem; font-size: 0.8rem; color: var(--muted); }
+  .verdict {
+    margin-top: 0.7rem; padding: 0.55rem 0.8rem; border-radius: 6px;
+    background: rgba(184, 96, 42, 0.08); border: 1px solid rgba(184, 96, 42, 0.25);
+    font-size: 0.88rem;
+  }
+  .verdict b { color: var(--accent); }
+
+  .controls { display: flex; gap: 0.45rem; margin-top: 0.9rem; flex-wrap: wrap; }
+  .controls button {
+    font: 600 0.78rem/1 -apple-system, sans-serif;
+    padding: 0.5em 0.95em; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+  }
+  .controls button:hover { border-color: var(--muted); color: var(--text); }
+  .controls button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card[data-status="resolve"] .b-resolve { background: var(--resolve); border-color: var(--resolve); color: #FAF8F5; }
+  .card[data-status="accept"]  .b-accept  { background: var(--accept);  border-color: var(--accept);  color: #FAF8F5; }
+  .card[data-status="discuss"] .b-discuss { background: var(--discuss); border-color: var(--discuss); color: #FAF8F5; }
+  .note {
+    width: 100%; margin-top: 0.7rem; padding: 0.55rem 0.7rem;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--bg);
+    font: 0.85rem/1.5 -apple-system, sans-serif; color: var(--text);
+    resize: vertical; min-height: 2.4rem;
+  }
+  .note::placeholder { color: var(--muted); }
+
+  /* ---- prompt panel ---- */
+  .side { position: sticky; top: 1rem; }
+  .side h3 {
+    font: 600 0.72rem/1 ui-monospace, Menlo, monospace;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 0.6rem;
+  }
+  #prompt {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem; font: 0.78rem/1.55 ui-monospace, Menlo, monospace;
+    white-space: pre-wrap; max-height: 62vh; overflow-y: auto;
+  }
+  #copy {
+    margin-top: 0.7rem; width: 100%; padding: 0.7em; border-radius: 8px; cursor: pointer;
+    font: 600 0.9rem -apple-system, sans-serif;
+    background: var(--accent); color: #FAF8F5; border: 1px solid var(--accent);
+  }
+  #copy:hover { filter: brightness(1.08); }
+  #copy:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  .hint { margin-top: 0.6rem; font-size: 0.78rem; color: var(--muted); }
+</style>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Discovery · Unknowns pass · harness-build-split</div>
+    <h1>Splitting harness-build: eight things the current file already decided for you</h1>
+    <p class="lede">Every card below came from reading <strong>harness-build.md</strong>, <strong>harness-plan.md</strong>, the memory rules, and the templates — not from theory. Disposition each one: <strong>fold in</strong> writes its directive into the prompt, <strong>accept as-is</strong> keeps today's behavior, <strong>needs discussion</strong> queues it for the interview.</p>
+    <div class="tally">
+      <span class="chip c-resolve">fold in <b id="t-resolve">0</b></span>
+      <span class="chip c-accept">accept <b id="t-accept">0</b></span>
+      <span class="chip c-discuss">discuss <b id="t-discuss">0</b></span>
+    </div>
+  </div>
+</header>
+
+<template id="card-tpl">
+  <article class="card">
+    <div class="card-head"><span class="num"></span><h2></h2></div>
+    <dl class="facet">
+      <dt>What it is</dt><dd class="d-what"></dd>
+      <dt>Why it bites</dt><dd class="d-bites"></dd>
+      <dt>Instead</dt><dd class="d-instead"></dd>
+    </dl>
+    <div class="refs"></div>
+    <div class="verdict"><b>If discussed:</b> <span class="d-question"></span></div>
+    <div class="controls" role="group" aria-label="disposition">
+      <button class="b-resolve">Fold in</button>
+      <button class="b-accept">Accept as-is</button>
+      <button class="b-discuss">Needs discussion</button>
+    </div>
+    <textarea class="note" rows="1" placeholder="Optional note — carried into the prompt verbatim"></textarea>
+  </article>
+</template>
+
+<div class="wrap cols">
+  <main id="cards"></main>
+  <aside class="side">
+    <h3>Copy-as-prompt</h3>
+    <div id="prompt"></div>
+    <button id="copy">Copy improved prompt</button>
+    <p class="hint">Assembled live from your dispositions and notes. Paste it into the recommended next pass.</p>
+  </aside>
+</div>
+
+<script>
+const FINDINGS = [
+  {
+    id: "seam",
+    title: "The split seam isn't where it looks — review state is woven through the whole build file",
+    what: "harness-build.md interleaves build and review everywhere: the stage table (Implementation → Tidy → Codex R1 → Fixes → R2 → Ready), PR_NUMBER, the reviews/ folder, ROUND_INPUT freezes, and the over-cap gate all live in one 132-line file.",
+    bites: "Cut it naively and the two commands can't find each other: harness-review needs the PR number, the last pushed SHA, the review profile, and the worktree path — none of which it created.",
+    instead: "Make spec.md's ## Tracking block the only hand-off carrier (Issue #N, PR #M, worktree, profile), exactly how harness-plan already hands off to harness-build today. harness-build's last act: record PR #M + final SHA in ## Tracking; harness-review's first act: read it.",
+    refs: "harness-build.md:17–19, 45 · harness-plan.md § Worktree & Handoff",
+    directive: "Make spec.md's ## Tracking block the sole hand-off state between the two commands: harness-build ends by recording PR #M and its last pushed SHA there; harness-review starts by reading it — no other shared state.",
+    question: "What exactly does harness-build record at its end, and what does harness-review refuse to run without?",
+    def: "resolve"
+  },
+  {
+    id: "review-style",
+    title: "Two Codex review styles already exist in this repo — pick one, don't blend them",
+    what: "harness-plan reviews with a lightweight sonnet runner: Codex reads the spec files itself and returns a verdict + digest. harness-build reviews with a heavyweight packet: you freeze SHAs, write diff.patch / validation.md / history-brief into round-N-input/, attest a clean tree — all because build-Codex is banned from running any git or shell.",
+    bites: "\"Do it like harness-plan\" quietly deletes the zero-git boundary: either Codex now runs its own git diff (simpler, new trust posture) or the orchestrator still prepares a diff (keeps the boundary, keeps some packet cost). Averaging the two styles gives you the worst of both — your own rule 7.",
+    instead: "Decide the posture first, then write the review loop. A defensible middle: keep the freeze but shrink the packet to diff + validation results only, dropping numstat/name-status/history-brief/attestation ceremony.",
+    refs: "harness-plan.md:126–143 · harness-build.md § Verification, § Review packet",
+    directive: "Adopt harness-plan's sonnet-runner shape for the review loop, and shrink the review input to a minimal packet (diff + validation results only), dropping numstat, name-status, history-brief, and the clean-tree attestation.",
+    question: "Review input style: does Codex run its own git diff (drops the zero-git boundary), or does the orchestrator still hand it a minimal frozen packet?",
+    def: "discuss"
+  },
+  {
+    id: "preflight",
+    title: "Preflight isn't all ceremony — one of its checks guards the workflow's join key",
+    what: "Of the four preflight checks, the Issue #N check is load-bearing: without it there is no Refs #N on commits, no Closes #N on the PR, no needs-human label target. gh auth guards the PR itself.",
+    bites: "Delete preflight wholesale and those failures move to AFTER implementation — you discover the missing issue when the PR won't link, having already spent the build.",
+    instead: "Kill the section, keep the checks: fold all four (codex CLI, plugin, gh auth, Issue #N in ## Tracking) into the enter-worktree step as one compound bash line that STOPs on failure. The waste was the prose, not the four fast commands.",
+    refs: "harness-build.md:50–57 · git-workflow.md § Model-C Linking",
+    directive: "Remove the Preflight section as a phase but fold its four checks (codex CLI, plugin installed, gh auth, Issue #N present in ## Tracking) into the enter-worktree step as one compound command that STOPs on failure.",
+    question: "Keep all four preflight checks inline, or drop some entirely?",
+    def: "resolve"
+  },
+  {
+    id: "impl-notes",
+    title: "Implementation-notes: your mental model is right — with one scope caveat",
+    what: "Yes: builders report deviations in their hand-offs during development, the lead folds them into specs/<name>/implementation-notes.md at each checkpoint commit, and the file becomes an interactive HTML page — the Deviations board, linked from the PR. Same shape as the thariqs 09-implementation-notes page.",
+    bites: "The current template is deviations-only (plan-said-X-we-did-Y). The thariqs page is a fuller dev log — what was built, decisions, gotchas. If you expect the fuller page, that's a template expansion, and it overlaps the new development-log rule file: two homes for \"lessons learned\" will drift apart.",
+    instead: "Decide the boundary once: implementation-notes = per-plan, plan-vs-built deviations (feeds the Deviations board); the rules-file log = cross-plan, agent-error lessons (feeds future context). Write that boundary into both files.",
+    refs: "specs/_templates/implementation-notes.md · artifacts.md § Page inventory (Deviations board)",
+    directive: "Keep implementation-notes.md deviations-only and per-plan (it feeds the Deviations board page); route cross-plan agent-error lessons to the new development-log rule file — state that boundary in both files.",
+    question: "Should implementation-notes stay a deviations log, or expand into a full thariqs-style dev-notes page?",
+    def: "resolve"
+  },
+  {
+    id: "tidy-order",
+    title: "PR-first-then-simplifier flips today's order — fine, but know what the current order buys. And yes: simplifiers auto-fix",
+    what: "harness-simplifier and code-simplifier hold Edit tools and apply behavior-preserving changes directly, then report — they don't just flag. Today tidy runs BEFORE the draft PR so the PR's opening diff is already clean; the awkward cost is the tidy report being \"held\" until a PR exists to comment on.",
+    bites: "Your flip (draft PR at first implementation checkpoint → spawn simplifier → findings as a PR comment) removes the held-report hack and gives reviewers an earlier PR — but the PR's first visible diff is pre-tidy noise.",
+    instead: "Either order works; pick one deliberately and delete the machinery of the other (the flip kills the 'hold the tidy report' rule entirely).",
+    refs: "harness-build.md:44–45 · agent registry: harness-simplifier / code-simplifier",
+    directive: "Open the draft PR at the first implementation checkpoint, then spawn harness-simplifier / code-simplifier (they auto-fix, behavior-preserving) and post their findings directly as the tidy PR comment — deleting the held-report rule.",
+    question: "Draft PR before tidy (earlier PR, noisier first diff) or tidy before PR (today's order, held report)?",
+    def: "resolve"
+  },
+  {
+    id: "dev-log",
+    title: "The development-log rule file collides with two standing conventions",
+    what: "You want an agent-error log that loads into build context. But memory-series.md loads rules by TOUCHED FILE PATHS, not by which command is running — there is no 'load when harness-build runs' mechanism. And AGENTS.md § Harness Development explicitly bans decision logs and context bloat: 'every line loads into context.'",
+    bites: "A flat root rule taxes every session forever; a paths-scoped rule fires on file patterns, not commands; an append-only 'what went wrong' log grows unbounded — becoming exactly the bloat the rules ban.",
+    instead: "Load it by explicit reference from the two command bodies (loads exactly when needed — cleanest). Curation contract: each lesson is rewritten as a ONE-LINE imperative rule, deduped on entry, pruned at ship. And note: the build lead 'never edits files' today — writing this log must join its short exception list.",
+    refs: "memory-series.md:24–37 · AGENTS.md § Harness Development · harness-build.md:30",
+    directive: "Create the development-log as .claude/rules/harness-layer/ file loaded by explicit reference from both command bodies (not flat, not paths-scoped); each entry is a one-line imperative rule, deduped on write, pruned at ship; add writing it to the lead's file-edit exception list and pointer it from AGENTS.md.",
+    question: "Loading mechanism (flat / paths-scoped / referenced from commands), the file's name, and its pruning rule?",
+    def: "discuss"
+  },
+  {
+    id: "over-cap",
+    title: "The no-asking exit already exists in harness-plan — copying it deletes three build mechanisms; choose survivors",
+    what: "harness-plan auto-resolves at the cap: needs-human label + issue comment, zero AskUserQuestion. harness-build's over-cap gate instead ASKS, offering a round-3 redesign and accepted-with-unverified-fixes; around it hang the fix-design consult, the root-cause rule (a twice-surviving root cause is never patched again), and the Locked Boundaries ledger.",
+    bites: "Going no-ask silently discards all of that. The round-3 and accept options are safe to drop — but the root-cause escalation rule and the Locked Boundaries ledger are separable safeguards that prevented non-converging fix loops.",
+    instead: "Copy the plan's auto needs-human exit (label + comment + notification for human takeover), and explicitly keep the root-cause rule and Locked Boundaries ledger inside harness-review's fix pass.",
+    refs: "harness-plan.md:148–152 · harness-build.md:80–92",
+    directive: "At the 2-round cap, auto-resolve like harness-plan: needs-human label + issue comment + a notification for human takeover — no AskUserQuestion, no round 3, no accepted-with-unverified-fixes. Keep the root-cause escalation rule and the Locked Boundaries ledger inside harness-review's fix pass.",
+    question: "Which over-cap mechanisms survive: root-cause rule? Locked Boundaries? fix-design consult? And how is the human notified?",
+    def: "resolve"
+  },
+  {
+    id: "variables",
+    title: "Half the variables are genuinely state; half are constants wearing a Variables costume",
+    what: "Real state that must survive the split: PATH_TO_PLAN, ISSUE_NUMBER, PR_NUMBER, REVIEW_PROFILE — all carried in ## Tracking or the PR. Constants used in exactly one section each: STAGES (duplicates the PR-body spec), HARNESS_SIMPLIFIER + CODE_SIMPLIFIER (two names for 'the tidy agents' the registry already documents), CROSS_CHECK, ROUND_INPUT, REQUIRED_PLUGINS.",
+    bites: "Splitting the file while keeping the costume doubles it: each command re-declares eleven variables and the drift between the two copies becomes a new bug class.",
+    instead: "Per command, declare only the state variables it reads or writes (sourced from ## Tracking); inline every single-use constant where it's used.",
+    refs: "harness-build.md:12–25",
+    directive: "In each new command declare only genuine state variables (PATH_TO_PLAN, ISSUE_NUMBER, PR_NUMBER, REVIEW_PROFILE — sourced from ## Tracking); inline the single-use constants (STAGES, simplifier names, CROSS_CHECK, ROUND_INPUT, REQUIRED_PLUGINS) into the sections that use them.",
+    question: "Which variables does each command keep?",
+    def: "resolve"
+  }
+];
+
+const state = Object.fromEntries(FINDINGS.map(f => [f.id, { status: f.def, note: "" }]));
+
+const cardsEl = document.getElementById("cards");
+const tpl = document.getElementById("card-tpl");
+FINDINGS.forEach((f, i) => {
+  const el = tpl.content.firstElementChild.cloneNode(true);
+  el.id = "card-" + f.id;
+  el.querySelector(".num").textContent = String(i + 1).padStart(2, "0");
+  el.querySelector("h2").textContent = f.title;
+  el.querySelector(".d-what").textContent = f.what;
+  el.querySelector(".d-bites").textContent = f.bites;
+  el.querySelector(".d-instead").textContent = f.instead;
+  el.querySelector(".refs").textContent = "⌁ " + f.refs;
+  el.querySelector(".d-question").textContent = f.question;
+  el.querySelector(".b-resolve").onclick = () => setStatus(f.id, "resolve");
+  el.querySelector(".b-accept").onclick = () => setStatus(f.id, "accept");
+  el.querySelector(".b-discuss").onclick = () => setStatus(f.id, "discuss");
+  el.querySelector(".note").oninput = e => { state[f.id].note = e.target.value; updateAll(); };
+  cardsEl.appendChild(el);
+});
+
+function setStatus(id, status) { state[id].status = status; updateAll(); }
+
+function buildPrompt() {
+  const folded = FINDINGS.filter(f => state[f.id].status === "resolve");
+  const accepted = FINDINGS.filter(f => state[f.id].status === "accept");
+  const discuss = FINDINGS.filter(f => state[f.id].status === "discuss");
+
+  let p = `Split .claude/commands/harness-layer/harness-build.md into two commands — harness-build (implement → tidy → draft PR) and harness-review (Codex cross-check gate → fixes → PR ready) — and add a development-log rules file that build/review agents append hard-won lessons to. Goal: cheaper, faster, KISS; both new files together shorter than today's 132 lines; instructions-not-rationale throughout.
+
+Before drafting, walk through: harness-plan.md § Codex Cross-Review (the sonnet-runner + auto needs-human pattern to copy), current harness-build.md § Verification and § Review packet (the machinery being replaced), memory-series.md + AGENTS.md § Harness Development (constraints on the new rule file), and specs/_templates/implementation-notes.md with the Deviations board row in artifacts.md.\n`;
+
+  if (folded.length) {
+    p += "\nWork order:\n" + folded.map(f => {
+      let line = "- " + f.directive;
+      if (state[f.id].note.trim()) line += " (Note: " + state[f.id].note.trim() + ")";
+      return line;
+    }).join("\n") + "\n";
+  }
+  if (accepted.length) {
+    p += "\nKeep today's behavior for: " + accepted.map(f => {
+      let s = f.id.replace(/-/g, " ");
+      if (state[f.id].note.trim()) s += " (" + state[f.id].note.trim() + ")";
+      return s;
+    }).join("; ") + ".\n";
+  }
+  if (discuss.length) {
+    p += "\nOpen decisions to lock with me before any spec is written — stop and ask:\n" + discuss.map(f => {
+      let line = "- " + f.question;
+      if (state[f.id].note.trim()) line += " (My leaning: " + state[f.id].note.trim() + ")";
+      return line;
+    }).join("\n") + "\n";
+  }
+  p += "\nWorktree: .claude/worktrees/harness-build-split";
+  return p;
+}
+
+function updateAll() {
+  const counts = { resolve: 0, accept: 0, discuss: 0 };
+  FINDINGS.forEach(f => {
+    counts[state[f.id].status]++;
+    document.getElementById("card-" + f.id).dataset.status = state[f.id].status;
+  });
+  document.getElementById("t-resolve").textContent = counts.resolve;
+  document.getElementById("t-accept").textContent = counts.accept;
+  document.getElementById("t-discuss").textContent = counts.discuss;
+  document.getElementById("prompt").textContent = buildPrompt();
+}
+
+document.getElementById("copy").onclick = async () => {
+  const btn = document.getElementById("copy");
+  try { await navigator.clipboard.writeText(buildPrompt()); }
+  catch { const r = document.createRange(); r.selectNodeContents(document.getElementById("prompt")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand("copy"); s.removeAllRanges(); }
+  btn.textContent = "Copied!";
+  setTimeout(() => { btn.textContent = "Copy improved prompt"; }, 1400);
+};
+
+updateAll();
+</script>
