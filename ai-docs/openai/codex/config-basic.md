@@ -1,8 +1,8 @@
 ---
-source: https://developers.openai.com/codex/config-basic
-fetched: 2026-07-05
+source: https://learn.chatgpt.com/docs/config-file/config-basic
+fetched: 2026-07-21
 ---
-> **In here:** Configuration file locations · Configuration precedence order · Common options and feature flags
+> **In here:** Configuration file locations and precedence · Common configuration options · Feature flags and enabling
 
 # Config basics
 
@@ -17,8 +17,8 @@ To open the configuration file from the Codex IDE extension, select the gear ico
 The CLI and IDE extension share the same configuration layers. You can use them to:
 
 - Set the default model and provider.
-- Configure [approval policies and sandbox settings](https://developers.openai.com/codex/agent-approvals-security#sandbox-and-approvals).
-- Configure [MCP servers](https://developers.openai.com/codex/mcp).
+- Configure [approval policies and sandbox settings](https://learn.chatgpt.com/docs/agent-approvals-security#sandbox-and-approvals).
+- Configure [MCP servers](https://learn.chatgpt.com/docs/extend/mcp).
 
 ## Configuration precedence
 
@@ -26,22 +26,22 @@ Codex resolves values in this order (highest precedence first):
 
 1. CLI flags and `--config` overrides
 2. Project config files: `.codex/config.toml`, ordered from the project root down to your current working directory (closest wins; trusted projects only)
-3. [Profile](https://developers.openai.com/codex/config-advanced#profiles) files selected with `--profile profile-name` (`~/.codex/profile-name.config.toml`)
+3. [Profile](https://learn.chatgpt.com/docs/config-file/config-advanced#profiles) files selected with `--profile profile-name` (`~/.codex/profile-name.config.toml`)
 4. User config: `~/.codex/config.toml`
 5. System config (if present): `/etc/codex/config.toml` on Unix
 6. Built-in defaults
 
-Use that precedence to set shared defaults in `config.toml` and keep [profile files](https://developers.openai.com/codex/config-advanced#profiles) focused on the values that differ.
+Use that precedence to set shared defaults in `config.toml` and keep [profile files](https://learn.chatgpt.com/docs/config-file/config-advanced#profiles) focused on the values that differ.
 
 If you mark a project as untrusted, Codex skips project-scoped `.codex/` layers, including project-local config, hooks, and rules. User and system config still load, including user/global hooks and rules.
 
-For one-off overrides via `-c`/`--config` (including TOML quoting rules), see [Advanced Config](https://developers.openai.com/codex/config-advanced#one-off-overrides-from-the-cli).
+For one-off overrides via `-c`/`--config` (including TOML quoting rules), see [Advanced Config](https://learn.chatgpt.com/docs/config-file/config-advanced#one-off-overrides-from-the-cli).
 
 On managed machines, your organization may also enforce constraints via
   `requirements.toml` (for example, disallowing `approval_policy = "never"` or
   `sandbox_mode = "danger-full-access"`). See [Managed
-  configuration](https://developers.openai.com/codex/enterprise/managed-configuration) and [Admin-enforced
-  requirements](https://developers.openai.com/codex/enterprise/managed-configuration#admin-enforced-requirements-requirementstoml).
+  configuration](https://learn.chatgpt.com/docs/enterprise/managed-configuration) and [Admin-enforced
+  requirements](https://learn.chatgpt.com/docs/enterprise/managed-configuration#admin-enforced-requirements-requirementstoml).
 
 ## Common configuration options
 
@@ -52,7 +52,7 @@ Here are a few options people change most often:
 Choose the model Codex uses by default in the CLI and IDE.
 
 ```toml
-model = "gpt-5.5"
+model = "gpt-5.6"
 ```
 
 
@@ -64,7 +64,7 @@ Control when Codex pauses to ask before running generated commands.
 approval_policy = "on-request"
 ```
 
-For behavior differences between `untrusted`, `on-request`, and `never`, see [Run without approval prompts](https://developers.openai.com/codex/agent-approvals-security#run-without-approval-prompts) and [Common sandbox and approval combinations](https://developers.openai.com/codex/agent-approvals-security#common-sandbox-and-approval-combinations).
+For behavior differences between `untrusted`, `on-request`, and `never`, see [Run without approval prompts](https://learn.chatgpt.com/docs/agent-approvals-security#run-without-approval-prompts) and [Common sandbox and approval combinations](https://learn.chatgpt.com/docs/agent-approvals-security#common-sandbox-and-approval-combinations).
 
 #### Sandbox level
 
@@ -74,14 +74,14 @@ Adjust how much filesystem and network access Codex has while executing commands
 sandbox_mode = "workspace-write"
 ```
 
-For mode-by-mode behavior (including protected `.git`/`.codex` paths and network defaults), see [Sandbox and approvals](https://developers.openai.com/codex/agent-approvals-security#sandbox-and-approvals), [Protected paths in writable roots](https://developers.openai.com/codex/agent-approvals-security#protected-paths-in-writable-roots), and [Network access](https://developers.openai.com/codex/agent-approvals-security#network-access).
+For mode-by-mode behavior (including protected `.git`/`.codex` paths and network defaults), see [Sandbox and approvals](https://learn.chatgpt.com/docs/agent-approvals-security#sandbox-and-approvals), [Protected paths in writable roots](https://learn.chatgpt.com/docs/agent-approvals-security#protected-paths-in-writable-roots), and [Network access](https://learn.chatgpt.com/docs/agent-approvals-security#network-access).
 
 #### Permission profiles
 
 Codex also supports named permission profiles for reusable filesystem and
 network policies. Built-in profiles are `:read-only`, `:workspace`, and
 `:danger-full-access`. Custom profiles use `[permissions.<name>]` tables and a
-matching `default_permissions` value. See [Permissions](https://developers.openai.com/codex/permissions).
+matching `default_permissions` value. See [Permissions](https://learn.chatgpt.com/docs/permissions).
 
 #### Windows sandbox mode
 
@@ -95,14 +95,16 @@ sandbox = "elevated"   # Recommended
 
 #### Web search mode
 
-Codex enables web search by default for local tasks and serves results from a web search cache. The cache is an OpenAI-maintained index of web results, so cached mode returns pre-indexed results instead of fetching live pages. This reduces exposure to prompt injection from arbitrary live content, but you should still treat web results as untrusted. If you are using `--yolo` or another [full access sandbox setting](https://developers.openai.com/codex/agent-approvals-security#common-sandbox-and-approval-combinations), web search defaults to live results. Choose a mode with `web_search`:
+Codex enables web search by default for local chats and serves results from a web search cache. The cache is an OpenAI-maintained index of web results, so cached mode returns pre-indexed results instead of fetching live pages. This reduces exposure to prompt injection from arbitrary live content, but you should still treat web results as untrusted. If you are using `--yolo` or another [full access sandbox setting](https://learn.chatgpt.com/docs/agent-approvals-security#common-sandbox-and-approval-combinations), web search defaults to live results. Choose a mode with `web_search`:
 
 - `"cached"` (default) serves results from the web search cache.
+- `"indexed"` permits external web access only when the search index gates the request.
 - `"live"` fetches the most recent data from the web (same as `--search`).
 - `"disabled"` turns off the web search tool.
 
 ```toml
 web_search = "cached"  # default; serves results from the web search cache
+# web_search = "indexed" # gate external web access through the search index
 # web_search = "live"  # fetch the most recent data from the web (same as --search)
 # web_search = "disabled"
 ```
@@ -168,37 +170,33 @@ codex -c log_dir=./.codex-log
 
 Use the `[features]` table in `config.toml` to toggle optional and experimental capabilities.
 
-```toml
-[features]
-shell_snapshot = true           # Speed up repeated commands
-```
-
-### Supported features
+### Common feature flags
 
 | Key                  |        Default        | Maturity     | Description                                                                              |
 | -------------------- | :-------------------: | ------------ | ---------------------------------------------------------------------------------------- |
-| `apps`               |         false         | Experimental | Enable ChatGPT Apps/connectors support                                                   |
-| `codex_git_commit`   |         false         | Experimental | Enable Codex-generated git commits and commit attribution trailers                       |
-| `hooks`              |         true          | Stable       | Enable lifecycle hooks from `hooks.json` or inline `[hooks]`. See [Hooks](https://developers.openai.com/codex/hooks). |
+| `apps`               |         true          | Stable       | Enable app (connector) integrations                                                      |
+| `goals`              |         true          | Stable       | Enable persisted goals and automatic continuation                                        |
+| `hooks`              |         true          | Stable       | Enable lifecycle hooks from `hooks.json` or inline `[hooks]`. See [Hooks](https://learn.chatgpt.com/docs/hooks). |
 | `fast_mode`          |         true          | Stable       | Enable Fast mode selection and the `service_tier = "fast"` path                          |
-| `memories`           |         false         | Stable       | Enable [Memories](https://developers.openai.com/codex/memories)                                                       |
+| `memories`           |         false         | Experimental | Enable [Memories](https://learn.chatgpt.com/docs/customization/memories)                                         |
 | `multi_agent`        |         true          | Stable       | Enable subagent collaboration tools                                                      |
 | `personality`        |         true          | Stable       | Enable personality selection controls                                                    |
+| `remote_plugin`      |         true          | Stable       | Enable the remote plugin catalog                                                         |
 | `shell_snapshot`     |         true          | Stable       | Snapshot your shell environment to speed up repeated commands                            |
 | `shell_tool`         |         true          | Stable       | Enable the default `shell` tool                                                          |
 | `unified_exec`       | `true` except Windows | Stable       | Use the unified PTY-backed exec tool                                                     |
-| `undo`               |         false         | Stable       | Enable undo via per-turn git ghost snapshots                                             |
 | `web_search`         |         true          | Deprecated   | Legacy toggle; prefer the top-level `web_search` setting                                 |
 | `web_search_cached`  |         false         | Deprecated   | Legacy toggle that maps to `web_search = "cached"` when unset                            |
 | `web_search_request` |         false         | Deprecated   | Legacy toggle that maps to `web_search = "live"` when unset                              |
 
-The Maturity column uses feature maturity labels such as Experimental, Beta,
-  and Stable. See [Feature Maturity](https://developers.openai.com/codex/feature-maturity) for how to
-  interpret these labels.
+This table lists common user-facing flags, not every internal or
+  under-development feature. The Maturity column uses labels such as
+  Experimental, Beta, and Stable. See [Feature
+  Maturity](https://learn.chatgpt.com/docs/feature-maturity) for how to interpret these labels.
 
 Omit feature keys to keep their defaults.
 
-For lifecycle hook configuration, see [Hooks](https://developers.openai.com/codex/hooks).
+For lifecycle hook configuration, see [Hooks](https://learn.chatgpt.com/docs/hooks).
 
 ### Enabling features
 

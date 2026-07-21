@@ -359,8 +359,8 @@ dist
 # generated index.md are regenerable from the manifest, so track only
 # sources.yaml (the source of truth) and let /kb rebuild the rest.
 # =============================================================================
-# ai-docs/*
-# !ai-docs/sources.yaml
+ai-docs/*
+!ai-docs/sources.yaml
 
 # =============================================================================
 # Claude Code personal scratchpad — shared config lives in .claude/settings.json

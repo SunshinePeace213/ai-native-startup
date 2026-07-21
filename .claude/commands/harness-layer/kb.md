@@ -2,6 +2,8 @@
 description: Builds and syncs the ai-docs/ knowledge base of official harness-layer docs. Reads ai-docs/sources.yaml, fetches every source that is missing or older than 30 days, writes faithful markdown mirrors, and regenerates the ai-docs/index.md catalog. Use when the user asks to sync, refresh, or add AI docs, set up the harness knowledge base, or mentions ai-docs being stale or missing a topic — even without naming /kb.
 argument-hint: [add url [group] | --force]
 allowed-tools: Bash(curl *), WebFetch
+model: sonnet
+effort: high
 ---
 
 # Purpose
@@ -25,7 +27,7 @@ STALE_AFTER: `30` days
 
 ## Workflow
 
-1. Parse ARGS. For `add <url> [group]`: append a MANIFEST entry (group defaults by host — anthropic/claude hosts → `anthropic`, Agent SDK pages → `anthropic/agent-sdk`, else the site's name; group keys are path-like and double as the folder under `ai-docs/`; derive `file` from the group + page slug, draft a `topic`, `fetched: null`).
+1. Parse ARGS. For `add <url> [group]`: append a MANIFEST entry (group defaults by host — anthropic/claude hosts → `anthropic`, Codex docs (learn.chatgpt.com) → `openai/codex`, OpenAI cookbook pages → `openai`, else the site's name; group keys are path-like and double as the folder under `ai-docs/`; derive `file` from the group + page slug, draft a `topic`, `fetched: null`).
 2. Read MANIFEST. Work set = entries whose `fetched` is null, whose `file` is missing, or whose `fetched` is more than STALE_AFTER days old; `--force` selects all; `add` selects just the new entry. Empty work set → report "all fresh" and stop.
 3. Fetch the work set: fan out `kb-fetcher` subagents per the Instructions and collect their OK/FAIL lines.
 4. Update MANIFEST: canonical `url`, today's `fetched` date — only for entries that returned OK.

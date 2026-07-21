@@ -1,14 +1,14 @@
 ---
-source: https://developers.openai.com/codex/config-advanced
-fetched: 2026-07-05
+source: https://learn.chatgpt.com/docs/config-file/config-advanced
+fetched: 2026-07-21
 ---
-> **In here:** Profiles and configuration layers · CLI overrides and defaults · Project-level config precedence
+> **In here:** Configuration profiles and layering · Custom providers and sandbox modes · Hooks, MCP servers, and observability
 
 # Advanced Configuration
 
-Use these options when you need more control over providers, policies, and integrations. For a quick start, see [Config basics](https://developers.openai.com/codex/config-basic).
+Use these options when you need more control over providers, policies, and integrations. For a quick start, see [Config basics](https://learn.chatgpt.com/docs/config-file/config-basic).
 
-For background on project guidance, reusable capabilities, custom slash commands, subagent workflows, and integrations, see [Customization](https://developers.openai.com/codex/concepts/customization). For configuration keys, see [Configuration Reference](https://developers.openai.com/codex/config-reference).
+For background on project guidance, reusable capabilities, custom slash commands, subagent workflows, and integrations, see [Customization](https://learn.chatgpt.com/docs/customization/overview). For configuration keys, see [Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
 ## Profiles
 
@@ -81,9 +81,9 @@ Common files you may see there:
 - `history.jsonl` (if history persistence is enabled)
 - Other per-user state such as logs and caches
 
-For authentication details (including credential storage modes), see [Authentication](https://developers.openai.com/codex/auth). For the full list of configuration keys, see [Configuration Reference](https://developers.openai.com/codex/config-reference).
+For authentication details (including credential storage modes), see [Authentication](https://learn.chatgpt.com/docs/auth). For the full list of configuration keys, see [Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
-For shared defaults, rules, and skills checked into repos or system paths, see [Team Config](https://developers.openai.com/codex/enterprise/admin-setup#team-config).
+For shared defaults, rules, and skills checked into repos or system paths, see [Team Config](https://learn.chatgpt.com/docs/enterprise/admin-setup#step-4-standardize-local-configuration-with-team-config).
 
 If you just need to point the built-in OpenAI provider at an LLM proxy, router, or data-residency enabled project, set `openai_base_url` in `config.toml` instead of defining a new provider. This changes the base URL for the built-in `openai` provider without requiring a separate `model_providers.<id>` entry.
 
@@ -142,11 +142,11 @@ If a single layer contains both `hooks.json` and inline `[hooks]`, Codex loads
 both and warns. Prefer one representation per layer.
 
 For the current event list, input fields, output behavior, and limitations, see
-[Hooks](https://developers.openai.com/codex/hooks).
+[Hooks](https://learn.chatgpt.com/docs/hooks).
 
 ## Agent roles (`[agents]` in `config.toml`)
 
-For subagent role configuration (`[agents]` in `config.toml`), see [Subagents](https://developers.openai.com/codex/subagents).
+For subagent role configuration (`[agents]` in `config.toml`), see [Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
 ## Project root detection
 
@@ -230,11 +230,15 @@ If you omit `profile`, Codex uses the standard AWS credential chain. Set
 `region` to the supported Bedrock region that should handle requests.
 
 For the full setup flow, authentication options, supported models, and feature
-availability, see [Use Codex with Amazon Bedrock](https://developers.openai.com/codex/amazon-bedrock).
+availability, see [Use ChatGPT Work and Codex with Amazon
+Bedrock](https://learn.chatgpt.com/docs/amazon-bedrock).
 
 ## OSS mode (local providers)
 
-Codex can run against a local "open source" provider (for example, Ollama or LM Studio) when you pass `--oss`. If you pass `--oss` without specifying a provider, Codex uses `oss_provider` as the default.
+Codex can run against a local "open source" provider such as Ollama or LM
+Studio when you pass `--oss`. Choose one for a single run with
+`--local-provider`, or set `oss_provider` as the default. If neither is set, the
+interactive CLI prompts you to choose; `codex exec` exits with an error.
 
 ```toml
 # Default local provider used with `--oss`
@@ -283,9 +287,9 @@ model_context_window = 128000             # Context window size
 
 Pick approval strictness (affects when Codex pauses) and sandbox level (affects file/network access).
 
-For operational details to keep in mind while editing `config.toml`, see [Common sandbox and approval combinations](https://developers.openai.com/codex/agent-approvals-security#common-sandbox-and-approval-combinations), [Protected paths in writable roots](https://developers.openai.com/codex/agent-approvals-security#protected-paths-in-writable-roots), and [Network access](https://developers.openai.com/codex/agent-approvals-security#network-access).
+For operational details to keep in mind while editing `config.toml`, see [Common sandbox and approval combinations](https://learn.chatgpt.com/docs/agent-approvals-security#common-sandbox-and-approval-combinations), [Protected paths in writable roots](https://learn.chatgpt.com/docs/agent-approvals-security#protected-paths-in-writable-roots), and [Network access](https://learn.chatgpt.com/docs/agent-approvals-security#network-access).
 
-For beta permission profiles that configure filesystem and network access together, see [Permissions](https://developers.openai.com/codex/permissions).
+For beta permission profiles that configure filesystem and network access together, see [Permissions](https://learn.chatgpt.com/docs/permissions).
 
 You can also use a granular approval policy (`approval_policy = { granular = { ... } }`) to allow or auto-reject individual prompt categories. This is useful when you want normal interactive approvals for some cases but want others, such as `request_permissions` or skill-script prompts, to fail closed automatically.
 
@@ -326,18 +330,18 @@ Use your organization's automatic review policy.
 ### Named permission profiles
 
 For built-in profiles, custom profile syntax, and the full filesystem and
-network configuration model, see [Permissions](https://developers.openai.com/codex/permissions).
+network configuration model, see [Permissions](https://learn.chatgpt.com/docs/permissions).
 
 For the complete key list and requirements constraints, see
-[Configuration Reference](https://developers.openai.com/codex/config-reference) and
-[Managed configuration](https://developers.openai.com/codex/enterprise/managed-configuration).
+[Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference) and
+[Managed configuration](https://learn.chatgpt.com/docs/enterprise/managed-configuration).
 
 In workspace-write mode, some environments keep `.git/` and `.codex/`
   read-only even when the rest of the workspace is writable. This is why
   commands like `git commit` may still require approval to run outside the
   sandbox. If you want Codex to skip specific commands (for example, block `git
   commit` outside the sandbox), use
-  <a href="/codex/rules">rules</a>.
+  <a href="/codex/agent-configuration/rules">rules</a>.
 
 Disable sandboxing entirely (use only if your environment already isolates processes):
 
@@ -362,7 +366,7 @@ Patterns are case-insensitive globs (`*`, `?`, `[A-Z]`); `ignore_default_exclude
 
 ## MCP servers
 
-See the dedicated [MCP documentation](https://developers.openai.com/codex/mcp) for configuration details.
+See the dedicated [MCP documentation](https://learn.chatgpt.com/docs/extend/mcp) for configuration details.
 
 ## Observability and telemetry
 
@@ -394,7 +398,7 @@ exporter = { otlp-grpc = {
 }}
 ```
 
-If `exporter = "none"` Codex records events but sends nothing. Exporters batch asynchronously and flush on shutdown. Event metadata includes service name, CLI version, env tag, conversation id, model, sandbox/approval settings, and per-event fields (see [Config Reference](https://developers.openai.com/codex/config-reference)).
+If `exporter = "none"` Codex records events but sends nothing. Exporters batch asynchronously and flush on shutdown. Event metadata includes service name, CLI version, env tag, conversation id, model, sandbox/approval settings, and per-event fields (see [Config Reference](https://learn.chatgpt.com/docs/config-file/config-reference)).
 
 ### What gets emitted
 
@@ -427,13 +431,13 @@ Each metric below also includes default metadata tags: `auth_mode`, `originator`
 | `codex.tool.call`                     | counter   | `tool`, `success`   | Tool invocation count by tool name and success/failure.           |
 | `codex.tool.call.duration_ms`         | histogram | `tool`, `success`   | Tool execution duration in milliseconds by tool name and outcome. |
 
-For more security and privacy guidance around telemetry, see [Security](https://developers.openai.com/codex/agent-approvals-security#monitoring-and-telemetry).
+For more security and privacy guidance around telemetry, see [Security](https://learn.chatgpt.com/docs/agent-approvals-security#monitoring-and-telemetry).
 
 ### Metrics
 
 By default, Codex periodically sends a small amount of anonymous usage and health data back to OpenAI. This helps detect when Codex isn't working correctly and shows what features and configuration options are being used, so the Codex team can focus on what matters most. These metrics don't contain any personally identifiable information (PII). Metrics collection is independent of OTel log/trace export.
 
-If you want to disable metrics collection entirely across Codex surfaces on a machine, set the analytics flag in your config:
+If you want to disable metrics collection entirely across the ChatGPT desktop app, Codex CLI, and IDE extension on a machine, set the analytics flag in your config:
 
 ```toml
 [analytics]
@@ -587,7 +591,7 @@ The elevated setup failure metrics include `code` and `message` when Windows set
 
 ### Feedback controls
 
-By default, Codex lets users send feedback from `/feedback`. To disable feedback collection across Codex surfaces on a machine, update your config:
+By default, local clients let users send feedback from `/feedback`. To disable feedback collection across the ChatGPT desktop app, Codex CLI, and IDE extension on a machine, update your config:
 
 ```toml
 [feedback]
@@ -666,7 +670,7 @@ Place the script somewhere on disk and point `notify` to it.
 
 In `auto` mode, Codex prefers OSC 9 notifications (a terminal escape sequence some terminals interpret as a desktop notification) and falls back to BEL (`\x07`) otherwise.
 
-See [Configuration Reference](https://developers.openai.com/codex/config-reference) for the exact keys.
+See [Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference) for the exact keys.
 
 ## History persistence
 
@@ -701,7 +705,7 @@ Codex reads `AGENTS.md` (and related files) and includes a limited amount of pro
 - `project_doc_max_bytes`: how much to read from each `AGENTS.md` file
 - `project_doc_fallback_filenames`: additional filenames to try when `AGENTS.md` is missing at a directory level
 
-For a detailed walkthrough, see [Custom instructions with AGENTS.md](https://developers.openai.com/codex/guides/agents-md).
+For a detailed walkthrough, see [Custom instructions with AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
 
 ## TUI options
 
@@ -717,4 +721,4 @@ Running `codex` with no subcommand launches the interactive terminal UI (TUI). C
 
 `tui.notification_method` defaults to `auto`. In `auto` mode, Codex prefers OSC 9 notifications (a terminal escape sequence some terminals interpret as a desktop notification) when the terminal appears to support them, and falls back to BEL (`\x07`) otherwise.
 
-See [Configuration Reference](https://developers.openai.com/codex/config-reference) for the full key list.
+See [Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference) for the full key list.

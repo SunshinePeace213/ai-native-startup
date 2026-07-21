@@ -1,90 +1,88 @@
 ---
 source: https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html
-fetched: 2026-07-16
+fetched: 2026-07-21
 ---
-
-> **In here:** · Why HTML outperforms Markdown for Claude Code outputs · Practical use cases from specs to custom interfaces · Getting started with HTML generation
+> **In here:** HTML over Markdown for AI artifacts · Use cases: specs, reviews, design, reports · Interactive sharing and two-way editing
 
 # Using Claude Code: The Unreasonable Effectiveness of HTML
 
-**Publication Date:** May 20, 2026  
-**Reading Time:** 5 minutes  
-**Author:** Thariq Shihipar, Member of Technical Staff at Anthropic
+## Article Overview
 
----
+This blog post by Thariq Shihipar from Anthropic discusses why the Claude Code team prefers HTML over Markdown for generating AI outputs. The article was published on May 20, 2026, with an estimated 5-minute read time.
 
-## Overview
-
-The article argues that HTML has become the preferred output format for Claude Code agents over Markdown. According to the author, "Markdown has become the dominant file format used by agents to communicate with humans," yet it increasingly feels restrictive for complex work.
-
-## Why Use HTML?
-
-The author identifies four primary advantages:
+## Key Arguments for HTML Over Markdown
 
 ### Information Density
 
-HTML can represent diverse data types—tables, SVG illustrations, interactive elements, and code snippets—that Markdown cannot efficiently convey. This prevents agents from resorting to "ASCII diagrams or estimating colors with unicode characters" when Markdown proves insufficient.
+HTML enables richer information representation compared to Markdown, including:
 
-### Visual Clarity and Ease of Reading
+- Tabular data through tables
+- Design elements via CSS
+- Illustrations using SVG
+- Code snippets with script tags
+- Interactive features with HTML elements, JavaScript, and CSS
+- Workflow diagrams with SVG and HTML
+- Spatial data using positioning and canvases
+- Images via image tags
 
-As Claude tackles increasingly complex tasks, output files grow substantially. The author notes difficulty engaging with Markdown files exceeding 100 lines, whereas HTML documents leverage tabs, illustrations, and responsive design to improve readability and encourage stakeholder review.
+The author notes that "there is almost no set of information that Claude can read that you cannot efficiently represent with HTML."
+
+### Visual Clarity and Reading Ease
+
+Long Markdown files (beyond 100 lines) become difficult to read. HTML documents offer superior navigation through visual organization, tabs, illustrations, and links. Mobile responsiveness also allows content adaptation based on device type.
 
 ### Ease of Sharing
 
-HTML files can be uploaded and shared via links, whereas Markdown typically requires email attachments. This accessibility significantly increases the likelihood others will actually read specifications and reports.
+HTML files can be uploaded and shared via links, making them more accessible than Markdown attachments. This increases the likelihood of colleagues actually reading specifications and reports.
 
 ### Two-Way Interactions
 
-HTML enables interactive features—sliders, toggles, and live previews—allowing users to adjust designs dynamically and export results back into Claude Code, creating tighter feedback loops.
+HTML enables interactive elements like sliders and knobs, allowing users to adjust designs or test algorithms while maintaining a "copy as prompt" export function to feed results back into Claude Code.
 
-### Data Ingestion
+### Data Ingestion Capabilities
 
-Claude Code can access file systems, MCPs like Slack and Linear, browser history, and git logs—context unavailable to standard Claude.ai. This additional information enhances HTML generation capabilities.
+Claude Code can leverage file system access, MCPs (Slack, Linear, etc.), Chrome browsing history, and git history—advantages unavailable through Claude.ai or Claude Design.
 
-## Getting Started
-
-The author emphasizes that prompting Claude to create HTML is straightforward: simply request "_make an HTML file_" or "_make an HTML artifact_." Understanding your desired outcome and use case matters more than complex instructions.
-
-## Use Cases
+## Practical Use Cases
 
 ### Specs, Planning, and Exploration
 
-HTML serves as an effective canvas for problem exploration. Users can request Claude to generate multiple design approaches in grid layouts for side-by-side comparison, complete with labeled tradeoffs. Implementation plans benefit from mockups, data flow diagrams, and code snippets—all visually organized in HTML format.
+Create side-by-side comparisons of different design approaches, implementation plans with mockups, data flow diagrams, and annotated code snippets.
+
+**Example prompt:** "Generate 6 distinctly different approaches to an onboarding screen—vary layout, tone, and density—and lay them out as a single HTML file in a grid for comparison."
 
 ### Code Review and Understanding
 
-HTML enables rendering diffs, annotations, flowcharts, and module diagrams more effectively than Markdown. Teams can use this for PR reviews and code explanations, with color-coded findings and inline annotations.
+HTML enables rendering of diffs with inline annotations, color-coded findings by severity, and visual flowcharts for PR descriptions and code explanations.
+
+**Example prompt:** Create "an HTML artifact describing this PR, focusing on streaming/backpressure logic with colored diff annotations."
 
 ### Design and Prototypes
 
-HTML allows prototyping interactions, animations, and component behaviors. The author suggests requesting sliders and parameter controls to experiment with animations, allowing users to export optimized settings.
+Use HTML to sketch designs with interactive elements like adjustable sliders and animated buttons, creating throwaway prototypes for testing animations and component variations.
 
 ### Reports, Research, and Learning
 
-Claude Code can synthesize information across Slack, codebases, git history, and internet sources into readable HTML reports. SVG diagrams enhance visualization of complex concepts.
+Synthesize information from multiple sources (Slack, codebase, git history, internet) into readable HTML reports, explainers, or slideshows with SVG diagrams.
+
+**Example prompt:** "Produce a single HTML explainer page with a token-bucket flow diagram, annotated code snippets, and a 'gotchas' section."
 
 ### Custom Editing Interfaces
 
-Purpose-built HTML editors allow users to manipulate structured data—reordering tickets, editing feature flags, tuning prompts—with export functionality to generate Markdown, JSON, or diffs for downstream use.
+Build purpose-built HTML editors for specific tasks (ticket reordering, feature flag configuration, system prompt tuning) with export functions that return data as JSON or Markdown.
 
-## Frequently Asked Questions
+## FAQ Highlights
 
-**Isn't it less efficient?**
+**Efficiency Concerns:** While Markdown uses fewer tokens, HTML's expressiveness and higher readability rates result in better overall output. With Opus 4.7's 1 million context window, token increases are negligible.
 
-While Markdown uses fewer tokens, HTML's expressiveness and higher readability rates result in better overall output. With Claude's 1MM context window, increased token usage remains negligible.
+**Current Markdown Use:** The author has "stopped using Markdown altogether for almost everything" and acknowledges being "far on the HTML maximalist side of things."
 
-**When do you use Markdown?**
+**Replacing Planning:** Rather than single plans, the workflow involves multiple HTML files for different stages—exploration, UI options, implementation plans—kept as ongoing references.
 
-The author reports abandoning Markdown for nearly all use cases, though acknowledges occupying an "HTML maximalist" position.
+## Core Philosophy
 
-**Has this replaced planning?**
+The fundamental reason for preferring HTML is maintaining engagement with Claude's work: "The real reason I use HTML instead of Markdown is that it helps me feel much more in the loop with Claude." As AI capabilities expand, staying actively involved in reviewing choices becomes increasingly important.
 
-Rather than single plans, users typically maintain multiple HTML files for different implementation stages—exploration documents, UI mockups, and component libraries—retained as future references.
+## Getting Started
 
-## Conclusion
-
-The author emphasizes that HTML's primary benefit is keeping users "much more in the loop with Claude." As AI capabilities expand, richer output formats help maintain meaningful human engagement rather than passive handoffs.
-
----
-
-**Getting started:** Users can access Claude Code documentation and explore HTML use case examples.
+Simply prompt Claude Code to "make an HTML file" or "make an HTML artifact" with descriptions of desired functionality. The platform includes example templates for common use cases, available on GitHub.

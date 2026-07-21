@@ -32,8 +32,7 @@ The delegation message gives:
    final URL is the canonical `source`, even if the host changed.
 2. **Fetch raw markdown.** The Anthropic doc hosts (code.claude.com,
    platform.claude.com, docs.claude.com, docs.anthropic.com) serve raw markdown at
-   the page URL with `.md` appended — prefer `curl -fsSL` on that. For
-   docs.astral.sh try the URL with `index.md` appended after the trailing slash.
+   the page URL with `.md` appended — prefer `curl -fsSL` on that.
    If no markdown endpoint works, WebFetch the canonical URL with a prompt to
    reproduce the page faithfully as markdown — every section, table, and code
    block, no summarizing.
@@ -41,7 +40,7 @@ The delegation message gives:
    banner (the llms.txt pointer), nav sidebars, footers. Keep all real content.
 4. **Write TARGET** exactly as:
 
-   ```
+   ```text
    ---
    source: <canonical URL>
    fetched: <YYYY-MM-DD>
@@ -63,7 +62,7 @@ stripped chrome missing.
 
 Exactly two lines:
 
-```
+```text
 OK <TARGET> <canonical URL>
 <one-line page summary, max 15 words>
 ```

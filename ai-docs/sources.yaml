@@ -1,266 +1,114 @@
 # Knowledge-base manifest — managed by /kb.
-#   group key: the folder under ai-docs/ (path-like keys nest, e.g. anthropic/agent-sdk)
+#   group key: the folder under ai-docs/ (path-like keys nest, e.g. openai/codex)
 #   url:     source page (canonicalized to the redirect target on sync)
 #   file:    cached mirror under ai-docs/ (lives inside its group's folder)
 #   topic:   one-line subject, reused by index.md
 #   fetched: last sync date (null = never fetched)
+
 anthropic:
   - url: https://code.claude.com/docs/en/sub-agents
     file: anthropic/subagents.md
     topic: Subagents — built-in & custom, delegation, context management
-    fetched: 2026-07-05
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/agent-teams
     file: anthropic/agent-teams.md
     topic: Agent teams — multi-session orchestration, task coordination, inter-agent messaging
-    fetched: 2026-07-05
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/workflows
     file: anthropic/workflows.md
     topic: Workflows — script-based orchestration of many subagents in parallel
-    fetched: 2026-07-05
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/worktrees
     file: anthropic/worktrees.md
     topic: Git worktrees — isolate sessions for conflict-free parallel edits
-    fetched: 2026-07-05
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/mcp
     file: anthropic/mcp.md
     topic: MCP in Claude Code — server config, scopes, auth, tool usage
-    fetched: 2026-07-05
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/skills
     file: anthropic/skills.md
     topic: Skills — author, configure, and share to extend Claude
-    fetched: 2026-07-05
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/artifacts
     file: anthropic/artifacts.md
     topic: Artifacts — publish pages with versioning, team sharing, org controls
-    fetched: 2026-07-05
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/hooks-guide
     file: anthropic/hooks-guide.md
     topic: Hooks guide — lifecycle automation, notifications, enforcement recipes
-    fetched: 2026-07-05
+    fetched: 2026-07-21
+  - url: https://code.claude.com/docs/en/scheduled-tasks
+    file: anthropic/scheduled-tasks.md
+    topic: Scheduled tasks — /loop recurring runs, cron expressions, scheduling options
+    fetched: 2026-07-21
+  - url: https://code.claude.com/docs/en/goal
+    file: anthropic/goal.md
+    topic: Goal mode — /goal completion conditions, auto-evaluation loop
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/headless
     file: anthropic/headless.md
     topic: Headless mode — non-interactive CLI (-p) for scripting and CI/CD
-    fetched: 2026-07-05
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/deep-links
     file: anthropic/deep-links.md
     topic: Deep links — launch sessions from URLs with cwd and prompt params
-    fetched: 2026-07-05
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/large-codebases
     file: anthropic/large-codebases.md
     topic: Large codebases — monorepos, nested settings, sparse worktrees, per-directory skills
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/plugin-marketplaces
-    file: anthropic/plugin-marketplaces.md
-    topic: Plugin marketplaces — create, distribute, version-manage plugins
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/plugin-dependencies
-    file: anthropic/plugin-dependencies.md
-    topic: Plugin dependencies — semver version constraints and resolution
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/plugin-hints
-    file: anthropic/plugin-hints.md
-    topic: Plugin hints — prompt users to install marketplace plugins
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/plugin-relevance
-    file: anthropic/plugin-relevance.md
-    topic: Plugin relevance — suggest plugins via relevance blocks and signal matching
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/plugins-reference
-    file: anthropic/plugins-reference.md
-    topic: Plugins reference — components, CLI commands, schemas, dev tools
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/env-vars
-    file: anthropic/env-vars.md
-    topic: Environment variables — shell setup, settings precedence, variable catalog
-    fetched: 2026-07-05
+    fetched: 2026-07-21
+  - url: https://code.claude.com/docs/en/cli-reference
+    file: anthropic/cli-reference.md
+    topic: CLI reference — commands, flags, system-prompt configuration
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/tools-reference
     file: anthropic/tools-reference.md
     topic: Built-in tools reference — tools, permissions, behaviors
-    fetched: 2026-07-05
+    fetched: 2026-07-21
   - url: https://code.claude.com/docs/en/hooks
     file: anthropic/hooks.md
     topic: Hooks reference — events, schemas, handlers, exit codes
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/settings
-    file: anthropic/settings.md
-    topic: Settings — scopes, precedence, attribution, config keys
-    fetched: 2026-07-06
-  - url: https://code.claude.com/docs/en/memory
-    file: anthropic/memory.md
-    topic: Memory — CLAUDE.md files, .claude/rules/ loading & paths scoping, auto memory
     fetched: 2026-07-21
-  - url: https://platform.claude.com/docs/en/about-claude/models/overview
-    file: anthropic/models.md
-    topic: Model lineup — names, capabilities, pricing, platform availability
-    fetched: 2026-07-05
-  - url: https://platform.claude.com/docs/en/build-with-claude/skills-guide
-    file: anthropic/skills-api-guide.md
-    topic: Agent Skills via the Messages API — custom and managed skills
-    fetched: 2026-07-05
-  - url: https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices
-    file: anthropic/skills-best-practices.md
-    topic: Agent Skills — authoring best practices for concise, effective skills
-    fetched: 2026-07-05
-  - url: https://www.anthropic.com/engineering/writing-tools-for-agents
-    file: anthropic/writing-tools-for-agents.md
-    topic: Writing tools for agents — designing tools & evals (engineering post)
-    fetched: 2026-07-05
   - url: https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html
     file: anthropic/html-artifacts-workflows.md
     topic: HTML artifacts — interactive two-way pages, copy-as-prompt loops, use-case patterns
-    fetched: 2026-07-16
-anthropic/agent-sdk:
-  - url: https://code.claude.com/docs/en/agent-sdk/overview
-    file: anthropic/agent-sdk/overview.md
-    topic: Agent SDK — overview: build agents with tools, hooks, subagents
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/agent-loop
-    file: anthropic/agent-sdk/agent-loop.md
-    topic: Agent SDK — agent loop: message types, turns, context & budget
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/claude-code-features
-    file: anthropic/agent-sdk/claude-code-features.md
-    topic: Agent SDK — load Claude Code features via filesystem settings
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/sessions
-    file: anthropic/agent-sdk/sessions.md
-    topic: Agent SDK — sessions: continue, resume, fork, cross-host
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/session-storage
-    file: anthropic/agent-sdk/session-storage.md
-    topic: Agent SDK — session storage: mirror transcripts to S3/Redis/custom
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/streaming-vs-single-mode
-    file: anthropic/agent-sdk/streaming-vs-single-mode.md
-    topic: Agent SDK — streaming vs single-message input modes
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/user-input
-    file: anthropic/agent-sdk/user-input.md
-    topic: Agent SDK — user input: tool approvals and clarifying questions via callbacks
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/streaming-output
-    file: anthropic/agent-sdk/streaming-output.md
-    topic: Agent SDK — streaming output: text responses and tool calls
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/structured-outputs
-    file: anthropic/agent-sdk/structured-outputs.md
-    topic: Agent SDK — structured outputs via JSON Schema, Zod, or Pydantic
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/custom-tools
-    file: anthropic/agent-sdk/custom-tools.md
-    topic: Agent SDK — custom tools: define, register, manage
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/mcp
-    file: anthropic/agent-sdk/mcp.md
-    topic: Agent SDK — MCP: connect external tools, transport, auth
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/tool-search
-    file: anthropic/agent-sdk/tool-search.md
-    topic: Agent SDK — tool search: dynamically load tools to save context
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/subagents
-    file: anthropic/agent-sdk/subagents.md
-    topic: Agent SDK — subagents: creation, context isolation, parallelization
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/modifying-system-prompts
-    file: anthropic/agent-sdk/modifying-system-prompts.md
-    topic: Agent SDK — modifying system prompts: presets, append, output styles
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/slash-commands
-    file: anthropic/agent-sdk/slash-commands.md
-    topic: Agent SDK — slash commands: discovery, built-in, custom markdown
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/skills
-    file: anthropic/agent-sdk/skills.md
-    topic: Agent SDK — skills: filesystem-based, discovery and invocation
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/plugins
-    file: anthropic/agent-sdk/plugins.md
-    topic: Agent SDK — plugins: local loading, namespaced skills, manifest validation
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/permissions
-    file: anthropic/agent-sdk/permissions.md
-    topic: Agent SDK — permissions: modes, rules, runtime callbacks
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/hooks
-    file: anthropic/agent-sdk/hooks.md
-    topic: Agent SDK — hooks: intercept events, control permissions, transform tool I/O
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/cost-tracking
-    file: anthropic/agent-sdk/cost-tracking.md
-    topic: Agent SDK — cost tracking: token usage, costs, caching
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/observability
-    file: anthropic/agent-sdk/observability.md
-    topic: Agent SDK — observability: OpenTelemetry export, traces, data controls
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/todo-tracking
-    file: anthropic/agent-sdk/todo-tracking.md
-    topic: Agent SDK — todo tracking: display task progress via todo/Task tools
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/typescript
-    file: anthropic/agent-sdk/typescript.md
-    topic: Agent SDK — TypeScript API reference: query, async generators, types
-    fetched: 2026-07-05
-  - url: https://code.claude.com/docs/en/agent-sdk/python
-    file: anthropic/agent-sdk/python.md
-    topic: Agent SDK — Python API reference: query() and ClaudeSDKClient
-    fetched: 2026-07-05
-astral:
-  - url: https://docs.astral.sh/uv/guides/scripts/
-    file: astral/uv-scripts.md
-    topic: uv — running scripts: inline dependencies and executables
-    fetched: 2026-07-05
-  - url: https://docs.astral.sh/uv/guides/projects/
-    file: astral/uv-projects.md
-    topic: uv — projects: create, manage, and build Python projects
-    fetched: 2026-07-05
+    fetched: 2026-07-21
+  - url: https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns
+    file: anthropic/fable-finding-unknowns.md
+    topic: Finding your unknowns — Fable field-guide patterns before, during, after implementation (blog)
+    fetched: 2026-07-21
+openai:
+  - url: https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide
+    file: openai/codex-prompting-guide.md
+    topic: Codex prompting guide — model prompting and integration best practices (cookbook)
+    fetched: 2026-07-21
+  - url: https://developers.openai.com/cookbook/examples/codex/code_modernization
+    file: openai/code-modernization.md
+    topic: Code modernization — five-phase legacy-upgrade patterns with Codex CLI (cookbook)
+    fetched: 2026-07-21
 openai/codex:
   - url: https://learn.chatgpt.com/docs/models
     file: openai/codex/models.md
-    topic: Codex — model catalog (Sol, Terra, Luna, 5.5, Spark) and reasoning-effort levels
-    fetched: 2026-07-11
-  - url: https://developers.openai.com/codex/config-basic
+    topic: Codex — model catalog, reasoning-effort levels, per-task selection
+    fetched: 2026-07-21
+  - url: https://learn.chatgpt.com/docs/config-file/config-basic
     file: openai/codex/config-basic.md
-    topic: Codex — basic config: locations, precedence, common options, feature flags
-    fetched: 2026-07-05
-  - url: https://developers.openai.com/codex/config-advanced
+    topic: "Codex — basic config: locations, precedence, common options, feature flags"
+    fetched: 2026-07-21
+  - url: https://learn.chatgpt.com/docs/config-file/config-advanced
     file: openai/codex/config-advanced.md
-    topic: Codex — advanced config: profiles, CLI overrides, precedence
-    fetched: 2026-07-05
-  - url: https://developers.openai.com/codex/config-reference
-    file: openai/codex/config-reference.md
-    topic: Codex — config.toml reference: user, project, security settings
-    fetched: 2026-07-05
-  - url: https://developers.openai.com/codex/environment-variables
-    file: openai/codex/environment-variables.md
-    topic: Codex — environment variables: config, install, auth, diagnostics
-    fetched: 2026-07-05
-  - url: https://developers.openai.com/codex/config-sample
+    topic: "Codex — advanced config: profiles, custom providers, hooks, MCP servers, policies"
+    fetched: 2026-07-21
+  - url: https://learn.chatgpt.com/docs/config-file/config-sample
     file: openai/codex/config-sample.md
-    topic: Codex — annotated sample config.toml: models, approvals, sandbox
-    fetched: 2026-07-05
-  - url: https://developers.openai.com/codex/rules
-    file: openai/codex/rules.md
-    topic: Codex — rules: control command execution with patterns and safe shell parsing
-    fetched: 2026-07-05
-  - url: https://developers.openai.com/codex/hooks
-    file: openai/codex/hooks.md
-    topic: Codex — hooks: events, discovery, trust, lifecycle config
-    fetched: 2026-07-05
-  - url: https://developers.openai.com/codex/guides/agents-md
-    file: openai/codex/agents-md.md
-    topic: Codex — AGENTS.md: discovery, global guidance, instruction layering
-    fetched: 2026-07-05
-  - url: https://developers.openai.com/codex/mcp
-    file: openai/codex/mcp.md
-    topic: Codex — MCP: server configuration and integration
-    fetched: 2026-07-05
-  - url: https://developers.openai.com/codex/skills
-    file: openai/codex/skills.md
-    topic: Codex — skills: create, distribute, and manage reusable skills
-    fetched: 2026-07-05
-  - url: https://developers.openai.com/codex/subagents
+    topic: "Codex — annotated sample config.toml: models, approvals, sandbox"
+    fetched: 2026-07-21
+  - url: https://learn.chatgpt.com/docs/agent-configuration/subagents
     file: openai/codex/subagents.md
-    topic: Codex — subagents: parallel workflows, custom TOML agents, CSV batches
-    fetched: 2026-07-05
+    topic: "Codex — subagents: parallel workflows, custom TOML agents, batch processing"
+    fetched: 2026-07-21
+  - url: https://learn.chatgpt.com/docs/agent-configuration/rules
+    file: openai/codex/rules.md
+    topic: "Codex — rules: command restrictions and safe shell parsing for sandbox control"
+    fetched: 2026-07-21

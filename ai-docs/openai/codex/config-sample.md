@@ -1,8 +1,8 @@
 ---
-source: https://developers.openai.com/codex/config-sample
-fetched: 2026-07-05
+source: https://learn.chatgpt.com/docs/config-file/config-sample
+fetched: 2026-07-21
 ---
-> **In here:** Model selection & reasoning · Approval policies & sandbox · TOML configuration reference
+> **In here:** Sample config.toml structure · Model selection and reasoning · Sandbox, approval, and authentication settings
 
 # Sample Configuration
 
@@ -10,11 +10,11 @@ Use this example configuration as a starting point. It includes most keys Codex 
 
 For explanations and guidance, see:
 
-- [Config basics](https://developers.openai.com/codex/config-basic)
-- [Advanced Config](https://developers.openai.com/codex/config-advanced)
-- [Config Reference](https://developers.openai.com/codex/config-reference)
-- [Sandbox and approvals](https://developers.openai.com/codex/agent-approvals-security#sandbox-and-approvals)
-- [Managed configuration](https://developers.openai.com/codex/enterprise/managed-configuration)
+- [Config basics](https://learn.chatgpt.com/docs/config-file/config-basic)
+- [Advanced Config](https://learn.chatgpt.com/docs/config-file/config-advanced)
+- [Config Reference](https://learn.chatgpt.com/docs/config-file/config-reference)
+- [Sandbox and approvals](https://learn.chatgpt.com/docs/agent-approvals-security#sandbox-and-approvals)
+- [Managed configuration](https://learn.chatgpt.com/docs/enterprise/managed-configuration)
 
 Use the snippet below as a reference. Copy only the keys and sections you need into `~/.codex/config.toml` (or into a project-scoped `.codex/config.toml`), then adjust values for your setup.
 
@@ -35,9 +35,9 @@ Use the snippet below as a reference. Copy only the keys and sections you need i
 
 ################################################################################
 
-# Primary model used by Codex. Recommended example for most users: "gpt-5.5".
+# Primary model used by Codex. Recommended example for most users: "gpt-5.6".
 
-model = "gpt-5.5"
+model = "gpt-5.6"
 
 # Communication style for supported models. Allowed values: none | friendly | pragmatic
 
@@ -45,7 +45,7 @@ model = "gpt-5.5"
 
 # Optional model override for /review. Default: unset (uses current session model).
 
-# review_model = "gpt-5.5"
+# review_model = "gpt-5.6"
 
 # Provider id selected from [model_providers]. Default: "openai".
 
@@ -64,6 +64,8 @@ model_provider = "openai"
 # model_context_window = 128000 # tokens; default: auto for model
 
 # model_auto_compact_token_limit = 64000 # tokens; unset uses model defaults
+
+# model_auto_compact_token_limit_scope = "total" # total | body_after_prefix; default: total
 
 # tool_output_token_limit = 12000 # tokens stored per tool output
 
@@ -114,14 +116,6 @@ model_provider = "openai"
 # Inline override for the history compaction prompt. Default: unset.
 
 # compact_prompt = ""
-
-# Override the default commit co-author trailer. This only takes effect when
-
-# [features].codex_git_commit is enabled. When enabled and unset, Codex uses
-
-# "Codex <noreply@openai.com>". Set to "" to disable it.
-
-# commit_attribution = "Jane Doe <jane@example.com>"
 
 # Override built-in base instructions with a file path. Default: unset.
 
@@ -241,7 +235,9 @@ mcp_oauth_credentials_store = "auto"
 
 # Optional redirect URI override for MCP OAuth login (for example, remote devbox ingress).
 
-# Codex appends a server-specific callback ID before OAuth login, so register the full derived URI with your provider, not just the base host or unsuffixed path.
+# Codex appends a server-specific callback ID before OAuth login.
+
+# Register the full derived URI with your provider, not just the base host or unsuffixed path.
 
 # Custom callback paths are supported. `mcp_oauth_callback_port` still controls the listener port.
 
@@ -307,11 +303,13 @@ check_for_update_on_startup = true
 
 ################################################################################
 
-# Web search mode: disabled | cached | live. Default: "cached"
+# Web search mode: disabled | cached | indexed | live. Default: "cached"
 
 # cached serves results from a web search cache (an OpenAI-maintained index).
 
-# cached returns pre-indexed results; live fetches the most recent data.
+# cached returns pre-indexed results; indexed gates external web access through
+
+# the search index; live fetches the most recent data.
 
 # If you use --yolo or another full access sandbox setting, web search defaults to live.
 
@@ -344,6 +342,10 @@ web_search = "cached"
 # Default timeout per worker for spawn_agents_on_csv jobs. When unset, the tool defaults to 1800 seconds.
 
 # job_max_runtime_seconds = 1800
+
+# Record a model-visible message when an agent turn is interrupted. Default: true
+
+# interrupt_message = true
 
 # [agents.reviewer]
 
@@ -409,7 +411,7 @@ inherit = "all"
 
 ignore_default_excludes = false
 
-# Case-insensitive glob patterns to remove (e.g., "AWS*\*", "AZURE*\*"). Default: []
+# Case-insensitive glob patterns to remove. Default: []
 
 exclude = []
 
@@ -443,21 +445,17 @@ experimental_use_profile = false
 
 # Exact hosts match only themselves.
 
-# "\*.example.com" matches subdomains only; "\*\*.example.com" matches the apex plus subdomains.
+# Glob patterns match subdomains or apex plus subdomains.
 
-# "\*" allows any public host that is not denied, so prefer scoped rules when possible.
+# Wildcard allows any public host that is not denied, so prefer scoped rules when possible.
 
-# `allow_local_binding = false` blocks loopback and private destinations by default.
-
-# Add an exact local IP literal or `localhost` allow rule for one target, or set it to true only when broader local access is required.
+# allow_local_binding blocks loopback and private destinations by default.
 
 #
 
-# Set `default_permissions = "workspace"` before enabling this profile.
+# Set default_permissions before enabling this profile.
 
-# Example additional workspace roots that inherit this profile's
-
-# `:workspace_roots` filesystem rules.
+# Example additional workspace roots that inherit this profile rules.
 
 # [permissions.workspace.workspace_roots]
 
@@ -467,17 +465,17 @@ experimental_use_profile = false
 
 #
 
-# Example filesystem profile. Use `"deny"` to deny reads for exact paths or
+# Example filesystem profile. Use deny to deny reads for exact paths or
 
 # glob patterns. On platforms that need pre-expanded glob matches, set
 
-# glob_scan_max_depth when using unbounded patterns such as `\*\*`.
+# glob_scan_max_depth when using unbounded patterns.
 
 # [permissions.workspace.filesystem]
 
 # glob_scan_max_depth = 3
 
-# ":workspace_roots" = { "." = "write", "\*\*/\*.env" = "deny" }
+# ":workspace_roots" = { "." = "write" }
 
 # "/absolute/path/to/secrets" = "deny"
 
@@ -498,12 +496,6 @@ experimental_use_profile = false
 # enable_socks5_udp = false
 
 # allow_upstream_proxy = false
-
-# dangerously_allow_non_loopback_proxy = false
-
-# dangerously_allow_non_loopback_admin = false
-
-# dangerously_allow_all_unix_sockets = false
 
 # mode = "limited" # limited | full
 
@@ -593,11 +585,11 @@ show_tooltips = true
 
 # Syntax-highlighting theme (kebab-case). Use /theme in the TUI to preview and save.
 
-# You can also add custom .tmTheme files under $CODEX_HOME/themes.
+# You can also add custom theme files under $CODEX_HOME/themes.
 
 # theme = "catppuccin-mocha"
 
-# Custom key bindings. Selected composer actions fall back to matching [tui.keymap.global] bindings.
+# Custom key bindings. Selected composer actions fall back to matching global bindings.
 
 # Use [] to unbind an action.
 
@@ -628,7 +620,7 @@ show_tooltips = true
 [analytics]
 enabled = true
 
-# Control whether users can submit feedback from `/feedback`. Default: true
+# Control whether users can submit feedback from /feedback. Default: true
 
 [feedback]
 enabled = true
@@ -661,17 +653,17 @@ enabled = true
 
 # shell_tool = true
 
-# apps = false
+# apps = true
 
 # hooks = false
-
-# codex_git_commit = false
 
 # unified_exec = true
 
 # shell_snapshot = true
 
 # multi_agent = true
+
+# remote_plugin = true
 
 # personality = true
 
@@ -863,25 +855,9 @@ enabled = true
 
 # name = "OpenAI Data Residency"
 
-# base_url = "https://us.api.openai.com/v1" # example with 'us' domain prefix
+# base_url = "https://us.api.openai.com/v1"
 
-# wire_api = "responses" # only supported value
-
-# # requires_openai_auth = true # use only for providers backed by OpenAI auth
-
-# # request_max_retries = 4 # default 4; max 100
-
-# # stream_max_retries = 5 # default 5; max 100
-
-# # stream_idle_timeout_ms = 300000 # default 300_000 (5m)
-
-# # supports_websockets = true # optional
-
-# # experimental_bearer_token = "sk-example" # optional dev-only direct bearer token
-
-# # http_headers = { "X-Example" = "value" }
-
-# # env_http_headers = { "OpenAI-Organization" = "OPENAI_ORGANIZATION", "OpenAI-Project" = "OPENAI_PROJECT" }
+# wire_api = "responses"
 
 # --- Example: Azure/OpenAI-compatible provider ---
 
@@ -898,8 +874,6 @@ enabled = true
 # env_key = "AZURE_OPENAI_API_KEY"
 
 # env_key_instructions = "Set AZURE_OPENAI_API_KEY in your environment"
-
-# # supports_websockets = false
 
 # --- Example: command-backed bearer token auth ---
 
@@ -955,7 +929,7 @@ enabled = true
 
 # approvals_reviewer = "user" # user | auto_review
 
-# default_tools_approval_mode = "auto" # auto | prompt | approve
+# default_tools_approval_mode = "auto" # auto | prompt | writes | approve
 
 #
 
@@ -969,7 +943,7 @@ enabled = true
 
 # approvals_reviewer = "auto_review"
 
-# default_tools_approval_mode = "prompt" # auto | prompt | approve
+# default_tools_approval_mode = "prompt" # auto | prompt | writes | approve
 
 #
 
@@ -1005,11 +979,11 @@ enabled = true
 
 ################################################################################
 
-# To create a config profile, put overrides in a separate profile file under $CODEX_HOME.
+# To create a config profile, put overrides in a separate profile file under CODEX_HOME.
 
 # Select it with codex --profile ci.
 
-# For example, a CI profile could live at $CODEX_HOME/ci.config.toml:
+# For example, a CI profile could live at CODEX_HOME/ci.config.toml:
 
 # model = "gpt-5.4"
 
@@ -1105,15 +1079,7 @@ metrics_exporter = "statsig"
 
 # [otel.exporter."otlp-http".headers]
 
-# "x-otlp-api-key" = "${OTLP_TOKEN}"
-
-# [otel.exporter."otlp-http".tls]
-
-# ca-certificate = "certs/otel-ca.pem"
-
-# client-certificate = "/etc/codex/certs/client.pem"
-
-# client-private-key = "/etc/codex/certs/client-key.pem"
+# Headers example
 
 # Example OTLP/gRPC trace exporter configuration
 

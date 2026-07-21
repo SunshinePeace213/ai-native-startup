@@ -1,8 +1,8 @@
 ---
 source: https://code.claude.com/docs/en/skills
-fetched: 2026-07-05
+fetched: 2026-07-21
 ---
-> **In here:** Create and manage skills · Configure invocation and context · Share skills across projects
+> **In here:** Skill creation and structure · Bundled skills and invocation · Configuration and troubleshooting
 
 # Extend Claude with skills
 
@@ -13,7 +13,7 @@ Skills extend what Claude can do. Create a `SKILL.md` file with instructions, an
 Create a skill when you keep pasting the same instructions, checklist, or multi-step procedure into chat, or when a section of CLAUDE.md has grown into a procedure rather than a fact. Unlike CLAUDE.md content, a skill's body loads only when it's used, so long reference material costs almost nothing until you need it.
 
 <Note>
-  For built-in commands like `/help` and `/compact`, and bundled skills like `/debug` and `/code-review`, see the [commands reference](/en/commands).
+  For built-in commands like `/help` and `/compact`, and bundled skills like `/debug` and `/code-review`, see the [commands reference](/docs/en/commands).
 
   **Custom commands have been merged into skills.** A file at `.claude/commands/deploy.md` and a skill at `.claude/skills/deploy/SKILL.md` both create `/deploy` and work the same way. Your existing `.claude/commands/` files keep working. Skills add optional features: a directory for supporting files, frontmatter to [control whether you or Claude invokes them](#control-who-invokes-a-skill), and the ability for Claude to load them automatically when relevant.
 </Note>
@@ -22,9 +22,11 @@ Claude Code skills follow the [Agent Skills](https://agentskills.io) open standa
 
 ## Bundled skills
 
-Claude Code includes a set of bundled skills that are available in every session unless disabled with the [`disableBundledSkills`](/en/settings#available-settings) setting, including `/code-review`, `/batch`, `/debug`, `/loop`, and `/claude-api`. Unlike most built-in commands, which execute fixed logic directly, bundled skills are prompt-based: they give Claude detailed instructions and let it orchestrate the work using its tools. You invoke them the same way as any other skill, by typing `/` followed by the skill name.
+Claude Code includes a set of bundled skills that are available in every session unless disabled with the [`disableBundledSkills`](/docs/en/settings#available-settings) setting, including `/doctor`, `/code-review`, `/batch`, `/debug`, `/loop`, and `/claude-api`. Unlike most built-in commands, which execute fixed logic directly, bundled skills are prompt-based: they give Claude detailed instructions and let it orchestrate the work using its tools. You invoke them the same way as any other skill, by typing `/` followed by the skill name.
 
-Bundled skills are listed alongside built-in commands in the [commands reference](/en/commands), marked **Skill** in the Purpose column.
+The [`/doctor`](/docs/en/commands#all-commands) setup checkup is the one exception to `disableBundledSkills` in Claude Code v2.1.205 and later: it stays typable when the setting is on. To hide it, set the `DISABLE_DOCTOR_COMMAND` environment variable or a [`skillOverrides`](#override-skill-visibility-from-settings) entry of `"doctor": "off"`. Before v2.1.205, `/doctor` was a built-in command rather than a bundled skill.
+
+Bundled skills are listed alongside built-in commands in the [commands reference](/docs/en/commands), marked **Skill** in the Purpose column.
 
 ### Run and verify your app
 
@@ -36,7 +38,7 @@ Three bundled skills work together to launch your app and confirm changes agains
 | `/verify`              | Build and run your app to confirm a code change does what it should, without falling back to tests or type checks |
 | `/run-skill-generator` | Teach `/run` and `/verify` how to build and launch your project                                                   |
 
-{/* min-version: 2.1.145 */}All three skills require Claude Code v2.1.145 or later.
+{/* min-version: 2.1.145 */}All three skills require Claude Code v2.1.145 or later. Check your version with `claude --version` or the `/status` command.
 
 `/run` and `/verify` work without setup. They infer the launch from your project type (CLI, server, TUI, browser-driven) and from what's in your README, `package.json`, or `Makefile`. That inference gets unreliable for projects that need anything beyond a standard launch: a database, an env file, a graphical session, a multi-step build.
 
@@ -98,408 +100,326 @@ This example creates a skill that summarizes the uncommitted changes in your git
   </Step>
 </Steps>
 
-### Where skills live
+### Where to save skills
 
-Skills can live in three places:
+- **Personal skills** in `~/.claude/skills/` are available to every project on your machine.
+- **Project skills** in `.claude/skills/` are shared with anyone who clones your repository.
+- **Team skills** in a `.claude/skills/` folder in a private repository that you grant the team permission to share across projects: see [permissions](/docs/en/permissions#share-your-skills).
 
-- **Personal skills** (available in every project): `~/.claude/skills/`
-- **Project skills** (this project only): `.claude/skills/`
-- **Shared skills** (in a published package): a Git repo or npm package
+All three locations load skills the same way: a directory with a `SKILL.md` file. Subdirectories of `.claude/skills/` in the repo also load; this allows you to organize related skills: `.claude/skills/deploy/SKILL.md` and `.claude/skills/deploy/backup/SKILL.md` both register as skills.
 
-Project skills take precedence over personal skills with the same name. When you type `/skill-name`, Claude Code searches in order and uses the first match. To list all available skills, type `/help` and scroll to the **Skills** section.
+Skills in a `.claude/commands/` directory (the old location before skills were introduced) still work. When both files exist at `.claude/commands/skill.md` and `.claude/skills/skill/SKILL.md`, the skill wins. New skills should go in `.claude/skills/`.
 
-## Configure skills
+### Skill structure
 
-### Write the SKILL.md file
+A skill is a directory containing:
 
-Every skill needs a `SKILL.md` file. The simplest version has just a body:
+- **`SKILL.md`** — required, contains frontmatter and instructions
+- **Supporting files** — optional, referenced in the skill and loaded together with it
 
-```markdown
-# My Skill
+The directory name (stripped of suffixes like `-skill` or `-helper` if you add them) becomes the command name. `/my-skill` invokes `~/.claude/skills/my-skill/SKILL.md` or `.claude/skills/my-skill/SKILL.md`.
 
-This is a skill that does something useful.
-```
+### Write SKILL.md
 
-Most skills add frontmatter (YAML between `---` markers) to configure when Claude uses it:
+The `SKILL.md` file has two parts: YAML frontmatter between `---` markers, and markdown instructions.
 
 ```yaml
 ---
-description: Short description. Use when the user asks X.
-autoInvoke: true
+description: A one-line description Claude reads when deciding whether to invoke this skill automatically. Use keywords matching the kinds of requests you want to trigger the skill.
+when_to_use: |
+  Optional. A detailed explanation of when to use this skill and when not to use it.
+  Use to disambiguate between similar skills, or to rule out edge cases.
 ---
 
-# My Skill
+# Skill title
 
-Instructions for Claude...
+Your instructions here. Can span multiple sections.
 ```
 
-Here's what each frontmatter field does:
+**`description`** — Claude reads this when deciding whether to run your skill automatically. Write it for Claude, not for humans: include keywords that match the requests you want to trigger the skill. Examples:
 
-| Field            | Type                                      | Default                    | Purpose                                                                                                                                                                                                          |
-| :--------------- | :---------------------------------------- | :------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `description`    | string                                    | ""                         | A short (one-sentence) description of what the skill does. Claude uses this to decide when to auto-invoke the skill. Ignored if `autoInvoke: false`.                                                            |
-| `autoInvoke`     | boolean                                   | true                       | If true, Claude will load this skill when your message matches the description. If false, the skill only runs when explicitly invoked with `/skill-name`.                                                         |
-| `invoke`         | `user` \| `claude` \| `both` (default)    | `both`                     | Controls who can invoke the skill. See [Control who invokes a skill](#control-who-invokes-a-skill).                                                                                                             |
-| `runAs`          | `direct` \| `subagent`                    | `direct`                   | If `subagent`, Claude Code will run the skill in a subagent instead of using it as a prompt. See [Run skills in a subagent](#run-skills-in-a-subagent).                                                         |
-| `model`          | `opus` \| `sonnet` \| `haiku` \| `fable` | [Current default model](/) | Model to use if this skill runs in a subagent. Ignored if `runAs: direct`.                                                                                                                                       |
-| `environment`    | object                                    | `{}`                       | Environment variables to pass to the skill (for injected dynamic context). Does not affect security or permissions.                                                                                             |
-| `dependencies`   | array of strings                          | `[]`                       | Names of other skills or commands to load before this one. Useful if your skill refers to behavior that another skill implements. See [Skill dependencies](#skill-dependencies).                                  |
-| `tags`           | array of strings                          | `[]`                       | Arbitrary tags to categorize and organize your skills. Example: `["refactoring", "testing", "codegen"]`.                                                                                                      |
+- ✅ `Helps debug environment setup, imports, build failures, and test failures by running diagnostics.`
+- ❌ `Debugging tool` (too vague)
+- ✅ `Writes and updates Dockerfiles and containerization workflows for Node, Python, Ruby, and Go projects.`
+- ❌ `Docker helper` (doesn't say what problems it solves)
+
+**`when_to_use`** — optional, a detailed explanation that helps Claude pick between similar skills or rule out edge cases.
+
+The frontmatter keys are case-sensitive. Additional keys specific to skill invocation and behavior are documented below.
+
+### Skill syntax
+
+Inside a skill's instructions, you can use:
+
+- **Markdown** — normal markdown syntax for headings, lists, links, code blocks
+- **Dynamic context** — special syntax to inject live command output or file content:
+  - `` !`command` `` — runs a shell command and inlines the output
+  - `` !`file.md` `` — reads a file's contents and inlines it
+- **HTML and JSX** — custom elements like `<Note>`, `<Steps>`, and collapsible sections for structure and navigation
+
+Use these to keep your skill instructions grounded in the live state of the project, and to make long reference material navigable without bloating the skill's loaded size.
 
 ### Control who invokes a skill
 
-By default, both you and Claude can invoke a skill: you type `/skill-name` to use it directly, and Claude auto-invokes it when relevant. You can restrict invocation with the `invoke` field:
+By default, Claude can invoke your skill automatically when it's relevant, and you can always invoke it manually with the skill name. Two settings let you change this:
+
+- **`disable-model-invocation: true`** — only you can invoke this skill with `/skill-name`; Claude won't run it automatically.
+- **`disable-user-invocation: true`** — only Claude can invoke this skill automatically; you can't invoke it with `/skill-name`.
+
+Example:
 
 ```yaml
 ---
-invoke: user  # Only you can invoke with /skill-name. Claude never auto-invokes.
+description: Runs the project's tests whenever you ask about test results or whether the code works.
+disable-user-invocation: true
 ---
 ```
 
-This is useful when the skill sets up a workflow that only makes sense when explicitly requested. For example, a skill that runs a data migration:
-
-```yaml
----
-description: Runs the nightly data migration. Not for routine use.
-invoke: user
----
-
-# Data Migration
-
-This skill runs the nightly data migration. **Do not invoke lightly.**
-
-!`./scripts/migrate-data.sh`
-```
-
-The `invoke: claude` setting is rare but useful for workflow skills that should run when you ask for something that matches the description, but that you should not invoke directly yourself:
-
-```yaml
----
-description: Runs tests when you ask to verify your changes.
-invoke: claude
----
-
-# Verify Tests
-
-!`npm test`
-```
+Use `disable-model-invocation` for skills that are too specialized or destructive for automatic invocation (e.g., a `/deploy` skill, or a `/quick-test-only` that's meant to skip comprehensive tests). Use `disable-user-invocation` for skills designed for automatic invocation only and not useful when manually triggered.
 
 ### Run skills in a subagent
 
-By default, Claude uses a skill as a prompt: the skill text is loaded into Claude's context and Claude orchestrates the work. Some skills are more powerful as **subagent tasks**: Claude Code spawns a separate instance of Claude that runs the skill, and reports the result back.
+Large or complex skills can run in a subagent: a separate Claude instance that loads the skill, runs it unsupervised, and returns the result. Subagents let you:
 
-Use `runAs: subagent` to run a skill in a subagent:
+- **Dedicate Claude to one task** without interruption
+- **Use a specialized model** (`opus` for complex work, `haiku` for lightweight utilities)
+- **Isolate long-running work** so it doesn't block the main session
+- **Keep skill code separate** from the main chat context
+
+Add these keys to a skill's frontmatter:
 
 ```yaml
 ---
-description: Refactor a module to improve maintainability.
-runAs: subagent
+subagent: true
+subagent-model: "opus"  # optional: "opus", "sonnet", "haiku"; default "sonnet"
 ---
-
-# Refactor for Readability
-
-... detailed refactoring instructions ...
 ```
 
-When Claude invokes this skill, Claude Code spawns a subagent, passes it the skill instructions, and the subagent works independently. The subagent's result comes back to Claude as a concise summary.
+When you invoke a skill with `subagent: true`, Claude Code spins up a new agent instance, loads the skill, streams the output back, and returns to the main chat. The subagent runs in the same project directory and has access to your project's files and tools.
 
-Subagent skills are useful when:
-
-- **You want isolation**: The skill makes edits, runs tests, and iterates. You don't want that loop in your main chat context.
-- **You want focus**: The subagent runs only the skill's logic, not every skill and tool you have loaded.
-- **You want to pick the model**: Use `model: haiku` for a lightweight skill, or `model: opus` for complex reasoning.
-- **You want clear success criteria**: The subagent's work is wrapped in a task, so you can ask "did this skill work?" and get a yes/no answer.
-
-The subagent still has access to your project's files and tools. It just runs independently.
+If the skill uses dynamic context (`` !`command` `` or `` !`file` ``), the injection happens in the subagent's environment, so the skill sees the current state of the project. This makes subagents ideal for skills that explore the codebase or run commands.
 
 ### Inject dynamic context
 
-Skills can pull in dynamic context — the results of a command, the current git branch, the uncommitted diff — before Claude reads the skill. Use the syntax `` !`command` `` in your skill body:
+Dynamic context syntax lets you inject live data into a skill without storing that data in the skill file. Before Claude sees the skill, Claude Code runs the commands or reads the files you specify, and inlines the output.
+
+**Read a file:**
 
 ```markdown
-# Current Changes
+## Project layout
 
-## Uncommitted changes
+!`find . -type f -name "*.json" | head -20`
+```
+
+**Run a command:**
+
+```markdown
+## Recent commits
+
+!`git log --oneline -10`
+```
+
+Claude Code runs the command in the same directory as the project and inlines the output. If the command fails or produces no output, Claude Code leaves the line as-is (the `` !`...` `` syntax remains visible to Claude) so you can decide how to handle the error case.
+
+**Full example:**
+
+```yaml
+---
+description: Summarizes uncommitted changes and suggests a commit message.
+---
+
+## Current changes
 
 !`git diff HEAD`
 
-## Current branch
+## Instructions
 
-!`git branch --show-current`
+Summarize the diff in 1–2 sentences, then suggest a commit message. If the diff is empty, say there are no uncommitted changes.
+```
+
+**Scoping:** Claude Code runs injections in the project's root directory. If you need output from a subdirectory, include the path in the command: `` !`ls subdir/` ``.
+
+**Performance:** Each injection adds a small delay while Claude Code runs the command or reads the file. Keep commands fast and targeted. For expensive operations (full test suites, large file searches), consider running them manually and pasting the output, or loading the skill and asking Claude to run the command itself.
+
+**Error handling:** Commands can fail (non-zero exit status) or produce no output. If a failure matters, include a fallback in the skill instructions:
+
+```markdown
+## Current test status
+
+!`npm test 2>&1`
+
+If the tests above didn't run, describe what happened and I'll diagnose the issue.
+```
+
+### Load skills from version control
+
+Skills checked into `.claude/skills/` load automatically when you open the project. You can also load skills from a different repository:
+
+```yaml
+---
+description: Deploys the project using the deployment skill from the platform repo.
+load-skills-from: 
+  - repo: "https://github.com/myteam/platform"
+    path: ".claude/skills"
+---
+```
+
+This merges the `path` directory from the `repo` into your skill context temporarily. Merging happens at load time, so you see the latest version of the loaded skills. If a skill name conflicts between your project and the loaded repo, your project's version takes priority.
+
+**Permissions:** Loading skills from a remote repository requires permission. The first time you load a skill from a new repo, Claude Code asks for your approval before downloading and running it.
+
+### File requirements
+
+Files are local to each machine; a skill can't reference files outside the project directory. Paths are relative to the project root.
+
+If you need to reference files that won't exist until the skill runs (e.g., files generated by a previous step), use a `if-exists` wrapper or check in the skill instructions. Example:
+
+```yaml
+---
+description: Updates the changelog after a release.
+---
+
+## Recent changes
+
+!`if [ -f "CHANGELOG_SINCE_LAST_RELEASE.md" ]; then cat CHANGELOG_SINCE_LAST_RELEASE.md; fi`
 
 ## Instructions
 
-Summarize the changes above...
+If the file from the recent changes exists, update `CHANGELOG.md` with its contents. Otherwise, generate the changelog from the recent git log.
 ```
 
-When the skill runs, Claude Code runs each command, captures the output, and replaces the `` !`command` `` line with the output. Claude then reads the skill with the context already inlined. The output is evaluated as markdown: if it's a code block, it renders as code; if it's plain text, it's prose.
+## Advanced
 
-You can also use dynamic context in the skill's frontmatter `environment` field to pass values to later environment references. Example:
+### Share skills with the team
+
+Skills in a `.claude/skills/` directory in a repository also load in Claude Tag channels created from that repository. If you want to make certain skills available to your team without sharing the entire repository:
+
+1. Create a private repository with your shared skills in `.claude/skills/`
+2. Grant team members access to the repository
+3. Link to it in another skill's `load-skills-from:` field, or have them clone it locally and work from there
+
+When a team member opens a project and a skill loads a skill from your repository, Claude Code prompts them for permission the first time, then remembers their choice.
+
+### Share skills publicly
+
+To publish a skill for public use, host it on GitHub and share the URL. Anyone can load it with:
 
 ```yaml
 ---
-environment:
-  PR_NUMBER: !`gh pr view --json number -q .number`
-  PR_TITLE: !`gh pr view --json title -q .title`
+description: Your description here.
+load-skills-from:
+  - repo: "https://github.com/your-org/your-skill-repo"
+    path: ".claude/skills"
 ---
-
-# Your PR Context
-
-The PR number is {PR_NUMBER} and the title is "{PR_TITLE}".
 ```
 
-Dynamic context runs in the shell, so you can pipe and chain commands:
+### Load skills from a monorepo
 
-```markdown
-!`git diff HEAD | wc -l`
-
-!`find . -name "*.test.ts" | head -5`
-```
-
-## Additional resources
-
-- [Agent Skills spec](https://agentskills.io) — the open standard Claude Code follows.
-- [commands reference](/en/commands) — all built-in commands and bundled skills.
-- [models reference](/en/models) — model alias and details.
-
-## Advanced patterns
-
-### Skill dependencies
-
-You can reference another skill or command by name from inside a skill. When you do, Claude Code loads the dependency before your skill runs. This is useful when your skill builds on behavior that another skill implements.
-
-Example: a `/review-change` skill might depend on a `/summarize-changes` skill (from the example above). The review instructions can assume that summarizing changes is available:
+In a monorepo, a skill in one subdirectory can load skills from another:
 
 ```yaml
 ---
-description: Reviews your uncommitted changes and suggests improvements.
-dependencies: ["summarize-changes"]
+description: Runs the frontend build using the build skill from the shared tools directory.
+load-skills-from:
+  - path: "../../tools/.claude/skills"
 ---
-
-# Review Changes
-
-First, use the /summarize-changes skill to see what changed. Then, review the changes and suggest improvements.
 ```
 
-Dependencies load in order. If skill A depends on skill B, which depends on skill C, they load as: C, B, A.
+Use relative paths to refer to other directories in the same repository. Claude Code resolves the path relative to the skill's directory.
 
-### Make a skill that respects .gitignore
+If the monorepo itself has a `.claude/skills/` directory, skills there load automatically for any subdirectory project.
 
-Some skills operate on your repository. If you want them to respect `.gitignore`, use `git ls-files`:
+### Load skills conditionally
 
-```markdown
-# Audit Your Codebase
+A skill can declare dependencies that determine whether it's available:
 
-Review the files below and suggest improvements:
+```yaml
+---
+description: Runs tests using pytest when pytest is installed.
+requires: "pytest"
+---
+```
 
-!`git ls-files | head -20`
+The `requires` field accepts a space-separated list of command names or environment variable names that must be present:
+
+```yaml
+requires: "docker node npm"
+requires: "DATABRICKS_HOST DATABRICKS_TOKEN"
+```
+
+If a requirement is missing, the skill won't appear in `/list-skills` or load automatically, but you can still invoke it manually with `/skill-name`.
+
+### Register a tool
+
+Skills can register tools that Claude can use to perform actions:
+
+```yaml
+---
+description: Scans a URL with Lighthouse and returns a performance report.
+---
+
+## Tools
+
+- **url** (required): The URL to scan
+- **format** (optional): json or html (default json)
 
 ## Instructions
 
-Audit the files above...
+I will scan the URL you provide using Lighthouse and return a JSON report of performance metrics. This includes the Lighthouse score, Core Web Vitals, and a breakdown of performance by metric.
 ```
 
-### Share skills across projects
+A tool declared in a skill behaves like a Bash tool — Claude can invoke it with parameters, and the skill content (instructions) receives the parameters and provides the output.
 
-Skills in `~/.claude/skills/` are available everywhere. For skills that are specific to a team or project, put them in `.claude/skills/` and commit them to your repo. That way, every team member gets the same skills.
+The tool name is the skill name. If your skill is at `.claude/skills/lighthouse/SKILL.md`, the tool is named `/lighthouse`. Claude calls the skill with each parameter, and the skill instructions receive them as variables: `${url}` and `${format}` in the example above.
 
-You can also share skills as a package:
+The tool is available to you and Claude whenever the skill is available. If a skill's frontmatter sets `disable-user-invocation: true`, its tool is also unavailable to you, though Claude can still use it.
 
-1. **Create a repo** with skills in `.claude/skills/`.
-2. **Publish to npm**: `npm init -y && npm publish` (skills work as local packages too).
-3. **In a project that wants to use your skills**: add a dependency in your `.claude/dependencies.yaml`:
+### Troubleshooting
 
-   ```yaml
-   imports:
-     - https://github.com/myteam/my-skills-repo
-     - npm://my-skills-package
-   ```
+#### Skill not loading or appearing in `/list-skills`
 
-This way, team members can have consistent, versioned skills across all their projects.
+Run `/doctor` to diagnose the issue. Common problems:
 
-## Pull request context
+- **File not found:** Ensure the skill is in `~/.claude/skills/skill-name/SKILL.md` or `.claude/skills/skill-name/SKILL.md`
+- **Frontmatter syntax error:** Frontmatter must be valid YAML between `---` markers. Use a YAML validator to check.
+- **Directory permissions:** Claude Code must be able to read the skill directory.
+- **Pattern mismatch:** The `requires` condition failed (a command or environment variable is missing)
 
-This section walks through another example: a skill that uses context from your current pull request. The skill shows how to combine dynamic context with instructions that guide Claude.
+#### Skill always triggers
 
-The result is a skill that runs when you ask Claude to review your changes, and that pulls in the PR title, description, and your recent commits — context that helps Claude make better suggestions.
+Make your description more specific to the use cases you want. Examples:
 
-### Your task
+- ❌ `Helps with anything` (too broad)
+- ✅ `Diagnoses build failures in Node and Python projects by running dependency checks and build commands`
+- ❌ `Lint checker` (doesn't say what it does or lints what)
+- ✅ `Checks TypeScript files for type errors and style violations using eslint and TypeScript compiler`
 
-Create a skill that:
+#### Skill triggers too often
 
-1. Pulls in metadata from your current PR (title, description, commits)
-2. Reviews the PR's changes
-3. Suggests improvements based on the PR's goals
+If Claude uses your skill when you don't want it:
 
-### Environment
+1. Make the description more specific
+2. Add `disable-model-invocation: true` if you only want manual invocation
 
-Set up a GitHub CLI (`gh`) and a git repo with a PR open. The skill uses `gh pr view` to fetch PR metadata.
+#### Skill descriptions are cut short
 
-### Build the skill
+Claude Code loads a listing of skill names and descriptions into context so Claude knows what's available. The listing always contains every skill name, but if you have many skills, Claude Code shortens descriptions to fit the listing's character budget, which can strip the keywords Claude needs to match your request. The budget scales at 1% of the model's context window. When the listing overflows, Claude Code drops descriptions starting with the skills you invoke least, so the skills you use most keep their full text.
 
-Create `~/.claude/skills/review-pr/SKILL.md`:
+Run `/doctor` for an estimate of the listing's context cost and its biggest contributors. When the listing exceeds its budget, Claude Code also writes a warning to the debug log, visible with [`--debug`](/docs/en/cli-reference#cli-flags).
 
-```yaml
----
-description: Reviews the current PR. Use when you're ready to submit a pull request.
-environment:
-  PR_TITLE: !`gh pr view --json title --jq .title`
-  PR_DESCRIPTION: !`gh pr view --json body --jq .body`
-  PR_COMMITS: !`gh pr view --json commits --jq '.commits[] | .message' | head -10`
----
+The Skills row in `/context` reports the size of the listing after the budget is applied, so it matches what the model receives. Before v2.1.196, the row counted the full text of every description and could show a value several times larger than the configured budget.
 
-# Review This PR
-
-**PR Title:** {PR_TITLE}
-
-**PR Description:**
-
-{PR_DESCRIPTION}
-
-**Recent Commits:**
-
-```
-{PR_COMMITS}
-```
-
-## Your task
-
-Review the PR above for clarity, correctness, and alignment with the PR's stated goals. Suggest improvements to the code, commit messages, and PR description.
-```
-
-The skill uses three environment variables (`PR_TITLE`, `PR_DESCRIPTION`, `PR_COMMITS`), each populated by a `gh` command. When the skill runs, Claude sees the actual PR context inlined.
-
-### Test the skill
-
-Open a project with a GitHub PR, then ask Claude:
-
-```text
-/review-pr
-```
-
-or
-
-```text
-Review my PR for issues.
-```
-
-Claude should respond with a review based on the actual PR data.
-
-### Evaluate and iterate on a skill
-
-The skill above is a starting point. Here's how to make it better:
-
-1. **Pull in the diff**: Add a line like `` !`git diff origin/main` `` to show the actual code changes.
-2. **Add a checklist**: Use a markdown checklist to guide Claude's review (e.g., "Check for error handling", "Verify tests are sufficient").
-3. **Name who should review**: Add a line that tags reviewers (using environment variables or a static list).
-4. **Make it specific to your project**: If you're reviewing a backend API, add specific checks for authentication, validation, and error handling. If you're reviewing a UI, add checks for accessibility and performance.
-
-The more context and the clearer your instructions, the better Claude's suggestions will be.
-
-## Share skills
-
-### Publish to npm
-
-Skills live in a `.claude/skills/<name>/` directory inside a repo. To share them:
-
-1. Create a public repo with your skills.
-2. Add a `package.json` at the root:
-
-```json
-{
-  "name": "my-skills",
-  "version": "1.0.0",
-  "description": "Custom skills for development",
-  "files": [".claude/skills"]
-}
-```
-
-3. Publish to npm:
-
-```bash
-npm publish
-```
-
-4. In any project, add the skills to `.claude/dependencies.yaml`:
-
-```yaml
-imports:
-  - npm://my-skills
-```
-
-### Use skills from a git repo
-
-You can also import skills from a git repo without publishing to npm:
-
-```yaml
-imports:
-  - https://github.com/myteam/my-skills-repo
-```
-
-The repo should have `.claude/skills/` at the root.
-
-### Usage
-
-Once you've imported skills, they work the same way as local skills. Type `/skill-name` to invoke, or Claude auto-invokes when the description matches your message.
-
-## Organize and visualize your skills
-
-### Tags and visualization
-
-Skills can have tags to help organize them:
-
-```yaml
----
-tags: ["refactoring", "testing", "performance"]
----
-```
-
-When you type `/help`, Claude Code displays your skills in a grid, organized by tag. Skills without tags appear in an **Untagged** section.
-
-### What the visualization shows
-
-The help output shows:
-
-| Column                     | Meaning                                                              |
-| :------------------------- | :------------------------------------------------------------------- |
-| **Skill Name** / Shorthand | The skill name and abbreviation (usually the first letter).          |
-| **Purpose**                | The `description` field from the skill's frontmatter.                |
-| **Type**                   | **Skill** for custom skills, **Command** for built-in commands.      |
-| **Invocation**             | Who can invoke it: **You**, **Claude**, or **Both** (the default).   |
-| **Run As**                 | **Direct** (prompt-based) or **Subagent** (spawned task).            |
-| **Tags**                   | Tags to help organize and discover skills.                          |
-
-## Troubleshooting
-
-### The skill is not being invoked automatically
-
-Check the frontmatter:
-
-- Is `autoInvoke` set to `true` (or omitted, which defaults to true)?
-- Does the `description` match what you're asking? Make the description short and specific. If Claude doesn't understand when to use the skill, it won't auto-invoke.
-- Is there a more specific skill with a similar description? Claude picks the best match, so if two skills have overlapping descriptions, the more specific one wins.
-
-### The skill is running, but not behaving as expected
-
-- Check that your **instructions are clear**. Skills are prompts: unclear instructions lead to unpredictable behavior.
-- If the skill uses dynamic context (`` !`command` ``), check that the command runs correctly in your shell. Run it manually to debug.
-- If the skill runs in a subagent (`runAs: subagent`), check the subagent's output to see what went wrong.
-
-### I need to update an imported skill
-
-Skills imported from npm or Git are read-only. If you need to modify one, create a local skill with the same name (in `.claude/skills/`). Local skills take precedence.
-
-### A skill is missing or appears under a different name
-
-Skills are discovered by directory name. If your skill is in `.claude/skills/my-skill/SKILL.md`, the command is `/my-skill`. Check:
-
-- Is the directory name correct?
-- Is there a `SKILL.md` file inside?
-- Is the `.claude/skills/` directory at the root of your project (for project skills) or in `~/.claude/skills/` (for personal skills)?
+To raise the budget, set the [`skillListingBudgetFraction`](/docs/en/settings#available-settings) setting (e.g. `0.02` = 2%) or the `SLASH_COMMAND_TOOL_CHAR_BUDGET` environment variable to a fixed character count. To free budget for other skills, set low-priority entries to `"name-only"` in [`skillOverrides`](#override-skill-visibility-from-settings) so they list without a description. You can also trim the `description` and `when_to_use` text at the source: put the key use case first, since each entry's combined text is capped at 1,536 characters regardless of budget. The cap is configurable with [`skillListingMaxDescChars`](/docs/en/settings#available-settings).
 
 ## Related resources
 
-- [**Agent Skills spec**](https://agentskills.io/) — the open standard that Claude Code implements.
-- [**Bundled skills**](#bundled-skills) — pre-built skills for code review, batch processing, debugging, and more.
-- [**Commands reference**](/en/commands) — built-in commands and bundled skills.
-- [**How to use Claude Code**](/en/guide) — get started with Claude Code.
+* **[Debug your configuration](/docs/en/debug-your-config)**: diagnose why a skill isn't appearing or triggering
+* **[Evaluating skill output quality](https://agentskills.io/skill-creation/evaluating-skills)**: the eval file format and iteration workflow on agentskills.io
+* **[Skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)**: writing guidance that applies across Claude products
+* **[Subagents](/docs/en/sub-agents)**: delegate tasks to specialized agents
+* **[Plugins](/docs/en/plugins)**: package and distribute skills with other extensions
+* **[Hooks](/docs/en/hooks)**: automate workflows around tool events
+* **[Memory](/docs/en/memory)**: manage CLAUDE.md files for persistent context
+* **[Commands](/docs/en/commands)**: reference for built-in commands and bundled skills
+* **[Permissions](/docs/en/permissions)**: control tool and skill access
+* **[Claude Tag skills](https://claude.com/docs/claude-tag/admins/skills-repo)**: project skills committed to a repo also load when that repo is used in a Claude Tag channel

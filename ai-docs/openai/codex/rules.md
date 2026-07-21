@@ -1,8 +1,8 @@
 ---
-source: https://developers.openai.com/codex/rules
-fetched: 2026-07-05
+source: https://learn.chatgpt.com/docs/agent-configuration/rules
+fetched: 2026-07-21
 ---
-> **In here:** Rules files for command approval · Prefix patterns and decisions · Shell command parsing
+> **In here:** Rule files and creation · Command matching and enforcement · Testing and validation
 
 # Rules
 
@@ -43,7 +43,7 @@ Rules are experimental and may change.
 
 3. Restart Codex.
 
-Codex scans `rules/` under every active config layer at startup, including [Team Config](https://developers.openai.com/codex/enterprise/admin-setup#team-config) locations and the user layer at `~/.codex/rules/`. Project-local rules under `<repo>/.codex/rules/` load only when the project `.codex/` layer is trusted.
+Codex scans `rules/` under every active config layer at startup, including [Team Config](https://learn.chatgpt.com/docs/enterprise/admin-setup#step-4-standardize-local-configuration-with-team-config) locations and the user layer at `~/.codex/rules/`. Project-local rules under `<repo>/.codex/rules/` load only when the project `.codex/` layer is trusted.
 
 When you add a command to the allow list in the TUI, Codex writes to the user layer at `~/.codex/rules/default.rules` so future runs can skip the prompt.
 
@@ -52,7 +52,7 @@ When Smart approvals are enabled (the default), Codex may propose a
 carefully before accepting it.
 
 Admins can also enforce restrictive `prefix_rule` entries from
-[`requirements.toml`](https://developers.openai.com/codex/enterprise/managed-configuration#admin-enforced-requirements-requirementstoml).
+[`requirements.toml`](https://learn.chatgpt.com/docs/enterprise/managed-configuration#admin-enforced-requirements-requirementstoml).
 
 ## Understand rule fields
 

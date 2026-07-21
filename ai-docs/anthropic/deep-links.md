@@ -1,8 +1,8 @@
 ---
 source: https://code.claude.com/docs/en/deep-links
-fetched: 2026-07-05
+fetched: 2026-07-21
 ---
-> **In here:** Deep link URL parameters and construction · Embedding in runbooks and shell commands · Platform registration and customization
+> **In here:** URL scheme for opening Claude Code · Building and embedding links · Terminal registration and troubleshooting
 
 # Launch sessions from links
 
@@ -20,10 +20,6 @@ Because a deep link is a URL, you can put one anywhere a link can go:
 * A CI failure notification that pre-fills the failing job's name
 
 This page covers how to [build a link](#build-a-link), [embed one in a runbook or trigger it from the shell](#examples), and [manage or disable handler registration](#registration-and-supported-platforms) on each platform.
-
-<Note>
-  Deep links require Claude Code v2.1.91 or later.
-</Note>
 
 ## How it works
 
@@ -53,6 +49,8 @@ Every deep link starts with `claude-cli://open`, which is the only path the hand
 ```text theme={null}
 claude-cli://open
 ```
+
+To try a link without putting it on a page, paste it into your browser's address bar or [open it from the shell](#open-a-link-from-the-shell).
 
 Add parameters to control where the session starts and what the prompt box contains:
 
@@ -116,7 +114,7 @@ To use this in your own runbook, replace `acme/web-gateway` with your service's 
 
 ### Open a link from the shell
 
-You can also open a deep link from a shell script, alias, or automation rather than by clicking it. Call your operating system's URL-opening command with the link as the argument.
+You can also open a deep link from a shell script, alias, or automation rather than by clicking it. Call your operating system's URL-opening command with the link as the argument. These commands rely on the handler that Claude Code [registers when you send your first prompt of an interactive session](#registration-and-supported-platforms) on the machine.
 
 <Tabs>
   <Tab title="macOS">
@@ -133,6 +131,8 @@ You can also open a deep link from a shell script, alias, or automation rather t
     ```bash theme={null}
     xdg-open "claude-cli://open?repo=acme/payments&q=review%20open%20PRs"
     ```
+
+    On success, a new terminal window opens with Claude Code running and the prompt pre-filled. If the shell reports that `xdg-open` isn't found, see [Troubleshooting](#xdg-open-is-not-found-on-linux).
   </Tab>
 
   <Tab title="Windows">
@@ -152,7 +152,7 @@ You can also open a deep link from a shell script, alias, or automation rather t
 
 ## Registration and supported platforms
 
-Claude Code registers the `claude-cli://` handler with your operating system the first time you start an interactive session on macOS, Linux, and Windows. You do not run a separate install command. Registration writes to user-level locations only:
+Claude Code registers the `claude-cli://` handler with your operating system on macOS, Linux, and Windows when you send your first prompt of an interactive session. Starting `claude` and exiting without sending a prompt doesn't register the handler. You don't run a separate install command. Registration writes to user-level locations only:
 
 | Platform | Handler location                                                                                                   |
 | -------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -162,17 +162,21 @@ Claude Code registers the `claude-cli://` handler with your operating system the
 
 The handler launches Claude Code in a detected terminal emulator. On macOS, Claude Code remembers the terminal from your most recent interactive session and reuses it, supporting iTerm2, Ghostty, kitty, Alacritty, WezTerm, and Terminal.app. On Linux it honors the `$TERMINAL` environment variable, then `x-terminal-emulator`, then a list of common emulators. On Windows it prefers Windows Terminal, then PowerShell, then `cmd.exe`.
 
-To prevent registration entirely, set [`disableDeepLinkRegistration`](/en/settings) to `"disable"` in `settings.json`. To enforce this across an organization so users cannot re-enable it, set it in [managed settings](/en/server-managed-settings) instead.
+To prevent registration entirely, set [`disableDeepLinkRegistration`](/docs/en/settings) to `"disable"` in `settings.json`. To enforce this across an organization so users cannot re-enable it, set it in [managed settings](/docs/en/server-managed-settings) instead.
 
 ## Open a VS Code tab instead of a terminal
 
-The VS Code extension registers its own handler at `vscode://anthropic.claude-code/open`, which opens a Claude Code editor tab rather than a terminal window. See [Launch a VS Code tab from other tools](/en/vs-code#launch-a-vs-code-tab-from-other-tools) for that URL's parameters.
+The VS Code extension registers its own handler at `vscode://anthropic.claude-code/open`, which opens a Claude Code editor tab rather than a terminal window. See [Launch a VS Code tab from other tools](/docs/en/vs-code#launch-a-vs-code-tab-from-other-tools) for that URL's parameters.
 
 ## Troubleshooting
 
 ### Clicking the link does nothing
 
-The handler likely is not registered yet. Start an interactive `claude` session once on that machine, exit, and try the link again. If you are on Linux without a desktop environment, `xdg-open` may have nothing to dispatch to.
+The handler likely isn't registered yet. Registration happens when you send your first prompt of an interactive session, not when the session starts. Start an interactive `claude` session on that machine, send any prompt, exit, and try the link again. If you are on Linux without a desktop environment, `xdg-open` may have nothing to dispatch to.
+
+### xdg-open is not found on Linux
+
+The `xdg-open` command is part of the `xdg-utils` package, which minimal server images, containers, and WSL distributions often leave out. Install `xdg-utils` with your distribution's package manager, for example `sudo apt install xdg-utils`, then run the command again. If the command then runs but nothing opens, `xdg-open` may have no desktop environment to dispatch to; see [Clicking the link does nothing](#clicking-the-link-does-nothing).
 
 ### The link renders as plain text instead of being clickable
 
@@ -190,5 +194,5 @@ On macOS, start `claude` in your preferred terminal once and the next deep link 
 
 These pages cover related ways to launch or extend Claude Code sessions:
 
-* [Skills](/en/skills): store a long runbook prompt as a `/skill` in the repo so the deep link's `q` parameter only has to name it
-* [Non-interactive mode](/en/headless): run Claude from a script and capture the output without opening a terminal
+* [Skills](/docs/en/skills): store a long runbook prompt as a `/skill` in the repo so the deep link's `q` parameter only has to name it
+* [Non-interactive mode](/docs/en/headless): run Claude from a script and capture the output without opening a terminal
