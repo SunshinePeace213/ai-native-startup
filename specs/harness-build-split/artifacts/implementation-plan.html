@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementation Plan — harness-build split</title>
+<style>
+  :root{
+    --bg:#FAF8F5; --surface:#F0EDE5; --border:#D4CFC7; --text:#2C2825;
+    --accent:#B8602A; --muted:#8A837A;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:16px/1.55 var(--sans);padding:0 20px 80px}
+  .wrap{max-width:920px;margin:0 auto}
+  a{color:var(--accent)}
+  /* header */
+  header{padding:44px 0 24px;border-bottom:2px solid var(--text)}
+  .eyebrow{font:600 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+  h1{font:400 40px/1.12 var(--serif);letter-spacing:-.01em}
+  h1 .cmd{font-family:var(--mono);font-size:.72em;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2px 8px;white-space:nowrap}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .chip{font:500 12px/1 var(--mono);border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 11px;color:var(--text)}
+  .chip.warn{border-color:var(--accent);color:var(--accent);font-weight:700}
+  /* budget meter — signature */
+  .meter{margin:30px 0 6px}
+  .meter h2{font:400 22px/1.2 var(--serif);margin-bottom:4px}
+  .meter p{color:var(--muted);font-size:14px;margin-bottom:14px}
+  .bar{display:flex;height:44px;border:1.5px solid var(--text);border-radius:8px;overflow:hidden;font:600 12px/1 var(--mono)}
+  .bar>div{display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;overflow:hidden}
+  .bar .build{background:var(--accent);color:#FAF8F5;flex:62}
+  .bar .review{background:var(--text);color:#FAF8F5;flex:64}
+  .bar .slack{background:repeating-linear-gradient(-45deg,var(--surface),var(--surface) 5px,var(--bg) 5px,var(--bg) 10px);color:var(--muted);flex:6}
+  .scale{display:flex;justify-content:space-between;font:11px var(--mono);color:var(--muted);margin-top:5px}
+  /* needs-human notice */
+  .notice{border:1.5px solid var(--accent);border-radius:10px;background:var(--surface);padding:18px 20px;margin:26px 0}
+  .notice h3{font:700 13px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+  .notice li{margin:6px 0 6px 20px;font-size:14.5px}
+  .notice .ok{color:var(--muted);font-size:13.5px;margin-top:10px}
+  /* sections */
+  section{margin-top:44px}
+  section>h2{font:400 26px/1.2 var(--serif);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:6px}
+  section>.sub{color:var(--muted);font-size:14px;margin-bottom:18px}
+  /* decision cards */
+  .card{border:1px solid var(--border);border-radius:10px;background:#fff;margin-bottom:16px;overflow:hidden}
+  .card-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:14px 18px 0}
+  .card-head h3{font:600 17px/1.3 var(--sans)}
+  .vol{font:600 10.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
+  .paths{padding:12px 18px 16px;display:grid;gap:10px}
+  .path{border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;background:var(--bg);transition:border-color .15s}
+  .path .tag{font:700 10.5px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+  .path p{font-size:14.5px}
+  .path.sel{border-color:var(--accent);background:var(--surface)}
+  .path.sel .tag{color:var(--accent)}
+  code,.mono{font-family:var(--mono);font-size:.92em}
+  code{background:var(--surface);border-radius:4px;padding:1px 5px}
+  .path.sel code{background:#fff}
+  /* build order */
+  .task{display:grid;grid-template-columns:44px 1fr auto;gap:14px;padding:14px 4px;border-bottom:1px solid var(--border);align-items:baseline}
+  .task:last-child{border-bottom:none}
+  .task .n{font:400 24px/1 var(--serif);color:var(--accent)}
+  .task h3{font:600 15.5px/1.35 var(--sans)}
+  .task p{font-size:14px;color:var(--muted);margin-top:3px}
+  .task .who{font:500 12px/1.6 var(--mono);color:var(--text);text-align:right;white-space:nowrap}
+  /* collapsed mechanical */
+  details{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:0}
+  summary{cursor:pointer;font:600 14.5px/1 var(--sans);padding:15px 18px;list-style:none;display:flex;justify-content:space-between}
+  summary::after{content:"+";font:400 18px/1 var(--mono);color:var(--muted)}
+  details[open] summary::after{content:"–"}
+  details ul{padding:0 18px 16px 36px}
+  details li{font-size:14px;margin:6px 0}
+  /* prompt out */
+  .promptbox{position:sticky;bottom:0;margin-top:48px;background:var(--bg);border-top:2px solid var(--text);padding:16px 0 14px}
+  .promptbox label{font:700 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .prow{display:flex;gap:10px;margin-top:8px;align-items:stretch}
+  #prompt{flex:1;font:13px/1.5 var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;white-space:pre-wrap;max-height:150px;overflow-y:auto}
+  #copy{font:600 13px var(--sans);background:var(--accent);color:#FAF8F5;border:none;border-radius:8px;padding:0 20px;cursor:pointer}
+  #copy:hover{filter:brightness(.94)}
+  #note{width:100%;margin-top:10px;font:13px/1.4 var(--mono);border:1px solid var(--border);border-radius:8px;background:#fff;padding:9px 12px;color:var(--text)}
+  @media(max-width:640px){h1{font-size:30px}.task{grid-template-columns:34px 1fr}.task .who{grid-column:2;text-align:left}}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Implementation plan · specs/harness-build-split</div>
+  <h1>One command becomes two:<br><span class="cmd">harness-build</span> → <span class="cmd">harness-review</span></h1>
+  <div class="chips">
+    <span class="chip">Issue #37</span>
+    <span class="chip">refactor/37-harness-build-split</span>
+    <span class="chip">kb-grounded</span>
+    <span class="chip">refactor · complex</span>
+    <span class="chip warn">codex: needs-human (2 fixes unverified)</span>
+  </div>
+</header>
+
+<div class="meter">
+  <h2>The whole contract in 132 lines</h2>
+  <p>Today's harness-build.md spends exactly 132 lines. Both new commands must fit under that same number — combined.</p>
+  <div class="bar" aria-label="line budget split">
+    <div class="build">harness-build · implement → tidy → draft PR</div>
+    <div class="review">harness-review · Codex gate → fixes → ready</div>
+    <div class="slack" title="headroom">&nbsp;</div>
+  </div>
+  <div class="scale"><span>0</span><span>&lt; 132 lines total (striped = headroom)</span><span>132</span></div>
+</div>
+
+<div class="notice">
+  <h3>Needs a human before build</h3>
+  <p style="font-size:14.5px;margin-bottom:8px">The Codex spec review ran its 2-round cap and ended <span class="mono">changes-requested</span>. Both round-2 blockers were fixed after the cap — <strong>unverified by Codex</strong>:</p>
+  <ul>
+    <li>Review-loop counters were conflated → now an invocation-local <strong>attempt counter A (1–2)</strong> drives fix-vs-hand-off; the global <strong>report number N</strong> only names reports and picks the diff range.</li>
+    <li>The AC1 line-count validator could pass with both files missing → <code>[ -f ]</code> guards added.</li>
+  </ul>
+  <p class="ok">Confirm both fixes read correctly (reviews/codex-spec-review-round-2.md), then copy the prompt below — an approved revision cycle clears the <span class="mono">status:needs-human</span> label.</p>
+</div>
+
+<section>
+  <h2>Decisions you're most likely to tweak</h2>
+  <p class="sub">Each card shows the drafted path and its live alternative. Selecting an alternative adds a tweak to the prompt below.</p>
+
+  <div class="card" data-id="handoff">
+    <div class="card-head"><h3>Hand-off between the two commands</h3><span class="vol">volatile 1</span></div>
+    <div class="paths">
+      <div class="path sel" data-v="keep" tabindex="0"><span class="tag">Drafted — recommended</span>
+        <p><code>spec.md ## Tracking</code> is the <em>sole</em> shared state. Build finishes every repo write, snapshots the <strong>hand-off SHA</strong>, then records <code>PR #M</code> + that SHA in one final metadata commit. Review refuses to run without a PR number; build refuses without an issue. The only two STOPs anywhere.</p></div>
+      <div class="path" data-v="alt" tabindex="0"><span class="tag">Alternative</span>
+        <p>Skip the recorded SHA entirely — review derives everything from the PR itself (<code>gh pr view</code>). One less Tracking field, but the human loses the at-a-glance hand-off record and ship's audit trail thins.</p></div>
+    </div>
+  </div>
+
+  <div class="card" data-id="selfserve">
+    <div class="card-head"><h3>How Codex gets its review input</h3><span class="vol">volatile 2</span></div>
+    <div class="paths">
+      <div class="path sel" data-v="keep" tabindex="0"><span class="tag">Drafted — recommended</span>
+        <p>Codex self-serves: it runs its own <code>git diff</code> over injected SHAs <em>and runs the plan's Validation Commands itself</em>, recording real results (unexecutable → recorded with reason, blocks approval). The frozen packet, attestations, and <code>round-N-input/</code> are deleted from the skill.</p></div>
+      <div class="path" data-v="alt" tabindex="0"><span class="tag">Alternative</span>
+        <p>Lead runs validation, hands Codex a results file (half the old packet). Keeps command execution out of the Codex sandbox but resurrects the drift-prone preparation step the split exists to kill.</p></div>
+    </div>
+  </div>
+
+  <div class="card" data-id="loop">
+    <div class="card-head"><h3>Review loop &amp; failure hand-off</h3><span class="vol">volatile 3</span></div>
+    <div class="paths">
+      <div class="path sel" data-v="keep" tabindex="0"><span class="tag">Drafted — recommended</span>
+        <p>2 attempts per run. Attempt-2 <code>changes-requested</code> → final report comment, PR stays <strong>draft</strong>, human owns it. No needs-human label, no over-cap gate, no consult. On <code>approved</code>: dev-notes + memory first, ONE terminal commit, verify PR head equals it, <code>gh pr ready</code> — nothing mutates after.</p></div>
+      <div class="path" data-v="alt" tabindex="0"><span class="tag">Alternative</span>
+        <p>Make 2 rounds a per-PR lifetime cap (re-runs forbidden) — simpler to reason about, but a human who fixes the blockers has no automated path back to a ready PR.</p></div>
+    </div>
+  </div>
+
+  <div class="card" data-id="devlog">
+    <div class="card-head"><h3>The dev-log system</h3><span class="vol">volatile 4</span></div>
+    <div class="paths">
+      <div class="path sel" data-v="keep" tabindex="0"><span class="tag">Drafted — recommended</span>
+        <p><code>implementation-notes.md</code> becomes a chronological per-plan log (phases, hand-offs, deviations, fixes, lessons) appended by both commands; review renders it as <code>artifacts/dev-notes.html</code> on any verdict — replacing the Deviations board <em>and</em> the ship brief. Cross-plan one-liners go to the new every-session <code>.claude/rules/development-log.md</code> (≈40-line cap, distill on overflow).</p></div>
+      <div class="path" data-v="alt" tabindex="0"><span class="tag">Alternative</span>
+        <p>Keep notes deviations-only and skip the every-session rule file — zero standing context cost, but hard-won agent lessons keep evaporating between plans.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Build order</h2>
+  <p class="sub">Three file-disjoint tasks in parallel — both sides implement the runner-prompt contract pinned in spec.md, neither derives it from the other — then one validation sweep.</p>
+  <div class="task"><span class="n">1</span><div><h3>Author the command pair</h3><p>harness-build.md rewritten + harness-review.md created; 4 variables each; combined &lt; 132 lines</p></div><span class="who">builder-commands<br>opus / high</span></div>
+  <div class="task"><span class="n">2</span><div><h3>Rewrite implementation-review skill</h3><p>Self-serve diff + validation; digest closer; packet machinery deleted</p></div><span class="who">builder-skill<br>opus / medium</span></div>
+  <div class="task"><span class="n">3</span><div><h3>Dev-log template, rule file, pointer edits</h3><p>implementation-notes template, development-log.md, artifacts row, 4 one-liners</p></div><span class="who">builder-notes<br>sonnet / medium</span></div>
+  <div class="task"><span class="n">4</span><div><h3>Validate everything</h3><p>Every AC1–AC10 command; blast-radius diff check</p></div><span class="who">validator<br>sonnet / low</span></div>
+</section>
+
+<section>
+  <h2>Mechanical work</h2>
+  <details>
+    <summary>9 files touched — the small, fixed edits</summary>
+    <ul>
+      <li><code>.claude/rules/harness-layer/artifacts.md</code> — Deviations board row → Dev notes row</li>
+      <li><code>harness-plan.md</code> — one line: mark tasks whose outcomes must be recorded to memory</li>
+      <li><code>.claude/rules/git-workflow.md</code> — draft PR opens "after the tidy checkpoint"</li>
+      <li><code>AGENTS.md</code> — pipeline line gains harness-review; dev-log pointer bullet</li>
+      <li>Untouched by contract: <code>harness-ship.md</code>, <code>spec-review</code> skill, discovery commands, issue/PR templates, hooks</li>
+      <li>Follow-ups (advisory): cache the Codex CLI reference via <code>/kb add</code>; fix ship's stale "after harness-build" wording in a future docs pass</li>
+    </ul>
+  </details>
+</section>
+
+<div class="promptbox">
+  <label>Copy as prompt — paste back to revise the plan</label>
+  <div class="prow">
+    <div id="prompt"></div>
+    <button id="copy" type="button">Copy</button>
+  </div>
+  <input id="note" type="text" placeholder="Optional: add your own tweak in plain words…">
+</div>
+
+</div>
+<script>
+const TWEAKS = {
+  handoff:  "drop the recorded Hand-off SHA from ## Tracking and have harness-review derive build state from the PR itself via gh pr view",
+  selfserve:"run the plan's Validation Commands lead-side and hand Codex a recorded results file instead of letting it execute commands itself",
+  loop:     "make the 2-round Codex cap a per-PR lifetime cap instead of per-invocation attempts",
+  devlog:   "keep implementation-notes.md deviations-only and drop the every-session development-log.md rule file"
+};
+const state = { handoff:"keep", selfserve:"keep", loop:"keep", devlog:"keep", note:"" };
+
+document.querySelectorAll(".card").forEach(card => {
+  const id = card.dataset.id;
+  card.querySelectorAll(".path").forEach(p => {
+    const pick = () => {
+      state[id] = p.dataset.v;
+      card.querySelectorAll(".path").forEach(x => x.classList.toggle("sel", x === p));
+      updatePrompt();
+    };
+    p.addEventListener("click", pick);
+    p.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+  });
+});
+document.getElementById("note").addEventListener("input", e => { state.note = e.target.value.trim(); updatePrompt(); });
+
+function updatePrompt(){
+  const tweaks = Object.keys(TWEAKS).filter(k => state[k] === "alt").map(k => TWEAKS[k]);
+  if (state.note) tweaks.push(state.note);
+  let body;
+  if (tweaks.length === 0) {
+    body = "I confirmed the two post-cycle round-2 fixes (attempt counter vs report number; AC1 file-existence guards) — no other changes. Re-run the Codex cycle so an approved verdict clears status:needs-human.";
+  } else {
+    body = "Revise the spec: " + tweaks.join("; ") + ". I also confirmed the two post-cycle round-2 fixes — fold everything into one revision and re-run the Codex cycle to clear status:needs-human.";
+  }
+  document.getElementById("prompt").textContent =
+    '/harness-layer:harness-plan "' + body + ' Worktree: .claude/worktrees/harness-build-split"';
+}
+document.getElementById("copy").addEventListener("click", () => {
+  navigator.clipboard.writeText(document.getElementById("prompt").textContent).then(() => {
+    const b = document.getElementById("copy");
+    b.textContent = "Copied!"; setTimeout(() => b.textContent = "Copy", 1400);
+  });
+});
+updatePrompt();
+</script>
+</body>
+</html>
