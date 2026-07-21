@@ -16,14 +16,13 @@ Lock every open decision before planning. Take detailed ideas (or a prior discov
 DESCRIPTION: $1 — the detailed ideas, or a prior pass's improved prompt (may carry a `Worktree:` line)
 DISCOVERY_DIR: `specs/<slug>/discovery/` — the chain's committed discovery home inside the worktree
 ARTIFACT_RULES: `.claude/rules/harness-layer/artifacts.md` — craft, palette, and publish rules for the page
-KNOWLEDGE_BASE: `ai-docs/` — cached official docs; catalog in `ai-docs/index.md`
 
 ## Instructions
 
 - **INTERVIEW ONLY** — no spec files, no issues, no pushes; write only under `DISCOVERY_DIR`.
 - If no `DESCRIPTION` is provided, stop and ask the user for one.
 - Worktree: when `DESCRIPTION` carries a `Worktree:` line, `EnterWorktree(path: ...)` into it; otherwise derive a kebab-case `<slug>` and `EnterWorktree(name: "<slug>")`. Never write outside the worktree.
-- **Explore first.** Answer from the codebase — and the relevant `KNOWLEDGE_BASE` docs when the task touches the harness surface (`.claude/`, `.agents/`, `.codex/`, `ai-docs/`, the memory files) — whatever they can answer; interview the user only on what they can't.
+- **Explore first.** Answer from the codebase and the relevant KB docs — whatever they can answer; interview the user only on what they can't.
 - **References early.** Always ask: "Is there existing code — a library, a vendor folder, prior art — that already does what you want? Point me at the path instead of describing it." Record any answer as a decision naming the path and what to take from it; the plan authors the Reference map from it.
 - **One round at a time, biggest blast radius first.** Each round carries the open questions whose wording doesn't depend on unanswered ones, ordered by how much the answer would change the architecture.
 - **Adaptive depth.** Match complexity — a light pass for chores, a deep pass for complex features. Don't interrogate trivial tasks.

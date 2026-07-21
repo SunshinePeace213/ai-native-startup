@@ -1,5 +1,5 @@
 ---
-description: Builds and syncs the ai-docs/ knowledge base of official harness-layer docs. Reads ai-docs/sources.yaml, fetches every source that is missing or older than 30 days, writes faithful markdown mirrors, and regenerates the ai-docs/index.md catalog. Use when the user asks to sync, refresh, or add AI docs, set up the harness knowledge base, or mentions ai-docs being stale or missing a topic — even without naming /kb.
+description: Builds and syncs the ai-docs/ knowledge base of official docs on any domain. Reads ai-docs/sources.yaml, fetches every source that is missing or older than 30 days, writes faithful markdown mirrors, and regenerates the ai-docs/index.md catalog. Use when the user asks to sync, refresh, or add AI docs, set up the knowledge base, or mentions ai-docs being stale or missing a topic — even without naming /kb.
 argument-hint: [add url [group] | --force]
 allowed-tools: Bash(curl *), WebFetch
 model: sonnet
@@ -24,6 +24,7 @@ STALE_AFTER: `30` days
 - **Fetching is delegated** — spawn one `kb-fetcher` subagent per work-set entry, in parallel; each delegation message is just the entry's `url` and the absolute target path. The agent canonicalizes redirects, mirrors the page, and returns `OK <file> <canonical url>` plus a one-line summary (or `FAIL <file>: <reason>`). Fetched pages never enter this context.
 - **Dedupe on canonicalization** — write each returned canonical URL back to the MANIFEST; if two entries resolve to the same canonical URL, keep one, drop the other, and say so in the report.
 - Only the `## Cached official docs` table in INDEX is generated; leave `## Project notes` untouched. The INDEX table regenerates from the MANIFEST alone.
+- **Cap** — keep the MANIFEST at ≈40 entries; over the cap, report entries no `specs/**/decisions.md` cites as eviction candidates. Never auto-delete.
 
 ## Workflow
 

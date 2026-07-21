@@ -16,7 +16,6 @@ Turn a rough problem into options worth reacting to. Before any spec exists, sea
 DESCRIPTION: $1 — the rough problem ("users churn after onboarding"), or a prior pass's improved prompt (may carry a `Worktree:` line)
 DISCOVERY_DIR: `specs/<slug>/discovery/` — the chain's committed discovery home inside the worktree
 ARTIFACT_RULES: `.claude/rules/harness-layer/artifacts.md` — craft, palette, and publish rules for the page
-KNOWLEDGE_BASE: `ai-docs/` — cached official docs; catalog in `ai-docs/index.md`
 
 ## Instructions
 
@@ -25,7 +24,6 @@ KNOWLEDGE_BASE: `ai-docs/` — cached official docs; catalog in `ai-docs/index.m
 - Worktree: when `DESCRIPTION` carries a `Worktree:` line, `EnterWorktree(path: ...)` into it; otherwise derive a kebab-case `<slug>` and `EnterWorktree(name: "<slug>")`. Never write outside the worktree.
 - Search the codebase before ideating: every intervention must anchor to real code — file paths, existing partial mechanisms, missed opportunities. An idea that needs no codebase knowledge is filler; cut it.
 - Spread the ladder from ship-this-afternoon to quarter-long bet — don't cluster in the comfortable middle, and include at least one ambitious bet.
-- When `DESCRIPTION` touches the harness surface (`.claude/`, `.agents/`, `.codex/`, `ai-docs/`, the memory files), also read the relevant `KNOWLEDGE_BASE` docs from the catalog.
 - Do not interview the user or lock scope; this pass only lays out options.
 - Commit the pass locally — `📝 docs(discovery): brainstorm pass for <slug>`, no issue footer (no issue exists yet). Never push; the plan's first push carries the discovery commits.
 - End by recommending exactly one next hop (first match wins), with the refined prompt as its input: resonating picks that are user-facing and need to be seen → `/harness-layer:harness-prototypes`; open decisions remain for the user → `/harness-layer:harness-interview`; otherwise → `/harness-layer:harness-plan`.

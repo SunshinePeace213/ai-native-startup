@@ -27,10 +27,10 @@ STALE_AFTER: `30` days — a KB doc older than this is stale
 
 ## Instructions
 
-- **PLANNING ONLY** — draft the spec; do not build, write code, or deploy builder agents. Read-only helper subagents are allowed: the `claude-code-guide` KB cross-check and the `sonnet` Codex review runner. Output is the four-file spec folder plus its artifacts — drafted in the worktree, then committed and pushed to `origin` (plan docs plus any gap-filled KB docs, never implementation code).
+- **PLANNING ONLY** — draft the spec; do not build, write code, or deploy builder agents. Helper subagents are allowed: the `claude-code-guide` KB cross-check, `kb-fetcher` for KB mirrors, and the `sonnet` Codex review runner — never builders; you never write mirror content yourself. Output is the four-file spec folder plus its artifacts — drafted in the worktree, then committed and pushed to `origin` (plan docs plus any gap-filled KB docs, never implementation code).
 - If no `USER_PROMPT` is provided, stop and ask the user for it.
 - Think deeply (ultrathink) about the best approach; determine the task type (feat|fix|docs|style|refactor|perf|test|chore) and complexity (simple|medium|complex).
-- Understand the codebase directly — application code and any existing harness patterns under `.claude/` and `.agents/` — without subagents, save the read-only helpers above.
+- Understand the codebase directly — application code and any existing harness patterns under `.claude/` and `.agents/` — without subagents, save the helpers above.
 - If `ORCHESTRATION_PROMPT` is provided, let it guide team composition, task granularity, dependency structure, and parallel/sequential decisions.
 - **Ground harness-layer claims.** When the expert layer is active, statements about hooks, frontmatter, subagents, skills, commands, MCP, or model aliases must trace to a KB doc (see `Domain Knowledge`); record what you consulted in decisions.md's `## KB References`.
 - Ensure the spec is detailed enough that another developer could follow it, covering edge cases, error handling, and scalability.
@@ -41,8 +41,8 @@ Conditional expert layer. Run it only when the task touches the harness surface 
 
 1. **Collect.** Read `ai-docs/index.md` and open every cached doc relevant to the request's surface (hooks work → hooks.md; a new command → skills-and-commands.md; and so on). If a doc you load is older than `STALE_AFTER`, continue with the stale copy, note it in decisions.md `## KB References`, and flag it in the Report with a `/harness-layer:kb` suggestion.
 2. **Cross-check.** Deploy the `Agent` tool with `subagent_type: "claude-code-guide"`, passing the specific harness claims/topics the plan depends on and asking it to verify them against current official behavior.
-3. **Reconcile.** Where both sources agree, continue. Where they conflict on a claim, WebFetch the official page — the fresh fetch wins; refresh that KB mirror inside the worktree (same mechanics as gap-fill: frontmatter `source` + `fetched`, `> **In here:**` bullets, faithful body, `ai-docs/sources.yaml` entry) and log the conflict + resolution in decisions.md `## KB References`. If the page is unreachable, prefer the source with the newer verifiable date and mark the claim unverified in the spec.
-4. **Gap-fill:** if the KB has no doc for a topic the plan depends on, fetch and READ it now — WebFetch the official page (or ask the claude-code-guide subagent for the right URL) — then write the mirror under `ai-docs/` inside the worktree (frontmatter `source` + `fetched`, `> **In here:**` bullets, faithful body) AND add its entry to `ai-docs/sources.yaml`, committed with the spec.
+3. **Reconcile.** Where both sources agree, continue. Where they conflict on a claim, refresh that mirror via a `kb-fetcher` subagent (the entry's url + the absolute target path in the worktree), then Read the fresh mirror — it wins; log the conflict + resolution in decisions.md `## KB References`. If the fetch fails, prefer the source with the newer verifiable date and mark the claim unverified in the spec.
+4. **Gap-fill:** if the KB has no doc for a topic the plan depends on, mirror it now — spawn a `kb-fetcher` subagent with the official page's URL (ask the claude-code-guide subagent for the right URL if unsure) and the absolute target path under `ai-docs/` in the worktree, add its entry to `ai-docs/sources.yaml`, then Read the fresh mirror — all committed with the spec.
 5. Log every doc you relied on — path + its `fetched` date — in decisions.md under `## KB References` (a section you append; the templates don't carry it).
 
 ## Readiness Gate
@@ -63,7 +63,7 @@ IMPORTANT: **PLANNING ONLY** — do not execute, build, or deploy builder agents
 
 1. Enter Worktree — `Worktree:` line in the prompt → `EnterWorktree(path: ...)`; otherwise `EnterWorktree(name: "<slug>")` (see `Worktree & Handoff`). An existing `specs/<slug>/spec.md` switches the run to `Revision Mode`.
 2. Readiness Gate — transcribe any discovery ledger, assess coverage, and fill only genuinely-open gaps (see `Readiness Gate`).
-3. Understand Codebase — directly read the relevant code and any existing harness patterns under `.claude/` and `.agents/` (only the read-only helper subagents are allowed).
+3. Understand Codebase — directly read the relevant code and any existing harness patterns under `.claude/` and `.agents/` (only the helper subagents from Instructions are allowed).
 4. Set Review Profile — apply the `Domain Knowledge` trigger: an expert-layer signal fires → load the KB docs and set the profile to `kb-grounded`; otherwise skip the layer and set `standard`.
 5. Design Solution — technical approach, architecture decisions, edge cases, error handling, and scalability, grounded in the KB docs when the expert layer is active.
 6. Define Team & Tasks — draw team members from the available agent types (default `general-purpose`); write tasks with IDs, dependencies, assignments, and each task's model + effort stamped per the model-selection rule (it loads every session). `ORCHESTRATION_PROMPT`, when provided, guides composition, granularity, and parallel/sequential structure. Document both in the plan. Mark any task whose outcome must be recorded to memory — the build/review memory steps record exactly those.

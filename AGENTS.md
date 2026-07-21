@@ -4,6 +4,13 @@
 - **JavaScript/TypeScript**: Always use `bun`, never raw `npm` or `npx`
 - **Safe delete**: NEVER use `rm -rf` directly. Use `mv <target> ~/.Trash/` instead of permanent deletion to prevent accidental data loss
 
+## Knowledge Base
+
+- `ai-docs/` is the shared KB — cached official docs on any domain, plus project notes; catalog: `ai-docs/index.md`, manifest: `ai-docs/sources.yaml`.
+- Start every task by checking `ai-docs/index.md` for topics matching the work; skim a matching doc's `> **In here:**` line before committing to a full read. Nothing relevant → move on.
+- Consulted an official page the KB lacks → register and mirror it with `/harness-layer:kb add <url>`.
+- Mirrors are read-only: fix wrong or stale content by refetching through `kb-fetcher` (or `/harness-layer:kb`), never by hand-editing. If the official page itself is wrong, record a project note in `ai-docs/` instead.
+
 ## Harness Development
 
 - **Instructions, not rationale**: State what to do, not why. No "chose A over B", no decision logs, no design history — that's context bloat the agent never acts on.
@@ -33,5 +40,5 @@
   - `/harness-layer:harness-brainstorm` — rough problem → intervention options, cheapest to most ambitious.
   - `/harness-layer:harness-prototypes` — throwaway mocks and design directions to react to.
   - `/harness-layer:harness-interview` — lock every open decision, round by round.
-- **KB** — the domain-expert layer auto-engages when work touches the harness; keep `ai-docs/` fresh with `/harness-layer:kb`.
+- **KB** — the domain-expert layer auto-engages when work touches the harness, grounding plan claims in the KB per `## Knowledge Base`; keep it fresh with `/harness-layer:kb`.
 - **Artifacts** — pipeline stages publish interactive pages committed under `specs/<name>/artifacts/`; crafting rules: [artifacts.md](.claude/rules/harness-layer/artifacts.md).
