@@ -1,0 +1,106 @@
+<title>Interview · harness-build split</title>
+<style>
+  :root{
+    --bg:#FAF8F5; --surface:#F0EDE5; --border:#D4CFC7; --text:#2C2825;
+    --accent:#B8602A; --muted:#8A837A; --ok:#4A7A4A;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;padding:0 20px 120px}
+  .wrap{max-width:860px;margin:0 auto}
+  header{padding:44px 0 10px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+  h1{font-family:var(--serif);font-size:clamp(26px,4vw,38px);font-weight:600;margin:6px 0 4px}
+  .sub{color:var(--muted);font-size:14px;max-width:640px}
+  .tally{display:flex;gap:18px;margin:20px 0 26px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .tally b{color:var(--text)}
+  h2.grp{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:26px 0 10px;border-bottom:1px solid var(--border);padding-bottom:6px}
+  .dec{border:1px solid var(--border);background:#fff;border-radius:8px;padding:14px 16px;margin-bottom:10px}
+  .dec.reopened{border-color:var(--accent)}
+  .dec .q{font-weight:600;font-size:14px}
+  .dec .q .mark{color:var(--ok);font-family:var(--mono);margin-right:6px}
+  .dec .a{font-size:13.5px;margin-top:3px}
+  .dec .a code{font-family:var(--mono);font-size:12px;background:var(--surface);padding:1px 4px;border-radius:3px}
+  .dec .meta{font-size:12px;color:var(--muted);margin-top:3px}
+  .dec textarea{display:block;width:100%;margin-top:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);padding:7px 10px;font-family:var(--sans);font-size:12.5px;color:var(--text);resize:vertical;min-height:30px}
+  .dec textarea::placeholder{color:var(--muted)}
+  ul.flat{margin:0 0 6px 0}
+  ul.flat li{list-style:none;font-size:13px;padding:4px 0;border-bottom:1px dashed var(--border)}
+  ul.flat li:last-child{border-bottom:none}
+  .outbar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 20px}
+  .outwrap{max-width:860px;margin:0 auto;display:flex;gap:14px;align-items:flex-start}
+  .out{flex:1;font-family:var(--mono);font-size:11.5px;max-height:96px;overflow-y:auto;white-space:pre-wrap}
+  .copy{flex:none;background:var(--text);color:var(--bg);border:none;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+  .copy:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">Interview · Sign-off · harness-build-split</div>
+  <h1>Every decision, locked</h1>
+  <p class="sub">Round 1 closed with all recommendations accepted. This is the full replay — 21 decisions and 3 assumptions. Leave a note on any row to reopen it; otherwise copy the approval below.</p>
+</header>
+
+<div class="tally"><span>Resolved <b>21</b></span><span>Assumptions <b>3</b></span><span>Reopened <b id="ro">0</b></span></div>
+
+<h2 class="grp">Locked in round 1</h2>
+<div id="round1"></div>
+
+<h2 class="grp">Resolved from your prompt &amp; the codebase</h2>
+<div id="pre"></div>
+
+<h2 class="grp">Assumptions (recorded with what would invalidate them)</h2>
+<ul class="flat">
+  <li>The &lt;132-line budget covers the two command files only; the new rule file, skill rewrite, template, and artifacts.md edits sit outside it. Invalidated if you meant the whole changeset.</li>
+  <li>Both new commands keep <code style="font-family:var(--mono);font-size:12px">model: fable</code> + <code style="font-family:var(--mono);font-size:12px">disable-model-invocation: true</code> frontmatter, matching every pipeline command. Invalidated if review should run cheaper.</li>
+  <li>KB-grounding under <code style="font-family:var(--mono);font-size:12px">kb-grounded</code> survives minimally in both commands (build: check claims while implementing; review: Codex verifies claims against ai-docs/). Invalidated if you want it review-only.</li>
+</ul>
+
+</div>
+<div class="outbar"><div class="outwrap">
+  <div class="out" id="out"></div>
+  <button class="copy" id="copy">Copy</button>
+</div></div>
+
+<script>
+const R1=[
+ ["Review input","Sonnet runner drives Codex, which runs its own git diff over the review range and reports back; the orchestrator spawns fixers per model-selection. The implementation-review skill is rewritten to match — frozen-packet contract deleted."],
+ ["Round-2 failure","Two rounds max. A round-2 changes-requested posts the final report comment, leaves the PR draft, and ends — no over-cap gate, no root-cause rule, no locked boundaries, no needs-human label. The human reads the PR and takes over."],
+ ["Preflight","All environment checks dropped. Two STOPs survive, both from ## Tracking: harness-build refuses without Issue #N; harness-review refuses without PR #M."],
+ ["Dev-notes page","implementation-notes.md becomes a chronological dev log (phases, hand-offs, deviations, fixes, lessons) appended by both commands; harness-review renders dev-notes.html from it at the end on any verdict. Replaces the Deviations board row in artifacts.md."],
+ ["Ship brief","Dropped. The dev-notes page is the single completion page, leading with what shipped, linked from the PR."],
+ ["Dev-log rule","New file .claude/rules/development-log.md — flat, no paths:, loads every session. One line per lesson (date · plan · lesson), capped ≈40 lines; on overflow, generalizable lessons distill into their proper rule file and the entries are deleted."],
+ ["Memory step","Both commands end by recording session-worthy conventions per memory-series.md (cross-plan lessons → development-log; conventions → rule files / AGENTS.md). harness-plan.md gains one line: plans mark tasks whose outcomes must be recorded to memory."]];
+const PRE=[
+ ["Scope","Split harness-build.md into harness-build (implement → tidy → draft PR) and harness-review (Codex gate → fixes → PR ready); both files together shorter than today's 132 lines; instructions-not-rationale throughout."],
+ ["Hand-off state","spec.md ## Tracking is the sole shared state: build ends by recording PR #M and its last pushed SHA (plus anything the human must know); review starts by reading it."],
+ ["State variables","Each command declares only PATH_TO_PLAN, ISSUE_NUMBER, PR_NUMBER, REVIEW_PROFILE (from ## Tracking); STAGES, simplifier names, CROSS_CHECK, ROUND_INPUT, REQUIRED_PLUGINS inline into their sections."],
+ ["Build order","Tidy runs before the draft PR opens; harness-simplifier / code-simplifier auto-fix behavior-preserving and their findings post directly as the tidy PR comment — the held-report rule is deleted."],
+ ["Reference","harness-review copies harness-plan.md § Codex Cross-Review's sonnet-runner shape (retry-once, verdict-line grep, digest relay)."],
+ ["Unchanged","git-workflow.md push/refspec/marker-comment mechanics, REVIEW_PROFILE gating, and the worktree rule carry over as-is."]];
+let notes={};
+function row(host,arr,prefix){
+  const el=document.getElementById(host);
+  el.innerHTML=arr.map((d,i)=>`<div class="dec" id="${prefix}${i}"><div class="q"><span class="mark">✓</span>${d[0]}</div><div class="a">${d[1]}</div><textarea data-k="${prefix}${i}" data-t="${d[0]}" rows="1" placeholder="Reopen with a note…"></textarea></div>`).join("");
+}
+row("round1",R1,"r");row("pre",PRE,"p");
+function upd(){
+  const ks=Object.keys(notes).filter(k=>notes[k].v);
+  document.getElementById("ro").textContent=ks.length;
+  document.querySelectorAll(".dec").forEach(d=>d.classList.toggle("reopened",!!(notes[d.id]&&notes[d.id].v)));
+  document.getElementById("out").textContent=ks.length
+    ?"Reopen these decisions before finalizing the harness-build split ledger:\n"+ks.map(k=>`- ${notes[k].t}: ${notes[k].v}`).join("\n")
+    :"Approved — finalize the harness-build split ledger exactly as replayed on the sign-off page.";
+}
+document.addEventListener("input",e=>{
+  if(e.target.tagName!=="TEXTAREA")return;
+  notes[e.target.dataset.k]={v:e.target.value.trim(),t:e.target.dataset.t};upd();
+});
+document.getElementById("copy").onclick=async()=>{
+  try{await navigator.clipboard.writeText(document.getElementById("out").textContent)}
+  catch(e){const t=document.createElement("textarea");t.value=document.getElementById("out").textContent;document.body.appendChild(t);t.select();document.execCommand("copy");t.remove()}
+  const b=document.getElementById("copy");b.textContent="Copied!";setTimeout(()=>b.textContent="Copy",1200);
+};
+upd();
+</script>
