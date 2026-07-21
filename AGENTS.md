@@ -12,6 +12,7 @@
 - **Hooks**: [hooks.md](.claude/rules/harness-layer/hooks.md) is the authoritative catalog of every hook — event/matcher, contract, files, and the hook-test rules. Read it before any hook work; never re-summarize hook behavior elsewhere or re-derive it from memory.
 - **Memory**: `AGENTS.md` is the hub — topic rules live in `.claude/rules/` (domain families in folders like `harness-layer/`, path-scoped via `paths:` frontmatter; rules every session needs stay flat at the root with no `paths:`). Never persist memory in `CLAUDE.md` (it only `@`-imports this file) or a new root markdown file. Fetch/record/edit/create contract: [memory-series.md](.claude/rules/memory-series.md).
 - **Model selection**: every model/effort assignment — Claude and Codex; orchestrators, subagents, workflows, Codex tasks — follows [model-selection.md](.claude/rules/model-selection.md). It loads every session; never duplicate its guidance in templates, tasks, or commands.
+- **Dev log**: cross-plan lessons live in [development-log.md](.claude/rules/development-log.md); per-plan process (phases, hand-offs, deviations, fixes, lessons) lives in that plan's `specs/<name>/implementation-notes.md`.
 
 ## Git Workflow & Pull Requests
 
@@ -26,7 +27,7 @@
 
 ## Harness-Layer Pipeline
 
-- **Core** — every task, app code or harness work: `/harness-layer:harness-plan` → `/harness-layer:harness-build` → `/harness-layer:harness-ship`.
+- **Core** — every task, app code or harness work: `/harness-layer:harness-plan` → `/harness-layer:harness-build` → `/harness-layer:harness-review` → `/harness-layer:harness-ship`.
 - **Discovery (optional, pre-plan)** — run when the problem is still fuzzy; each pass hands its successor an improved prompt and commits its pages to `specs/<slug>/discovery/` for the plan to draft from:
   - `/harness-layer:harness-unknowns` — surface unknown unknowns in unfamiliar code or domains.
   - `/harness-layer:harness-brainstorm` — rough problem → intervention options, cheapest to most ambitious.

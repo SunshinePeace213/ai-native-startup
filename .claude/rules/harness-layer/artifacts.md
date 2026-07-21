@@ -63,7 +63,7 @@ dark-theme default).
 | Interview pass | **Interview rounds** | One card per open question (2–4 option chips, the recommended pick badged, free text per card), an accept-all-recommendations control, and the coverage ledger as a resolved/open/N/A sidebar; copy-as-prompt returns the round's answers; redeployed to the same URL each round |
 | Plan / spec reader | **Implementation plan** | Spec content ordered by likelihood-of-tweaking — volatile decisions first, each with its chosen path and a toggled alternative; build order next; mechanical work collapsed last; copy-as-prompt offers ready-made tweak prompts that trigger a plan revision |
 | Plan / reference port | **Reference map** | Side-by-side reference↔target code pairs with linked hover notes, a preserved/changed/dropped behavior table, and an edge-case table; copy-as-prompt returns "semantics confirmed" or per-row corrections |
-| Build / checkpoints | **Deviations board** | The `implementation-notes.md` deviations as cards with accept / needs-follow-up controls; copy-as-prompt returns dispositions; linked from the PR |
+| Build + review / dev log | **Dev notes** | The implementation-notes.md log as a chronological timeline — phases, hand-offs, deviations, fixes, lessons — rendered by /harness-layer:harness-review on any verdict; linked from the PR |
 | Review / completion | **Findings page** | Diff excerpts with margin annotations, findings color-coded by severity; linked from the PR's Review Reports section |
 
 ## Beyond the inventory
