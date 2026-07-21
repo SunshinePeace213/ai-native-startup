@@ -27,8 +27,9 @@ REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — passed to Cod
    - **`A=1` + `changes-requested`** → commit the report (`Refs #N`), spawn fixer subagents per `model-selection.md` (a failed fix escalates a tier), make ONE fix commit, push both, and start attempt 2 (a fresh round at the next `N`).
    - **`approved` (any attempt), or `A=2` + `changes-requested`** → the terminal outcome (step 7).
 7. **Terminal outcome** — for medium/complex plans render `specs/<name>/artifacts/dev-notes.html` from `implementation-notes.md` per `artifacts.md`, and run the memory step (record each memory-marked outcome per `memory-series.md`) — both FIRST. Then make ONE **terminal commit** (the report + `dev-notes.html` + dev-log/memory/notes edits), push it, and link the page under `## Dev Notes`. Nothing mutates the repository after it.
-   - **`approved`** → verify the PR head equals the terminal commit, tick the stages with it as **Ready** evidence, and `gh pr ready`. Report `Next: /harness-layer:harness-ship <slug>`.
-   - **`A=2` + `changes-requested`** → the terminal commit carries the final report; post it as the `<!-- report:codex-round-N -->` comment, leave the PR draft — the human owns the blockers. Report that.
+   - **`approved`** → verify the PR head equals the terminal commit, tick the stages with it as **Ready** evidence, and `gh pr ready`.
+   - **`A=2` + `changes-requested`** → the terminal commit carries the final report; post it as the `<!-- report:codex-round-N -->` comment, leave the PR draft — the human owns the blockers.
+8. **Report** — end the run with the `## Report` output.
 
 ## Review runner
 
@@ -45,3 +46,25 @@ codex exec -C "<worktree root>" -s workspace-write --model <codex-model> \
 
 - **A push landing mid-round** — `REVIEWED_HEAD_SHA` no longer matches `HEAD` → discard the round and re-run it on the new head.
 - **Empty diff or missing verdict is never an approval** — an empty review range → `changes-requested` naming it; the runner exhausting its one retry with no verdict → report the failure, leave the PR draft, end the run.
+
+## Report
+
+After the terminal commit is pushed, provide a concise report:
+
+```text
+✅ Review Complete — PR ready   (or: ⚠️ Review Blocked — PR left draft)
+
+Plan: specs/<name>/
+PR: #<M> — <ready @ <approved-sha> | draft, needs human>
+Rounds this run: <1 | 2> — reports: specs/<name>/reviews/codex-impl-review-round-<N>.md
+Verdict: <approved at round N | changes-requested after 2 attempts | no verdict — runner failed>
+Fixes: <count applied after round N | none needed>
+KB grounding: <checked | n/a — standard profile>
+Dev notes: <artifacts/dev-notes.html + URL | n/a — simple plan>
+
+Blockers (left draft only):
+- <blocker, concise>
+
+Next: /harness-layer:harness-ship <slug>
+(or, left draft: resolve the blockers, then rerun /harness-layer:harness-review <name>)
+```
