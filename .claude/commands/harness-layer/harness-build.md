@@ -29,4 +29,26 @@ REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — gates the KB-
 9. **Finish the writes** — append the phase/hand-off/deviation entries to `implementation-notes.md`, then run the memory step (record each memory-marked task's outcome per `memory-series.md`). Commit+push — every implementation write is now done.
 10. **Snapshot the hand-off** — `HANDOFF_SHA=$(git rev-parse HEAD)`: the last implementation push, the informational **Hand-off SHA** for the human. Review derives its own review range.
 11. **Record the hand-off** — write `PR: #M` and `Hand-off SHA: <sha>` (plus anything the human must know) into `## Tracking` as ONE final metadata commit; push it.
-12. **Report** — summarise what shipped, `PR #M`, and the ticked stages, ending `Next: /harness-layer:harness-review <name>`.
+12. **Report** — end the run with the `## Report` output.
+
+## Report
+
+After the hand-off commit is pushed, provide a concise report:
+
+```text
+✅ Build Complete — draft PR open
+
+Plan: specs/<name>/
+Issue: #<N>
+PR: #<M> (draft) <url>
+Branch: <type>/<N>-<slug>
+Hand-off SHA: <sha>
+Stages: Implementation ✓ Tidy ✓
+Tidy report: <clean | N auto-fixes> — posted as <!-- report:tidy -->
+Tasks: <completed>/<total> — deviations: <count | none>
+
+Implemented:
+- <what shipped, concise>
+
+Next: /harness-layer:harness-review <name>
+```
