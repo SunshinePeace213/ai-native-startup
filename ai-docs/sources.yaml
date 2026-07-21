@@ -85,6 +85,10 @@ anthropic:
     file: anthropic/settings.md
     topic: Settings — scopes, precedence, attribution, config keys
     fetched: 2026-07-06
+  - url: https://code.claude.com/docs/en/memory
+    file: anthropic/memory.md
+    topic: Memory — CLAUDE.md files, .claude/rules/ loading & paths scoping, auto memory
+    fetched: 2026-07-21
   - url: https://platform.claude.com/docs/en/about-claude/models/overview
     file: anthropic/models.md
     topic: Model lineup — names, capabilities, pricing, platform availability
