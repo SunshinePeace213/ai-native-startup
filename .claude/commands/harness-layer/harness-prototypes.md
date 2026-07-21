@@ -3,6 +3,7 @@ description: Pre-plan discovery pass — throwaway HTML prototypes to react to b
 argument-hint: [description]
 model: fable
 effort: high
+disable-model-invocation: true
 disallowed-tools: Task, EnterPlanMode
 ---
 
@@ -23,9 +24,9 @@ ARTIFACT_RULES: `.claude/rules/harness-layer/artifacts.md` — craft, palette, a
 - Worktree: when `DESCRIPTION` carries a `Worktree:` line, `EnterWorktree(path: ...)` into it; otherwise derive a kebab-case `<slug>` and `EnterWorktree(name: "<slug>")`. Never write outside the worktree.
 - Classify the mode (see `Modes`).
 - Fake data only, but make it plausible: read enough of the real app first (existing UI conventions, real feature names and data shapes) that the prototype reads as native.
-- Do not interview the user or lock decisions — that is `/harness-layer:harness-interview`'s job. This pass only renders prototypes to react to.
+- Do not interview the user or lock decisions; this pass only renders prototypes to react to.
 - Commit the pass locally — `📝 docs(discovery): prototypes pass for <slug>`, no issue footer (no issue exists yet). Never push; the plan's first push carries the discovery commits.
-- End by recommending exactly one next hop, with the improved prompt as its input: open decisions remain for the user → `/harness-layer:harness-interview`; otherwise → `/harness-layer:harness-plan`.
+- End by recommending exactly one next hop (first match wins), with the improved prompt as its input: open decisions remain for the user → `/harness-layer:harness-interview`; otherwise → `/harness-layer:harness-plan`.
 
 ## Modes
 

@@ -89,6 +89,15 @@ Refs #42
   - `Refs #N` — commits and cross-references; links without closing.
   - `Part of #N` — a sub-task of an epic/plan issue.
 
+## Idempotent Marker Comments
+
+Status comments the harness posts on an issue or PR — plan-links, Codex round digests, review reports — must **upsert in place, never stack**. Each is keyed by a stable first-line HTML marker (e.g. `<!-- plan-links -->`, `<!-- codex-spec-round-N -->`, `<!-- report:codex-round-N -->`). To upsert one:
+
+1. Write the body to a file first — `gh api` has no `--body-file`.
+2. Find it: `gh api --paginate repos/{owner}/{repo}/issues/<N>/comments` and search for the marker (the same endpoint serves issues and PRs).
+3. Found → update in place: `gh api --method PATCH repos/{owner}/{repo}/issues/comments/<comment-id> -F body=@<file>`.
+4. Not found → create: `gh issue comment <N> --body-file <file>` (or `gh pr comment <N> --body-file <file>`).
+
 ## Worktree Rule
 
 - Claude's `EnterWorktree(name: "<slug>")` names the local branch **`worktree-<slug>`**, which does not match the remote convention branch `<type>/<N>-<slug>`. The local branch name is therefore cosmetic.

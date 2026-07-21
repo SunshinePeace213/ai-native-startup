@@ -1,9 +1,10 @@
 ---
-description: Drafts a concise engineering implementation plan for any coding OR harness-layer task — grounded in the ai-docs/ knowledge base when the work touches the harness — and saves it to the specs directory. Never interviews; /harness-layer:harness-interview locks decisions first
+description: Drafts a concise engineering implementation plan for any coding OR harness-layer task — grounded in the ai-docs/ knowledge base when the work touches the harness — and saves it to the specs directory. Fills only blocking gaps via a bounded readiness gate; heavy unknowns bounce to /harness-layer:harness-interview
 argument-hint: [finalized prompt] [orchestration prompt]
 model: fable
-effort: max
-disallowed-tools: Task, EnterPlanMode, AskUserQuestion
+effort: xhigh
+disable-model-invocation: true
+disallowed-tools: Task, EnterPlanMode
 hooks:
   Stop:
     - hooks:
@@ -13,38 +14,26 @@ hooks:
 
 # Harness Plan
 
-Draft the spec directly — no interviewing. Turn `USER_PROMPT` (ideally the finalized prompt from `/harness-layer:harness-interview`) into a four-file spec folder the team can build from — for any coding OR harness-layer task. When the work touches the harness layer, ground every claim in the KB first (see `Domain Knowledge`); otherwise plan straight from the codebase. Draft at `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` on the chain's worktree (or a fresh one), push to GitHub, gate with a Codex peer review (`CROSS_REVIEW_SKILL`), then publish the implementation-plan page for the user's async review.
+Turn `USER_PROMPT` (ideally the finalized prompt from `/harness-layer:harness-interview`) into a four-file spec folder the team can build from — for any coding OR harness-layer task. Resolve what the codebase and KB answer, fill only genuinely-open gaps through the `Readiness Gate`, and never re-litigate a locked ledger. When the work touches the harness layer, ground every claim in the KB first (see `Domain Knowledge`); otherwise plan straight from the codebase. Draft at `specs/<name-of-plan>/` on the chain's worktree (or a fresh one), push to GitHub, gate with a Codex peer review (`spec-review`, driven by a `sonnet` runner), then publish the implementation-plan page for the user's async review.
 
 ## Variables
 
 USER_PROMPT: $1
 ORCHESTRATION_PROMPT: $2 - (Optional) Guidance for team assembly, task structure, and execution strategy
-PLAN_OUTPUT_DIRECTORY: `specs/`
-SPEC_TEMPLATES: `specs/_templates/` - the four canonical templates to copy and fill
-ISSUE_SKELETONS: `specs/_templates/issues/` - agent-facing issue-body skeletons (feature|bug|chore|epic), one per kind
-SPEC_FILES: `spec.md`, `tasks.md`, `decisions.md`, `acceptance-criteria.md`
+MAX_REVIEW_ROUNDS: `2` - hard cap on NEW Codex rounds per review cycle; over the cap auto-resolves to needs-human
+CROSS_REVIEW_SKILL: `spec-review` — the Codex-side review skill in `.agents/skills/`
 KNOWLEDGE_BASE: `ai-docs/` — cached official docs; catalog in `ai-docs/index.md`, manifest in `ai-docs/sources.yaml`
 STALE_AFTER: `30` days — a KB doc older than this is stale
-MAX_REVIEW_ROUNDS: `2` - hard cap on NEW Codex rounds per review cycle; over the cap auto-resolves to needs-human
-CODEX_TIMEOUT: `900` seconds — every `codex exec` runs under `timeout --kill-after=30s`
-CROSS_REVIEW_SKILL: `spec-review` — the Codex-side review skill in `.agents/skills/`
-GENERAL_PURPOSE_AGENT: `general-purpose`
 
 ## Instructions
 
-- **PLANNING ONLY**: Do NOT build, write code, or deploy agents. Your only output is the four-file spec folder plus its artifacts — drafted in the worktree, then committed and pushed to `origin` (plan docs plus any gap-filled KB docs, never implementation code).
-- **NEVER ASK THE USER.** AskUserQuestion is disallowed. Every open point is either answered by the input (see `Input Gate`) or resolved with your recommended choice and recorded in decisions.md `## Assumptions`. Draft anyway; never stall. The only stops: missing `USER_PROMPT`, failed Preflight, or input so ambiguous no defensible approach exists — then stop and recommend `/harness-layer:harness-interview "<USER_PROMPT>"`.
-- If no `USER_PROMPT` is provided, stop and ask the user to provide it.
-- If `ORCHESTRATION_PROMPT` is provided, use it to guide team composition, task granularity, dependency structure, and parallel/sequential decisions.
-- Carefully analyze the user's requirements provided in the USER_PROMPT variable
-- Determine the task type (feat|fix|docs|style|refactor|perf|test|chore) and complexity (simple|medium|complex)
-- Think deeply (ultrathink) about the best approach to implement the requested functionality or solve the problem
-- Understand the codebase directly without subagents — application code and any existing harness patterns under `.claude/` and `.agents/` — the one exception is the `claude-code-guide` subagent the expert layer uses to cross-check harness claims
+- **PLANNING ONLY** — draft the spec; do not build, write code, or deploy builder agents. Read-only helper subagents are allowed: the `claude-code-guide` KB cross-check and the `sonnet` Codex review runner. Output is the four-file spec folder plus its artifacts — drafted in the worktree, then committed and pushed to `origin` (plan docs plus any gap-filled KB docs, never implementation code).
+- If no `USER_PROMPT` is provided, stop and ask the user for it.
+- Think deeply (ultrathink) about the best approach; determine the task type (feat|fix|docs|style|refactor|perf|test|chore) and complexity (simple|medium|complex).
+- Understand the codebase directly — application code and any existing harness patterns under `.claude/` and `.agents/` — without subagents, save the read-only helpers above.
+- If `ORCHESTRATION_PROMPT` is provided, let it guide team composition, task granularity, dependency structure, and parallel/sequential decisions.
 - **Ground harness-layer claims.** When the expert layer is active, statements about hooks, frontmatter, subagents, skills, commands, MCP, or model aliases must trace to a KB doc (see `Domain Knowledge`); record what you consulted in decisions.md's `## KB References`.
-- Follow the `Output: Spec Folder` section below to create a comprehensive implementation plan
-- Name the plan: reuse the chain's `<slug>` when the worktree pre-exists (rename with `git mv` only if actively wrong); otherwise generate a descriptive kebab-case name from the plan's main topic
-- Ensure the spec is detailed enough that another developer could follow it to implement the solution
-- Consider edge cases, error handling, and scalability concerns
+- Ensure the spec is detailed enough that another developer could follow it, covering edge cases, error handling, and scalability.
 
 ## Domain Knowledge
 
@@ -56,38 +45,39 @@ Conditional expert layer. Run it only when the task touches the harness surface 
 4. **Gap-fill:** if the KB has no doc for a topic the plan depends on, fetch and READ it now — WebFetch the official page (or ask the claude-code-guide subagent for the right URL) — then write the mirror under `ai-docs/` inside the worktree (frontmatter `source` + `fetched`, `> **In here:**` bullets, faithful body) AND add its entry to `ai-docs/sources.yaml`, committed with the spec.
 5. Log every doc you relied on — path + its `fetched` date — in decisions.md under `## KB References` (a section you append; the templates don't carry it).
 
-## Input Gate
+## Readiness Gate
 
-No interviewing — every decision was locked upstream or becomes an assumption.
+No re-interviewing a locked ledger; a bounded ask only for what's genuinely open.
 
-- **Ledger.** When `specs/<slug>/discovery/decisions-draft.md` exists in the worktree, transcribe it into decisions.md — resolved decisions stay resolved, never re-litigated. Reference any discovery pages from the spec; never copy them.
-- **Gaps.** Any decision still open after the ledger: pick your recommended answer and record it in decisions.md `## Assumptions` with what would invalidate it.
+- **Ledger.** When `specs/<slug>/discovery/decisions-draft.md` exists in the worktree, transcribe it into decisions.md — resolved decisions stay resolved, never re-litigated. Reference discovery pages from the spec; never copy them.
+- **Assess coverage the way the interview does:** first resolve every point the codebase and KB can answer, so only genuinely-open decisions remain. Then respond by how much is open:
+  - **Fully covered** (all fields present, or ledger-complete) → ask nothing; go straight to design.
+  - **A few open points** → ONE `AskUserQuestion` round (≤4 questions, biggest blast radius first); fold answers into decisions.md and any related spec file.
+  - **Many unknowns / no defensible approach** → STOP and recommend `/harness-layer:harness-interview "<USER_PROMPT>"`.
+- **Residual gaps** after asking → pick your recommended answer and record it in decisions.md `## Assumptions` with what would invalidate it. Never stall.
 - **Revision.** When the worktree already holds `specs/<slug>/spec.md`, this run is a revision (a tweak prompt from the implementation-plan page, or blockers resolved after needs-human) — see `Revision Mode`.
 
 ## Workflow
 
-IMPORTANT: **PLANNING ONLY** - Do not execute, build, or deploy. Output is a plan document.
+IMPORTANT: **PLANNING ONLY** — do not execute, build, or deploy builder agents. Output is a plan document.
 
-1. Preflight - Before anything else, verify required tools. If `gh` is missing or `gh auth status` fails, STOP and ask the user to configure GitHub auth (`gh auth login`). If `command -v codex` fails, STOP and point them to `/codex:setup`. Resolve the issue assignee with `gh api user -q .login`. Continue only when all pass.
-2. Analyze Requirements - Parse the USER_PROMPT to understand the core problem and desired outcome
-3. Enter Worktree - `Worktree:` line in the prompt → `EnterWorktree(path: ...)`; otherwise `EnterWorktree(name: "<slug>")` (see `Worktree & Handoff`). An existing `specs/<slug>/spec.md` switches the run to `Revision Mode`.
-4. Run the Input Gate - Ingest the discovery ledger; convert remaining gaps to Assumptions
-5. Understand Codebase - Without subagents (except the `claude-code-guide` subagent the expert layer uses to cross-check harness claims), directly understand the relevant code and any existing harness patterns under `.claude/` and `.agents/`
-6. Set Review Profile - Apply the `Domain Knowledge` trigger: if an expert-layer signal fires, load the KB docs and set the profile to `kb-grounded`; otherwise skip the layer and set `standard`.
-7. Design Solution - Develop technical approach including architecture decisions and implementation strategy, grounded in the KB docs when the expert layer is active
-8. Define Team Members - Use `ORCHESTRATION_PROMPT` (if provided) to guide team composition. Draw team members from the available agent types, defaulting to `GENERAL_PURPOSE_AGENT`. Document in plan.
-9. Define Step by Step Tasks - Use `ORCHESTRATION_PROMPT` (if provided) to guide task granularity and parallel/sequential structure. Write out tasks with IDs, dependencies, assignments, and each task's model and effort stamped per the model-selection rule (it loads every session). Document in plan.
-10. Name the Plan - Reuse the chain slug (or name it now), and pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test)
-11. Create & Link Issue - First cycle only: file the GitHub issue from the ledger + Assumptions and link its convention branch (see `Worktree & Handoff`)
-12. Write the Spec Folder - Create `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/` and fill all four `SPEC_FILES` from `SPEC_TEMPLATES`; append `## KB References` to decisions.md when the expert layer is active; write any gap-filled KB docs and their `ai-docs/sources.yaml` entries; record the issue, branch, worktree path, and review profile in spec.md's `## Tracking`
-13. Commit & Push - Commit the spec folder (plus gap-filled KB docs) with a `Refs #N` footer, push its branch to `origin`, then post the plan-links comment on the issue (see `Worktree & Handoff`)
-14. Cross-Review - Have Codex review the spec with `CROSS_REVIEW_SKILL`, at most `MAX_REVIEW_ROUNDS` new rounds this cycle, fixing blocking findings each round (see `Codex Cross-Review`)
-15. Implementation-Plan Page - After the gate settles, author and publish the page per `Plan Artifacts`, commit and push it
-16. Report - Follow the `Report` section to summarize the spec folder and its key components
+1. Enter Worktree — `Worktree:` line in the prompt → `EnterWorktree(path: ...)`; otherwise `EnterWorktree(name: "<slug>")` (see `Worktree & Handoff`). An existing `specs/<slug>/spec.md` switches the run to `Revision Mode`.
+2. Readiness Gate — transcribe any discovery ledger, assess coverage, and fill only genuinely-open gaps (see `Readiness Gate`).
+3. Understand Codebase — directly read the relevant code and any existing harness patterns under `.claude/` and `.agents/` (only the read-only helper subagents are allowed).
+4. Set Review Profile — apply the `Domain Knowledge` trigger: an expert-layer signal fires → load the KB docs and set the profile to `kb-grounded`; otherwise skip the layer and set `standard`.
+5. Design Solution — technical approach, architecture decisions, edge cases, error handling, and scalability, grounded in the KB docs when the expert layer is active.
+6. Define Team & Tasks — draw team members from the available agent types (default `general-purpose`); write tasks with IDs, dependencies, assignments, and each task's model + effort stamped per the model-selection rule (it loads every session). `ORCHESTRATION_PROMPT`, when provided, guides composition, granularity, and parallel/sequential structure. Document both in the plan.
+7. Name the Plan — reuse the chain `<slug>` (rename with `git mv` only if actively wrong) or generate a descriptive kebab-case name from the plan's main topic; pick its change `<type>` (feat/fix/chore/refactor/docs/style/perf/test).
+8. Create & Link Issue — first cycle only: file the GitHub issue from the ledger + Assumptions and link its convention branch (see `Worktree & Handoff`).
+9. Write the Spec Folder — create `specs/<name-of-plan>/` and fill all four files from `specs/_templates/`; append `## KB References` to decisions.md when the expert layer is active; write any gap-filled KB docs and their `ai-docs/sources.yaml` entries; record the issue, branch, worktree path, and review profile in spec.md's `## Tracking`.
+10. Commit & Push — commit the spec folder (plus gap-filled KB docs) with a `Refs #N` footer, push its branch to `origin`, then post the plan-links comment on the issue (see `Worktree & Handoff`).
+11. Cross-Review — a `sonnet` runner has Codex review the spec with `CROSS_REVIEW_SKILL`, at most `MAX_REVIEW_ROUNDS` new rounds this cycle, fixing blocking findings each round (see `Codex Cross-Review`).
+12. Implementation-Plan Page — after the gate settles, author and publish the page per `Plan Artifacts`, commit and push it.
+13. Report — summarize the spec folder and its key components (see `Report`).
 
 ## Output: Spec Folder
 
-Write the plan as four files under `PLAN_OUTPUT_DIRECTORY/<name-of-plan>/`. Copy each file from `SPEC_TEMPLATES`, then replace every `<placeholder>` with real content. Keep each template's `##` headings exactly as written — a Stop hook checks that every required section is present before the run can end.
+Write the plan as four files under `specs/<name-of-plan>/`. Copy each file from `specs/_templates/`, then replace every `<placeholder>` with real content. Keep each template's `##` headings exactly as written — a Stop hook checks that every required section is present before the run can end.
 
 ```text
 specs/<name-of-plan>/
@@ -116,12 +106,12 @@ After the Codex gate settles, author the **Implementation plan** page from the f
 Every plan gets a GitHub issue and its convention branch before anything is pushed, so `/harness-layer:harness-build` can pick it up and GitHub can track it. Run the steps in order; if any `gh` call fails, STOP and tell the user how to fix it — never proceed degraded or with a placeholder issue.
 
 - **Enter the worktree.** The discovery chain usually created it — `EnterWorktree(path: ".claude/worktrees/<slug>")`; without one, `EnterWorktree(name: "<slug>")` branches from `origin/main` into `.claude/worktrees/<slug>`. Write the spec folder there, never on `main`. Discovery commits already on the branch ride along with the first push.
-- **Create the issue** (first cycle only). Pick the skeleton kind from `<type>` — feat→`feature`, fix→`bug`, docs/style/refactor/perf/test/chore→`chore`, `epic` only for a genuine multi-issue initiative. Fill `ISSUE_SKELETONS/<kind>.md` from the interview ledger and Assumptions, write it to a temp file, and create the issue: `gh issue create --title "<emoji> <type>: <plan title>" --body-file <tmp> --label <type> --label priority:P<0-3> --assignee <login>` (gitmoji from the commit table, matching the issue forms) — exactly one type label from {feat,fix,docs,style,refactor,perf,test,chore}, one `priority:P0`–`priority:P3` label, and the login from Preflight. Note the returned issue number `#N`.
+- **Create the issue** (first cycle only). Pick the skeleton kind from `<type>` — feat→`feature`, fix→`bug`, docs/style/refactor/perf/test/chore→`chore`, `epic` only for a genuine multi-issue initiative. Fill `specs/_templates/issues/<kind>.md` from the interview ledger and Assumptions, write it to a temp file, and create the issue: `gh issue create --title "<emoji> <type>: <plan title>" --body-file <tmp> --label <type> --label priority:P<0-3> --assignee <login>` (gitmoji from the commit table, matching the issue forms) — exactly one type label from {feat,fix,docs,style,refactor,perf,test,chore}, one `priority:P0`–`priority:P3` label, and your GitHub login (`gh api user -q .login`) as `<login>`. Note the returned issue number `#N`.
 - **Link the branch.** `gh issue develop <N> --base main --name <type>/<N>-<slug>` creates the convention branch on the issue.
 - **Tracking.** In spec.md's `## Tracking`, record Issue `#N`, Branch `<type>/<N>-<slug>`, the absolute worktree path (`git rev-parse --show-toplevel`), and `Review profile: kb-grounded|standard`.
 - **Commit.** Stage the spec folder (`git add specs/<name-of-plan>/`) plus any gap-filled KB docs (`git add ai-docs/`) and make one commit `<emoji> <type>(spec): draft plan for <name-of-plan>` with a `Refs #N` footer.
 - **Push.** `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>` lands the convention branch on GitHub (bare `git push` refuses from the local `worktree-<slug>` branch).
-- **Plan-links comment.** After the first push, upsert one issue comment whose first line is `<!-- plan-links -->`, its body markdown links to all four spec files as blob URLs on the convention branch. Upsert: list comments with `gh api --paginate repos/{owner}/{repo}/issues/<N>/comments`; if the marker is found, update with `gh api --method PATCH repos/{owner}/{repo}/issues/comments/<comment-id> -F body=@<file>`; else create with `gh issue comment <N> --body-file <file>`. Always write the body to a file first (`gh api` has no `--body-file`).
+- **Plan-links comment.** After the first push, upsert one issue comment keyed `<!-- plan-links -->` whose body links all four spec files as blob URLs on the convention branch — upsert per `git-workflow.md` § Idempotent Marker Comments.
 
 ## Revision Mode
 
@@ -135,11 +125,21 @@ When the worktree already holds `specs/<slug>/spec.md`:
 
 ## Codex Cross-Review
 
-Once the plan is pushed, Codex reviews it as a peer inside the worktree — at most `MAX_REVIEW_ROUNDS` new rounds this cycle, round numbers continuing across cycles. Before each round, pick the Codex model and reasoning effort per the model-selection rule based on the spec's complexity. Beyond ordinary spec defects, when the expert layer is active it verifies the spec's harness claims against the KB docs, and it always challenges the approach for a simpler, cleaner design. Snapshot the reviewed head SHA before each round; check every push's exit status directly. Loop per round N:
+Once the plan is pushed, a `sonnet` review runner drives Codex as a peer reviewer inside the worktree — at most `MAX_REVIEW_ROUNDS` new rounds this cycle, round numbers continuing across cycles. Before each round, pick the Codex model and reasoning effort per the model-selection rule based on the spec's complexity. Beyond ordinary spec defects, when the expert layer is active Codex verifies the spec's harness claims against the KB docs, and it always challenges the approach for a simpler, cleaner design. Snapshot the reviewed head SHA before each round; check every push's exit status directly. Loop per round N:
 
-1. **Ask Codex — under a hard timeout, in the background.** Run via Bash with `run_in_background: true` and continue when the exit notification arrives: `timeout --kill-after=30s <CODEX_TIMEOUT> codex exec -C "<worktree root>" -s workspace-write --model <codex-model> -c model_reasoning_effort="<effort>" "Use the spec-review skill to review round <N> of the plan at specs/<name-of-plan>/spec.md; read all four files and (when present) the KB docs listed in decisions.md ## KB References, write your verdict to specs/<name-of-plan>/reviews/codex-spec-review-round-<N>.md, and return only the terse summary."`
-2. **Read the verdict from the report file, not stdout:** `grep -E '^### Round [0-9]+ — Verdict: (approved|changes-requested)$' specs/<name-of-plan>/reviews/codex-spec-review-round-<N>.md | tail -1`. Timed out, or exited with no verdict written → re-run the same round exactly once; a second consecutive failure → take the `Needs-human exit` with reason `codex-unavailable`.
-3. **Relay the digest.** Read the `**Issue-comment digest:**` paragraph from the round's report file and post it verbatim as an issue comment whose first line is `<!-- codex-spec-round-N -->` (N = the round). Upsert by marker exactly as the plan-links comment does (paginated `gh api` search → PATCH `-F body=@<file>`, else `gh issue comment --body-file`). Codex never calls `gh` — you relay.
+1. **Spawn the review runner (`sonnet`).** Give it the round number, the worktree root, and the Codex model + effort. It runs the review command, checks the exit status and whether the verdict line was written, re-runs the same command once if Codex crashed / exited non-zero / wrote no verdict, and returns to you ONLY the round verdict (`approved` | `changes-requested`) and the report's `**Issue-comment digest:**` paragraph. It touches no git and no gh. The command:
+
+   ```bash
+   codex exec -C "<worktree root>" -s workspace-write --model <codex-model> \
+     -c model_reasoning_effort="<effort>" \
+     "Use the spec-review skill to review round <N> of the plan at specs/<name-of-plan>/spec.md; \
+      read all four files and (when present) the KB docs listed in decisions.md ## KB References, \
+      write your verdict to specs/<name-of-plan>/reviews/codex-spec-review-round-<N>.md, \
+      and return only the terse summary."
+   ```
+
+2. **Verdict** from the runner's return (it matched `^### Round <N> — Verdict: (approved|changes-requested)$` in the report file). The runner reports no verdict after its one retry → take the `Needs-human exit` with reason `codex-unavailable`.
+3. **Relay the digest.** Post the runner's digest paragraph verbatim as an issue comment keyed `<!-- codex-spec-round-N -->` (N = the round), upserted per `git-workflow.md` § Idempotent Marker Comments. Codex never calls `gh` — you relay.
 4. **`changes-requested`** → commit the report on its own (`git add specs/<name-of-plan>/reviews/`, one commit with `Refs #N`), fix the blocking findings, commit the fixes on their own (`git add specs/<name-of-plan>/ ai-docs/`, one commit with `Refs #N`), then push both commits together. Rounds left in the cycle → round N+1; otherwise take the `Needs-human exit`.
 5. **`approved`** → gate passed; commit the report (`git add specs/<name-of-plan>/reviews/`, one commit with `Refs #N`) and push. Set spec.md `Status: Approved`, record any advisories, and record the outcome in spec.md's `## Codex Verification`.
 
@@ -158,7 +158,7 @@ After creating and saving the spec folder, provide a concise report with the fol
 ```text
 ✅ Spec Folder Created
 
-Folder: PLAN_OUTPUT_DIRECTORY/<name-of-plan>/ (spec.md, tasks.md, decisions.md, acceptance-criteria.md)
+Folder: specs/<name-of-plan>/ (spec.md, tasks.md, decisions.md, acceptance-criteria.md)
 Issue: #N <url>
 Branch: <type>/<N>-<slug> — pushed to origin
 Worktree: <absolute worktree path>

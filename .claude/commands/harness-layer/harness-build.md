@@ -2,6 +2,7 @@
 description: Implement a saved plan on its worktree via a draft PR, then verify it with a single Codex cross-check gate on packet-carried input — ≤2 rounds
 argument-hint: [name-or-path-of-plan]
 model: fable
+disable-model-invocation: true
 ---
 
 # Harness Build

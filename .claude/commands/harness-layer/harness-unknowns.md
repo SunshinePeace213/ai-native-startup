@@ -3,6 +3,7 @@ description: Pre-plan discovery pass — finds your unknown unknowns in the code
 argument-hint: [description]
 model: fable
 effort: high
+disable-model-invocation: true
 disallowed-tools: Task, EnterPlanMode
 ---
 
@@ -25,9 +26,9 @@ KNOWLEDGE_BASE: `ai-docs/` — cached official docs; catalog in `ai-docs/index.m
 - Classify the gap (see `Modes`) and run the matching pass; when both fire, one page carries both sections.
 - Ground every finding in what you actually read — real files, real conventions, real history. A finding that could be written without opening the codebase is filler; cut it.
 - When `DESCRIPTION` touches the harness surface (`.claude/`, `.agents/`, `.codex/`, `ai-docs/`, the memory files), also read the relevant `KNOWLEDGE_BASE` docs from the catalog — unwritten conventions often live there.
-- Do not interview the user or lock decisions — that is `/harness-layer:harness-interview`'s job. This pass only surfaces and explains.
+- Do not interview the user or lock decisions; this pass only surfaces and explains.
 - Commit the pass locally — `📝 docs(discovery): unknowns pass for <slug>`, no issue footer (no issue exists yet). Never push; the plan's first push carries the discovery commits.
-- End by recommending exactly one next hop, with the improved prompt as its input: scope still rough with several plausible interventions → `/harness-layer:harness-brainstorm`; a look-and-feel decision surfaced → `/harness-layer:harness-prototypes`; open decisions only the user can answer (including needs-discussion cards) → `/harness-layer:harness-interview`; otherwise → `/harness-layer:harness-plan`.
+- End by recommending exactly one next hop (first match wins), with the improved prompt as its input: scope still rough with several plausible interventions → `/harness-layer:harness-brainstorm`; a look-and-feel decision surfaced → `/harness-layer:harness-prototypes`; open decisions only the user can answer (including needs-discussion cards) → `/harness-layer:harness-interview`; otherwise → `/harness-layer:harness-plan`.
 
 ## Modes
 

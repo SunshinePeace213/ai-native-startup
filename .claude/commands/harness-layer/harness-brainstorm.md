@@ -3,6 +3,7 @@ description: Pre-plan discovery pass — searches the codebase and brainstorms ~
 argument-hint: [rough problem]
 model: fable
 effort: high
+disable-model-invocation: true
 disallowed-tools: Task, EnterPlanMode
 ---
 
@@ -25,9 +26,9 @@ KNOWLEDGE_BASE: `ai-docs/` — cached official docs; catalog in `ai-docs/index.m
 - Search the codebase before ideating: every intervention must anchor to real code — file paths, existing partial mechanisms, missed opportunities. An idea that needs no codebase knowledge is filler; cut it.
 - Spread the ladder from ship-this-afternoon to quarter-long bet — don't cluster in the comfortable middle, and include at least one ambitious bet.
 - When `DESCRIPTION` touches the harness surface (`.claude/`, `.agents/`, `.codex/`, `ai-docs/`, the memory files), also read the relevant `KNOWLEDGE_BASE` docs from the catalog.
-- Do not interview the user or lock scope — that is `/harness-layer:harness-interview`'s job. This pass only lays out options.
+- Do not interview the user or lock scope; this pass only lays out options.
 - Commit the pass locally — `📝 docs(discovery): brainstorm pass for <slug>`, no issue footer (no issue exists yet). Never push; the plan's first push carries the discovery commits.
-- End by recommending exactly one next hop, with the refined prompt as its input: resonating picks that are user-facing and need to be seen → `/harness-layer:harness-prototypes`; open decisions remain for the user → `/harness-layer:harness-interview`; otherwise → `/harness-layer:harness-plan`.
+- End by recommending exactly one next hop (first match wins), with the refined prompt as its input: resonating picks that are user-facing and need to be seen → `/harness-layer:harness-prototypes`; open decisions remain for the user → `/harness-layer:harness-interview`; otherwise → `/harness-layer:harness-plan`.
 
 ## Workflow
 

@@ -26,5 +26,11 @@
 
 ## Harness-Layer Pipeline
 
-- **Pipeline** — every task, application code or harness work: `/harness-layer:harness-plan` → `/harness-layer:harness-build` → `/harness-layer:harness-ship`. Optional pre-plan discovery chain, handed forward via improved prompts: `/harness-layer:harness-unknowns` (unknown unknowns — unfamiliar code or domain), `/harness-layer:harness-brainstorm` (rough problem → intervention options, cheapest to most ambitious), `/harness-layer:harness-prototypes` (throwaway mocks and design directions to react to), `/harness-layer:harness-interview` (locks every open decision round by round). The first pass opens the chain worktree; every pass commits its pages to `specs/<slug>/discovery/`, and the plan drafts silently from the interview ledger — no interviewing at plan time. The domain-expert KB layer engages automatically when the work touches the harness. Keep the `ai-docs/` KB fresh with `/harness-layer:kb`.
+- **Core** — every task, app code or harness work: `/harness-layer:harness-plan` → `/harness-layer:harness-build` → `/harness-layer:harness-ship`.
+- **Discovery (optional, pre-plan)** — run when the problem is still fuzzy; each pass hands its successor an improved prompt and commits its pages to `specs/<slug>/discovery/` for the plan to draft from:
+  - `/harness-layer:harness-unknowns` — surface unknown unknowns in unfamiliar code or domains.
+  - `/harness-layer:harness-brainstorm` — rough problem → intervention options, cheapest to most ambitious.
+  - `/harness-layer:harness-prototypes` — throwaway mocks and design directions to react to.
+  - `/harness-layer:harness-interview` — lock every open decision, round by round.
+- **KB** — the domain-expert layer auto-engages when work touches the harness; keep `ai-docs/` fresh with `/harness-layer:kb`.
 - **Artifacts** — pipeline stages publish interactive pages committed under `specs/<name>/artifacts/`; crafting rules: [artifacts.md](.claude/rules/harness-layer/artifacts.md).

@@ -3,6 +3,7 @@ description: Pre-plan interview pass — grills the user round by round through 
 argument-hint: [detailed ideas or a prior pass's improved prompt]
 model: fable
 effort: high
+disable-model-invocation: true
 disallowed-tools: Task, EnterPlanMode
 ---
 
