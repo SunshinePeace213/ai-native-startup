@@ -16,6 +16,13 @@ ISSUE_NUMBER: the GitHub issue `#N` from `spec.md`'s `## Tracking` — the `Refs
 PR_NUMBER: the draft PR `#M` from `## Tracking` — the PR this run gates
 REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — passed to Codex for its KB claim checks
 
+## Instructions
+
+- No `PATH_TO_PLAN` → STOP and ask the user for it (AskUserQuestion).
+- Every commit carries the `Refs #N` footer; every push uses the explicit refspec per `git-workflow.md` — check its exit status directly.
+- Under `kb-grounded`, fixers check behavior claims (frontmatter fields, hook events, model aliases, command resolution) against the plan's `## KB References` docs — never from memory.
+- Advisories (non-blocking findings) never spawn an extra round and get no per-advisory AskUserQuestion — record each in the PR body's `## Follow-ups` checklist.
+
 ## Workflow
 
 1. **Resolve & read** — resolve `PATH_TO_PLAN`; read `spec.md`'s `## Tracking` for `PR_NUMBER`, `ISSUE_NUMBER`, the worktree path, and `REVIEW_PROFILE`.
@@ -24,7 +31,7 @@ REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — passed to Cod
 4. **Set the counters** — the **attempt counter** `A` (1–2) is invocation-local and drives control flow; each invocation performs at most 2 attempts. The **report number** `N` is global: highest existing `specs/<name>/reviews/codex-impl-review-round-*.md` + 1. `N` names the report file and picks the review range — `N=1` diffs from `git merge-base origin/main HEAD`, `N>1` from the prior report's reviewed head. Never conflate the two.
 5. **Run the round** — snapshot `BASE_SHA` (per `N`) and `REVIEWED_HEAD_SHA=$(git rev-parse HEAD)`, then spawn the runner (below). Post its digest paragraph verbatim as `<!-- report:codex-round-N -->`, upserted per `git-workflow.md`.
 6. **Branch on the verdict:**
-   - **`A=1` + `changes-requested`** → commit the report (`Refs #N`), spawn fixer subagents per `model-selection.md` (a failed fix escalates a tier), make ONE fix commit, push both, and start attempt 2 (a fresh round at the next `N`).
+   - **`A=1` + `changes-requested`** → commit the report, spawn fixer subagents per `model-selection.md` (a failed fix escalates a tier), make ONE fix commit, push both, and start attempt 2 (a fresh round at the next `N`).
    - **`approved` (any attempt), or `A=2` + `changes-requested`** → the terminal outcome (step 7).
 7. **Terminal outcome** — for medium/complex plans render `specs/<name>/artifacts/dev-notes.html` from `implementation-notes.md` per `artifacts.md`, and run the memory step (record each memory-marked outcome per `memory-series.md`) — both FIRST. Then make ONE **terminal commit** (the report + `dev-notes.html` + dev-log/memory/notes edits), push it, and link the page under `## Dev Notes`. Nothing mutates the repository after it.
    - **`approved`** → verify the PR head equals the terminal commit, tick the stages with it as **Ready** evidence, and `gh pr ready`.
