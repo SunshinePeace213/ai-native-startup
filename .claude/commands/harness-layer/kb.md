@@ -2,8 +2,6 @@
 description: Builds and syncs the ai-docs/ knowledge base of official docs on any domain. Reads ai-docs/sources.yaml, fetches every source that is missing or older than 30 days, writes faithful markdown mirrors, and regenerates the ai-docs/index.md catalog. Use when the user asks to sync, refresh, or add AI docs, set up the knowledge base, or mentions ai-docs being stale or missing a topic — even without naming /kb.
 argument-hint: [add url [group] | --force]
 allowed-tools: Bash(curl *), WebFetch
-model: sonnet
-effort: high
 ---
 
 # Purpose
