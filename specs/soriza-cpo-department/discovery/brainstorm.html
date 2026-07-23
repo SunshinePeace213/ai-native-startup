@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soriza CPO — Intervention Ladder</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; animation: none !important; }
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 80px; }
+
+  /* ---- sticky header ---- */
+  header.bar {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  }
+  header.bar .t { font-family: var(--font-display); font-size: 18px; }
+  header.bar .count {
+    font-family: var(--font-mono); font-size: 13px; color: var(--muted); white-space: nowrap;
+  }
+  header.bar .count b { color: var(--accent); font-size: 16px; }
+
+  /* ---- intro ---- */
+  .intro { padding: 48px 0 8px; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--font-display); font-weight: 500;
+    font-size: clamp(30px, 5vw, 44px); line-height: 1.12; margin-bottom: 14px;
+  }
+  .intro p.lede { font-size: 16.5px; max-width: 62ch; color: var(--text); }
+  .intro p.note { margin-top: 12px; font-size: 13.5px; color: var(--muted); max-width: 68ch; }
+  .locked {
+    margin-top: 22px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 18px; font-size: 13.5px;
+  }
+  .locked b { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+  .locked ul { margin-left: 18px; }
+  .locked li { margin: 3px 0; }
+
+  /* ---- the rail (signature) ---- */
+  .ladder { position: relative; margin-top: 36px; padding-left: 58px; }
+  .ladder::before {
+    content: ""; position: absolute; left: 19px; top: 8px; bottom: 8px;
+    width: 2px; background: var(--border);
+  }
+  .card { position: relative; margin-bottom: 22px; }
+  .rung {
+    position: absolute; left: -58px; top: 14px;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 12px; color: var(--muted);
+    transition: all .18s ease;
+  }
+  .card.picked .rung { background: var(--accent); border-color: var(--accent); color: #FAF8F5; }
+  .card-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 22px; transition: border-color .18s ease, box-shadow .18s ease;
+  }
+  .card.picked .card-box { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .card-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .size {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+    padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border);
+    color: var(--muted); background: var(--bg); white-space: nowrap;
+  }
+  .card h2 { font-family: var(--font-display); font-weight: 500; font-size: 21px; line-height: 1.25; }
+  .card .impact { margin-top: 6px; font-size: 14px; color: var(--accent); font-style: italic; }
+  .card dl { margin-top: 12px; display: grid; grid-template-columns: 84px 1fr; gap: 6px 14px; font-size: 13.5px; }
+  .card dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+  .card dd code, .card dd .cd {
+    font-family: var(--font-mono); font-size: 12px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; white-space: nowrap;
+  }
+  .card dd { overflow-wrap: anywhere; }
+  .pick-row { margin-top: 16px; }
+  .pick {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    font-size: 13.5px; padding: 7px 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+    user-select: none; transition: all .15s ease;
+  }
+  .pick:hover { border-color: var(--accent); color: var(--text); }
+  .pick input { position: absolute; opacity: 0; pointer-events: none; }
+  .pick .dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--muted); transition: all .15s ease; }
+  .card.picked .pick { background: var(--accent); border-color: var(--accent); color: #FAF8F5; }
+  .card.picked .pick .dot { background: #FAF8F5; border-color: #FAF8F5; }
+  .pick:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---- org-shape strip ---- */
+  .org { margin-top: 44px; }
+  .org h3 { font-family: var(--font-display); font-weight: 500; font-size: 24px; margin-bottom: 6px; }
+  .org > p { font-size: 14px; color: var(--muted); max-width: 68ch; margin-bottom: 16px; }
+  .org-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .org-col { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; font-size: 13.5px; }
+  .org-col h4 { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .org-col ul { margin-left: 16px; }
+  .org-col li { margin: 4px 0; }
+  .org-col .e2e { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 13px; color: var(--muted); }
+
+  /* ---- prompt output ---- */
+  .out { margin-top: 44px; }
+  .out h3 { font-family: var(--font-display); font-weight: 500; font-size: 24px; margin-bottom: 6px; }
+  .out > p { font-size: 14px; color: var(--muted); margin-bottom: 14px; }
+  .prompt-box { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  .prompt-box pre {
+    font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
+    padding: 20px 22px; white-space: pre-wrap; overflow-wrap: anywhere;
+    max-height: 480px; overflow-y: auto;
+  }
+  .copy-btn {
+    position: absolute; top: 12px; right: 12px;
+    font-family: var(--font-body); font-size: 13px; cursor: pointer;
+    background: var(--accent); color: #FAF8F5; border: none; border-radius: 6px;
+    padding: 7px 16px; transition: opacity .15s ease;
+  }
+  .copy-btn:hover { opacity: .88; }
+  .copy-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <span class="t">Soriza CPO — intervention ladder</span>
+  <span class="count"><b id="pickCount">0</b> / 10 resonate</span>
+</header>
+
+<div class="wrap">
+  <section class="intro">
+    <div class="eyebrow">Brainstorm pass · discovery</div>
+    <h1>Ten rungs from a one-line worktree fix to a department that runs itself</h1>
+    <p class="lede">The harness layer stays the foundation. On top of it: Soriza's first operating department — a CPO/design studio that walks clients down the fidelity ladder (intake → brief → sitemap/IA → wireframe → section briefs) and hands Ringo a brief packet. Every card below is anchored to a file that exists in this repo today. Toggle what resonates; the prompt at the bottom becomes the interview's input.</p>
+    <p class="note">Ordering is cost, cheapest first — rungs 1–4 are locked-decision groundwork, 5–6 are the gates, 7–10 ladder the two open decisions (org shape, role mapping) from "no new agents" to "an agent team per engagement."</p>
+    <div class="locked">
+      <b>Locked — folded in, not reopened</b>
+      <ul>
+        <li>Client home is <code>projects/&lt;client&gt;/</code>; the folder structure is the first deliverable.</li>
+        <li>Agents draft all files (intake → brief packet); Ringo owns assets, templates, and Claude Design prototyping.</li>
+        <li>Department memory = path-scoped <code>.claude/rules/soriza-cpo/</code> family + a lessons log on the development-log contract.</li>
+        <li>KB mirrors copy into worktrees via <code>.worktreeinclude</code>; official design/UX sources registered via <code>/harness-layer:kb add</code>; doctrine lives in rules, never fake mirrors.</li>
+        <li>Work ships as an epic with child issues — one pipeline run per child.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="ladder" id="ladder"></section>
+
+  <section class="org">
+    <h3>The open decision the top rungs embody: org shape</h3>
+    <p>Rungs 7, 8, and 10 are the same workflow under three org shapes. Pick by where judgment must live and what a hand-off may lose — context cost and delegation reliability pull in opposite directions.</p>
+    <div class="org-grid">
+      <div class="org-col">
+        <h4>Flat commands (rung 7)</h4>
+        <ul>
+          <li>Roles dissolve into phases of chained commands — the discovery chain's proven shape.</li>
+          <li>Zero delegation loss: one session holds intake, brief, and IA context end to end.</li>
+          <li>Limit: session length; five section briefs draft sequentially.</li>
+        </ul>
+        <div class="e2e">End-to-end: one session walks the rungs, Ringo between gates.</div>
+      </div>
+      <div class="org-col">
+        <h4>Orchestrator + specialists (rung 8)</h4>
+        <ul>
+          <li>Roles = deliverables = subagents at depth 1 — nesting not needed (each specialist is a leaf).</li>
+          <li>Five section briefs fan out in parallel; each agent loads only its own doctrine.</li>
+          <li>Cost: the delegation message is the interface — anything not written down is lost at hand-off.</li>
+        </ul>
+        <div class="e2e">End-to-end: orchestrator command walks the ladder, fans out per deliverable, assembles the packet.</div>
+      </div>
+      <div class="org-col">
+        <h4>Agent team (rung 10)</h4>
+        <ul>
+          <li>Persistent teammates + shared task board — <code>task-tools.md</code> already specifies the lead protocol.</li>
+          <li>Survives multi-day engagements and mid-flight client replies.</li>
+          <li>Cost: highest context spend, most moving parts; overkill for a single deliverable.</li>
+        </ul>
+        <div class="e2e">End-to-end: CPO lead session per engagement; teammates own rungs; board is the audit trail.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="out">
+    <h3>Refined prompt</h3>
+    <p>Built live from your picks, with every locked decision carried forward. Paste it into <code>/harness-layer:harness-interview</code>.</p>
+    <div class="prompt-box">
+      <button class="copy-btn" id="copyBtn">Copy</button>
+      <pre id="promptOut"></pre>
+    </div>
+  </section>
+</div>
+
+<script>
+const CARDS = [
+  {
+    id: "worktree-kb", size: "S", num: "1",
+    title: "Copy the KB into every worktree — one .worktreeinclude line",
+    exists: ".worktreeinclude holds only .env patterns; .gitignore:362 ignores ai-docs/* (only sources.yaml tracked), so every fresh worktree starts with an empty KB and kb-grounded planning silently loses its ground truth.",
+    proposal: "Add an ai-docs/ pattern to .worktreeinclude so cached mirrors copy into each new worktree.",
+    pointers: [".worktreeinclude", ".gitignore:362", "ai-docs/sources.yaml"],
+    impact: "Every CPO (and existing pipeline) worktree starts already grounded.",
+    open: "None — locked decision; ship as-is."
+  },
+  {
+    id: "projects-scaffold", size: "S", num: "2",
+    title: "projects/_template/ — the client folder as a copyable scaffold",
+    exists: "specs/_templates/ already proves the pattern: skeleton files a command copies and fills. Nothing exists yet for client work.",
+    proposal: "projects/_template/ with intake.md, brief.md, sitemap-ia.md, wireframes/, section-briefs/ (hero, social-proof, features, cta, footer — each skeleton carrying 'one job' and 'one desired action' fields), asset-checklist.md, decision-log.md. First client folder is a copy, not an invention.",
+    pointers: ["specs/_templates/", "specs/_templates/issues/"],
+    impact: "The department's whole output surface is defined in one PR.",
+    open: "Exact per-file skeleton headings (interview or plan can settle)."
+  },
+  {
+    id: "cpo-rules", size: "S", num: "3",
+    title: ".claude/rules/soriza-cpo/ — the department's memory family",
+    exists: "memory-series.md defines the contract (domain folder, paths: frontmatter); development-log.md defines the lessons-log contract (one line each, distill at ~40). python/ and harness-layer/ are live precedents.",
+    proposal: "client-communication.md, intake-standards.md, definition-of-ready.md, brief-format.md, section-anatomy.md, plus cpo-lessons.md on the dev-log contract — all scoped paths: [\"projects/**/*\"], pointed to from AGENTS.md.",
+    pointers: [".claude/rules/memory-series.md", ".claude/rules/development-log.md", ".claude/rules/python/"],
+    impact: "Doctrine loads only when a session touches client work; rejections become rules.",
+    open: "Which doctrine files carry real content day one vs. stubs that lessons fill."
+  },
+  {
+    id: "design-kb", size: "S", num: "4",
+    title: "Seed a design/ KB group with genuinely official sources",
+    exists: "sources.yaml has anthropic/, openai/, openai/codex groups; kb-fetcher mirrors one page; /harness-layer:kb syncs the manifest. Zero design/UX coverage.",
+    proposal: "Register official pages only (e.g. WCAG quickref, web.dev patterns, platform HIG pages) via /harness-layer:kb add under a design/ group. Homegrown section-anatomy doctrine stays in the rules family — never a fake mirror.",
+    pointers: ["ai-docs/sources.yaml", ".claude/agents/kb-fetcher.md", ".claude/commands/harness-layer/kb.md"],
+    impact: "Brief and wireframe claims can be grounded the way harness claims already are.",
+    open: "Which sources make the first cut — needs Ringo's shortlist."
+  },
+  {
+    id: "design-git-flow", size: "M", num: "5",
+    title: "A design lane through the git workflow — evidence that fits briefs",
+    exists: "git-workflow.md locks 8 commit types and one PR template per type; harness-build opens draft PRs whose bodies demand Test Evidence — meaningless for a brief or wireframe. check_spec_completeness.py shows gates can be mechanical.",
+    proposal: "Map projects/ deliverables to the docs type (📝 docs(<client>)); a projects/**-scoped rule swaps the evidence block: DoR checklist + decision-log entry + client sign-off replace test evidence. Same issue/PR/branch machinery, design-shaped proof. Alternative to weigh: skip PRs for drafts entirely and PR only at gate points (brief approved, packet handed off).",
+    pointers: [".claude/rules/git-workflow.md", ".github/PULL_REQUEST_TEMPLATE/docs.md", ".claude/hooks/check_spec_completeness.py"],
+    impact: "Client work gets the audit trail without pretending it's code.",
+    open: "PR-per-deliverable vs PR-per-gate; whether docs.md template forks a design variant."
+  },
+  {
+    id: "intake-command", size: "M", num: "6",
+    title: "/soriza-cpo:intake — questionnaire rounds with a DoR Stop hook",
+    exists: "harness-interview.md already runs AskUserQuestion rounds against a coverage ledger and redeploys one page per round; harness-plan.md:8–12 shows a command carrying its own Stop hook (check_spec_completeness.py blocks ending until sections exist).",
+    proposal: "An intake command interviews the client's answers into projects/<client>/intake.md, then a uv-script Stop hook verifies every Definition-of-Ready section is present before the run may end. The gate is code, not model memory.",
+    pointers: [".claude/commands/harness-layer/harness-interview.md", ".claude/commands/harness-layer/harness-plan.md:8", ".claude/hooks/check_spec_completeness.py"],
+    impact: "No brief starts before DoR passes — enforced, not remembered.",
+    open: "The DoR checklist itself (lives in rung 3's definition-of-ready.md)."
+  },
+  {
+    id: "ladder-commands", size: "M", num: "7",
+    title: "Fidelity ladder as a command chain — roles dissolve into phases",
+    exists: "The discovery chain (unknowns → brainstorm → prototypes → interview) is exactly this shape: each command hands its successor an improved prompt plus a Worktree: line, committing as it goes.",
+    proposal: "/soriza-cpo:brief → :sitemap → :wireframe → :section-briefs, each reading the previous rung's file in projects/<client>/, gated by its DoR, committing per rung. No new agents; one session's judgment end to end.",
+    pointers: [".claude/commands/harness-layer/harness-brainstorm.md", ".claude/commands/harness-layer/harness-unknowns.md", "AGENTS.md § Harness-Layer Pipeline"],
+    impact: "A full intake→packet run works today with zero delegation risk.",
+    open: "Org shape (this is the flat-commands stance); one command per rung vs one orchestrating command with phases."
+  },
+  {
+    id: "specialists", size: "L", num: "8",
+    title: "Deliverable-shaped specialists — brief-writer, section-brief-author, wireframer",
+    exists: ".claude/agents/kb-fetcher.md is the house single-purpose-agent style (tight description, tools, model, effort); the meta-agent skill is the authoring standard; model-selection.md sets the roster — fable orchestrator-only, taste ≥ 7 for client-facing copy.",
+    proposal: "Subagents named for deliverables, not job titles. A CPO orchestrator command delegates one deliverable per agent and fans the five section briefs out in parallel — flat, depth 1; each specialist loads only its slice of the soriza-cpo/ doctrine.",
+    pointers: [".claude/agents/kb-fetcher.md", ".claude/rules/model-selection.md", "meta-agent skill"],
+    impact: "Section briefs draft in parallel; every hand-off is an explicit written interface.",
+    open: "Role mapping (this is the specialists stance); model per specialist; which rungs stay inline vs delegate."
+  },
+  {
+    id: "wireframe-artifacts", size: "L", num: "9",
+    title: "Wireframes as interactive artifacts with a client feedback loop",
+    exists: "artifacts.md already specifies Mockup and Design-directions pages (throwaway mock + 2–4 alternatives with tweak controls, copy-as-prompt returning reactions); the playground skill's design-playground template builds them; the Artifact tool publishes private-by-default shareable pages.",
+    proposal: "The wireframer outputs one self-contained HTML page per screen into projects/<client>/wireframes/; its copy-as-prompt returns the client's reactions as structured change requests that append to decision-log.md. Ringo shares the link; feedback arrives pre-digested.",
+    pointers: [".claude/rules/harness-layer/artifacts.md §Page inventory", "playground skill (design-playground)", "specs/soriza-cpo-department/discovery/unknowns.html"],
+    impact: "Clients react to something clickable; revision requests arrive as prompts, not phone calls.",
+    open: "Lo-fi grayscale discipline vs styled directions; whether client-visible pages get published or stay local for Ringo to present."
+  },
+  {
+    id: "agent-team", size: "XL", num: "10",
+    title: "The department as an agent team — one engagement, one board",
+    exists: "task-tools.md already writes the full team-lead protocol (board, owners, SendMessage); ai-docs/anthropic/agent-teams.md mirrors the official teams doc; epic.yml + specs/_templates/issues/epic.md exist for the epic scoping. Note: the prompt's CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH claim is Agent-SDK-side; the Claude Code mirror (ai-docs/anthropic/subagents.md:837) says nesting is on by default since v2.1.172 with a fixed depth cap — fact-check at plan time.",
+    proposal: "A persistent CPO-lead session per client engagement, teammates owning rungs, the shared task board as audit trail, lessons flowing into cpo-lessons.md. The quarter-long bet: the department doesn't run a command, it runs a team.",
+    pointers: [".claude/rules/task-tools.md", "ai-docs/anthropic/agent-teams.md", "ai-docs/anthropic/subagents.md:837", ".github/ISSUE_TEMPLATE/epic.yml"],
+    impact: "Multi-day engagements survive session boundaries; the board is the department's heartbeat.",
+    open: "Org shape (this is the teams stance); whether teams wait until flat shapes prove the workflow."
+  }
+];
+
+const state = { picks: new Set() };
+
+const ladder = document.getElementById("ladder");
+function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+
+ladder.innerHTML = CARDS.map(c => `
+  <article class="card" id="card-${c.id}">
+    <div class="rung" aria-hidden="true">${c.num}</div>
+    <div class="card-box">
+      <div class="card-head">
+        <span class="size">${c.size}</span>
+        <h2>${esc(c.title)}</h2>
+      </div>
+      <p class="impact">${esc(c.impact)}</p>
+      <dl>
+        <dt>Today</dt><dd>${esc(c.exists)}</dd>
+        <dt>Do</dt><dd>${esc(c.proposal)}</dd>
+        <dt>Code</dt><dd>${c.pointers.map(p=>`<span class="cd">${esc(p)}</span>`).join(" ")}</dd>
+        <dt>Open</dt><dd>${esc(c.open)}</dd>
+      </dl>
+      <div class="pick-row">
+        <label class="pick">
+          <input type="checkbox" data-id="${c.id}">
+          <span class="dot" aria-hidden="true"></span>
+          <span>This resonates</span>
+        </label>
+      </div>
+    </div>
+  </article>
+`).join("");
+
+document.querySelectorAll(".pick input").forEach(cb => {
+  cb.addEventListener("change", () => {
+    const id = cb.dataset.id;
+    cb.checked ? state.picks.add(id) : state.picks.delete(id);
+    document.getElementById("card-" + id).classList.toggle("picked", cb.checked);
+    updateAll();
+  });
+});
+
+const LOCKED = `Locked decisions — fold in, do not reopen:
+- Client-project home is projects/<client>/ in this repo (brief, section briefs, IA, wireframes, asset checklist, decision log); the folder structure is the first deliverable.
+- Human/agent boundary: agents draft all files (intake -> brief packet); Ringo owns asset/template collection and Claude Design prototyping; the department's output is the brief packet handed to Ringo.
+- Department memory: path-scoped rule family at .claude/rules/soriza-cpo/ (client-communication doctrine, intake standards, Definition of Ready, brief format, section anatomy) plus a lessons log on the development-log.md contract; no parallel memory system, no new root markdown files.
+- KB: add an ai-docs/ pattern to .worktreeinclude so mirrors copy into new worktrees; register authoritative design/UX sources via /harness-layer:kb add where official pages exist; homegrown doctrine lives in the rules family, never as fake mirrors.
+- Scope as an epic with child issues, one pipeline run per child (epic.yml and specs/_templates/issues/epic.md exist); never one giant spec.
+- Department workflow is the fidelity ladder (intake -> brief -> sitemap/IA -> wireframe -> section briefs, each section with one job and one desired action), gated by a client intake questionnaire and a Definition of Ready. Delivery/production is a future CTO department, out of scope.`;
+
+function updatePrompt(){
+  const out = document.getElementById("promptOut");
+  const picked = CARDS.filter(c => state.picks.has(c.id));
+  if (!picked.length) {
+    out.textContent = "Toggle “This resonates” on at least one card — the refined prompt assembles here from your picks, with every locked decision carried forward.";
+    return;
+  }
+  const blocks = picked.map(c =>
+`- [${c.size}] ${c.title}
+  Today: ${c.exists}
+  Do: ${c.proposal}
+  Code: ${c.pointers.join(", ")}
+  Still open: ${c.open}`).join("\n\n");
+
+  out.textContent =
+`Build the first slice of Soriza's CPO/design department on top of this repo's harness layer: a client web-design studio whose operations agents run. The client owns "what"; the department owns discover -> define -> design and hands Ringo a brief packet.
+
+${LOCKED}
+
+Resonating interventions from the brainstorm ladder (specs/soriza-cpo-department/discovery/brainstorm.html), cheapest first:
+
+${blocks}
+
+Open decisions to lock, round by round:
+- Org shape: flat command chain vs flat orchestrator + deliverable-shaped specialists (depth 1) vs an agent team per engagement — weigh context cost, delegation reliability, and the end-to-end intake->packet flow under each. (Fact-check nesting at plan time: the prompt's CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH claim is Agent-SDK-side; ai-docs/anthropic/subagents.md:837 says Claude Code nesting is on by default since v2.1.172 with a fixed depth cap.)
+- Role mapping: which roles become subagents vs skills/commands vs phases of one orchestrating command; roles map to deliverables (intake-interviewer, brief-writer, section-brief author, wireframer), never job titles; fable stays orchestrator-only per model-selection.md.
+- Per pick: the "Still open" line on each intervention above.
+
+Worktree: .claude/worktrees/soriza-cpo-department`;
+}
+
+function updateAll(){
+  document.getElementById("pickCount").textContent = state.picks.size;
+  updatePrompt();
+}
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("copyBtn");
+  try {
+    await navigator.clipboard.writeText(document.getElementById("promptOut").textContent);
+    btn.textContent = "Copied!";
+  } catch {
+    const r = document.createRange();
+    r.selectNodeContents(document.getElementById("promptOut"));
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    document.execCommand("copy"); sel.removeAllRanges();
+    btn.textContent = "Copied!";
+  }
+  setTimeout(() => { btn.textContent = "Copy"; }, 1400);
+});
+
+updateAll();
+</script>
+</body>
+</html>
