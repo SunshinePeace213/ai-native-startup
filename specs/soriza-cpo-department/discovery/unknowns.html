@@ -1,0 +1,574 @@
+<title>Soriza CPO Layer — Unknowns Pass</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --accent-soft: #F3E4D8;
+    --discuss: #8F3B25;
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 48px 24px 96px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(30px, 5vw, 42px);
+    line-height: 1.15; margin: 0 0 14px; font-weight: 600;
+    text-wrap: balance;
+  }
+  .lede { color: var(--muted); max-width: 62ch; margin: 0 0 8px; }
+  .meta-line { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); margin-top: 14px; }
+  .meta-line b { color: var(--text); font-weight: 600; }
+
+  .section { margin-top: 64px; }
+  .section-head { border-top: 2px solid var(--text); padding-top: 18px; }
+  .section-head .eyebrow { color: var(--muted); }
+  h2 {
+    font-family: var(--font-display); font-size: 28px; margin: 0 0 8px; font-weight: 600;
+    text-wrap: balance;
+  }
+  .section-sub { color: var(--muted); max-width: 64ch; margin: 0 0 28px; }
+
+  /* ---------- Unknown cards ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 22px 24px 18px;
+    margin-bottom: 18px;
+  }
+  .card.discussing { border-color: var(--discuss); }
+  .card-slug {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+  }
+  .card h3 {
+    font-family: var(--font-display); font-size: 20px; margin: 0 0 12px; font-weight: 600;
+    line-height: 1.3;
+  }
+  .card dl { margin: 0 0 16px; display: grid; grid-template-columns: 92px 1fr; row-gap: 10px; column-gap: 14px; }
+  .card dt {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; padding-top: 3px;
+  }
+  .card dd { margin: 0; font-size: 15px; }
+  .card dd code, .term-body code, .step p code {
+    font-family: var(--font-mono); font-size: 0.86em;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 3px; padding: 1px 4px; white-space: nowrap;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip {
+    font: 600 13px/1 var(--font-body);
+    border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+    border-radius: 999px; padding: 8px 14px; cursor: pointer;
+  }
+  .chip:hover { border-color: var(--muted); }
+  .chip:focus-visible, .copy-btn:focus-visible, .payoff:focus-visible, .term-head:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #FFF; }
+  .chip.chip-discuss[aria-pressed="true"] { background: var(--discuss); border-color: var(--discuss); }
+  .note-input {
+    display: block; width: 100%; margin-top: 12px;
+    font: 14px/1.5 var(--font-body); color: var(--text);
+    background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+    padding: 9px 12px;
+  }
+  .note-input::placeholder { color: var(--muted); }
+
+  /* ---------- Mental model ---------- */
+  .steps { counter-reset: step; margin: 0; padding: 0; list-style: none; }
+  .steps li {
+    counter-increment: step;
+    display: grid; grid-template-columns: 44px 1fr; gap: 16px;
+    padding: 18px 0; border-bottom: 1px solid var(--border);
+  }
+  .steps li::before {
+    content: counter(step);
+    font-family: var(--font-display); font-size: 26px; color: var(--accent);
+    line-height: 1;
+  }
+  .steps h4 { margin: 0 0 6px; font-size: 16px; }
+  .steps p { margin: 0; font-size: 15px; color: var(--text); }
+
+  /* ---------- Org chart, corrected ---------- */
+  .org-compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 24px; margin-top: 28px;
+  }
+  .org-col .org-label {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    font-weight: 600; margin-bottom: 14px;
+  }
+  .org-col:first-child .org-label { color: var(--muted); }
+  .org-col:last-child .org-label { color: var(--accent); }
+  .org-node {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+    padding: 7px 12px; font-size: 13.5px; margin-bottom: 8px; position: relative;
+  }
+  .org-node.crossed { color: var(--muted); }
+  .org-node.crossed .org-title { text-decoration: line-through; text-decoration-color: var(--discuss); }
+  .org-node .org-why { display: block; font-size: 11.5px; color: var(--muted); }
+  .org-indent-1 { margin-left: 22px; }
+  .org-indent-2 { margin-left: 44px; }
+  .org-node.lead { border-color: var(--accent); border-width: 1.5px; font-weight: 600; }
+  .org-caption { grid-column: 1 / -1; font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+
+  /* ---------- Vocabulary ladder ---------- */
+  .term { border-bottom: 1px solid var(--border); }
+  .term-head {
+    width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding: 16px 4px; color: var(--text);
+  }
+  .term-head .t-name { font-family: var(--font-display); font-size: 18px; font-weight: 600; }
+  .term-head .t-gloss { font-size: 13px; color: var(--muted); flex: 1; text-align: right; }
+  .term-head .t-caret { color: var(--accent); font-size: 13px; }
+  .term-body { display: none; padding: 0 4px 18px; }
+  .term.open .term-body { display: block; }
+  .term-body p { margin: 0 0 10px; font-size: 14.5px; }
+  .term-body .t-tag {
+    display: inline-block; min-width: 84px; font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); font-weight: 600;
+  }
+  .term-body .t-pro { font-style: italic; }
+
+  /* ---------- Titles table ---------- */
+  .titles-table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin-top: 8px; }
+  .titles-table th {
+    text-align: left; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); padding: 8px 10px 8px 0; border-bottom: 2px solid var(--text);
+  }
+  .titles-table td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .table-scroll { overflow-x: auto; }
+
+  /* ---------- Quality bar ---------- */
+  .quality { list-style: none; margin: 0; padding: 0; }
+  .quality li {
+    display: grid; grid-template-columns: 24px 1fr; gap: 10px;
+    padding: 9px 0; font-size: 15px;
+  }
+  .quality li::before { content: "✓"; color: var(--accent); font-weight: 700; }
+
+  /* ---------- Payoff prompts ---------- */
+  .payoffs { display: grid; gap: 10px; margin-top: 8px; }
+  .payoff {
+    text-align: left; font: 14px/1.5 var(--font-body); color: var(--text);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 13px 16px; cursor: pointer;
+  }
+  .payoff .p-tag {
+    display: block; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; margin-bottom: 3px;
+  }
+  .payoff[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  .payoff[aria-pressed="true"] .p-tag { color: var(--accent); }
+
+  /* ---------- Prompt output ---------- */
+  .prompt-block {
+    background: var(--surface); border: 1.5px solid var(--text); border-radius: 6px;
+    margin-top: 28px;
+  }
+  .prompt-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+  }
+  .prompt-bar .eyebrow { margin: 0; }
+  .copy-btn {
+    font: 600 13px/1 var(--font-body); color: #FFF; background: var(--accent);
+    border: none; border-radius: 5px; padding: 9px 16px; cursor: pointer;
+  }
+  .copy-btn:hover { background: #A05224; }
+  #promptOut {
+    margin: 0; padding: 18px; font: 13px/1.65 var(--font-mono);
+    white-space: pre-wrap; overflow-x: auto; color: var(--text);
+  }
+
+  @media (max-width: 640px) {
+    .card dl { grid-template-columns: 1fr; row-gap: 2px; }
+    .card dt { padding-top: 8px; }
+    .org-compare { grid-template-columns: 1fr; }
+    .term-head .t-gloss { display: none; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .chip, .payoff, .copy-btn { transition: background 0.15s, border-color 0.15s, color 0.15s; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Discovery · Unknowns pass · Both gaps</div>
+    <h1>Soriza's CPO layer — what you don't know yet</h1>
+    <p class="lede">Before planning the AI-native startup layer, two blind spots need light: how this repo's harness actually constrains a "department", and how real product &amp; design organizations name and run the work you described.</p>
+    <p class="meta-line">Worktree: <b>.claude/worktrees/soriza-cpo-department</b> · Page: specs/soriza-cpo-department/discovery/unknowns.html</p>
+  </header>
+
+  <!-- ============ CODEBASE PASS ============ -->
+  <section class="section">
+    <div class="section-head">
+      <div class="eyebrow">Pass one · Codebase</div>
+      <h2>Unknowns board — seven landmines in this repo</h2>
+      <p class="section-sub">Each card: what's true in the code, why it bites the CPO plan, and what to do instead. Set a disposition on each — the prompt at the bottom rebuilds live.</p>
+    </div>
+    <div id="cards"></div>
+  </section>
+
+  <!-- ============ DOMAIN PASS ============ -->
+  <section class="section">
+    <div class="section-head">
+      <div class="eyebrow">Pass two · Domain</div>
+      <h2>The vocabulary of product &amp; design work</h2>
+      <p class="section-sub">You said you have no idea what a real company looks like. Here is the mental model, the words professionals use, and the quality bar they judge by — enough to prompt the next pass with real vocabulary.</p>
+    </div>
+
+    <h3 style="font-family: var(--font-display); font-size: 21px; margin: 8px 0 4px;">Mental model — four corrections</h3>
+    <ol class="steps">
+      <li><div>
+        <h4>You're describing a studio, not a product company</h4>
+        <p>A CPO exists where a company owns its <em>own</em> product and roadmap. Soriza does client work — in the real world that is an <strong>agency / design studio</strong>, run by a Creative Director, a Strategist, and a Producer. The client owns "what"; the studio owns how it's discovered, defined, designed, and delivered. Keep the CPO name if you like it — but staff the department with studio-shaped roles, or the titles will pull the workflow toward roadmaps and backlogs you don't have.</p>
+      </div></li>
+      <li><div>
+        <h4>All design work runs the double diamond</h4>
+        <p><strong>Discover</strong> (learn the client's world) → <strong>Define</strong> (agree the brief) → <strong>Design</strong> (wireframe → mockup → prototype) → <strong>Deliver</strong> (handoff). Your workflow step 1 is Discover + Define; your step 3 is Design; the future CTO department is Deliver. Naming the phases lets each one have its own gate.</p>
+      </div></li>
+      <li><div>
+        <h4>Fidelity is a ladder you climb with the client</h4>
+        <p>Brief → sitemap/IA → wireframe → mockup → prototype. Each rung locks one class of decision so the next rung is cheap. Jumping from brief straight to a polished prototype means the client reacts to structure, layout, and color all at once — and every revision is expensive.</p>
+      </div></li>
+      <li><div>
+        <h4>"Did the client give us enough?" is a solved problem</h4>
+        <p>It's called <strong>client intake</strong> plus a <strong>Definition of Ready</strong>: a discovery questionnaire that fills the brief, and a checklist that must pass before design starts. Your instinct to want "our own standards" is exactly right — you just don't need to invent the concept, only Soriza's version of it.</p>
+      </div></li>
+    </ol>
+
+    <div class="org-compare">
+      <div class="org-col">
+        <div class="org-label">Your drafted org chart</div>
+        <div class="org-node"><span class="org-title">CPO</span></div>
+        <div class="org-node org-indent-1"><span class="org-title">Head of Product</span></div>
+        <div class="org-node org-indent-2"><span class="org-title">Product Manager</span></div>
+        <div class="org-node org-indent-2 crossed"><span class="org-title">Product Owner</span><span class="org-why">Scrum-internal role — redundant with PM in a studio</span></div>
+        <div class="org-node org-indent-2 crossed"><span class="org-title">Product Intelligence</span><span class="org-why">not a real title — you mean Product Analyst / UX Researcher</span></div>
+        <div class="org-node org-indent-1"><span class="org-title">Design Lead</span></div>
+        <div class="org-node org-indent-2"><span class="org-title">UX Researcher</span></div>
+        <div class="org-node org-indent-2"><span class="org-title">UX Designer</span></div>
+        <div class="org-node org-indent-2"><span class="org-title">UI Designer</span></div>
+      </div>
+      <div class="org-col">
+        <div class="org-label">What the harness can actually run</div>
+        <div class="org-node lead"><span class="org-title">CPO orchestrator</span><span class="org-why">one lead session/command — deploys everyone directly</span></div>
+        <div class="org-node org-indent-1"><span class="org-title">intake-interviewer</span><span class="org-why">runs the client questionnaire, checks Definition of Ready</span></div>
+        <div class="org-node org-indent-1"><span class="org-title">brief-writer</span><span class="org-why">turns intake into the project brief</span></div>
+        <div class="org-node org-indent-1"><span class="org-title">section-brief author</span><span class="org-why">hero, social proof, features, CTA, footer — one job each</span></div>
+        <div class="org-node org-indent-1"><span class="org-title">wireframer</span><span class="org-why">IA/sitemap → lo-fi structure</span></div>
+        <div class="org-node org-indent-1"><span class="org-title">ux-researcher</span><span class="org-why">audience, competitors, reference sites</span></div>
+        <p class="org-caption" style="margin-left: 0;">"Head of Product" and "Design Lead" become <em>phases</em> (Define, Design), not agents — subagents can't manage subagents.</p>
+      </div>
+      <p class="org-caption">The signature correction of this pass: job titles flatten into one orchestrator plus deliverable-shaped specialists.</p>
+    </div>
+
+    <h3 style="font-family: var(--font-display); font-size: 21px; margin: 40px 0 4px;">Vocabulary ladder — seven terms to prompt with</h3>
+    <div id="ladder"></div>
+
+    <h3 style="font-family: var(--font-display); font-size: 21px; margin: 40px 0 4px;">Job titles — reality check</h3>
+    <div class="table-scroll">
+      <table class="titles-table">
+        <tr><th>You wrote</th><th>Reality</th></tr>
+        <tr><td>Product Owner</td><td>A Scrum-framework role, not an org title. In a small studio it duplicates the Product Manager — pick one.</td></tr>
+        <tr><td>Product Intelligence</td><td>Not a standard title. The real ones: <strong>Product Analyst</strong> (data), <strong>Product Ops</strong> (process), <strong>UX Researcher</strong> (users).</td></tr>
+        <tr><td>Design Lead's team — "any others?"</td><td>Yes: <strong>Content Designer / UX Writer</strong> (words are design material), <strong>Art Director</strong> (visual direction across projects), <strong>Design Systems Designer</strong> (the reusable component library).</td></tr>
+        <tr><td>Missing entirely</td><td>The client-facing side every agency has: <strong>Account Manager / Producer</strong> — owns client communication and scheduling. Your "cookbook for talking to clients" is this role's playbook, not the PM's.</td></tr>
+      </table>
+    </div>
+
+    <h3 style="font-family: var(--font-display); font-size: 21px; margin: 40px 0 4px;">The quality bar professionals judge by</h3>
+    <ul class="quality">
+      <li>A designer who never met the client could design from the brief alone.</li>
+      <li>IA is settled before wireframes; wireframes are approved before any visual design.</li>
+      <li>Every section brief names that section's single job and the one action it should cause.</li>
+      <li>Prototypes use real copy and real client assets — never lorem ipsum.</li>
+      <li>One design system feeds every client project; assets are tokens and components, not a folder of downloads.</li>
+      <li>Every client round ends with a written decision log: what was approved, what changed, what's open.</li>
+    </ul>
+
+    <h3 style="font-family: var(--font-display); font-size: 21px; margin: 40px 0 4px;">Payoff prompts — toggle to add a focus</h3>
+    <div class="payoffs" id="payoffs"></div>
+  </section>
+
+  <!-- ============ PROMPT OUTPUT ============ -->
+  <section class="section">
+    <div class="section-head">
+      <div class="eyebrow">Hand-off</div>
+      <h2>Improved prompt</h2>
+      <p class="section-sub">Rebuilt live from your card dispositions, notes, and toggled focuses. Copy it into the recommended next pass: <span style="font-family: var(--font-mono); font-size: 13px;">/harness-layer:harness-brainstorm</span>.</p>
+    </div>
+    <div class="prompt-block">
+      <div class="prompt-bar">
+        <div class="eyebrow">Copy as prompt</div>
+        <button class="copy-btn" id="copyBtn">Copy prompt</button>
+      </div>
+      <pre id="promptOut"></pre>
+    </div>
+  </section>
+</div>
+
+<script>
+  const CARDS = [
+    {
+      id: "pipeline-shape",
+      title: "The pipeline builds one change at a time; a department is many",
+      what: "The harness pipeline (plan → build → review → ship) is strictly per-task: one GitHub issue, one worktree, one spec folder under specs/<slug>/, one PR. Every plan gets exactly one issue and one convention branch (harness-plan.md's Worktree & Handoff).",
+      bites: "Prompted as \"build the CPO department\", harness-plan will cram an entire organization into one spec and one PR — unreviewable, and the Codex gate (2-round cap) will thrash on it.",
+      instead: "Frame it as an epic — the epic issue form and specs/_templates/issues/epic.md already exist — decomposed into child issues (memory rules, intake skill, role agents, project home), each its own pipeline run.",
+      constraint: "Scope the work as an epic with child issues — one pipeline run per child (the epic issue form and specs/_templates/issues/epic.md already exist); never one giant spec."
+    },
+    {
+      id: "flat-roster",
+      title: "Org charts can't nest — the harness runs two levels, not five",
+      what: "model-selection.md: fable is orchestrator-only, never a subagent; and subagents cannot deploy subagents. The runnable shapes are one orchestrator + flat specialists, agent teams, or Workflow scripts (all mirrored in the KB: subagents.md, agent-teams.md, workflows.md).",
+      bites: "A literal CPO → Head of Product → PM hierarchy fails at level three: the middle managers have no way to deploy anyone.",
+      instead: "Map titles to a flat roster: the CPO is the orchestrating session or command; \"Head of Product\" and \"Design Lead\" become phases or task groupings; specialists are deployed directly.",
+      constraint: "Flatten the org chart to one CPO orchestrator plus directly-deployed specialist agents — \"Head of Product\" and \"Design Lead\" are phases, not agents (subagents cannot deploy subagents; fable is orchestrator-only per model-selection.md)."
+    },
+    {
+      id: "roles-are-tasks",
+      title: "Every role agent is a context tax — map roles to deliverables, not titles",
+      what: "Only three agents exist today (.claude/agents/: code-simplifier, harness-simplifier, kb-fetcher) — all single-purpose. Agent descriptions load into sessions, and the repo rule is explicit: every line loads into context, keep it short. The meta-agent skill is the mandated authoring path.",
+      bites: "Eight job-title agents (PM, PO, UXR, UX, UI…) with overlapping \"product\" descriptions will bloat context and collide on delegation — the harness can't tell which \"product person\" a task belongs to.",
+      instead: "Author one agent per distinct deliverable — intake-interviewer, brief-writer, section-brief author, wireframer — each via /meta-agent, and only once a repeated task justifies it.",
+      constraint: "Author role agents one-per-deliverable (intake-interviewer, brief-writer, section-brief author, wireframer) via the meta-agent skill — never one-per-job-title, and only where a repeated task justifies the context cost."
+    },
+    {
+      id: "memory-exists",
+      title: "The department's memory system already exists — extend it, don't invent one",
+      what: "memory-series.md defines the entire shape: one rule family per domain under .claude/rules/<domain>/, path-scoped via paths: frontmatter, hub pointers in AGENTS.md, never a new root markdown file.",
+      bites: "\"The CPO department should have a similar memory system\" — building a parallel one splits the source of truth and violates the repo's memory contract.",
+      instead: "Create a new rule family, e.g. .claude/rules/soriza-cpo/ (intake-standards.md, brief-format.md, section-anatomy.md), path-scoped to the department's working folders, with one pointer added to AGENTS.md.",
+      constraint: "House all department doctrine (intake standards, Definition of Ready, brief format, section anatomy) as a new path-scoped rule family under .claude/rules/soriza-cpo/ per memory-series.md — no parallel memory system, no new root markdown files."
+    },
+    {
+      id: "kb-gap",
+      title: "The KB knows only harness tooling — and mirrors don't travel",
+      what: "ai-docs/sources.yaml has three groups: anthropic, openai, openai/codex — all agent/tooling docs, nothing on product, UX, or agency practice. Mirrors are untracked (commit 89b15a6): each machine re-syncs from sources.yaml, and this fresh worktree holds zero cached docs.",
+      bites: "The pipeline's expert layer grounds plan claims in the KB; a CPO plan finds nothing to ground on. And the client-communication cookbook is original doctrine, not an official page — the KB's read-only-mirror rules don't fit it.",
+      instead: "Register genuinely official/authoritative design sources via /harness-layer:kb add where they exist; homegrown standards live in the soriza-cpo rules family (or as ai-docs project notes) — decide which home, once.",
+      constraint: "Treat the KB gap explicitly: register authoritative design/UX sources via /harness-layer:kb add where official pages exist, and put homegrown doctrine in the rules family — never author fake mirrors."
+    },
+    {
+      id: "project-home",
+      title: "Client projects have no home in this repo",
+      what: "The repo root is pure harness — .claude, .agents, ai-docs, specs, tests, configs. specs/ is defined as planning files for harness plans, and git-workflow's vocabulary (PR templates per commit type, test evidence, review gates) is code-shaped.",
+      bites: "Step 1's deliverables — project brief, section briefs, IA, wireframes, assets, prototypes, decision log — have nowhere to live, and design work doesn't produce the PR artifacts the git workflow demands.",
+      instead: "Decide the boundary before planning: a clients/<name>/ (or projects/) home inside this repo, versus one repo per client with this repo as the shared harness. The choice shapes paths:-scoped rules, worktrees, and the git workflow's fit.",
+      constraint: "Decide the client-project home early — clients/<name>/ inside this repo vs one repo per client — before any rules or agents assume a path; note that the code-shaped git workflow (PR templates, test evidence) doesn't fit design deliverables as-is."
+    },
+    {
+      id: "human-boundary",
+      title: "\"Do it by Ringo\" contradicts \"all operations managed by agents\"",
+      what: "The mission says agents run the company, but workflow steps 2 (asset/template collection) and 3 (Claude Design prototyping) are marked \"Do it by Ringo\".",
+      bites: "The layer's architecture differs completely depending on whether those steps are permanently human, human-for-now, or agent-run-with-approval. If prototyping stays with Ringo, the CPO layer's real output is the brief packet Ringo feeds to Claude Design — a much smaller, sharper scope.",
+      instead: "Decide the human/agent boundary per workflow step, plus the escalation rule: what agents must always bring to a human.",
+      constraint: "Honor the current human/agent boundary: asset collection and Claude Design prototyping stay with Ringo for now, so the department's output is the brief packet (brief + section briefs + IA/wireframe + asset checklist) handed to Ringo."
+    }
+  ];
+
+  const TERMS = [
+    { name: "Creative brief / project brief", gloss: "the one-page contract of intent",
+      plain: "One page stating goals, audience, key message, scope, and constraints.",
+      mech: "Everything downstream traces back to it; disagreements are resolved by pointing at it, not by opinion.",
+      pro: "“Nothing goes to design until the brief is signed off.”" },
+    { name: "Discovery & client intake", gloss: "structured questioning of the client",
+      plain: "A questionnaire plus interview that extracts what the client actually needs — including what they don't know to tell you.",
+      mech: "Gaps become logged assumptions the client must confirm; the intake feeds the brief field by field.",
+      pro: "“Intake surfaced that they have no brand guidelines — add a moodboard round before design.”" },
+    { name: "Information architecture (IA) & sitemap", gloss: "what pages exist, before pixels",
+      plain: "The tree of pages and how content nests, decided before any visual work.",
+      mech: "Content is sorted into a hierarchy; navigation mirrors the tree.",
+      pro: "“Settle the IA before wireframes, or you'll wireframe pages that shouldn't exist.”" },
+    { name: "Wireframe → mockup → prototype", gloss: "the fidelity ladder",
+      plain: "Boxes-and-labels → pixel-true visuals → clickable simulation.",
+      mech: "Each rung isolates one class of feedback: structure, then look, then flow.",
+      pro: "“Feedback on a wireframe is about layout — never let the client argue color there.”" },
+    { name: "Landing-page anatomy & content-first design", gloss: "your “section briefs”, named",
+      plain: "Hero, social proof, features, CTA, footer — the standard anatomy of a conversion page. Copy is written before layout.",
+      mech: "Each section has one job and one desired action; the hero carries the value proposition in five seconds, social proof de-risks, the CTA converts.",
+      pro: "“What's this section's job? If it doesn't have one, cut it.”" },
+    { name: "Design system / component library", gloss: "what your template collection becomes",
+      plain: "Reusable tokens (color, type, spacing) and components shared across all client work.",
+      mech: "Step 2's asset gathering matures into a system: each new prototype assembles from it, faster and more consistent than starting fresh.",
+      pro: "“Build the portfolio as a design system, not a folder of downloads.”" },
+    { name: "Definition of Ready & design handoff", gloss: "the two gates",
+      plain: "DoR: the checklist that must pass before design starts. Handoff: the annotated package (assets, specs, states) that lets another team build it.",
+      mech: "DoR gates intake → design; handoff gates design → the future CTO department.",
+      pro: "“This doesn't meet DoR — we're missing brand assets and a primary CTA.”" }
+  ];
+
+  const PAYOFFS = [
+    { id: "dor", tag: "Department doctrine",
+      text: "Draft Soriza's client intake questionnaire and Definition of Ready as the first rules in .claude/rules/soriza-cpo/ — the checklist that gates discovery → design." },
+    { id: "roster", tag: "Agent roster",
+      text: "Design the CPO layer as a flat roster: one orchestrator plus deliverable-shaped agents (intake-interviewer, brief-writer, section-brief author, wireframer), each authored via the meta-agent skill." },
+    { id: "home", tag: "Project home",
+      text: "Propose the client-project home first: a clients/<name>/ structure holding brief, section briefs, IA, wireframes, asset checklist, and decision log." }
+  ];
+
+  const state = {
+    disp: Object.fromEntries(CARDS.map(c => [c.id, c.id === "human-boundary" ? "discuss" : "resolve"])),
+    notes: Object.fromEntries(CARDS.map(c => [c.id, ""])),
+    payoffs: Object.fromEntries(PAYOFFS.map(p => [p.id, false]))
+  };
+
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // ---- Render cards ----
+  const cardsEl = document.getElementById("cards");
+  CARDS.forEach(c => {
+    const el = document.createElement("article");
+    el.className = "card";
+    el.id = "card-" + c.id;
+    el.innerHTML =
+      '<div class="card-slug">' + esc(c.id) + "</div>" +
+      "<h3>" + esc(c.title) + "</h3>" +
+      "<dl>" +
+      "<dt>What</dt><dd>" + esc(c.what) + "</dd>" +
+      "<dt>Why it bites</dt><dd>" + esc(c.bites) + "</dd>" +
+      "<dt>Instead</dt><dd>" + esc(c.instead) + "</dd>" +
+      "</dl>" +
+      '<div class="chips" role="group" aria-label="Disposition">' +
+      '<button class="chip" data-d="resolve">Resolve in plan</button>' +
+      '<button class="chip" data-d="accept">Accept the risk</button>' +
+      '<button class="chip chip-discuss" data-d="discuss">Needs discussion</button>' +
+      "</div>" +
+      '<input class="note-input" type="text" placeholder="Optional note — folded into the prompt" aria-label="Note for ' + esc(c.title) + '">';
+    cardsEl.appendChild(el);
+    el.querySelectorAll(".chip").forEach(btn => {
+      btn.addEventListener("click", () => { state.disp[c.id] = btn.dataset.d; updateAll(); });
+    });
+    el.querySelector(".note-input").addEventListener("input", e => {
+      state.notes[c.id] = e.target.value; updatePrompt();
+    });
+  });
+
+  // ---- Render vocabulary ladder ----
+  const ladderEl = document.getElementById("ladder");
+  TERMS.forEach((t, i) => {
+    const el = document.createElement("div");
+    el.className = "term" + (i === 0 ? " open" : "");
+    el.innerHTML =
+      '<button class="term-head" aria-expanded="' + (i === 0) + '">' +
+      '<span class="t-name">' + esc(t.name) + "</span>" +
+      '<span class="t-gloss">' + esc(t.gloss) + "</span>" +
+      '<span class="t-caret">' + (i === 0 ? "−" : "+") + "</span>" +
+      "</button>" +
+      '<div class="term-body">' +
+      '<p><span class="t-tag">Plain</span>' + esc(t.plain) + "</p>" +
+      '<p><span class="t-tag">Mechanism</span>' + esc(t.mech) + "</p>" +
+      '<p class="t-pro"><span class="t-tag">Pro usage</span>' + esc(t.pro) + "</p>" +
+      "</div>";
+    ladderEl.appendChild(el);
+    const head = el.querySelector(".term-head");
+    head.addEventListener("click", () => {
+      const open = el.classList.toggle("open");
+      head.setAttribute("aria-expanded", open);
+      head.querySelector(".t-caret").textContent = open ? "−" : "+";
+    });
+  });
+
+  // ---- Render payoff toggles ----
+  const payoffsEl = document.getElementById("payoffs");
+  PAYOFFS.forEach(p => {
+    const btn = document.createElement("button");
+    btn.className = "payoff";
+    btn.setAttribute("aria-pressed", "false");
+    btn.innerHTML = '<span class="p-tag">' + esc(p.tag) + "</span>" + esc(p.text);
+    btn.addEventListener("click", () => {
+      state.payoffs[p.id] = !state.payoffs[p.id];
+      btn.setAttribute("aria-pressed", state.payoffs[p.id]);
+      updatePrompt();
+    });
+    payoffsEl.appendChild(btn);
+  });
+
+  // ---- Prompt assembly ----
+  function updatePrompt() {
+    const resolved = CARDS.filter(c => state.disp[c.id] === "resolve");
+    const accepted = CARDS.filter(c => state.disp[c.id] === "accept");
+    const discuss  = CARDS.filter(c => state.disp[c.id] === "discuss");
+
+    const parts = [];
+    parts.push(
+      "Reposition this repo: the harness layer stays the foundation, and on top of it we build the first slice of Soriza's AI-native startup layer — a client web-design studio whose operations agents run. Start with the product/design department (working name: CPO department, staffed with studio-shaped roles per agency practice: the client owns “what”, the department owns discover → define → design; delivery/production belongs to a future CTO department and is out of scope). The department's workflow follows the fidelity ladder — intake → brief → sitemap/IA → wireframe → section briefs (hero, social proof, features, CTA, footer, each with one job and one desired action) — gated by a client intake questionnaire and a Definition of Ready."
+    );
+
+    parts.push(
+      "Before proposing anything, walk through: .claude/rules/memory-series.md, .claude/rules/model-selection.md, .claude/rules/task-tools.md, ai-docs/sources.yaml, and the existing agents under .claude/agents/."
+    );
+
+    if (resolved.length) {
+      parts.push("Constraints to fold into the design (from the unknowns pass):\n" +
+        resolved.map(c => "- " + c.constraint).join("\n"));
+    }
+    if (accepted.length) {
+      parts.push("Accepted risks — noted, do not redesign around them:\n" +
+        accepted.map(c => "- " + c.title + ".").join("\n"));
+    }
+
+    const focuses = PAYOFFS.filter(p => state.payoffs[p.id]);
+    if (focuses.length) {
+      parts.push("Prioritize these first deliverables:\n" + focuses.map(p => "- " + p.text).join("\n"));
+    }
+
+    const notes = CARDS.filter(c => state.notes[c.id].trim());
+    if (notes.length) {
+      parts.push("Ringo's notes:\n" + notes.map(c => "- On " + c.id + ": " + state.notes[c.id].trim()).join("\n"));
+    }
+
+    if (discuss.length) {
+      parts.push("Open decisions — surface options but stop for my confirmation before locking:\n" +
+        discuss.map(c => "- " + c.title + ".").join("\n"));
+    }
+
+    parts.push("Worktree: .claude/worktrees/soriza-cpo-department");
+    document.getElementById("promptOut").textContent = parts.join("\n\n");
+  }
+
+  function updateAll() {
+    CARDS.forEach(c => {
+      const el = document.getElementById("card-" + c.id);
+      el.classList.toggle("discussing", state.disp[c.id] === "discuss");
+      el.querySelectorAll(".chip").forEach(btn => {
+        btn.setAttribute("aria-pressed", btn.dataset.d === state.disp[c.id]);
+      });
+    });
+    updatePrompt();
+  }
+
+  document.getElementById("copyBtn").addEventListener("click", () => {
+    navigator.clipboard.writeText(document.getElementById("promptOut").textContent).then(() => {
+      const b = document.getElementById("copyBtn");
+      b.textContent = "Copied!";
+      setTimeout(() => { b.textContent = "Copy prompt"; }, 1500);
+    });
+  });
+
+  updateAll();
+</script>
