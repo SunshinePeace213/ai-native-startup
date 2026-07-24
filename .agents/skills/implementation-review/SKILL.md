@@ -110,6 +110,11 @@ Step-by-Step Tasks; Validation FAILs or unexecuted commands (see above); code th
 locked decision in `decisions.md`; or scope drift. Plus a generic defect scan — real bugs
 demonstrable from the diff itself: logic errors, broken references, wrong behavior.
 
+When a defect lies in the **plan itself** — the planned mechanism cannot work as specified, or
+implementing the plan faithfully produces the wrong behavior — append `(spec-defect)` after the
+finding's new/repeat tag and say what the spec got wrong: the fix belongs in the spec, not the
+diff, and the caller routes it back to planning.
+
 **B. Selected-lens and KB findings.** Real bugs, standards violations, silent failures, missing
 critical test coverage, dangerous type designs, comment rot, and documented-behavior contradictions
 are **blocking**; `review-simplification`, ungrounded claims, and stale grounding are **advisory**
