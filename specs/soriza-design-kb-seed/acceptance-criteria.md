@@ -1,0 +1,102 @@
+# Acceptance Criteria: Seed the design KB group + worktree availability (child #44 of epic #43)
+
+> The definition of "done" for [spec.md](./spec.md). Every criterion is observable and testable, and
+> every task in tasks.md should map to at least one criterion here. Epic traceability: AC1
+> realizes epic AC2's pre-merge half; AC2–AC5 realize epic AC3; AC6 keeps the PR surface
+> exact. Epic AC2's worktree-receives-mirrors half is verified by the epic's own
+> `validate-all` after the post-merge hydration.
+
+## Acceptance Criteria
+
+- **AC1** — `.worktreeinclude` contains the single pattern line `ai-docs/*` with one comment
+  line directly above it; the pre-existing lines are unchanged. Under the WorktreeCreate
+  hook's exact matching semantics (`fnmatch` of each pattern against the relative path or
+  basename of every untracked-and-ignored file), the pattern matches every `ai-docs/` file
+  reported by `git ls-files -oi --exclude-standard` in this worktree.
+- **AC2** — `ai-docs/sources.yaml` carries a `design` group with exactly five entries
+  matching the spec's identity table (one w3.org, one web.dev/learn/design, exactly two
+  `nngroup.com/articles/` with one containing `homepage`, one fonts.google.com/knowledge) —
+  each with a canonical `url`, a `file` under `design/`, and a non-null `fetched` date, and
+  each mirror file existing on disk with frontmatter (`source:` matching the manifest url,
+  `fetched:` matching the manifest date) and a `> **In here:**` line. Any substitution from
+  the identity table is recorded in decisions.md; no mirror hand-authored.
+- **AC3** — The `anthropic` group carries exactly one entry whose url contains
+  `code.claude.com/docs/en/memory`, with a `file` under `anthropic/`, a non-null `fetched`
+  date, and its mirror on disk with matching frontmatter.
+- **AC4** — `ai-docs/index.md` exists in this worktree and lists all six new files (the five
+  `design/` mirrors and the memory mirror).
+- **AC5** — Manifest hygiene: total entry count ≤ 40 (expected 32) and no two entries share
+  a canonical url.
+- **AC6** — The branch's tracked change surface outside `specs/` is exactly
+  `.worktreeinclude` and `ai-docs/sources.yaml`; git tracks nothing else under `ai-docs/`
+  (mirrors and `ai-docs/index.md` remain gitignored, never force-added).
+
+## Validation Commands
+
+Run these to prove the criteria above — from the worktree root
+(`/Users/ringo/Desktop/ai-native-startup/.claude/worktrees/soriza-design-kb-seed`), after the
+build tasks complete. Assertion scripts exit non-zero on any failure.
+
+- `grep -n -B1 "^ai-docs/\*$" .worktreeinclude` — verifies AC1 (pattern present, comment
+  line above it). A pass shows the comment line then `ai-docs/*`.
+- `uv run python -c "
+  from fnmatch import fnmatch
+  from pathlib import Path
+  import subprocess
+  pats = [l.strip() for l in Path('.worktreeinclude').read_text().splitlines()
+          if l.strip() and not l.strip().startswith('#')]
+  files = subprocess.run(['git','ls-files','-oi','--exclude-standard'],
+                         capture_output=True, text=True, check=True).stdout.splitlines()
+  kb = [f.strip() for f in files if f.strip().startswith('ai-docs/')]
+  assert kb, 'no gitignored ai-docs files on disk to test against — run the kb tasks first'
+  missed = [f for f in kb if not any(fnmatch(f, p.lstrip('/')) or fnmatch(Path(f).name, p) for p in pats)]
+  assert not missed, missed
+  print('AC1 ok: %d KB files matched by the include patterns' % len(kb))"` — verifies AC1
+  (the hook's exact matching semantics, simulated in-place; mirrors must exist first).
+- `uv run python -c "
+  import yaml
+  m = yaml.safe_load(open('ai-docs/sources.yaml'))
+  d = m.get('design', [])
+  assert len(d) == 5 and all(e['fetched'] and e['file'].startswith('design/') for e in d), d
+  urls = [e['url'] for e in d]
+  for marker in ['w3.org', 'web.dev/learn/design', 'fonts.google.com/knowledge']:
+      assert sum(marker in u for u in urls) == 1, 'missing/duplicate source: ' + marker
+  assert sum('nngroup.com/articles/' in u for u in urls) == 2, 'expected exactly two NN/g articles'
+  assert any('nngroup.com' in u and 'homepage' in u for u in urls), 'NN/g homepage cornerstone missing'
+  mem = [e for e in m['anthropic'] if 'code.claude.com/docs/en/memory' in e['url']]
+  assert len(mem) == 1 and mem[0]['fetched'] and mem[0]['file'].startswith('anthropic/'), mem
+  idx = open('ai-docs/index.md').read()
+  for e in d + mem:
+      assert e['file'] in idx, 'index.md missing entry for ' + e['file']
+  print('AC2/AC3/AC4 ok')"` — verifies AC2 + AC3 + AC4 (source identities, groups, fetched
+  dates, index rows; the epic-level check additionally pins `w3.org/WAI/WCAG22/quickref` —
+  keep that identity unless a documented swap says otherwise).
+- `uv run python -c "
+  import yaml
+  from pathlib import Path
+  m = yaml.safe_load(open('ai-docs/sources.yaml'))
+  new = m.get('design', []) + [e for e in m['anthropic'] if 'code.claude.com/docs/en/memory' in e['url']]
+  assert len(new) == 6, [e['url'] for e in new]
+  for e in new:
+      text = (Path('ai-docs') / e['file']).read_text()
+      head = text[:400]
+      assert head.startswith('---'), e['file'] + ': no frontmatter'
+      assert 'source: ' + e['url'] in head, e['file'] + ': frontmatter source != manifest url'
+      assert 'fetched: ' + str(e['fetched']) in head, e['file'] + ': frontmatter fetched != manifest date'
+      assert '> **In here:**' in text, e['file'] + ': no In-here line'
+  print('AC2/AC3 mirror integrity ok')"` — verifies AC2 + AC3 (mirrors exist, frontmatter
+  agrees with the manifest — a fetched mirror, not a hand-authored file).
+- `uv run python -c "
+  import yaml
+  m = yaml.safe_load(open('ai-docs/sources.yaml'))
+  entries = [e for g in m.values() for e in g]
+  urls = [e['url'] for e in entries]
+  assert len(entries) <= 40, 'over the manifest cap: %d' % len(entries)
+  assert len(set(urls)) == len(urls), 'duplicate canonical URLs in the manifest'
+  print('AC5 ok: %d entries' % len(entries))"` — verifies AC5.
+- `test "$(git ls-files ai-docs/)" = "ai-docs/sources.yaml" && echo "AC6 tracked-surface ok"` —
+  verifies AC6 (the manifest is the only tracked file under `ai-docs/`).
+- `git check-ignore -q ai-docs/index.md && echo "AC6 ignore ok"` — verifies AC6 (the
+  regenerated index stays ignored).
+- `git diff --name-only origin/main...HEAD -- ':!specs'` — verifies AC6. A pass prints
+  exactly two lines: `.worktreeinclude` and `ai-docs/sources.yaml`.
