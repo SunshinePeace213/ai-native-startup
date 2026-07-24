@@ -14,7 +14,7 @@ hooks:
 
 # Harness Plan
 
-Turn `USER_PROMPT` (ideally the finalized prompt from `/harness-layer:harness-interview`) into a four-file spec folder the team can build from — for any coding OR harness-layer task. Resolve what the codebase and KB answer, fill only genuinely-open gaps through the `Readiness Gate`, and never re-litigate a locked ledger. When the work touches the harness layer, ground every claim in the KB first (see `Domain Knowledge`); otherwise plan straight from the codebase. Draft at `specs/<name-of-plan>/` on the chain's worktree (or a fresh one), push to GitHub, gate with a Codex peer review (`spec-review`, driven by a `sonnet` runner), then publish the implementation-plan page for the user's async review.
+Turn `USER_PROMPT` (ideally the finalized prompt from `/harness-layer:harness-interview`) into a four-file spec folder the team can build from — for any coding OR harness-layer task. Resolve what the codebase and KB answer, fill only genuinely-open gaps through the `Readiness Gate`, and never re-litigate a locked ledger. When the work touches the harness layer, ground every claim in the KB first (see `Domain Knowledge`); otherwise plan straight from the codebase. Draft at `specs/<name-of-plan>/` on the chain's worktree (or a fresh one), push to GitHub, gate with a Codex peer review (`spec-review`, driven by the `codex-runner` subagent), then publish the implementation-plan page for the user's async review.
 
 ## Variables
 
@@ -27,7 +27,7 @@ STALE_AFTER: `30` days — a KB doc older than this is stale
 
 ## Instructions
 
-- **PLANNING ONLY** — draft the spec; do not build, write code, or deploy builder agents. Helper subagents are allowed: the `claude-code-guide` KB cross-check, `kb-fetcher` for KB mirrors, and the `sonnet` Codex review runner — never builders; you never write mirror content yourself. Output is the four-file spec folder plus its artifacts — drafted in the worktree, then committed and pushed to `origin` (plan docs plus any gap-filled KB docs, never implementation code).
+- **PLANNING ONLY** — draft the spec; do not build, write code, or deploy builder agents. Helper subagents are allowed: the `claude-code-guide` KB cross-check, `kb-fetcher` for KB mirrors, and the `codex-runner` review runner — never builders; you never write mirror content yourself. Output is the four-file spec folder plus its artifacts — drafted in the worktree, then committed and pushed to `origin` (plan docs plus any gap-filled KB docs, never implementation code).
 - If no `USER_PROMPT` is provided, stop and ask the user for it.
 - Think deeply (ultrathink) about the best approach; determine the task type (feat|fix|docs|style|refactor|perf|test|chore) and complexity (simple|medium|complex).
 - Understand the codebase directly — application code and any existing harness patterns under `.claude/` and `.agents/` — without subagents, save the helpers above.
@@ -71,7 +71,7 @@ IMPORTANT: **PLANNING ONLY** — do not execute, build, or deploy builder agents
 8. Create & Link Issue — first cycle only: file the GitHub issue from the ledger + Assumptions and link its convention branch (see `Worktree & Handoff`).
 9. Write the Spec Folder — create `specs/<name-of-plan>/` and fill all four files from `specs/_templates/`; append `## KB References` to decisions.md when the expert layer is active; write any gap-filled KB docs and their `ai-docs/sources.yaml` entries; record the issue, branch, worktree path, and review profile in spec.md's `## Tracking`.
 10. Commit & Push — commit the spec folder (plus gap-filled KB docs) with a `Refs #N` footer, push its branch to `origin`, then post the plan-links comment on the issue (see `Worktree & Handoff`).
-11. Cross-Review — a `sonnet` runner has Codex review the spec with `CROSS_REVIEW_SKILL`, at most `MAX_REVIEW_ROUNDS` new rounds this cycle, fixing blocking findings each round (see `Codex Cross-Review`).
+11. Cross-Review — the `codex-runner` subagent has Codex review the spec with `CROSS_REVIEW_SKILL`, at most `MAX_REVIEW_ROUNDS` new rounds this cycle, fixing blocking findings each round (see `Codex Cross-Review`).
 12. Implementation-Plan Page — after the gate settles, author and publish the page per `Plan Artifacts`, commit and push it.
 13. Report — summarize the spec folder and its key components (see `Report`).
 
@@ -85,7 +85,8 @@ specs/<name-of-plan>/
 ├── spec.md                # what & why: task, objective, non-goals, locked decisions, tracking, review record
 ├── tasks.md               # how & who: phases, team members, step-by-step tasks
 ├── decisions.md           # the interview record (+ ## KB References when the expert layer is active)
-├── acceptance-criteria.md # done: testable criteria + validation commands
+├── acceptance-criteria.md # done: testable criteria + one-line, stage-tagged validation commands
+├── checks/                # committed check scripts the validation commands invoke (one per criterion)
 ├── artifacts/             # implementation-plan page (+ reference map when porting semantics)
 └── reviews/               # Codex verdicts
 ```
@@ -125,22 +126,25 @@ When the worktree already holds `specs/<slug>/spec.md`:
 
 ## Codex Cross-Review
 
-Once the plan is pushed, a `sonnet` review runner drives Codex as a peer reviewer inside the worktree — at most `MAX_REVIEW_ROUNDS` new rounds this cycle, round numbers continuing across cycles. Before each round, pick the Codex model and reasoning effort per the model-selection rule based on the spec's complexity. Beyond ordinary spec defects, when the expert layer is active Codex verifies the spec's harness claims against the KB docs, and it always challenges the approach for a simpler, cleaner design. Snapshot the reviewed head SHA before each round; check every push's exit status directly. Loop per round N:
+Once the plan is pushed, the `codex-runner` subagent drives Codex as a peer reviewer inside the worktree — at most `MAX_REVIEW_ROUNDS` new rounds this cycle, round numbers continuing across cycles. Before each round, pick the Codex model and reasoning effort per the model-selection rule based on the spec's complexity, and snapshot `REVIEWED_HEAD_SHA=$(git rev-parse HEAD)`; for rounds N>1 also set `BASE_SHA` to the prior round's reviewed head (from its report) — round 1 is a full exhaustive review, later rounds are delta-scoped by the skill. Beyond ordinary spec defects, when the expert layer is active Codex verifies the spec's harness claims against the KB docs, and it always challenges the approach for a simpler, cleaner design. Check every push's exit status directly. Loop per round N:
 
-1. **Spawn the review runner.** Deploy it with the `Agent` tool — `subagent_type: "general-purpose"`, `model: "sonnet"`, `run_in_background: false` — never run `codex exec` yourself. Its prompt carries the round number, the worktree root, the Codex model + effort, and the exact command below. The runner runs the command via Bash, checks the exit status and whether the verdict line was written, re-runs the same command once if Codex crashed / exited non-zero / wrote no verdict, and returns ONLY the round verdict (`approved` | `changes-requested`) and the report's `**Issue-comment digest:**` paragraph. It touches no git and no gh. The command:
+1. **Spawn the runner.** Deploy the `Agent` tool with `subagent_type: "codex-runner"`, `run_in_background: false` — never run `codex exec` yourself; the retry/verdict contract lives in the agent. Its prompt carries ROUND `<N>`, REPORT `specs/<name-of-plan>/reviews/codex-spec-review-round-<N>.md`, and COMMAND:
 
    ```bash
    codex exec -C "<worktree root>" -s workspace-write --model <codex-model> \
      -c model_reasoning_effort="<effort>" \
      "Use the spec-review skill to review round <N> of the plan at specs/<name-of-plan>/spec.md; \
-      read all four files and (when present) the KB docs listed in decisions.md ## KB References, \
+      REVIEWED_HEAD_SHA=<sha>; BASE_SHA=<prior reviewed head — rounds >1 only>; \
       write your verdict to specs/<name-of-plan>/reviews/codex-spec-review-round-<N>.md, \
       and return only the terse summary."
    ```
 
-2. **Verdict** from the runner's return (it matched `^### Round <N> — Verdict: (approved|changes-requested)$` in the report file). The runner reports no verdict after its one retry → take the `Needs-human exit` with reason `codex-unavailable`.
+2. **Verdict** from the runner's return. A `verdict: none` return → take the `Needs-human exit` with reason `codex-unavailable`.
 3. **Relay the digest.** Post the runner's digest paragraph verbatim as an issue comment keyed `<!-- codex-spec-round-N -->` (N = the round), upserted per `git-workflow.md` § Idempotent Marker Comments. Codex never calls `gh` — you relay.
-4. **`changes-requested`** → commit the report on its own (`git add specs/<name-of-plan>/reviews/`, one commit with `Refs #N`), fix the blocking findings, commit the fixes on their own (`git add specs/<name-of-plan>/ ai-docs/`, one commit with `Refs #N`), then push both commits together. Rounds left in the cycle → round N+1; otherwise take the `Needs-human exit`.
+4. **`changes-requested`** → commit the report on its own (`git add specs/<name-of-plan>/reviews/`, one commit with `Refs #N`), then read the report file and classify every blocking finding before touching the spec:
+   - **Churn guard — redesign, don't patch.** A finding whose fix would introduce a mechanism the spec doesn't already have (new state or marker, new protocol, new component) is design work, not a patch: stop the round-by-round cycle, switch to `Revision Mode` semantics in this run — redesign the affected mechanism coherently across the spec files and log the redesign in decisions.md — then resume with a fresh round. Never design a mechanism incrementally across review rounds.
+   - **Escalation on repeats.** A `repeat of CX<n>-<m>` tag means the prior fix failed — never re-fix at the same tier. First repeat: redo the fix one tier up per the model-selection rule (model or effort; at the top model, escalate effort and re-derive from root cause — never re-apply the failed approach). Second repeat (the finding it repeats was itself tagged repeat): reassign across providers — a `general-purpose` `sonnet` wrapper has Codex (`gpt-5.6-sol`, workspace-write on `specs/<name-of-plan>/`) author the fix via `codex exec`, and you review its edit before committing.
+   Fix the findings, commit the fixes on their own (`git add specs/<name-of-plan>/ ai-docs/`, one commit with `Refs #N`), then push both commits together. Rounds left in the cycle → round N+1; otherwise take the `Needs-human exit`.
 5. **`approved`** → gate passed; commit the report (`git add specs/<name-of-plan>/reviews/`, one commit with `Refs #N`) and push. Set spec.md `Status: Approved`, record any advisories, and record the outcome in spec.md's `## Codex Verification`.
 
 **Advisories never spawn extra rounds.** Better-approach and other non-blocking suggestions are recorded as a follow-ups checklist in decisions.md to feed a future plan — they are not fixed in this run and never trigger another review round.
