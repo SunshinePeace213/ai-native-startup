@@ -28,32 +28,34 @@ verify each acceptance criterion.
 - Keep the shared task list (TaskCreate/TaskUpdate) as the single source of truth for who is doing
   what; verify each task on the board before marking it complete.
 - Note the session id / name of each team member — that is how you reference them.
-- **Deployment mechanics:** deploy each task through the Agent tool passing its stamped `model`
-  alias. The Agent tool exposes no per-invocation effort and `general-purpose` carries no
-  definition frontmatter, so every deployment runs at session-inherited effort (subagent `effort`
-  is a definition-level field defaulting to session inheritance — `ai-docs/anthropic/subagents.md`).
+- **Deployment mechanics:** deploy each task as `Agent({subagent_type: "effort-<tier>",
+  model: "<stamped alias>"})` — the task's effort stamp selects the pinned-effort executor
+  definition (`.claude/agents/effort-<tier>.md`, whose frontmatter pins the effort) and the
+  task's model stamp passes per invocation (per-invocation `model` overrides the definition —
+  `ai-docs/anthropic/subagents.md`). A resumed agent keeps its spawn-time effort pin, so
+  consecutive tasks for one team member carry the same effort stamp.
 
 ## Team Members
 
 - **Builder**
   - **Name:** builder-hook
   - **Role:** the Stop gate — session-scoped re-target, then the lint extension, with their tests
-  - **Agent Type:** `general-purpose`
-  - **Resume:** true (task 2 continues task 1's context in the same files)
+  - **Agent Type:** `effort-medium`
+  - **Resume:** true (task 2 continues task 1's context in the same files, keeping the medium pin)
 - **Builder**
   - **Name:** builder-contracts
   - **Role:** the prompt-contract suite under `tests/harness-layer/prompts/`
-  - **Agent Type:** `general-purpose`
+  - **Agent Type:** `effort-high`
   - **Resume:** true
 - **Builder**
   - **Name:** builder-ci
   - **Role:** the GitHub Actions workflow
-  - **Agent Type:** `general-purpose`
+  - **Agent Type:** `effort-low`
   - **Resume:** true
 - **Validator**
   - **Name:** validator
   - **Role:** run every validation command and confirm each acceptance criterion
-  - **Agent Type:** `general-purpose`
+  - **Agent Type:** `effort-low`
   - **Resume:** false
 
 ## Step by Step Tasks
@@ -67,8 +69,8 @@ verify each acceptance criterion.
 - **Task ID:** retarget-stop-gate
 - **Depends On:** none
 - **Assigned To:** builder-hook
-- **Agent Type:** `general-purpose`
-- **Model / Effort:** `opus` / session-inherited (Agent tool passes `model` only)
+- **Agent Type:** `effort-medium`
+- **Model / Effort:** `opus` / `medium`
 - **Parallel:** false
 - **Satisfies:** AC1
 - Rework `check_spec_completeness.py`: parse stdin JSON; resolve root as `git -C <cwd> rev-parse --show-toplevel` → stdin `cwd` itself (if a directory) → `$CLAUDE_PROJECT_DIR` → process git toplevel → `Path.cwd()`; scan only `<root>/specs/*`; delete the `.claude/worktrees/*/specs` glob. Keep the `_templates` / discovery-only exclusions and newest-mtime selection within the root. Malformed stdin degrades down the chain — never crash, never exit 2 on plumbing.
@@ -82,8 +84,8 @@ verify each acceptance criterion.
 - **Task ID:** stop-gate-lint
 - **Depends On:** retarget-stop-gate
 - **Assigned To:** builder-hook
-- **Agent Type:** `general-purpose`
-- **Model / Effort:** `opus` / session-inherited (Agent tool passes `model` only)
+- **Agent Type:** `effort-medium` (resumed from task 1 — same pin)
+- **Model / Effort:** `opus` / `medium`
 - **Parallel:** false
 - **Satisfies:** AC2
 - In the same hook, after the required-sections check on the selected folder: parse `## Validation Commands` bullets (lines starting `-` in that section) of acceptance-criteria.md. Block (exit 2, naming file + offending bullet): no recognized stage tag (`[plan-time]`, `[child-build-time]`, `[post-merge]`); invoking neither `uv run --script specs/<plan>/checks/…` nor `uv run pytest …`; a `[plan-time]` script path that does not exist under the root.
@@ -96,8 +98,8 @@ verify each acceptance criterion.
 - **Task ID:** contract-tests
 - **Depends On:** none
 - **Assigned To:** builder-contracts
-- **Agent Type:** `general-purpose`
-- **Model / Effort:** `sonnet` / session-inherited (Agent tool passes `model` only)
+- **Agent Type:** `effort-high`
+- **Model / Effort:** `sonnet` / `high`
 - **Parallel:** true (alongside tasks 1–2 and 4)
 - **Satisfies:** AC3
 - First promote the `load_hook_module` fixture: move it verbatim from
@@ -116,8 +118,8 @@ verify each acceptance criterion.
 - **Task ID:** ci-workflow
 - **Depends On:** none
 - **Assigned To:** builder-ci
-- **Agent Type:** `general-purpose`
-- **Model / Effort:** `sonnet` / session-inherited (Agent tool passes `model` only)
+- **Agent Type:** `effort-low`
+- **Model / Effort:** `sonnet` / `low`
 - **Parallel:** true (alongside tasks 1–3)
 - **Satisfies:** AC4
 - Create `.github/workflows/harness-tests.yml`: `on: pull_request` with `types: [opened, synchronize, reopened, edited]` and `paths: ['.claude/**', '.agents/**', 'tests/**', 'pyproject.toml', 'uv.lock', 'specs/_templates/**', '.github/workflows/harness-tests.yml']`; one job with `if: ${{ !contains(github.event.pull_request.title, '[skip-ci]') }}`, running checkout → astral-sh/setup-uv (cache enabled) → `uv run pytest tests/harness-layer`.
@@ -129,8 +131,8 @@ verify each acceptance criterion.
 - **Task ID:** validate-all
 - **Depends On:** retarget-stop-gate, stop-gate-lint, contract-tests, ci-workflow
 - **Assigned To:** validator
-- **Agent Type:** `general-purpose`
-- **Model / Effort:** `sonnet` / session-inherited (Agent tool passes `model` only)
+- **Agent Type:** `effort-low`
+- **Model / Effort:** `sonnet` / `low`
 - **Parallel:** false
 - Run every command in acceptance-criteria.md → `## Validation Commands`.
 - Run the full `uv run pytest tests/harness-layer` suite (pre-hand-off rule) and report exact results — no skips glossed over.

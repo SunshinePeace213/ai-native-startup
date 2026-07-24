@@ -31,7 +31,9 @@
   skip when the PR title contains `[skip-ci]`.
 - **AC5** — Inventory accuracy at plan time. Every row of spec.md's
   `## Load-Bearing Contract Inventory` holds against the current tree: each named file exists and
-  contains its pinned frontmatter literal, section set, or clause.
+  contains its pinned frontmatter literal, section set, or clause — including the five
+  `.claude/agents/effort-*.md` pinned-effort executor definitions the build's deployment
+  mechanic depends on.
 
 ## Validation Commands
 

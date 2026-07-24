@@ -72,7 +72,21 @@ survive reformatting.
 
 ## Requirements & Decisions
 
-- **Session-scoped targeting via stdin `cwd`** (most volatile): root = `git -C <cwd> rev-parse
+- **Per-task effort deployment via pinned-effort executors** (most volatile — this cycle's
+  CX2-1 redesign): five generic executor definitions
+  `.claude/agents/effort-{low,medium,high,xhigh,max}.md` — each minimal and
+  explicit-deployment-only (name; a description that prevents automatic delegation; `effort`
+  frontmatter; no `model`, no tools restriction; 2–3-line body), authored per the meta-agent
+  standard. They ship with this plan revision, not the build: the build's first
+  `Agent({subagent_type: "effort-<tier>", model: "<stamped alias>"})` call needs them to exist,
+  and AC5's plan-time inventory check covers them. Definition frontmatter pins effort
+  (per-invocation `model` overrides the definition; there is no per-invocation effort —
+  `ai-docs/anthropic/subagents.md`). tasks.md carries concrete per-task model + effort stamps
+  and the task-tools board protocol unchanged; the mechanic is documented in
+  model-selection.md §Mechanics only; harness-build.md is unchanged. Rejected alternatives
+  (CX2-1 interview pass): Workflow deployment (restructures the board protocol) and dropping
+  per-task effort (violates model-selection.md's stamping mandate).
+- **Session-scoped targeting via stdin `cwd`**: root = `git -C <cwd> rev-parse
   --show-toplevel`, falling back down a fixed single-root chain (stdin cwd itself →
   `$CLAUDE_PROJECT_DIR` → process git toplevel → process cwd); the `.claude/worktrees/*/specs`
   glob is deleted. Within the root, newest-mtime selection with the existing `_templates` /
@@ -109,7 +123,9 @@ criterion, locked in decisions.md. Kinds: `frontmatter` — the literal line app
 frontmatter; `sections` — the file's exact `##` heading set, in order; `clause` — the literal
 appears in the file body. `checks/ac5_inventory.py` verifies every row at plan time; the build
 turns the same rows into pytest expectations (plus the cross-consistency asserts listed after
-the table).
+the table). Exception: the `.claude/agents/effort-*.md` rows are plan-shipped deployment
+scaffolding verified by AC5 only — the AC3 build-time suite pins command and skill rows,
+not agent definitions.
 
 | File | Kind | Literal |
 | --- | --- | --- |
@@ -192,6 +208,11 @@ the table).
 | `.agents/skills/implementation-review/SKILL.md` | clause | `Reviewed head SHA:` |
 | `.agents/skills/implementation-review/SKILL.md` | clause | `Mode:` |
 | `.agents/skills/implementation-review/SKILL.md` | clause | `Lenses:` |
+| `.claude/agents/effort-low.md` | frontmatter | `effort: low` |
+| `.claude/agents/effort-medium.md` | frontmatter | `effort: medium` |
+| `.claude/agents/effort-high.md` | frontmatter | `effort: high` |
+| `.claude/agents/effort-xhigh.md` | frontmatter | `effort: xhigh` |
+| `.claude/agents/effort-max.md` | frontmatter | `effort: max` |
 
 Cross-consistency asserts (build-time tests, beyond the table):
 
@@ -216,6 +237,8 @@ Use these files to complete the task:
 - `specs/_templates/spec.md`, `tasks.md`, `decisions.md`, `acceptance-criteria.md` — coupling subjects for the hook↔template assert
 - `.claude/rules/harness-layer/hooks.md` — update the gate's catalog row to say session-scoped
 - `specs/harness-self-improvement/checks/` — committed plan checks (ac4, ac5)
+- `.claude/agents/effort-{low,medium,high,xhigh,max}.md` — pinned-effort executor definitions
+  (plan-shipped with this revision; the build deploys every task through them)
 
 ### New Files
 

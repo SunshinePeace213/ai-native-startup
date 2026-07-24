@@ -131,6 +131,69 @@ ships inside the PR's reviewed diff, machine-checked before merge — never post
   Orchestration. A real per-task effort vehicle is recorded as a follow-up, not designed here.
   The KB References below are refreshed accordingly (the prior "ungrounded effort key" note is
   superseded — the refreshed skills mirror documents `effort`).
+  **Superseded:** Codex round 2 rejected this fix as CX2-1 (session inheritance violates
+  model-selection.md's per-task stamping mandate); the CX2-1 interview pass below re-derived
+  the mechanism from root cause at the escalated tier.
+
+### Resolved in the CX2-1 interview pass (effort deployment)
+
+- **Q:** How does the build deploy each task at its stamped effort? (CX2-1 blocker)
+  - **A:** Effort-bearing subagent definitions in project `.claude/agents/`: thin pinned-effort
+    executors deployed via `Agent({subagent_type: "effort-<tier>", model: <task's stamped
+    alias>})`. tasks.md restores concrete per-task effort stamps and sets each task's Agent
+    Type to the matching executor.
+  - **Why:** `effort` exists only as subagent-definition frontmatter
+    (`ai-docs/anthropic/subagents.md`); the Agent tool overrides only `model` per invocation.
+    This honors both stamps while keeping the task-tools board protocol intact — Workflow
+    deployment would restructure orchestration, and revising the mandate would give up
+    per-task effort differentiation.
+- **Q:** Naming and reuse scope of the executor definitions?
+  - **A:** Generic pinned-effort executors named `effort-low` … `effort-max`, reusable by any
+    explicit deployment (builders, review-fix escalations) — not build-scoped `builder-*` names.
+  - **Why:** model-selection.md's stamps apply beyond the build stage; one generic set serves
+    every deployer.
+- **Q:** Which effort tiers get a definition?
+  - **A:** All five: `effort-low`, `effort-medium`, `effort-high`, `effort-xhigh`, `effort-max`.
+  - **Why:** The mechanism is total — a future plan stamping `xhigh`/`max` never re-hits this
+    blocker; each file is ~6 lines.
+- **Q:** Definition shape?
+  - **A:** Minimal executor: `name`, an explicit-deployment-only `description` (so it never
+    auto-delegates), `effort` frontmatter; no `model` (the plan's stamp passes per-invocation),
+    no tools restriction; a 2–3-line body — the deploying prompt carries all task context.
+    Authored per the meta-agent standard.
+  - **Why:** KISS harness rules; baking the board protocol into bodies would duplicate
+    task-tools.md.
+- **Q:** Automated verification for the mechanism?
+  - **A:** Inventory only — the five definition files enter the spec's file inventory, covered
+    by the existing AC5 inventory check. No bespoke stamp→definition mapping script.
+  - **Why:** File presence is what regresses; a mapping script is speculative machinery.
+- **Q:** References and documentation home?
+  - **A:** Mirror the existing `.claude/agents/*.md` house style; the deployment mechanic
+    (stamped effort → `effort-<tier>` subagent type) is documented in model-selection.md
+    §Mechanics only.
+  - **Why:** AGENTS.md forbids duplicating model-selection guidance elsewhere; harness-build.md
+    needs no edit — its "each on the model/effort its task stamps" promise becomes true again.
+
+### Resolved at revision (cycle 3)
+
+- **Q:** When do the five executor definitions land — with this plan revision or as a build task?
+  - **A:** With the plan revision, committed alongside the spec (like the `checks/` scripts).
+  - **Why:** Bootstrap: the build's very first `Agent({subagent_type: "effort-<tier>"})` call
+    needs the definitions to exist before any build task could author them, and AC5's inventory
+    check is `[plan-time]` — its five new rows must hold when spec-review runs it. Authored per
+    the meta-agent standard and validated with its `validate_agent.py` (all five PASS).
+- **Q:** Do the five inventory rows also feed the AC3 build-time contract suite?
+  - **A:** No — AC5-only, stated in the inventory preamble; the AC3 suite pins command and
+    skill rows exactly as before.
+  - **Why:** The locked verification decision is inventory-only; widening AC3's scope to agent
+    definitions would silently grow the suite beyond its locked file set.
+- **Q:** Which concrete stamps do the tasks restore?
+  - **A:** The pre-CX1-4 originals: retarget-stop-gate `opus`/`medium`, stop-gate-lint
+    `opus`/`medium`, contract-tests `sonnet`/`high`, ci-workflow `sonnet`/`low`, validate-all
+    `sonnet`/`low` — so builder-hook's two resumed tasks share one `effort-medium` pin (a
+    resumed agent keeps its spawn-time effort).
+  - **Why:** The original tiers were never the finding — only their deployability was; restoring
+    them re-satisfies model-selection.md without re-litigating tier choices.
 
 ## Assumptions
 
@@ -158,7 +221,9 @@ Review profile: `kb-grounded`. Docs consulted (path — fetched — what it grou
 
 - `ai-docs/anthropic/hooks.md` — 2026-07-21 — Stop-hook stdin common fields (`session_id`, `cwd`, `hook_event_name`; `stop_hook_active` on Stop); exit-2 blocks the stop with stderr fed to Claude; exit-0 output is not fed to Claude; frontmatter-declared hooks are scoped to the component's lifecycle ("while the component is active").
 - `ai-docs/anthropic/skills.md` — 2026-07-23 (refreshed since draft) — command/skill frontmatter fields (`description`, `argument-hint`, `disable-model-invocation`, `allowed-tools`, `disallowed-tools`, `model`, `effort` — effort overrides the session level, default inherits); commands merged into skills share the same frontmatter reference. Supersedes the draft's "ungrounded effort key" note.
-- `ai-docs/anthropic/subagents.md` — 2026-07-23 — subagent `effort` is definition-level frontmatter (default: inherits from session); the Agent tool takes `model` per invocation, no per-invocation effort — grounds the round-1 CX1-4 deployment-mechanics fix.
+- `ai-docs/anthropic/subagents.md` — 2026-07-23 — subagent `effort` is definition-level frontmatter (values `low`…`max`, overrides the session level, default inherits); the Agent tool takes `model` per invocation, no per-invocation effort; per-invocation `model` overrides the definition's — grounds the CX2-1 pinned-effort executor mechanism (and, historically, the superseded CX1-4 fix).
+- `.claude/skills/meta-agent/` (repo standard, not a KB mirror) — the authoring standard for the five executor definitions: frontmatter reference (`effort` values, tools-omitted = inherit-all, description-as-trigger with a Not-for boundary), body skeleton, and `validate_agent.py` (all five files PASS).
+- **Cross-check unavailable (cycle 3):** the `claude-code-guide` verification subagent could not be deployed (Agent tool denied in this background session, as in cycle 2). The executor mechanism's claims rest on the fresh subagents.md mirror and were independently confirmed by Codex's own round-2 finding ("`effort` is available on subagent definitions while only `model` has a per-invocation override").
 - **Gap (fetch unavailable):** GitHub Actions workflow syntax and astral-sh/setup-uv usage have no `ai-docs/` mirror, and the `kb-fetcher`/cross-check subagents were unavailable this session (Agent tool denied). The CI item's `paths`/`if`/`contains()` and setup-uv claims are marked unverified; the builder verifies them against the official docs at build time. Follow-up: `/harness-layer:kb add https://docs.astral.sh/uv/guides/integration/github/` and `/harness-layer:kb add https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax`.
 
 ## Follow-ups (advisory, Codex round 1 — feed a future plan, never this run)
@@ -166,4 +231,4 @@ Review profile: `kb-grounded`. Docs consulted (path — fetched — what it grou
 - [ ] Tighten `checks/ac5_inventory.py` (enforce section order and true frontmatter placement, not presence-anywhere) and `checks/ac4_ci_workflow.py` (assert the exact filter set and job-level skip placement, not token presence).
 - [ ] Add an AC1 regression whose stdin `cwd` is a nested directory inside a temporary git worktree — proves the primary `git -C <cwd> rev-parse --show-toplevel` branch directly.
 - [ ] Fold the hooks reference's `${CLAUDE_PROJECT_DIR}` = project-root definition into the fallback-chain assumption when next revised.
-- [ ] Give per-task effort stamps a real delivery vehicle for Claude subagents (builder agent definitions or Workflow deployment) — today the Agent tool honors only `model` per invocation.
+- [x] Give per-task effort stamps a real delivery vehicle for Claude subagents — resolved by the CX2-1 revision: pinned-effort executors in `.claude/agents/effort-*.md`, documented in model-selection.md §Mechanics.
