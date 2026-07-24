@@ -157,8 +157,9 @@ ships inside the PR's reviewed diff, machine-checked before merge — never post
   - **Why:** The mechanism is total — a future plan stamping `xhigh`/`max` never re-hits this
     blocker; each file is ~6 lines.
 - **Q:** Definition shape?
-  - **A:** Minimal executor: `name`, an explicit-deployment-only `description` (so it never
-    auto-delegates), `effort` frontmatter; no `model` (the plan's stamp passes per-invocation),
+  - **A:** Minimal executor: `name`, a `description` aimed at explicit deployment (best-effort
+    discouragement of automatic delegation — see the round-3 note), `effort` frontmatter; no
+    `model` (the plan's stamp passes per-invocation),
     no tools restriction; a 2–3-line body — the deploying prompt carries all task context.
     Authored per the meta-agent standard.
   - **Why:** KISS harness rules; baking the board protocol into bodies would duplicate
@@ -194,6 +195,16 @@ ships inside the PR's reviewed diff, machine-checked before merge — never post
     resumed agent keeps its spawn-time effort).
   - **Why:** The original tiers were never the finding — only their deployability was; restoring
     them re-satisfies model-selection.md without re-litigating tier choices.
+
+### Resolved at review round 3 (Codex CX3-1)
+
+- **CX3-1 — descriptions cannot enforce explicit-only deployment:** Claude auto-selects
+  subagents from their `description`, and subagent frontmatter has no disable-auto-delegation
+  field (KB: subagents.md, "Understand automatic delegation"). The executors'
+  "explicit-deployment-only" framing is therefore best-effort routing discouragement, not a
+  guarantee: the five descriptions now read "Not for proactive delegation", and spec.md and
+  this file no longer claim prevention. The residual risk is benign — an accidentally
+  auto-selected executor still just runs its delegation prompt at a pinned effort.
 
 ## Assumptions
 
@@ -232,3 +243,4 @@ Review profile: `kb-grounded`. Docs consulted (path — fetched — what it grou
 - [ ] Add an AC1 regression whose stdin `cwd` is a nested directory inside a temporary git worktree — proves the primary `git -C <cwd> rev-parse --show-toplevel` branch directly.
 - [ ] Fold the hooks reference's `${CLAUDE_PROJECT_DIR}` = project-root definition into the fallback-chain assumption when next revised.
 - [x] Give per-task effort stamps a real delivery vehicle for Claude subagents — resolved by the CX2-1 revision: pinned-effort executors in `.claude/agents/effort-*.md`, documented in model-selection.md §Mechanics.
+- [ ] Advisory (Codex round 3): ship only the executor tiers plans actually stamp (`low`/`medium`/`high` today); defer `xhigh`/`max` until a stamped task needs them — weigh against the interview-locked all-five-tiers decision in a future plan.

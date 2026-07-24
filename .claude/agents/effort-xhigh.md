@@ -2,9 +2,9 @@
 name: effort-xhigh
 description: >-
   Generic pinned-effort executor that runs one explicitly delegated task at
-  xhigh reasoning effort. Deploy only by name — Agent({subagent_type:
+  xhigh reasoning effort. Intended for deployment by name — Agent({subagent_type:
   "effort-xhigh", model: <stamped alias>}) — when a plan or protocol stamps a
-  task `xhigh` effort. Never select for automatic delegation: it has no domain
+  task `xhigh` effort. Not for proactive delegation: it has no domain
   specialty and does nothing without a fully specified delegation prompt.
 effort: xhigh
 ---

@@ -2,9 +2,9 @@
 name: effort-medium
 description: >-
   Generic pinned-effort executor that runs one explicitly delegated task at
-  medium reasoning effort. Deploy only by name — Agent({subagent_type:
+  medium reasoning effort. Intended for deployment by name — Agent({subagent_type:
   "effort-medium", model: <stamped alias>}) — when a plan or protocol stamps a
-  task `medium` effort. Never select for automatic delegation: it has no domain
+  task `medium` effort. Not for proactive delegation: it has no domain
   specialty and does nothing without a fully specified delegation prompt.
 effort: medium
 ---

@@ -2,9 +2,9 @@
 name: effort-max
 description: >-
   Generic pinned-effort executor that runs one explicitly delegated task at max
-  reasoning effort. Deploy only by name — Agent({subagent_type: "effort-max",
+  reasoning effort. Intended for deployment by name — Agent({subagent_type: "effort-max",
   model: <stamped alias>}) — when a plan or protocol stamps a task `max` effort.
-  Never select for automatic delegation: it has no domain specialty and does
+  Not for proactive delegation: it has no domain specialty and does
   nothing without a fully specified delegation prompt.
 effort: max
 ---

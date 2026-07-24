@@ -74,10 +74,10 @@ survive reformatting.
 
 - **Per-task effort deployment via pinned-effort executors** (most volatile — this cycle's
   CX2-1 redesign): five generic executor definitions
-  `.claude/agents/effort-{low,medium,high,xhigh,max}.md` — each minimal and
-  explicit-deployment-only (name; a description that prevents automatic delegation; `effort`
-  frontmatter; no `model`, no tools restriction; 2–3-line body), authored per the meta-agent
-  standard. They ship with this plan revision, not the build: the build's first
+  `.claude/agents/effort-{low,medium,high,xhigh,max}.md` — each minimal and intended for
+  explicit deployment (name; a Not-for-proactive-delegation description — best-effort routing
+  discouragement, since subagent descriptions have no enforcement field; `effort` frontmatter;
+  no `model`, no tools restriction; 2–3-line body), authored per the meta-agent standard. They ship with this plan revision, not the build: the build's first
   `Agent({subagent_type: "effort-<tier>", model: "<stamped alias>"})` call needs them to exist,
   and AC5's plan-time inventory check covers them. Definition frontmatter pins effort
   (per-invocation `model` overrides the definition; there is no per-invocation effort —

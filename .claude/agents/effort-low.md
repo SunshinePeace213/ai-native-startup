@@ -2,9 +2,9 @@
 name: effort-low
 description: >-
   Generic pinned-effort executor that runs one explicitly delegated task at low
-  reasoning effort. Deploy only by name — Agent({subagent_type: "effort-low",
+  reasoning effort. Intended for deployment by name — Agent({subagent_type: "effort-low",
   model: <stamped alias>}) — when a plan or protocol stamps a task `low` effort.
-  Never select for automatic delegation: it has no domain specialty and does
+  Not for proactive delegation: it has no domain specialty and does
   nothing without a fully specified delegation prompt.
 effort: low
 ---
