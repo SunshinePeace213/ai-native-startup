@@ -113,3 +113,10 @@
   `-c sandbox_workspace_write.network_access=true` to `codex exec` (documented in
   `ai-docs/openai/codex/config-advanced.md`, main checkout) so the sandbox can resolve the
   inline PyYAML dependency itself instead of leaving these four commands unexecuted again.
+- **2026-07-24 · review round 2 — approved** — delta round over `ada0e3d..87b741e`
+  (`gpt-5.6-terra`/high, sandbox network enabled per the round-1 remediation): all 9
+  validation commands PASS including the four PyYAML-backed ones, both prior blockers
+  dispositioned fixed, 0 blocking findings, no advisories
+  (`reviews/codex-impl-review-round-2.md`). Review memory step: the sandbox-network
+  lesson recorded as a cross-plan line in `.claude/rules/development-log.md`; simple plan,
+  so no dev-notes artifact. PR #50 flips ready at the terminal commit.
