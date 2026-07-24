@@ -25,7 +25,8 @@ plans build on. Four deliverables, all inside the harness layer itself:
    (dropped `## Report` / `## Instructions` sections in build/review commands), replayed as tests.
 3. **CI** — a GitHub Actions workflow running `uv run pytest tests/harness-layer` via
    astral-sh/setup-uv on PRs touching `.claude/**`, `.agents/**`, `tests/**`, `pyproject.toml`,
-   or `uv.lock`, honoring the `[skip-ci]` PR-title token.
+   `uv.lock`, `specs/_templates/**`, or the workflow file itself, honoring the `[skip-ci]`
+   PR-title token.
 4. **Stop-gate lint** — extend the same hook with the soriza-chronic checks: a Validation
    Commands bullet not invoking a committed check blocks (exit 2); absolute-promise wording in
    spec.md warns only.
@@ -41,7 +42,9 @@ dropped load-bearing clause or section in any harness-layer command or review sk
 - Every Plan 2 / Plan 3 item: findings ledger, PR self-learning gate, health metrics, fix
   verification, constraint retirement, constraint registry, #52 fire-drill.
 - The #12 retro stage (deferred until Plan 2's metrics exist; shape pre-locked in decisions.md).
-- Self-improvement machinery for the discovery commands (unknowns, brainstorm, prototypes, interview).
+- Learning-loop machinery (Plan 2/3 ledger rows, learning-gate coverage, metrics) for the
+  discovery commands (unknowns, brainstorm, prototypes, interview); their prompt files still get
+  AC3's baseline contract pins like every harness-layer command file.
 - Backfilling per-finding rows from the 55 pre-#52 review reports.
 - Prose-fidelity checks beyond structure — Codex stays the judge of prose (locked calibration).
 - Making the CI workflow a required status check (GitHub settings; human follow-up).
@@ -206,7 +209,7 @@ Use these files to complete the task:
 
 - `.claude/hooks/check_spec_completeness.py` — the Stop gate: re-target folder selection, add the lint checks
 - `tests/harness-layer/hooks/spec-completeness/test_check_spec_completeness.py` — rewrite the two worktree-glob tests to session-scoped semantics; add concurrency + lint tests
-- `tests/harness-layer/hooks/conftest.py` — the `run_hook` / `load_hook_module` fixtures (use as-is)
+- `tests/harness-layer/hooks/conftest.py` — `run_hook` and the git-isolation helpers stay here (use as-is); the build moves `load_hook_module` out (see New Files)
 - `tests/harness-layer/hooks/test_wiring.py` — the style model; its registration pins are unchanged by this plan
 - `.claude/commands/harness-layer/*.md` — contract-test subjects (9 files; registration of the hook lives in harness-plan.md frontmatter and does not change)
 - `.agents/skills/spec-review/SKILL.md`, `.agents/skills/implementation-review/SKILL.md` — contract-test subjects
@@ -216,6 +219,7 @@ Use these files to complete the task:
 
 ### New Files
 
+- `tests/harness-layer/conftest.py` — `load_hook_module` promoted verbatim from `hooks/conftest.py` (path constants re-derived for the new depth) so the prompts suite can import the hook without `sys.path` tricks
 - `tests/harness-layer/prompts/test_command_contracts.py` — command frontmatter/section/clause pins + #40/#42 replay tests
 - `tests/harness-layer/prompts/test_skill_contracts.py` — review-skill pins + cross-consistency asserts
 - `.github/workflows/harness-tests.yml` — the CI workflow
@@ -231,7 +235,7 @@ Use these files to complete the task:
 - **A `[child-build-time]` pytest path that doesn't exist yet** — warn only; the build creates it.
 - **Absolute-promise wording** — warn only, capped (≤10 lines) so a wordy spec can't flood stderr.
 - **Re-run idempotency** — the hook is read-only; repeated Stop firings produce identical results.
-- **CI: PR touching none of the five path filters** — no run (intended); PR title gains `[skip-ci]` after opening — the `edited` type re-evaluates the skip.
+- **CI: PR touching none of the seven path filters** — no run (intended); PR title gains `[skip-ci]` after opening — the `edited` type re-evaluates the skip.
 - **CI: fork PRs** — no secrets are used, so the default token restrictions are harmless.
 
 ## Red Flags

@@ -100,7 +100,7 @@ ships inside the PR's reviewed diff, machine-checked before merge — never post
   - **A:** Warnings print to stderr with a `WARN:` prefix and never change the exit code; they reach the agent only when a blocking finding forces exit 2 (they ride along), otherwise they land in verbose logs only. Accepted as the cost of "warns only" — spec-review remains the prose judge.
   - **Why:** KB hooks reference: on Stop, only exit 2 feeds stderr back to Claude; JSON block-decisions would make the warning blocking, which the ledger forbids.
 - **Q:** CI trigger details beyond the ledger?
-  - **A:** `pull_request` with `types: [opened, synchronize, reopened, edited]` (so a title edit adding `[skip-ci]` takes effect) and the five path filters; job-level `if: !contains(github.event.pull_request.title, '[skip-ci]')`; `actions/checkout` + `astral-sh/setup-uv` (versions pinned by the builder against the official docs); then `uv run pytest tests/harness-layer`. No secrets. The workflow is observational — making it a required check is a GitHub-settings step for the human (follow-up).
+  - **A:** `pull_request` with `types: [opened, synchronize, reopened, edited]` (so a title edit adding `[skip-ci]` takes effect) and the five path filters (superseded at review round 1 → seven); job-level `if: !contains(github.event.pull_request.title, '[skip-ci]')`; `actions/checkout` + `astral-sh/setup-uv` (versions pinned by the builder against the official docs); then `uv run pytest tests/harness-layer`. No secrets. The workflow is observational — making it a required check is a GitHub-settings step for the human (follow-up).
   - **Why:** Title-based skip evaluates at run creation; without `edited`, a late `[skip-ci]` would be ignored until the next push.
 - **Q:** Where does the prompt-contract suite live and how does it prove #40/#42 would have been caught?
   - **A:** `tests/harness-layer/prompts/` (sibling of `hooks/`). Expectations live in module-level per-file dicts (frontmatter pins, exact `##` section tuples, clause lists) checked by small helper functions; the #40/#42 replay tests feed the helpers a mutated copy of harness-build.md/harness-review.md text with `## Report` / `## Instructions` removed and assert the loss is flagged.
@@ -108,6 +108,29 @@ ships inside the PR's reviewed diff, machine-checked before merge — never post
 - **Q:** Issue priority?
   - **A:** `priority:P2` for the epic (#53) and Plan 1 (#54) — the documented default; nothing in the ledger locks a higher one.
   - **Why:** git-workflow.md sets P2 as the creation default.
+
+### Resolved at review round 1 (Codex CX1-1 … CX1-4)
+
+- **CX1-1 — prompts suite couldn't reach `load_hook_module`:** the fixture lives in
+  `tests/harness-layer/hooks/conftest.py`, out of pytest scope for the sibling `prompts/` dir.
+  The build promotes it verbatim to a new `tests/harness-layer/conftest.py` (path constants
+  re-derived); `run_hook` and the git-isolation helpers stay put, and hooks tests resolve the
+  fixture from the parent conftest unchanged.
+- **CX1-2 — discovery-command scope contradiction:** the Non-Goal is narrowed to learning-loop
+  machinery (Plan 2/3 ledger rows, gate coverage, metrics). The AC3 contract pins apply to all
+  9 command files — under the locked "parsed by something else" criterion, frontmatter and
+  required sections are load-bearing regardless of which command carries them.
+- **CX1-3 — CI filters omitted tested surfaces:** the filter set widens from five to seven,
+  adding `specs/_templates/**` (AC3's hook↔template coupling makes templates a tested surface)
+  and `.github/workflows/harness-tests.yml` (the workflow gates itself). Supersedes the
+  five-path lists in the two CI entries above; `checks/ac4_ci_workflow.py` updated to match.
+- **CX1-4 — per-task effort stamps weren't deployable:** the Agent tool passes only `model` per
+  invocation, and subagent `effort` is definition-level frontmatter defaulting to session
+  inheritance (KB: subagents.md); `general-purpose` has no definition file. Task stamps change
+  to `<model> / session-inherited`, with the mechanics stated once in tasks.md's Team
+  Orchestration. A real per-task effort vehicle is recorded as a follow-up, not designed here.
+  The KB References below are refreshed accordingly (the prior "ungrounded effort key" note is
+  superseded — the refreshed skills mirror documents `effort`).
 
 ## Assumptions
 
@@ -121,7 +144,7 @@ ships inside the PR's reviewed diff, machine-checked before merge — never post
 
 ## Open Questions / Out of Scope
 
-- **Out of scope:** the discovery commands (unknowns, brainstorm, prototypes, interview) — no self-improvement machinery for them.
+- **Out of scope (clarified at review round 1):** learning-loop machinery for the discovery commands (unknowns, brainstorm, prototypes, interview); their prompt files remain AC3 contract-pin subjects.
 - **Out of scope:** backfilling per-finding rows from the 55 pre-#52 review reports.
 - **Out of scope:** activating the #12 retro stage before Plan 2's metrics exist (its shape is pre-locked above).
 - **Out of scope (Plan 1):** every Plan 2 / Plan 3 item — findings ledger, self-learning gate, health metrics, fix verification, retirement, constraint registry, fire-drill.
@@ -134,6 +157,13 @@ ships inside the PR's reviewed diff, machine-checked before merge — never post
 Review profile: `kb-grounded`. Docs consulted (path — fetched — what it grounds):
 
 - `ai-docs/anthropic/hooks.md` — 2026-07-21 — Stop-hook stdin common fields (`session_id`, `cwd`, `hook_event_name`; `stop_hook_active` on Stop); exit-2 blocks the stop with stderr fed to Claude; exit-0 output is not fed to Claude; frontmatter-declared hooks are scoped to the component's lifecycle ("while the component is active").
-- `ai-docs/anthropic/skills.md` — 2026-07-21 — command/skill frontmatter fields (`description`, `argument-hint`, `disable-model-invocation`, `allowed-tools`, `disallowed-tools`); commands merged into skills share the same frontmatter reference.
-- **Ungrounded (advisory):** the `effort:` frontmatter key the repo's commands carry is not documented in the cached skills reference — pinned by the contract tests as repo convention, not official behavior.
+- `ai-docs/anthropic/skills.md` — 2026-07-23 (refreshed since draft) — command/skill frontmatter fields (`description`, `argument-hint`, `disable-model-invocation`, `allowed-tools`, `disallowed-tools`, `model`, `effort` — effort overrides the session level, default inherits); commands merged into skills share the same frontmatter reference. Supersedes the draft's "ungrounded effort key" note.
+- `ai-docs/anthropic/subagents.md` — 2026-07-23 — subagent `effort` is definition-level frontmatter (default: inherits from session); the Agent tool takes `model` per invocation, no per-invocation effort — grounds the round-1 CX1-4 deployment-mechanics fix.
 - **Gap (fetch unavailable):** GitHub Actions workflow syntax and astral-sh/setup-uv usage have no `ai-docs/` mirror, and the `kb-fetcher`/cross-check subagents were unavailable this session (Agent tool denied). The CI item's `paths`/`if`/`contains()` and setup-uv claims are marked unverified; the builder verifies them against the official docs at build time. Follow-up: `/harness-layer:kb add https://docs.astral.sh/uv/guides/integration/github/` and `/harness-layer:kb add https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax`.
+
+## Follow-ups (advisory, Codex round 1 — feed a future plan, never this run)
+
+- [ ] Tighten `checks/ac5_inventory.py` (enforce section order and true frontmatter placement, not presence-anywhere) and `checks/ac4_ci_workflow.py` (assert the exact filter set and job-level skip placement, not token presence).
+- [ ] Add an AC1 regression whose stdin `cwd` is a nested directory inside a temporary git worktree — proves the primary `git -C <cwd> rev-parse --show-toplevel` branch directly.
+- [ ] Fold the hooks reference's `${CLAUDE_PROJECT_DIR}` = project-root definition into the fallback-chain assumption when next revised.
+- [ ] Give per-task effort stamps a real delivery vehicle for Claude subagents (builder agent definitions or Workflow deployment) — today the Agent tool honors only `model` per invocation.

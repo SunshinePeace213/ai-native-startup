@@ -2,7 +2,7 @@
 # requires-python = ">=3.12"
 # ///
 """AC4 — .github/workflows/harness-tests.yml triggers on pull_request (types
-including 'edited') over exactly the five harness paths, skips on a '[skip-ci]'
+including 'edited') over exactly the seven harness paths, skips on a '[skip-ci]'
 PR title, and runs uv run pytest tests/harness-layer via astral-sh/setup-uv.
 String asserts on purpose: stdlib-only so the Codex sandbox (no network) can
 run it. Run from the repo root."""
@@ -19,6 +19,8 @@ REQUIRED = [
     "tests/**",
     "pyproject.toml",
     "uv.lock",
+    "specs/_templates/**",
+    ".github/workflows/harness-tests.yml",
     "[skip-ci]",
     "contains(",
     "github.event.pull_request.title",

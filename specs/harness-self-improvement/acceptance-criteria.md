@@ -21,11 +21,13 @@
   frontmatter literals, exact `##` section sets, and clause lists from spec.md's
   `## Load-Bearing Contract Inventory`, plus the cross-consistency asserts (hook
   REQUIRED_SECTIONS ⊆ template headings; command↔skill report-filename and verdict-grammar
-  agreement; skill name = directory name). Includes #40/#42 replay tests: the suite's checker
+  agreement; skill name = directory name), with the hook imported via `load_hook_module`
+  resolved from the promoted `tests/harness-layer/conftest.py`. Includes #40/#42 replay tests: the suite's checker
   flags harness-build.md / harness-review.md text with `## Report` or `## Instructions` removed.
 - **AC4** — CI. `.github/workflows/harness-tests.yml` runs `uv run pytest tests/harness-layer`
-  via astral-sh/setup-uv on `pull_request` (types including `edited`) with exactly the five path
-  filters (`.claude/**`, `.agents/**`, `tests/**`, `pyproject.toml`, `uv.lock`) and a job-level
+  via astral-sh/setup-uv on `pull_request` (types including `edited`) with exactly the seven path
+  filters (`.claude/**`, `.agents/**`, `tests/**`, `pyproject.toml`, `uv.lock`,
+  `specs/_templates/**`, `.github/workflows/harness-tests.yml`) and a job-level
   skip when the PR title contains `[skip-ci]`.
 - **AC5** — Inventory accuracy at plan time. Every row of spec.md's
   `## Load-Bearing Contract Inventory` holds against the current tree: each named file exists and

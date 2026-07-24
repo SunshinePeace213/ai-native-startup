@@ -28,6 +28,10 @@ verify each acceptance criterion.
 - Keep the shared task list (TaskCreate/TaskUpdate) as the single source of truth for who is doing
   what; verify each task on the board before marking it complete.
 - Note the session id / name of each team member — that is how you reference them.
+- **Deployment mechanics:** deploy each task through the Agent tool passing its stamped `model`
+  alias. The Agent tool exposes no per-invocation effort and `general-purpose` carries no
+  definition frontmatter, so every deployment runs at session-inherited effort (subagent `effort`
+  is a definition-level field defaulting to session inheritance — `ai-docs/anthropic/subagents.md`).
 
 ## Team Members
 
@@ -64,7 +68,7 @@ verify each acceptance criterion.
 - **Depends On:** none
 - **Assigned To:** builder-hook
 - **Agent Type:** `general-purpose`
-- **Model / Effort:** `opus` / `medium`
+- **Model / Effort:** `opus` / session-inherited (Agent tool passes `model` only)
 - **Parallel:** false
 - **Satisfies:** AC1
 - Rework `check_spec_completeness.py`: parse stdin JSON; resolve root as `git -C <cwd> rev-parse --show-toplevel` → stdin `cwd` itself (if a directory) → `$CLAUDE_PROJECT_DIR` → process git toplevel → `Path.cwd()`; scan only `<root>/specs/*`; delete the `.claude/worktrees/*/specs` glob. Keep the `_templates` / discovery-only exclusions and newest-mtime selection within the root. Malformed stdin degrades down the chain — never crash, never exit 2 on plumbing.
@@ -79,7 +83,7 @@ verify each acceptance criterion.
 - **Depends On:** retarget-stop-gate
 - **Assigned To:** builder-hook
 - **Agent Type:** `general-purpose`
-- **Model / Effort:** `opus` / `medium`
+- **Model / Effort:** `opus` / session-inherited (Agent tool passes `model` only)
 - **Parallel:** false
 - **Satisfies:** AC2
 - In the same hook, after the required-sections check on the selected folder: parse `## Validation Commands` bullets (lines starting `-` in that section) of acceptance-criteria.md. Block (exit 2, naming file + offending bullet): no recognized stage tag (`[plan-time]`, `[child-build-time]`, `[post-merge]`); invoking neither `uv run --script specs/<plan>/checks/…` nor `uv run pytest …`; a `[plan-time]` script path that does not exist under the root.
@@ -93,9 +97,15 @@ verify each acceptance criterion.
 - **Depends On:** none
 - **Assigned To:** builder-contracts
 - **Agent Type:** `general-purpose`
-- **Model / Effort:** `sonnet` / `high`
+- **Model / Effort:** `sonnet` / session-inherited (Agent tool passes `model` only)
 - **Parallel:** true (alongside tasks 1–2 and 4)
 - **Satisfies:** AC3
+- First promote the `load_hook_module` fixture: move it verbatim from
+  `tests/harness-layer/hooks/conftest.py` to a new `tests/harness-layer/conftest.py`, re-deriving
+  its `REPO_ROOT`/`HOOKS_ROOT` constants for the new depth; leave `run_hook`, `base_env`, and the
+  git-isolation constants in `hooks/conftest.py`. Hooks tests keep resolving the fixture from the
+  parent conftest; removing the fixture from `hooks/conftest.py` is the only edit this task makes
+  under `hooks/`.
 - Create `tests/harness-layer/prompts/test_command_contracts.py` and `test_skill_contracts.py` in `test_wiring.py`'s style: module-level per-file expectation maps (frontmatter literals, exact `##` section tuples, clause lists) taken verbatim from spec.md's `## Load-Bearing Contract Inventory`, checked by small pure helpers (frontmatter extractor, section lister, `missing_pins(text, expectations)`), each test docstring stating WHY the pin matters.
 - Add the cross-consistency tests: every `REQUIRED_SECTIONS` heading (via `load_hook_module`) appears in its `specs/_templates/` file; `harness-plan.md` and `spec-review/SKILL.md` agree on `codex-spec-review-round-`; `harness-review.md` and `implementation-review/SKILL.md` agree on `codex-impl-review-round-`; both skills carry the identical em-dash verdict grammar; each skill's `name:` equals its directory name.
 - Add the #40/#42 replay tests: feed `missing_pins` the real harness-build.md / harness-review.md text with `## Report` (3ce40db, #40) and `## Instructions` (c4bf3fa, #42) stripped, and assert the loss is flagged — docstrings cite the restore commits.
@@ -107,10 +117,10 @@ verify each acceptance criterion.
 - **Depends On:** none
 - **Assigned To:** builder-ci
 - **Agent Type:** `general-purpose`
-- **Model / Effort:** `sonnet` / `low`
+- **Model / Effort:** `sonnet` / session-inherited (Agent tool passes `model` only)
 - **Parallel:** true (alongside tasks 1–3)
 - **Satisfies:** AC4
-- Create `.github/workflows/harness-tests.yml`: `on: pull_request` with `types: [opened, synchronize, reopened, edited]` and `paths: ['.claude/**', '.agents/**', 'tests/**', 'pyproject.toml', 'uv.lock']`; one job with `if: ${{ !contains(github.event.pull_request.title, '[skip-ci]') }}`, running checkout → astral-sh/setup-uv (cache enabled) → `uv run pytest tests/harness-layer`.
+- Create `.github/workflows/harness-tests.yml`: `on: pull_request` with `types: [opened, synchronize, reopened, edited]` and `paths: ['.claude/**', '.agents/**', 'tests/**', 'pyproject.toml', 'uv.lock', 'specs/_templates/**', '.github/workflows/harness-tests.yml']`; one job with `if: ${{ !contains(github.event.pull_request.title, '[skip-ci]') }}`, running checkout → astral-sh/setup-uv (cache enabled) → `uv run pytest tests/harness-layer`.
 - Pin both action versions against the official docs (the KB has no mirror this run — verify, don't guess; record the verified versions in the PR body's test evidence).
 - Run `uv run --script specs/harness-self-improvement/checks/ac4_ci_workflow.py` and make it pass.
 
@@ -120,7 +130,7 @@ verify each acceptance criterion.
 - **Depends On:** retarget-stop-gate, stop-gate-lint, contract-tests, ci-workflow
 - **Assigned To:** validator
 - **Agent Type:** `general-purpose`
-- **Model / Effort:** `sonnet` / `low`
+- **Model / Effort:** `sonnet` / session-inherited (Agent tool passes `model` only)
 - **Parallel:** false
 - Run every command in acceptance-criteria.md → `## Validation Commands`.
 - Run the full `uv run pytest tests/harness-layer` suite (pre-hand-off rule) and report exact results — no skips glossed over.
