@@ -54,6 +54,11 @@ Pick the lowest effort that clears the bar; escalate for planning-heavy or multi
 
 - Claude models: pass the alias (`fable`, `opus`, `sonnet`, `haiku`) via the
   Agent/Workflow `model` parameter. Never hardcode a dated id like `claude-opus-4-8`.
+- Per-task effort (Claude): the Agent tool has no effort parameter — deploy the task
+  through its stamped tier's pinned-effort executor:
+  `Agent({subagent_type: "effort-<tier>", model: "<stamped alias>"})`. The
+  `.claude/agents/effort-<tier>.md` definition pins the effort via frontmatter; the
+  per-invocation model alias overrides the definition.
 - Codex models: run `codex exec` directly through this repo's skills and agents
   (`.agents/skills/`, `.codex/agents/*.toml`), passing model and effort explicitly per
   task — never rely on the `config.toml` default.
