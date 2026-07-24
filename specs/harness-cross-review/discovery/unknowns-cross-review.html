@@ -66,7 +66,7 @@
 <main>
   <div class="eyebrow">Discovery · unknowns pass</div>
   <h1>Why the cross-review gate grinds</h1>
-  <p class="sub">Six things found in the actual pipeline files and Issue&nbsp;#43's nine-round history. Mark each one: <strong>fix now</strong> folds it into the improved prompt, <strong>accept</strong> leaves it as-is, <strong>discuss</strong> queues it for the interview.</p>
+  <p class="sub">Seven things found in the actual pipeline files, Issue&nbsp;#43's nine-round history, and a cross-check against all nine closed plans' 55 review reports. Mark each one: <strong>fix now</strong> folds it into the improved prompt, <strong>accept</strong> leaves it as-is, <strong>discuss</strong> queues it for the interview.</p>
 
   <div class="ribbon">
     <div class="ribbon-title"><strong>Issue #43 spec review, as it actually ran:</strong> 9 rounds, 5 cycles, 2 needs-human breaks, 17 blocking findings total. Bar height = blocking findings that round.</div>
@@ -136,6 +136,7 @@ const FINDINGS = [
     what: `<p>Reading all nine #43 digests: most "new" findings each round were defects in the <em>previous round's fix</em> — shared <code>.intake-target</code> → per-client markers → sweep → sweep deletes live markers → idempotency → 8-block Stop-hook cap conflict. A concurrency protocol was being designed inside the review loop, two moves at a time.</p>
       <span class="lbl">Why it bites</span>
       <p>Two forces: (a) fixes that introduce a new mechanism generate genuinely new defects, so rounds can't converge; (b) the skill never says "report every blocking finding you can find this round" — its only calibration is "when in doubt, leave it out", which quietly rations findings.</p>
+      <p>Cross-check against all 55 review reports: Codex is <em>not</em> withholding — round-1 counts range from 1 to 9 (security-scan impl R1: ~9; sensitive-file-guard impl R1: ~6). The 1–2-finding pattern appears only in tail rounds, which is the churn signature, not rationing. So the exhaustiveness clause helps round 1; the churn guard is what collapses the tail.</p>
       <span class="lbl">Instead</span>
       <p>Add an exhaustiveness clause to spec-review (all blocking findings each round; a finding raisable this round but raised later is a review defect). In harness-plan's cross-review loop: a fix that introduces a new mechanism ends the cycle into Revision Mode planning instead of burning rounds — design work goes back to design, review verifies.</p>`,
     fix: 'Add to spec-review an exhaustiveness rule (enumerate ALL blocking findings each round), and to harness-plan\'s Codex Cross-Review a churn guard: when fixing a finding requires introducing a new mechanism rather than correcting the existing one, stop the cycle and redesign in Revision Mode instead of patching round-by-round.'
@@ -172,6 +173,17 @@ const FINDINGS = [
       <span class="lbl">Instead</span>
       <p>Give spec-review the same delta discipline: round 1 full + exhaustive; rounds &gt;1 verify prior blockers fixed and review only changed hunks — new findings there must trace to changed text. Revisit the cap only after findings 1–3 land; they remove most of the round pressure.</p>`,
     fix: 'Add delta scoping to .agents/skills/spec-review/SKILL.md mirroring implementation-review: round 1 reviews everything exhaustively; later rounds read the prior report plus the spec diff since the last reviewed head, disposition each prior blocker, and may only raise new findings grounded in changed text.'
+  },
+  {
+    id: 'escalation',
+    tag: 'repeat root cause',
+    title: 'Repeat-root-cause escalation exists on paper but nothing enforces it',
+    what: `<p><code>specs/sensitive-file-guard/reviews/</code> shows the other grind shape: impl rounds 2–7 are ONE continuing arms race on the same glob-intersection algorithm — the reviewer itself chains them (CX3-1 "CX2-1 remains open", CX4-1 "the same suffix-anchored bypass as CX3-1", CX5-1 "CX4-1 remains bypassable"…). Six rounds, one root cause.</p>
+      <span class="lbl">Why it bites</span>
+      <p><code>model-selection.md</code> already mandates: a failed fix escalates a tier, and "a repeat root-cause failure reassigns the task across providers". But no loop tracks root-cause identity across rounds, so the rule never fires — the same tier re-patches the same defect indefinitely. Adversarial/algorithmic work (exactly what model-selection stamps to <code>gpt-5.6-sol</code>) is where this bleeds most.</p>
+      <span class="lbl">Instead</span>
+      <p>Make it mechanical: both review skills must mark each blocker <code>new</code> or <code>repeat-of CX&lt;n&gt;-&lt;m&gt;</code>; harness-review/harness-plan treat a <code>repeat</code> as an automatic tier escalation, and a second repeat as cross-provider reassignment — never another same-tier round.</p>`,
+    fix: 'Enforce model-selection.md\'s escalation rule mechanically: spec-review and implementation-review must tag every blocking finding as new or repeat-of a prior finding ID; in harness-plan and harness-review, a repeat tag forces the fixer up a tier and a second repeat reassigns the fix across providers (Claude↔Codex) instead of running another same-tier round.'
   }
 ];
 
