@@ -61,7 +61,7 @@ Volatile first — full record in [decisions.md](./decisions.md):
    | --- | --- | --- | --- |
    | 1 | W3C WCAG 2.2 quickref | `https://www.w3.org/WAI/WCAG22/quickref/` | `design` |
    | 2 | web.dev Learn Design | `https://web.dev/learn/design` | `design` |
-   | 3 | NN/g homepage cornerstone | proposed: `https://www.nngroup.com/articles/top-10-guidelines-for-homepage-usability/` | `design` |
+   | 3 | NN/g homepage cornerstone | `https://www.nngroup.com/articles/113-design-guidelines-homepage-usability/` (build-time swap — proposed Top-10 digest URL 404'd; epic-driver-authorized, recorded in decisions.md build addendum) | `design` |
    | 4 | NN/g writing for the web | canonical `nngroup.com/articles/…` page picked at build | `design` |
    | 5 | Google Fonts Knowledge | `https://fonts.google.com/knowledge` | `design` |
    | 6 | Claude Code memory docs | `https://code.claude.com/docs/en/memory` | `anthropic` |

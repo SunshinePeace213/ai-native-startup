@@ -130,7 +130,11 @@ One line per `/harness-layer:kb add` run, verbatim from the kb report:
 - additionally, for any identity-table substitution:
   `- FAIL <original url> → swapped to <substitute url>: <reason>`.
 
-No lines yet — the build appends them. A mirror without its OK line here fails AC2.
+- OK design/wcag22-quickref.md <https://www.w3.org/WAI/WCAG22/quickref/>
+- OK design/learn-design.md <https://web.dev/learn/design>
+- FAIL <https://www.nngroup.com/articles/top-10-guidelines-for-homepage-usability/> → swapped to <https://www.nngroup.com/articles/113-design-guidelines-homepage-usability/>: proposed URL returns HTTP 404; substitute is the canonical superset of the dead Top-10 digest, same topic — epic-driver-authorized 2026-07-24
+- OK design/nngroup-homepage-usability.md <https://www.nngroup.com/articles/113-design-guidelines-homepage-usability/>
+- OK design/nngroup-writing-for-the-web.md <https://www.nngroup.com/articles/how-users-read-on-the-web/>
 
 ## Assumptions
 

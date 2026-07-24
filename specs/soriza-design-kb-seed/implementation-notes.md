@@ -22,3 +22,43 @@
   why: the Task board tools are not available in this session's harness (only TaskStop and
   SendMessage exist). No locked decision or acceptance criterion touches the board; task
   order, ownership, and dependencies from tasks.md are enforced by sequential deployment.
+- **2026-07-24 · worktreeinclude-pattern hand-off** — kb-builder appended the comment +
+  `ai-docs/*` lines; AC1 baseline check green (`AC1 ok: one pattern, comment above,
+  baseline preserved`); no deviations. Checkpoint commit `5f17db3` pushed.
+- **2026-07-24 · deviation (resolved under epic pre-authorization)** — plan-said NN/g
+  homepage cornerstone `nngroup.com/articles/top-10-guidelines-for-homepage-usability/`
+  (spec row 3, marked "proposed"; both NN/g URLs are build-time picks) / did register
+  `nngroup.com/articles/113-design-guidelines-homepage-usability/` / why: the proposed URL
+  is a genuine HTTP 404 (curl-verified). kb-builder honored the spec's stop condition
+  (halted after sources 1–2, deleted the provisional `fetched: null` entry); the epic
+  driver returned an authorized substitute — the canonical superset of the dead Top-10
+  digest, same topic — which satisfies the locked epic constraint verbatim (nngroup.com +
+  `homepage` in URL, exactly two `articles/` URLs once source 4 lands) and passes every AC
+  validation script unchanged. Recorded: FAIL/swap line in decisions.md build addendum;
+  spec.md identity-table row 3 updated to the registered URL with a swap note.
+  Surfaced for review in the PR Dev Notes.
+- **2026-07-24 · process note** — builders must hand off in their final message; the
+  kb-builder's mid-task SendMessage attempt failed (no such recipient) and its state came
+  back via the epic driver. Later resumes instructed final-message hand-off explicitly.
+- **2026-07-24 · kb-seed-design partial hand-off** — sources 3–4 registered and mirrored
+  after the authorized NN/g swap: `design/nngroup-homepage-usability.md`
+  (113-design-guidelines-homepage-usability) and `design/nngroup-writing-for-the-web.md`
+  (how-users-read-on-the-web). Design group at 4/5 fully-fetched entries; manifest, index,
+  and build addendum internally consistent; provisional entry for the failed source 5
+  cleanly deleted per the replacement contract's hygiene rule.
+- **2026-07-24 · BUILD HALTED — locked-AC deviation needs user approval** — source 5
+  `https://fonts.google.com/knowledge` is a genuine fetch failure (JS-only SPA: kb-fetcher
+  and curl both get a script shell with zero static text; Knowledge sub-pages and
+  m3.material.io/styles/typography verified as SPA shells too). The spec's stop condition
+  fired: AC2 makes the fonts.google.com identity **unconditional** ("their fetch failure is
+  a build stop, never a swap") and the round-3 Codex fix locked substitution to the WCAG
+  quickref only. The epic driver directed a swap to `https://web.dev/learn/design/typography`
+  plus rewriting AC2's identity assertions to exact-URL equality (the substring marker
+  `web.dev/learn/design` would double-match). That edit touches a Codex-locked acceptance
+  criterion and a locked resolved decision ("exactly five: … Google Fonts Knowledge";
+  "any other source → stop and propose an official alternative to Ringo") — per the build
+  command this STOPS for explicit user approval; an agent directive cannot stand in for it.
+  Build paused before kb-seed-memory/validator/tidy/PR; partial state committed and pushed.
+  Resume paths (all need a plan-level amendment): (a) approve the web.dev/typography swap +
+  AC2 marker adjustment, (b) pick a different official static typography source, (c) drop
+  or redefine source 5.
