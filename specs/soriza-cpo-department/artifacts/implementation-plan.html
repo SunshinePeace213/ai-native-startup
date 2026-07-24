@@ -89,7 +89,7 @@
   <h1>soriza-design — slice 1</h1>
   <p class="sub">Soriza's design department as a five-rung command chain over <code>projects/&lt;client&gt;/</code>. The client owns "what"; the department owns discover → define → design and hands Ringo a brief packet.</p>
   <div class="chips">
-    <span class="chip alert">Codex: needs-human — cap hit at round 2, all fixes applied, verifying round 3 pending</span>
+    <span class="chip alert">Codex: needs-human — cap hit again at round 4, all fixes applied, verifying round 5 pending</span>
     <span class="chip">branch <span class="mono">feat/43-soriza-cpo-department</span></span>
     <span class="chip">children #44–#48 · one pipeline run each</span>
     <span class="chip">profile kb-grounded</span>
@@ -107,14 +107,14 @@
   <p class="vera"><strong>Vera</strong> (CPO) signs every packet before it reaches Ringo · roster at <code>.claude/rules/soriza/roster.md</code></p>
 
   <h2>Decisions most likely to move</h2>
-  <p class="sub">Each card shows the locked path and its live alternative. Switch one (or add a note) and the prompt below becomes a plan-revision request; touch nothing and it's the verify-round-3 run.</p>
+  <p class="sub">Each card shows the locked path and its live alternative. Switch one (or add a note) and the prompt below becomes a plan-revision request; touch nothing and it's the verify-round-5 run.</p>
   <div id="cards"></div>
 
   <h2>Build order</h2>
   <div class="flow">
     <div class="child"><span class="id">#44</span><span><strong>KB seed</strong><p><code>ai-docs/*</code> pattern in <code>.worktreeinclude</code>; <code>design/</code> group (WCAG 2.2, web.dev Learn Design, NN/g ×2, Google Fonts Knowledge) + memory docs page via <code>/harness-layer:kb add</code>.</p></span><span class="dep">after epic docs merge<br><span class="stamp">sonnet/low</span></span></div>
     <div class="child"><span class="id">#45</span><span><strong>Foundations</strong><p><code>projects/_template/</code> + nine-skeleton library · six doctrine files + lessons (<code>paths: projects/**</code>) · company roster · AGENTS.md pointers.</p></span><span class="dep">after #44<br><span class="stamp">opus/high + sonnet/medium</span></span></div>
-    <div class="child"><span class="id">#46</span><span><strong>Intake + DoR gate</strong><p><code>:intake</code> (Mira) with per-client <code>.intake-in-progress</code> markers; Stop hook blocks until every marked client's intake is complete; cross-client + two-marker tests.</p></span><span class="dep">after #45<br><span class="stamp">opus/high + sonnet/medium</span></span></div>
+    <div class="child"><span class="id">#46</span><span><strong>Intake + DoR gate</strong><p><code>:intake</code> (Mira) with session-scoped <code>.intake-in-progress.${CLAUDE_SESSION_ID}</code> markers; Stop hook gates only its own session's markers and cleans only its own (no sweep); session-independence + same-client + re-run + no-cross-deletion tests.</p></span><span class="dep">after #45<br><span class="stamp">opus/high + sonnet/medium</span></span></div>
     <div class="child"><span class="id">#47</span><span><strong>The ladder</strong><p><code>:brief</code>, <code>:sitemap</code>, <code>:wireframe</code>, <code>:section-briefs</code> — each with a machine-checkable <code>## Rung Contract</code> block; section-briefs reads <code>wireframes/</code>.</p></span><span class="dep">after #46 · ∥ #48<br><span class="stamp">opus/high</span></span></div>
     <div class="child"><span class="id">#48</span><span><strong>Client git lane</strong><p><code>git-lane.md</code>: issue per engagement, <code>docs/&lt;N&gt;-&lt;client&gt;</code> branch, PRs only at brief-approved (<code>Refs</code>) and packet hand-off (<code>Closes</code>), evidence swap.</p></span><span class="dep">after #45 · ∥ #46/#47<br><span class="stamp">sonnet/medium</span></span></div>
   </div>
@@ -125,7 +125,9 @@
     <ul>
       <li><strong>Round 1</strong> (changes-requested): artifact "private links" aren't a client surface → delivery modes locked per engagement; newest-modified gate targeting → deterministic; weak validation → assertion scripts.</li>
       <li><strong>Round 2</strong> (changes-requested): shared target file race → per-client markers, gate-all-marked; section-briefs predecessor corrected to <code>wireframes/</code>; AC7/AC9–AC11 → Rung Contract field assertions.</li>
-      <li>Cap is 2 rounds/cycle → <strong>needs-human</strong>; every blocker is already fixed on the branch — a plan re-run (Revision Mode) runs the verifying round 3 and clears the label.</li>
+      <li><strong>Round 3</strong> (changes-requested): all-marked gating strands unrelated runs → session-scoped markers (<code>${CLAUDE_SESSION_ID}</code> ↔ stdin <code>session_id</code>); AC9–AC11 clause gaps → clause-exact field assertions.</li>
+      <li><strong>Round 4</strong> (changes-requested): complete-client sweep could delete live session markers → sweep removed, hook's own exit-0 cleanup is the sole deletion; AC3/AC6/AC7/AC11 → exact source identities, exact roster rows, AC7 field semantics, exact two-<code>Gate:</code>-bullet mapping.</li>
+      <li>Cap is 2 rounds/cycle → <strong>needs-human</strong> again; every blocker is already fixed on the branch — a plan re-run (Revision Mode) runs the verifying round 5 and clears the label.</li>
     </ul>
   </details>
   <details>
@@ -158,9 +160,9 @@
 <script>
   const DECISIONS = [
     { id: "gate", title: "Intake gate targeting",
-      why: "Round-2 fix — the gate must be race-free under concurrent intake runs.",
-      chosen: "Per-client projects/<client>/.intake-in-progress markers; the Stop hook blocks until every marked client's intake.md is complete (fails toward blocking); command sweeps stale markers.",
-      alt: "Single shared projects/.intake-target file — simpler, but concurrent runs overwrite it and can gate the wrong client (rejected in round 2)." },
+      why: "Rounds 2–4 fix — the gate must be race-free AND strand-free under concurrent intake runs.",
+      chosen: "Session-scoped markers projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}; the Stop hook gates only its own session's markers and removes only its own on exit 0 — the sole marker deletion anywhere (no sweep).",
+      alt: "Gate every marked client + sweep complete-client markers — concurrent sessions strand each other on abandoned or swept markers (rejected in rounds 3–4)." },
     { id: "pred", title: "section-briefs predecessor",
       why: "Round-2 fix — every rung must consume its true predecessor.",
       chosen: "Lior reads wireframes/ (approved layouts + decision-log change requests), with sitemap-ia.md as the inventory source.",
@@ -217,7 +219,7 @@
         `Worktree: .claude/worktrees/soriza-cpo-department"`;
     } else {
       modeEl.textContent = "Next step — copy into Claude Code";
-      text = `/harness-layer:harness-plan "Verify the round-2 fixes on the soriza-cpo-department spec (Revision Mode, issue #43) — no scope changes; run the verifying Codex round 3 and, on approval, remove the status:needs-human label. Worktree: .claude/worktrees/soriza-cpo-department"`;
+      text = `/harness-layer:harness-plan "Verify the round-4 fixes on the soriza-cpo-department spec (Revision Mode, issue #43) — no scope changes; run the verifying Codex round 5 and, on approval, remove the status:needs-human label. Worktree: .claude/worktrees/soriza-cpo-department"`;
     }
     document.getElementById("prompt").textContent = text;
   }
