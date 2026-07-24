@@ -78,6 +78,10 @@ anthropic:
     file: anthropic/fable-finding-unknowns.md
     topic: Finding your unknowns — Fable field-guide patterns before, during, after implementation (blog)
     fetched: 2026-07-21
+  - url: https://code.claude.com/docs/en/memory
+    file: anthropic/memory.md
+    topic: Memory — CLAUDE.md files, imports, project vs user memory, precedence
+    fetched: 2026-07-24
 openai:
   - url: https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide
     file: openai/codex-prompting-guide.md
@@ -112,3 +116,24 @@ openai/codex:
     file: openai/codex/rules.md
     topic: "Codex — rules: command restrictions and safe shell parsing for sandbox control"
     fetched: 2026-07-21
+design:
+  - url: https://www.w3.org/WAI/WCAG22/quickref/
+    file: design/wcag22-quickref.md
+    topic: WCAG 2.2 quickref — accessibility success criteria, filterable by level and topic
+    fetched: 2026-07-24
+  - url: https://web.dev/learn/design
+    file: design/learn-design.md
+    topic: web.dev Learn Design — layout, typography, color, and UI structure fundamentals
+    fetched: 2026-07-24
+  - url: https://www.nngroup.com/articles/113-design-guidelines-homepage-usability/
+    file: design/nngroup-homepage-usability.md
+    topic: NN/g homepage usability design guidelines — IA and homepage design cornerstone
+    fetched: 2026-07-24
+  - url: https://www.nngroup.com/articles/how-users-read-on-the-web/
+    file: design/nngroup-writing-for-the-web.md
+    topic: NN/g how users read on the web — scannability and writing-for-the-web guidance
+    fetched: 2026-07-24
+  - url: https://web.dev/learn/design/typography
+    file: design/learn-design-typography.md
+    topic: web.dev Learn Design — typography module — type choice, scale, and legibility
+    fetched: 2026-07-24
