@@ -18,8 +18,11 @@
   `nngroup.com/articles/` with one containing `homepage`, one fonts.google.com/knowledge) —
   each with a canonical `url`, a `file` under `design/`, and a non-null `fetched` date, and
   each mirror file existing on disk with frontmatter (`source:` matching the manifest url,
-  `fetched:` matching the manifest date) and a `> **In here:**` line. Any substitution from
-  the identity table is recorded in decisions.md; no mirror hand-authored.
+  `fetched:` matching the manifest date) and a `> **In here:**` line. Provenance is
+  observable: decisions.md's `### Build addendum — kb run record` carries exactly one
+  `- OK <file> <canonical url>` line per registered source, and any deviation from the
+  identity table's fixed URLs carries a swap line naming the original URL. A mirror without
+  its OK record — or a fixed-identity deviation without a swap line — fails.
 - **AC3** — The `anthropic` group carries exactly one entry whose url contains
   `code.claude.com/docs/en/memory`, with a `file` under `anthropic/`, a non-null `fetched`
   date, and its mirror on disk with matching frontmatter.
@@ -27,9 +30,11 @@
   `design/` mirrors and the memory mirror).
 - **AC5** — Manifest hygiene: total entry count ≤ 40 (expected 32) and no two entries share
   a canonical url.
-- **AC6** — The branch's tracked change surface outside `specs/` is exactly
-  `.worktreeinclude` and `ai-docs/sources.yaml`; git tracks nothing else under `ai-docs/`
-  (mirrors and `ai-docs/index.md` remain gitignored, never force-added).
+- **AC6** — The change surface vs `origin/main` outside `specs/` — measured against the
+  working tree, so the check passes identically before or after the build's commit — is
+  exactly `.worktreeinclude` and `ai-docs/sources.yaml`, with no stray untracked non-ignored
+  files; git tracks nothing else under `ai-docs/` (mirrors and `ai-docs/index.md` remain
+  gitignored, never force-added).
 
 ## Validation Commands
 
@@ -101,6 +106,27 @@ build tasks complete. Assertion scripts exit non-zero on any failure.
   agrees with the manifest — a fetched mirror, not a hand-authored file).
 - `uv run python -c "
   import yaml
+  from pathlib import Path
+  m = yaml.safe_load(open('ai-docs/sources.yaml'))
+  new = m.get('design', []) + [e for e in m['anthropic'] if 'code.claude.com/docs/en/memory' in e['url']]
+  dec = Path('specs/soriza-design-kb-seed/decisions.md').read_text()
+  parts = dec.split('### Build addendum — kb run record', 1)
+  assert len(parts) == 2, 'decisions.md missing the build addendum section'
+  record = parts[1].split('\n## ', 1)[0]
+  lines = [l.strip() for l in record.splitlines()]
+  for e in new:
+      ok = [l for l in lines if l.startswith('- OK') and e['file'] in l and e['url'] in l]
+      assert len(ok) == 1, 'expected exactly one OK record line for %s, got %d' % (e['file'], len(ok))
+  urls = [e['url'] for e in m.get('design', [])]
+  for fixed in ['w3.org/WAI/WCAG22/quickref', 'web.dev/learn/design', 'fonts.google.com/knowledge']:
+      if not any(fixed in u for u in urls):
+          swap = [l for l in lines if 'swap' in l.lower() and fixed in l]
+          assert swap, 'fixed identity %s deviated without a recorded swap line' % fixed
+  print('AC2 provenance ok')"` — verifies AC2 (every registered source has exactly one OK
+  record in the build addendum; every fixed-identity deviation has a swap line naming the
+  original URL — an unrecorded substitution or a mirror with no kb run record fails).
+- `uv run python -c "
+  import yaml
   m = yaml.safe_load(open('ai-docs/sources.yaml'))
   entries = [e for g in m.values() for e in g]
   urls = [e['url'] for e in entries]
@@ -113,8 +139,13 @@ build tasks complete. Assertion scripts exit non-zero on any failure.
   regenerated index stays ignored).
 - `uv run python -c "
   import subprocess
-  out = subprocess.run(['git','diff','--name-only','origin/main...HEAD','--',':!specs'],
-                       capture_output=True, text=True, check=True).stdout.split()
-  assert sorted(out) == ['.worktreeinclude', 'ai-docs/sources.yaml'], out
-  print('AC6 exact-surface ok')"` — verifies AC6 (the non-spec change surface equals exactly
-  those two paths — any extra, missing, or renamed path fails).
+  diff = subprocess.run(['git','diff','--name-only','origin/main','--',':!specs'],
+                        capture_output=True, text=True, check=True).stdout.split()
+  assert sorted(diff) == ['.worktreeinclude', 'ai-docs/sources.yaml'], diff
+  stray = subprocess.run(['git','ls-files','-o','--exclude-standard','--',':!specs'],
+                         capture_output=True, text=True, check=True).stdout.split()
+  assert not stray, 'stray untracked non-ignored files: %r' % stray
+  print('AC6 exact-surface ok')"` — verifies AC6 sequence-independently: `git diff` against
+  `origin/main` with no second rev measures the working tree (staged + unstaged + committed
+  alike), so the assertion holds whether the build has committed yet or not; the `ls-files -o`
+  check fails on any stray untracked non-ignored file outside `specs/`.

@@ -94,6 +94,17 @@ never hand-authored; only `.worktreeinclude` and `ai-docs/sources.yaml` are trac
   matching semantics); child AC2–AC5 realize epic AC3; child AC6 keeps the PR surface exactly
   scoped. Epic AC2's worktree-receives-mirrors half lands with the epic driver's hydration.
 
+### Build addendum — kb run record
+
+Appended by kb-builder at build time — the observable provenance record validation parses.
+One line per `/harness-layer:kb add` run, verbatim from the kb report:
+
+- `- OK <file> <canonical url>` for every successfully mirrored source (six lines when done);
+- additionally, for any identity-table substitution:
+  `- FAIL <original url> → swapped to <substitute url>: <reason>`.
+
+No lines yet — the build appends them. A mirror without its OK line here fails AC2.
+
 ## Assumptions
 
 - **NN/g exact URLs are picked at build** — proposed homepage cornerstone:

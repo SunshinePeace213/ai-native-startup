@@ -68,8 +68,11 @@
   point — proposed homepage cornerstone first, then the writing-for-the-web article).
 - After each run, confirm the kb report: OK → canonical url + today's `fetched` written to
   the manifest, mirror on disk; FAIL → leave `fetched: null`, substitute the canonical
-  same-topic page per spec.md `## Edge Cases`, and append the swap to decisions.md under
-  `## Resolved Decisions` (build addendum).
+  same-topic page per spec.md `## Edge Cases`.
+- After each run, append its result verbatim to decisions.md
+  `### Build addendum — kb run record`: `- OK <file> <canonical url>` on success; on a
+  substitution additionally `- FAIL <original url> → swapped to <substitute url>: <reason>`.
+  This record is the provenance AC2's validation parses — no OK line, no pass.
 - Never hand-edit a mirror or `ai-docs/index.md`; never pass `--force`.
 
 ### 3. Register and mirror the anthropic memory page
@@ -84,6 +87,8 @@
 - Run `/harness-layer:kb add https://code.claude.com/docs/en/memory anthropic`.
 - Confirm the manifest entry lands in the `anthropic` group with a canonical url, a
   `file` under `anthropic/`, a non-null `fetched`, and that `ai-docs/index.md` lists it.
+- Append the run's `- OK <file> <canonical url>` line to decisions.md
+  `### Build addendum — kb run record`.
 
 ### 4. Validate Everything
 
@@ -93,6 +98,9 @@
 - **Agent Type:** general-purpose
 - **Model / Effort:** `sonnet` / `low`
 - **Parallel:** false
-- Run every command in acceptance-criteria.md → `## Validation Commands`.
-- Verify each acceptance criterion is met; confirm the tracked change surface outside
-  `specs/` is exactly `.worktreeinclude` + `ai-docs/sources.yaml` (AC6).
+- Run every command in acceptance-criteria.md → `## Validation Commands`. They are
+  sequence-independent (the AC6 surface check measures the working tree against
+  `origin/main`), so run them before the build's commit and re-run after if anything moved.
+- Verify each acceptance criterion is met; confirm the change surface outside `specs/` is
+  exactly `.worktreeinclude` + `ai-docs/sources.yaml` (AC6) and the kb run record covers all
+  six sources (AC2).

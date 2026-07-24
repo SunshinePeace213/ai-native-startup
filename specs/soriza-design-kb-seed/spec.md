@@ -74,7 +74,8 @@ Volatile first — full record in [decisions.md](./decisions.md):
    source of truth, fetching fans out to `kb-fetcher` subagents per the kb command's own
    contract, and the `design` group is passed explicitly (host-based defaulting would
    misfile w3.org/web.dev/nngroup/fonts.google.com). Six sequential `add` runs; each syncs
-   just its new entry.
+   just its new entry, and each run's result is appended verbatim to decisions.md
+   `### Build addendum — kb run record` — the observable provenance AC2 parses.
 3. **The pattern is a single `ai-docs/*` line** (plus a one-line comment above it). The
    repo's `WorktreeCreate` hook replaces stock `.worktreeinclude` processing and re-implements
    the copy with `fnmatch` against `git ls-files -oi --exclude-standard` — `fnmatch`'s `*`
@@ -171,8 +172,15 @@ All new files are gitignored KB output in this worktree — none are tracked:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** <pending — filled after the Codex loop>
-- **Rejected findings:** <pending>
+- **Outcome:** **needs-human (blockers)** — 2026-07-24, cycle cap (2 new rounds) reached
+  still `changes-requested`. Round 1 (head `6c44157`): AC1/AC6 validation commands were
+  diagnostic, not asserting — fixed (single-pattern + `origin/main` baseline assertion;
+  exact-surface assertion). Round 2 (head `bfb5c10`): AC2 substitution/mirror provenance not
+  observable, AC6 surface check sequenced against `HEAD` before the build commit — fixed
+  on this branch (kb run record in decisions.md parsed by a new provenance assertion;
+  working-tree-vs-`origin/main` surface check) but **not yet re-verified by Codex**. A
+  revision cycle (rounds continue at 3) must confirm the round-2 fixes.
+- **Rejected findings:** none — every blocking finding from both rounds was applied.
 
 ## References
 
