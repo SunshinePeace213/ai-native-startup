@@ -108,14 +108,16 @@ any failure.
 - `uv run python -c "
   import json, subprocess
   def q(args): return json.loads(subprocess.run(['gh']+args,capture_output=True,text=True,check=True).stdout)
-  pr = q(['pr','view','49','--json','state,body,mergedAt,baseRefName'])
+  pr = q(['pr','view','49','--json','state,body,mergedAt,baseRefName,mergeCommit'])
   assert pr['state'] == 'MERGED' and pr['baseRefName'] == 'main' and pr['mergedAt'], pr
   assert '#43' in pr['body'], 'epic docs PR does not reference #43'
+  epic = pr['mergeCommit']['oid']
   for n in ['44','45','46','47','48']:
       for c in q(['issue','view',n,'--json','closedByPullRequestsReferences'])['closedByPullRequestsReferences']:
-          cpr = q(['pr','view',str(c['number']),'--json','createdAt'])
-          assert cpr['createdAt'] > pr['mergedAt'], 'child PR #%s predates the epic docs merge' % c['number']
-  print('AC1 ok')"` — verifies AC1 (PR #49 merged to main referencing #43, and every child PR was opened after that merge).
+          head = q(['pr','view',str(c['number']),'--json','headRefOid'])['headRefOid']
+          st = q(['api','repos/{owner}/{repo}/compare/%s...%s' % (epic, head)])['status']
+          assert st in ('ahead','identical'), 'child PR #%s branch does not contain the epic docs merge (status %s) — its pipeline started before the docs landed' % (c['number'], st)
+  print('AC1 ok')"` — verifies AC1 (PR #49 merged to main referencing #43, and every child PR's branch descends from that merge commit — child worktrees branch fresh from origin/main at plan start, so ancestry proves the pipeline started after the docs landed).
 - `grep -n "ai-docs" .worktreeinclude` — verifies AC2 (pattern present). Full check: create a scratch worktree (`EnterWorktree` or `git worktree add` + the WorktreeCreate hook) and assert `ai-docs/anthropic/*.md` exists inside it.
 - `uv run python -c "
   import yaml
@@ -272,5 +274,13 @@ any failure.
       assert needle in text, 'evidence swap incomplete: ' + needle
   assert re.search(r'(no|never).{0,40}PR.{0,40}(per|each).{0,20}(draft|deliverable)|only.{0,30}gate', text, re.I|re.S), 'PR-per-deliverable not excluded'
   print('AC11 ok')"` — verifies AC11 (both gate points, swap clause, exclusion).
-- `gh issue view 43 --json body -q .body | grep -c "\- \[x\] #4"` — verifies AC12 (expect 5); and
-  `for n in 44 45 46 47 48; do gh issue view $n --json state,closedByPullRequestsReferences -q '[.state, (.closedByPullRequestsReferences|length)] | @tsv'; done` — every child CLOSED with ≥1 closing PR.
+- `uv run python -c "
+  import json, re, subprocess
+  def q(args): return json.loads(subprocess.run(['gh']+args,capture_output=True,text=True,check=True).stdout)
+  body = q(['issue','view','43','--json','body'])['body']
+  for n in ['44','45','46','47','48']:
+      assert re.search(r'- \[x\] #%s\b' % n, body), 'epic checkbox for #%s not ticked' % n
+      ch = q(['issue','view',n,'--json','state,closedByPullRequestsReferences'])
+      assert ch['state'] == 'CLOSED', '#%s is not closed' % n
+      assert len(ch['closedByPullRequestsReferences']) >= 1, '#%s has no closing PR' % n
+  print('AC12 ok')"` — verifies AC12 (hard assertions: all five checkboxes ticked, every child CLOSED with ≥1 closing PR).
