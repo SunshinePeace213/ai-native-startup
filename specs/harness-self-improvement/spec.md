@@ -261,8 +261,10 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** needs-human (codex-unavailable) — the Agent tool (and with it the `codex-runner` subagent) is denied in this background session, so no review round could run. Round numbering starts at 1 on the next cycle.
-- **Rejected findings:** none — no round ran.
+- **Outcome:** needs-human (blockers) — cycle 2 ran rounds 1–2 (`gpt-5.6-sol` / `xhigh`; reports under `reviews/`). Round 1 (head `976d18f`): changes-requested, CX1-1..CX1-4. Round 2 (head `57cd02d`, delta): CX1-1..CX1-3 fixed; CX2-1 (repeat of CX1-4) still blocking at the cycle cap.
+- **Open blocker:** CX2-1 — per-task effort stamps need a deployment mechanism the Agent tool can honor (candidates: effort-bearing builder agent definitions, Workflow deployment, or revising model-selection.md's stamping mandate). First repeat: the next fix re-derives from root cause at an escalated tier, never re-applying session-inherited stamps.
+- **Rejected findings:** none.
+- **Note:** the `codex-runner` subagent could not be deployed (Agent tool denied in this background session); the runner contract — verbatim command, verdict-line verification, single retry — was executed inline via Bash instead, disclosed in the run report.
 
 ## References
 
@@ -277,7 +279,7 @@ specs/harness-self-improvement/
 ├── acceptance-criteria.md  # done: acceptance criteria + validation commands
 ├── checks/                 # committed plan checks (ac4_ci_workflow.py, ac5_inventory.py)
 ├── artifacts/              # implementation-plan page
-└── reviews/                # Codex verdicts (starts with the next review cycle)
+└── reviews/                # Codex verdicts (rounds 1–2 recorded this cycle)
 ```
 
 ## Self Validation
@@ -286,4 +288,4 @@ specs/harness-self-improvement/
 - [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
 - [x] Acceptance criteria are specific and testable
 - [x] All four files exist under specs/harness-self-improvement/ and are saved in the repository
-- [ ] Codex has reviewed the spec and Status reflects the outcome (needs-human: codex-unavailable this run)
+- [x] Codex has reviewed the spec and Status reflects the outcome (needs-human: blockers — CX2-1 open, see `## Codex Verification`)
