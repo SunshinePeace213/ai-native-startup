@@ -14,9 +14,21 @@ must be checkable by a human or a command — no "feels fast", no "works well".>
 
 ## Validation Commands
 
-Run these to prove the criteria above. Map each command to the criteria it verifies.
+Validation logic lives in committed check scripts — one script per criterion under
+`specs/<name>/checks/` (PEP 723 scripts, like hooks), or pytest files under `tests/`. Never inline
+a multi-line program in this file. Each bullet below is exactly ONE line: a stage tag, the script
+invocation, and the criterion it verifies.
 
-<precise, copy-pasteable commands. Use `uv run …` for Python and `bun …` for JS/TS.>
+The stage tag names the earliest point the command can pass. Reviewers run only the commands whose
+stage has been reached and record later-stage commands as deferred — deferred is not a failure:
 
-- `<command>` — verifies <AC#>. <what a pass looks like>
-- `<command>` — verifies <AC#>.
+- `[plan-time]` — runnable against the spec folder alone, before any build.
+- `[child-build-time]` — runnable once the implementing build (for an epic: the relevant child's
+  build) has produced its changes.
+- `[post-merge]` — runnable only after dependent work has merged to `main`.
+
+<one bullet per criterion. Use `uv run --script …` for checks/ scripts, `uv run pytest …` for tests.>
+
+- `[plan-time]` `uv run --script specs/<name>/checks/ac1_<slug>.py` — verifies AC1. <what a pass looks like>
+- `[child-build-time]` `uv run pytest tests/<path> -k <ac2-marker>` — verifies AC2.
+- `[post-merge]` `uv run --script specs/<name>/checks/ac3_<slug>.py` — verifies AC3.

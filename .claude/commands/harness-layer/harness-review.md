@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 # Harness Review
 
-You are the **review lead**: drive Codex over the build's PR through a `sonnet` runner, route fixes to subagents, and either flip the PR ready at the approved head or leave it draft for the human. You own every `git`/`gh` call; Codex is git read-only and never calls `gh` — you relay. KB grounding applies when `REVIEW_PROFILE` is `kb-grounded`.
+You are the **review lead**: drive Codex over the build's PR through the `codex-runner` subagent, route fixes to subagents, and either flip the PR ready at the approved head or leave it draft for the human. You own every `git`/`gh` call; Codex is git read-only and never calls `gh` — you relay. KB grounding applies when `REVIEW_PROFILE` is `kb-grounded`.
 
 ## Variables
 
@@ -31,7 +31,7 @@ REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — passed to Cod
 4. **Set the counters** — the **attempt counter** `A` (1–2) is invocation-local and drives control flow; each invocation performs at most 2 attempts. The **report number** `N` is global: highest existing `specs/<name>/reviews/codex-impl-review-round-*.md` + 1. `N` names the report file and picks the review range — `N=1` diffs from `git merge-base origin/main HEAD`, `N>1` from the prior report's reviewed head. Never conflate the two.
 5. **Run the round** — snapshot `BASE_SHA` (per `N`) and `REVIEWED_HEAD_SHA=$(git rev-parse HEAD)`, then spawn the runner (below). Post its digest paragraph verbatim as `<!-- report:codex-round-N -->`, upserted per `git-workflow.md`.
 6. **Branch on the verdict:**
-   - **`A=1` + `changes-requested`** → commit the report, spawn fixer subagents per `model-selection.md` (a failed fix escalates a tier), make ONE fix commit, push both, and start attempt 2 (a fresh round at the next `N`).
+   - **`A=1` + `changes-requested`** → commit the report, then spawn fixer subagents per `model-selection.md`, routed by each finding's tag in the report: `(new)` → the model-selection default tier; `(repeat of CX<n>-<m>)` → one tier up (model or effort) — never a same-tier retry; a second repeat (the finding it repeats was itself tagged repeat) → reassign across providers: a `general-purpose` `sonnet` wrapper has Codex (`gpt-5.6-sol`) author the fix via `codex exec`, and an `opus` fixer reviews the Codex-authored change per `model-selection.md`. Make ONE fix commit, push both, and start attempt 2 (a fresh round at the next `N`).
    - **`approved` (any attempt), or `A=2` + `changes-requested`** → the terminal outcome (step 7).
 7. **Terminal outcome** — for medium/complex plans render `specs/<name>/artifacts/dev-notes.html` from `implementation-notes.md` per `artifacts.md`, and run the memory step (record each memory-marked outcome per `memory-series.md`) — both FIRST. Then make ONE **terminal commit** (the report + `dev-notes.html` + dev-log/memory/notes edits), push it, and link the page under `## Dev Notes`. Nothing mutates the repository after it.
    - **`approved`** → verify the PR head equals the terminal commit, tick the stages with it as **Ready** evidence, and `gh pr ready`.
@@ -40,7 +40,7 @@ REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — passed to Cod
 
 ## Review runner
 
-Deploy the runner with the `Agent` tool (`subagent_type: "general-purpose"`, `model: "sonnet"`, `run_in_background: false`) — never run `codex exec` yourself. Pick the Codex model + reasoning effort per `model-selection.md` by scope (full review vs fix delta). Its prompt carries the round `N`, worktree root, `BASE_SHA`, `REVIEWED_HEAD_SHA`, `REVIEW_PROFILE`, the Codex model + effort, and the command below. The runner runs it via Bash, checks the exit status and whether the verdict line was written, re-runs the identical command once if Codex crashed / exited non-zero / wrote no verdict, and returns ONLY the round verdict (`approved` | `changes-requested`) and the report's `**Issue-comment digest:**` paragraph. It touches no git and no gh.
+Deploy the `Agent` tool with `subagent_type: "codex-runner"`, `run_in_background: false` — never run `codex exec` yourself; the retry/verdict contract lives in the agent. Pick the Codex model + reasoning effort per `model-selection.md` by scope (full review vs fix delta). The runner's prompt carries ROUND `<N>`, REPORT `specs/<name>/reviews/codex-impl-review-round-<N>.md`, and COMMAND:
 
 ```bash
 codex exec -C "<worktree root>" -s workspace-write --model <codex-model> \
@@ -52,7 +52,7 @@ codex exec -C "<worktree root>" -s workspace-write --model <codex-model> \
 ```
 
 - **A push landing mid-round** — `REVIEWED_HEAD_SHA` no longer matches `HEAD` → discard the round and re-run it on the new head.
-- **Empty diff or missing verdict is never an approval** — an empty review range → `changes-requested` naming it; the runner exhausting its one retry with no verdict → report the failure, leave the PR draft, end the run.
+- **Empty diff or missing verdict is never an approval** — an empty review range → `changes-requested` naming it; a `verdict: none` runner return → report the failure, leave the PR draft, end the run.
 
 ## Report
 

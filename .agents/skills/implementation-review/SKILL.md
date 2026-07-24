@@ -1,6 +1,6 @@
 ---
 name: implementation-review
-description: "Single-gate Codex cross-model review of a /harness-layer:harness-build implementation against its saved plan. A sonnet runner invokes you via codex exec and injects the round number N, the plan path, BASE_SHA, REVIEWED_HEAD_SHA, and REVIEW_PROFILE. You derive your OWN git diff over that range, read the plan, RUN the plan's Validation Commands yourself in the workspace-write sandbox, select read-only .codex/agents lenses by what the diff touched, run the KB-grounding pass when a signal fires, confidence-filter findings (floor 80) into blocking or advisory, and write exactly ONE report per round — verdict on the first line, an Issue-comment digest last — then return a terse two-line summary. Git is read-only (diff/log only, no commits); you never call gh. Use to review, verify, or gate an implementation against its spec.md — typically via codex exec once per round under -s workspace-write."
+description: "Single-gate Codex cross-model review of a /harness-layer:harness-build implementation against its saved plan. A sonnet runner invokes you via codex exec and injects the round number N, the plan path, BASE_SHA, REVIEWED_HEAD_SHA, and REVIEW_PROFILE. You derive your OWN git diff over that range, read the plan, RUN the runnable-stage subset of the plan's Validation Commands yourself in the workspace-write sandbox (deferring [post-merge] ones), select read-only .codex/agents lenses by what the diff touched, run the KB-grounding pass when a signal fires, confidence-filter findings (floor 80) into blocking or advisory tagged new or repeat-of a prior finding ID, and write exactly ONE report per round — verdict on the first line, an Issue-comment digest last — then return a terse two-line summary. Git is read-only (diff/log only, no commits); you never call gh. Use to review, verify, or gate an implementation against its spec.md — typically via codex exec once per round under -s workspace-write."
 ---
 
 # Implementation Review — Codex single gate
@@ -47,13 +47,18 @@ plan-adherence finding.
 **Delta rounds (`Scope: delta`, N>1).** Read the **prior report and the delta only** — never
 re-read the full plan or KB. Disposition every prior blocker fixed / not fixed / regressed.
 
-## Run the Validation Commands
+## Run the Validation Commands (runnable-stage subset)
 
-Run each Validation Command from the plan **yourself** in the `-s workspace-write` sandbox against
-`REVIEWED_HEAD_SHA`, and record the real PASS/FAIL result. A command you **cannot execute** (sandbox
-or network limits) is recorded as **unexecuted with the reason** and **BLOCKS approval** — never
-fabricate a result. Any FAIL, or any unexecuted command, is a blocking condition. Reproduce the
-results on the `Validation:` report line.
+The plan's Validation Commands are one-line committed check-script invocations, each carrying a
+stage tag — `[plan-time]`, `[child-build-time]`, or `[post-merge]`. Run each `[plan-time]` and
+`[child-build-time]` command **yourself** in the `-s workspace-write` sandbox against
+`REVIEWED_HEAD_SHA`, and record the real PASS/FAIL result. Record each `[post-merge]` command as
+`deferred (post-merge)` **without running it** — deferred is not a failure and never blocks. A
+runnable command you **cannot execute** (sandbox or network limits) is recorded as **unexecuted
+with the reason** and **BLOCKS approval** — never fabricate a result. Any FAIL, or any unexecuted
+runnable command, is a blocking condition; so is a Validation Command that violates the convention
+(an inline multi-line program instead of a one-line script invocation, or a missing stage tag).
+Reproduce the results on the `Validation:` report line.
 
 ## Lens selection (deterministic)
 
@@ -146,7 +151,7 @@ Then, in order:
 7. `Validation:` — one line per command ending in `PASS`/`FAIL`/`unexecuted (reason)` (or `Validation: all PASS`).
 8. On delta rounds, `Prior blockers:` — every prior blocker dispositioned fixed / not fixed / regressed.
 9. A short **Digest** — blocking-finding count by category and the headline issues.
-10. **Findings**, grouped by category (plan adherence / KB grounding / lens name), each anchored to a diff location AND the plan line, cached doc, or lens it rests on, with a concrete fix. Advisory items go under a clearly non-blocking heading. For `approved`, state that no blocking findings remain — invent none to pad.
+10. **Findings**, grouped by category (plan adherence / KB grounding / lens name). Each blocking finding starts with a finding ID `CX<N>-<i>` (round N, i-th finding) and a tag — `(new)`, or `(repeat of CX<n>-<m>)` when it shares its root cause with a prior-round finding (not fixed, regressed, or the fix failed the same way). Each is anchored to a diff location AND the plan line, cached doc, or lens it rests on, with a concrete fix. Advisory items go under a clearly non-blocking heading. For `approved`, state that no blocking findings remain — invent none to pad.
 11. **Issue-comment digest (final element).** End with `**Issue-comment digest:**` followed by exactly one short paragraph: the round number, verdict, blocking-finding count + headline issues, and the next action. Draw only on this round's findings — add no new claim. The orchestrator posts it verbatim to the issue thread; you still never call `gh`.
 
 Example (`changes-requested`):
@@ -162,20 +167,21 @@ Profile: standard
 Lenses: plan-adherence, review-code-standards, review-silent-failure, review-test-coverage | skipped: review-type-design — no types changed; review-comment-accuracy — no comments changed; review-simplification — tidy pass already ran
 Findings: 2 surviving of 5 raw (floor 80)
 Validation:
-- bun run build → FAIL
-- uv run pytest -q → PASS
+- [child-build-time] uv run --script specs/the-plan/checks/ac2_jwt.py → FAIL
+- [plan-time] uv run --script specs/the-plan/checks/ac1_layout.py → PASS
+- deferred: 1 post-merge
 Prior blockers:
-- "login returns a JWT" unmet — not fixed
+- CX1-1 not fixed; CX1-2 fixed
 
-Digest: 2 blocking — 1 unmet acceptance criterion, 1 failing validation command.
+Digest: 2 blocking (1 repeat) — 1 unmet acceptance criterion, 1 failing validation command.
 
 Findings:
 
 **Plan adherence**
-- **Acceptance criterion "login returns a JWT" is unmet.** `src/auth/login.ts` returns a session cookie, contradicting Acceptance Criteria bullet 2. Fix: issue and return a signed JWT.
-- **`bun run build` fails** on a missing export in `src/auth/index.ts:12`. Fix: export `verifyToken`.
+- **CX2-1 (repeat of CX1-1) — Acceptance criterion "login returns a JWT" is unmet.** `src/auth/login.ts` still returns a session cookie, contradicting Acceptance Criteria bullet 2. Fix: issue and return a signed JWT.
+- **CX2-2 (new) — `checks/ac2_jwt.py` fails** on a missing export in `src/auth/index.ts:12`. Fix: export `verifyToken`.
 
-**Issue-comment digest:** Round 2, changes-requested — 2 blocking: an unmet acceptance criterion ("login returns a JWT") and a failing `bun run build`. Next: fix both, then re-review.
+**Issue-comment digest:** Round 2, changes-requested — 2 blocking (1 repeat): an unmet acceptance criterion ("login returns a JWT") and a failing AC2 check. Next: fix both, then re-review.
 ```
 
 ## Return to the caller (keep it short)
