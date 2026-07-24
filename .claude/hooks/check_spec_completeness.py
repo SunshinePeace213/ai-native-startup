@@ -8,12 +8,18 @@ the per-plan spec folder is complete.
 
 Two checks only: (1) all four files exist, (2) each file has its required
 '##' sections. Exit 2 => deny stop; stderr is fed back to Claude so it
-completes the gaps. The gated folder is the newest-modified plan folder
-across the main specs/ and any worktree's specs/ (/harness-layer:harness-plan
-drafts in a worktree), excluding underscore-prefixed dirs (_templates) and
-discovery-only chain folders (a discovery/ subdir with no spec files yet).
+completes the gaps. The gate is session-scoped: it reads the Stop-hook stdin
+JSON, resolves the invoking session's root from its 'cwd', and gates only the
+newest-modified plan folder under THAT root's specs/ -- never any other
+worktree's specs/, so a concurrent planning session cannot steal or mask the
+target. Underscore-prefixed dirs (_templates) and discovery-only chain folders
+(a discovery/ subdir with no spec files yet) are excluded.
+
+Malformed/empty stdin or a cwd outside any git repo degrades down a fixed
+fallback chain -- never crash, never exit 2 on plumbing (fail-open).
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -51,13 +57,52 @@ REQUIRED_SECTIONS: dict[str, tuple[str, ...]] = {
 }
 
 
-def resolve_root() -> Path:
+def read_stdin_cwd() -> str | None:
+    """The session's cwd from the Stop payload, or None if stdin is empty or
+    malformed (fail-open: plumbing noise must not crash the gate)."""
+    try:
+        data = json.load(sys.stdin)
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if isinstance(data, dict):
+        cwd = data.get("cwd")
+        if isinstance(cwd, str) and cwd:
+            return cwd
+    return None
+
+
+def git_toplevel(cwd: str | None) -> Path | None:
+    """`git rev-parse --show-toplevel`, run in `cwd` when given; None on any
+    failure (not a repo, missing dir, git absent)."""
+    args = ["git"]
+    if cwd is not None:
+        args += ["-C", cwd]
+    args += ["rev-parse", "--show-toplevel"]
+    try:
+        proc = subprocess.run(args, capture_output=True, text=True)
+    except OSError:
+        return None
+    if proc.returncode == 0 and proc.stdout.strip():
+        return Path(proc.stdout.strip())
+    return None
+
+
+def resolve_root(stdin_cwd: str | None) -> Path:
+    """Session root, first success wins: git toplevel of the stdin cwd -> the
+    stdin cwd itself (if a directory) -> $CLAUDE_PROJECT_DIR -> git toplevel of
+    the process cwd -> Path.cwd()."""
+    if stdin_cwd:
+        top = git_toplevel(stdin_cwd)
+        if top is not None:
+            return top
+        if Path(stdin_cwd).is_dir():
+            return Path(stdin_cwd)
     env_root = os.environ.get("CLAUDE_PROJECT_DIR")
     if env_root:
         return Path(env_root)
-    proc = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True)
-    if proc.returncode == 0 and proc.stdout.strip():
-        return Path(proc.stdout.strip())
+    top = git_toplevel(None)
+    if top is not None:
+        return top
     return Path.cwd()
 
 
@@ -69,11 +114,9 @@ def discovery_only(folder: Path) -> bool:
 
 
 def newest_plan_folder(root: Path) -> Path | None:
-    specs_dirs = [root / "specs", *sorted((root / ".claude" / "worktrees").glob("*/specs"))]
+    specs = root / "specs"
     folders = [
         folder
-        for specs in specs_dirs
-        if specs.is_dir()
         for folder in specs.iterdir()
         if folder.is_dir() and not folder.name.startswith("_") and not discovery_only(folder)
     ]
@@ -81,9 +124,9 @@ def newest_plan_folder(root: Path) -> Path | None:
 
 
 def main() -> int:
-    root = resolve_root()
+    root = resolve_root(read_stdin_cwd())
     if not (root / "specs").is_dir():
-        return 0  # no specs dir at all -> nothing to gate
+        return 0  # no specs dir under this session's root -> nothing to gate
 
     folder = newest_plan_folder(root)
     if folder is None:

@@ -22,7 +22,7 @@ families share a `_common.py` engine.
 | `auto-format/` | PostToolUse `Write\|Edit\|MultiEdit` | Four extension-scoped formatters (`js_ts`, `data`, `markdown`, `python`) format the edited file in place; unfixable lint → exit-2 diagnostics |
 | `security-scan/` | PostToolUse(+Failure) `Write\|Edit\|MultiEdit`/`Bash`, SessionStart, Stop/SubagentStop | Tracks agent-touched files, scans them for secrets (blocking) and vuln patterns (warn-only); a `security-scan: allow` comment suppresses a line |
 | `sensitive-files/` | PreToolUse `Read\|Grep\|Edit\|Write\|MultiEdit` + `Bash` | Denies agent access to secret-bearing files by name/path; `bash_guard.py` is also registered in `.codex/hooks.json` |
-| `check_spec_completeness.py` | Stop (command-scoped) | Blocks `/harness-layer:harness-plan` from ending on an incomplete `specs/` folder |
+| `check_spec_completeness.py` | Stop (command-scoped) | Blocks `/harness-layer:harness-plan` from ending on an incomplete `specs/` folder; session-scoped — resolves the root from stdin `cwd` and gates only that root's `specs/` |
 | `worktree/` | WorktreeCreate / WorktreeRemove | Creates dep-installed worktrees (`bun install` + `uv sync`); removes worktree + branch |
 
 ## Development
