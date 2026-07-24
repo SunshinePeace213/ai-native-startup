@@ -87,6 +87,8 @@ the build produce the wrong thing or get stuck:
 
 - **Missing / contradictory requirements** — an objective with no implementing step, or two requirements (or a requirement and a locked decision) that conflict.
 - **Infeasible / mis-ordered steps** — a step that can't work as written, or is sequenced before its prerequisite.
+- **Promise/mechanism mismatch** — a stated guarantee the spec's own mechanism cannot deliver. Check every absolute promise ("always", "never", "until complete", "the named X") against the mechanism's actual selection/trigger rule, including under concurrency and re-runs; under the KB layer, also against documented platform limits — a cap, override, or timeout in a cached doc that bounds the promise is a contradiction.
+- **Broken artifact flow** — a step consumes an artifact no prior step delivers to where that step runs: each consumed artifact needs a producing step AND a carrying channel (committed and pushed, or an explicit hydration/copy step). Gitignored or worktree-local outputs do not travel with git.
 - **Unverifiable acceptance criteria** — a criterion with NO observable check at all, or whose check script verifies a DIFFERENT claim than the criterion states. A check that exists and verifies the right claim but could be stricter is advisory, never blocking.
 - **Validation-convention violations** — a Validation Commands bullet that is not one line invoking one committed check script (an inline multi-line program is the classic violation), a missing or unknown stage tag, or an invoked check script absent from the tree.
 - **Security / data risks** — destructive ops, secret exposure, or data-loss paths.
