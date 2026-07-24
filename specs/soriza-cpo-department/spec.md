@@ -1,0 +1,279 @@
+# Spec: Soriza design department — slice 1 (soriza-design)
+
+- **Owner:** @SunshinePeace213
+- **Status:** Approved
+  <!-- Lifecycle, set by /harness-layer:harness-plan: Drafted for Review → Approved (on a Codex
+       `approved` verdict). A cycle that ends still changes-requested — or with Codex unavailable —
+       records needs-human in ## Codex Verification and keeps this status. One value only. -->
+
+## Task Description
+
+Build the first slice of Soriza's design department — **soriza-design**, headed by the CPO
+persona **Vera** — on this repo's harness layer: a client web-design studio whose operations
+agents run. The client owns "what"; the department owns discover → define → design and hands
+Ringo a brief packet for Claude Design prototyping.
+
+The slice is a per-rung command chain — `/soriza-design:intake → :brief → :sitemap →
+:wireframe → :section-briefs` — operating on `projects/<client>/` (scaffolded from
+`projects/_template/`). Each rung embodies a named staffer from the company-wide roster, reads
+the previous rung's file, is gated by its Definition of Ready, and commits per rung. Intake is
+additionally gated by a uv-script Stop hook (code, not model memory). Doctrine lives in a
+path-scoped rules family with real starter content day one; copywriting is first-class (section
+briefs deliver draft copy; the packet carries a typography-direction page). Wireframes are lo-fi
+grayscale HTML pages published as artifacts — private to Ringo by default, with the client-facing
+delivery mode locked per engagement (org share, consented public link, or the self-contained HTML
+file itself) and recorded in the decision log. The KB gains a `design/` group of five
+official sources, plus worktree availability for all mirrors. Client deliverables ride a
+design-shaped git lane (PR per gate point, evidence block swapped).
+
+This is an **epic** (#43) with five child issues (#44–#48), one pipeline run per child — this
+spec is the epic master plan each child's plan run transcribes from. Pilot engagement: Soriza's
+own site, with Ringo as the client.
+
+## Objective
+
+When this epic is done, `/soriza-design:intake <client>` through `/soriza-design:section-briefs
+<client>` can run end to end against a real `projects/<client>/` folder — every rung gated by
+real doctrine, intake gated by the DoR hook (bounded by the platform's 8-block Stop-hook cap, with every rung's DoR refusal as the durable stop), wireframes reviewable as artifacts with a locked
+client-delivery mode, and the final packet (brief, IA, wireframes, per-section briefs with draft copy,
+typography direction, asset checklist, decision log) signed by Vera and handed to Ringo — with
+all five children shipped through their own plan → build → review → ship runs (#44–#48 closed
+by their PRs).
+
+## Non-Goals
+
+- Delivery/production — a future CTO department.
+- Agent team per engagement — revisit after the ladder proves out.
+- Styled design directions for wireframes — lo-fi grayscale only in slice 1.
+- Client-facing intake surface — Ringo relays; no client-visible pages beyond shared wireframe links.
+- Subagent specialists (brief-writer, wireframer as agents) — the roster's named personas keep the door open.
+- Running the pilot engagement itself — this epic makes the ladder pilot-ready; the pilot is a
+  normal engagement (own issue/branch) that starts after #44–#48 ship.
+
+## Problem Statement
+
+Soriza wants agents to run a web-design studio's operations, but the harness has no
+department: no client folder convention, no design doctrine to hold outputs to, no intake gate,
+no staff identity, and no design knowledge in the KB. Ringo's field experience says clients
+reject pages over weak copy and fonts — so the department must know how to *write*, not only
+how to structure. Building it as slice 1 on the proven pipeline (command chains, path-scoped
+rules, code gates, KB grounding) gives real stakes via the Soriza-site pilot without betting on
+unproven org shapes.
+
+## Solution Approach
+
+A five-rung command chain mirroring the proven discovery-chain shape — one session's judgment
+end to end, cheapest context — over a `projects/<client>/` home scaffolded from
+`projects/_template/`. Doctrine is a path-scoped rules family (`paths: ["projects/**/*"]`) with
+real starter content drafted from a freshly seeded `design/` KB group; the intake gate is a
+command-scoped Stop hook (frontmatter registration, `check_spec_completeness.py` precedent);
+client work rides its own git lane (engagement branch, PR per gate point). The main alternative
+— an orchestrator with subagent specialists — was closed in discovery: viable (subagents nest
+since v2.1.172) but declined on judgment; the named-persona roster keeps that upgrade path open.
+
+Execution shape: one epic (#43), five children (#44–#48), **one pipeline run per child** —
+because `harness-build` binds one spec folder to one issue/branch/PR, per-child PRs require
+per-child spec folders; each child plan transcribes from this master spec and asks nothing.
+
+## Requirements & Decisions
+
+Volatile first — full record in [decisions.md](./decisions.md):
+
+1. **Doctrine content & template skeletons** (most likely to churn): six doctrine files with
+   real starter content day one — stubs gate nothing; content drafts from the design KB at #45's
+   build and Ringo reviews it in the PR. Live alternative: Ringo supplies a preferred brief
+   format first, which reshapes `brief-format.md` and the template skeletons.
+2. **Section inventory is dynamic per client**: the sitemap/IA rung locks pages and sections
+   with the client from a nine-skeleton starter library (each skeleton carries "One job" and
+   "One desired action"). Live alternative rejected: a hardcoded five-section brief.
+3. **Intake gate is code, and deterministic**: `check_intake_readiness.py`, a uv-script Stop
+   hook in `/soriza-design:intake`'s frontmatter; hard-coded section tuple + doctrine sync
+   test; the gate targets session-scoped per-client markers
+   `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}` (the command's first write)
+   and blocks an incomplete stop — up to the platform's Stop-hook cap of 8 consecutive
+   blocks (`ai-docs/anthropic/hooks.md`), after which Claude Code overrides and ends the
+   turn; the durable guarantee is the next rung's `DoR gate:` refusal, so an escaped
+   incomplete intake still cannot climb the ladder. Race-free and strand-free under
+   concurrent runs, never a newest-modified heuristic. Live alternative rejected: model-side
+   checklist only.
+4. **Epic mechanics**: children #44–#48 already filed; one pipeline run per child in dependency
+   order #44 → #45 → {#46 → #47, #48}; epic planning docs land on `main` via a draft
+   `📝 docs(spec)` PR (`Refs #43`) so child worktrees (branched fresh from `origin/main`) can
+   read this spec.
+
+## Tracking
+
+<!-- Recorded by /harness-layer:harness-plan. The Issue field is the SINGLE SOURCE OF TRUTH
+     /harness-layer:harness-build reads — it NEVER re-derives #N from the local `worktree-<slug>`
+     branch name. spec.md is the single home for this block; decisions.md does not duplicate it. -->
+
+- **Issue:** #43 (epic) — children #44, #45, #46, #47, #48
+- **Branch:** feat/43-soriza-cpo-department
+- **Worktree:** /Users/ringo/Desktop/ai-native-startup/.claude/worktrees/soriza-cpo-department
+- **Review profile:** kb-grounded
+- **PR:** #49 (draft `📝 docs(spec)` epic docs PR, `Refs #43` — merge lands the plan on `main`
+  after the verifying round approves); child PRs are opened by each child's own build run and
+  recorded in the child specs
+
+## Relevant Files
+
+Use these files to complete the task:
+
+- `.worktreeinclude` — gains the `ai-docs/*` pattern (#44); processed by the repo's own
+  WorktreeCreate hook, whose `fnmatch` matching lets `*` cross `/`.
+- `.claude/hooks/worktree/worktree_create.py` — the copy mechanism #44 relies on; read-only.
+- `ai-docs/sources.yaml` — gains the `design/` group entries + the anthropic memory page (#44);
+  mirrors themselves stay gitignored (`.gitignore:362`), which is exactly why the
+  `.worktreeinclude` pattern is needed.
+- `.claude/hooks/check_spec_completeness.py` — the pattern #46's hook copies (newest-folder
+  resolution, hard-coded section tuple, exit-2 diagnostics, fail-open plumbing).
+- `tests/harness-layer/hooks/test_wiring.py` — pins every hook registration; already scans
+  `.claude/commands/` for command-scoped registrars; #46 extends its expectations.
+- `.claude/rules/harness-layer/hooks.md` — authoritative hook catalog; #46 adds its row.
+- `.claude/rules/git-workflow.md` — the lane #48's rule specializes for `projects/**`.
+- `.claude/rules/memory-series.md` — the contract the rules family and roster follow.
+- `.claude/rules/development-log.md` — the contract `soriza-design/lessons.md` copies.
+- `.claude/commands/harness-layer/*.md` — frontmatter and rung-shape precedents for the five
+  `/soriza-design:*` commands.
+- `AGENTS.md` — gains the roster/family pointers and a `projects/` structure row (#45).
+
+### New Files
+
+- `projects/_template/` — `intake.md`, `brief.md`, `sitemap-ia.md`, `asset-checklist.md`,
+  `decision-log.md`, `wireframes/README.md`, `section-briefs/README.md`,
+  `section-briefs/_library/<9 skeletons>.md` — the client home scaffold (#45).
+- `.claude/rules/soriza/roster.md` — company-wide staff roster, `paths: ["projects/**/*"]` (#45).
+- `.claude/rules/soriza-design/{client-communication,intake-standards,definition-of-ready,brief-format,section-anatomy,copywriting,lessons}.md`
+  — six doctrine files + lessons log, all `paths: ["projects/**/*"]` (#45).
+- `.claude/rules/soriza-design/git-lane.md` — the client git lane, `paths: ["projects/**/*"]` (#48).
+- `.claude/commands/soriza-design/{intake,brief,sitemap,wireframe,section-briefs}.md` — the five
+  rungs (#46, #47).
+- `.claude/hooks/check_intake_readiness.py` — the DoR Stop gate (#46); gates its own
+  session's `projects/<client>/.intake-in-progress.<session-id>` markers (transient; the
+  pattern gets a `.gitignore` line in #46).
+- `tests/harness-layer/hooks/intake-readiness/` — contract + doctrine-sync +
+  session-independence regression + same-client concurrent tests (#46).
+- `specs/soriza-design-{kb-seed,foundations,intake-gate,ladder,git-lane}/` — the five child spec
+  folders, created by each child's own plan run (not by this one).
+
+## Edge Cases
+
+- **KB source refuses fetching** (NN/g robots, WCAG quickref JS app): `/kb` reports FAIL and
+  leaves `fetched: null`; #44 substitutes the canonical page for the same topic and records the
+  swap — never a hand-authored mirror, never a fake `fetched` date.
+- **Worktree copy misses mirrors**: `.worktreeinclude` copies only untracked-and-ignored files
+  **present in the creating checkout** — #44's mirrors never land on `main`, so after #44's PR
+  merges the epic driver hydrates the main checkout with `/harness-layer:kb` (the merged
+  `sources.yaml` drives the sync) before creating any dependent child's worktree. A worktree
+  created without that hydration simply lacks mirrors → run `/harness-layer:kb` inside it.
+- **Re-running `:intake` on an existing client**: scaffold step must be idempotent — never
+  clobber an existing `projects/<client>/`; re-interview updates `intake.md` in place.
+- **DoR hook resolution**: session-scoped and race-free — the intake command's first write
+  drops `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}` (gitignored, transient;
+  no shared file to overwrite). The hook matches stdin's `session_id` against the marker
+  suffix and gates **only its own session's markers**: exit 2 while any own-marked client's
+  `intake.md` is incomplete, exit 0 once all are complete — **leaving the marker in place** —
+  Stop hooks run in parallel and another Stop hook's exit 2 forces a continuation, so this
+  hook can fire again after passing and must pass again idempotently. The block is
+  **platform-bounded, not absolute**: Claude Code overrides a Stop hook after 8 consecutive
+  blocks and ends the turn (`hooks.md`; cap raisable via `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP`,
+  which this design does not require). The hook deliberately does not short-circuit on
+  `stop_hook_active` — the gated condition is resolvable (the command keeps interviewing to
+  fill `intake.md`), and the platform cap is the stuck-loop escape. After an override the
+  intake simply remains incomplete on disk, and the durable guarantee is rung-level: every
+  ladder rung's `DoR gate:`/`Refusal:` refuses an incomplete predecessor, so an escaped
+  incomplete intake cannot progress. Completing client A never releases client B, and B's
+  abandoned incomplete marker never strands A; concurrent runs of the same client each gate
+  on their own distinct marker (primary isolation is one engagement worktree per client;
+  markers are defense-in-depth). No own-session marker → block with a clear message;
+  `_`-prefixed folders never valid; nothing deletes markers at run time — stale markers are
+  harmless gitignored litter that session-scoped matching ignores; malformed/empty stdin or
+  unreadable files → fail open (exit 0), per the hooks contract. Command-scoped registration
+  means other sessions editing `projects/` are never gated. Tests: session-independence
+  regression, same-client concurrent case, re-run on a complete client,
+  no-cross-session-deletion, cross-hook continuation (a second firing after a pass still
+  exits 0), and block-consistency (an incomplete intake yields exit 2 on every firing,
+  including with `stop_hook_active: true` — the hook never fakes success; the override is
+  the platform's call).
+- **Doctrine/hook drift**: the sync test fails if `definition-of-ready.md`'s checklist headings
+  and the hook's tuple diverge — the pair ships together or not at all.
+- **Large section inventory**: `:section-briefs` loops inline by default; above ~10 sections it
+  may fan out parallel subagents per section, with Lior consolidating voice and Vera signing the
+  merged packet.
+- **Artifact publish fails or is denied**: wireframe HTML files remain the canonical
+  deliverable; the rung notes "publish skipped" in `decision-log.md` and never blocks.
+- **Client can't open an artifact link**: a fresh artifact is visible only to its author — the
+  rung never promises a private URL to an external client; it locks the delivery mode per
+  engagement (org share / consented public link / the HTML file itself) and records it in
+  `decision-log.md`.
+- **Client name collisions / naming**: client folder names are kebab-case; `_`-prefixed folders
+  are reserved (template, libraries) and never treated as clients.
+- **Concurrent child pipelines**: #46/#47 vs #48 may run in parallel — they touch disjoint
+  files; both depend on #45 landing on `main` first (children branch from `origin/main`).
+- **`gh` unavailable mid-pipeline**: per git-workflow, stop and surface — never proceed with a
+  placeholder issue or unchecked push.
+
+## Red Flags
+
+- Starting to write code without any written requirements
+- Asking "should I just start building?" before clarifying what "done" means
+- Implementing features not mentioned in any spec or task list
+- Making architectural decisions without documenting them
+- Skipping the spec because "it's obvious what to build"
+- Hand-editing anything under `ai-docs/` other than `sources.yaml` — mirrors are fetched, never written
+- Doctrine stubs ("TBD", "fill me in") — an empty DoR gates nothing; that's a build failure, not a placeholder
+- A single giant build PR spanning multiple children — the ledger locks one pipeline run per child
+- Writing department memory anywhere but `.claude/rules/soriza/` / `.claude/rules/soriza-design/` (no new root markdown, nothing in CLAUDE.md)
+- The intake command "checking the DoR itself" instead of relying on the Stop hook — the gate is code
+
+## Notes
+
+- **Child hand-off**: each child's plan run gets a ready-made prompt (see
+  [tasks.md](./tasks.md)) that names its issue, branch, and worktree, and instructs it to
+  transcribe from this folder and ask nothing. Child plans skip issue creation (#44–#48 exist)
+  and link their branch via `gh issue develop <N>`.
+- **Order matters**: the epic docs PR must merge before #44 starts (children need this spec on
+  `main`); #45 needs #44's KB on disk to draft doctrine; #46 needs #45's doctrine and template;
+  #47 needs #46's rung to chain from; #48 only needs #45.
+- **No new libraries** anywhere in the slice; the hook is a zero-dependency PEP 723 uv script
+  like its precedent.
+- The KB manifest stays under its ≈40-entry cap after #44 (26 + 6 = 32).
+
+## Codex Verification
+
+<!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
+
+- **Outcome:** **approved at round 9** (2026-07-24, reviewed head `ceba2d0`). Nine rounds
+  across five cycles, every blocking finding applied on this branch. Highlights per round:
+  1–2 delivery modes locked, deterministic gate targeting, Rung Contract blocks, chain order;
+  3 session-scoped markers (`${CLAUDE_SESSION_ID}` ↔ stdin `session_id`) + clause-exact
+  AC9–AC11; 4 marker sweep removed (no run-time marker deletion beyond design intent) +
+  AC3/AC6/AC7/AC11 exactness; 5 markers retained on success (idempotent across repeated Stop
+  firings); 6 platform-bounded gate (8-block Stop-hook cap acknowledged; rung-level DoR
+  refusals are the durable stop) + AC1/AC3/AC10 gaps; 7 AC1 branch-ancestry check + AC12
+  hard assertions; 8 post-#44 KB hydration hand-off + last absolute-gate language aligned;
+  9 approved, no blocking findings.
+- **Rejected findings:** none — every blocking finding from all nine rounds was applied;
+  round-1 advisory (add html-artifacts-workflows.md to KB References) also applied.
+
+## References
+
+<a tree of the sibling plan files and their purpose, so the four files trace to each other:>
+
+```text
+specs/soriza-cpo-department/
+├── discovery/              # unknowns ×2, brainstorm, interview pages + decisions-draft.md (the locked ledger)
+├── spec.md                 # this file — what & why, tracking, review record
+├── decisions.md            # interview record: resolved decisions, assumptions, out-of-scope, KB references
+├── tasks.md                # how & who: per-child scope, teams, model/effort stamps, pipeline prompts
+├── acceptance-criteria.md  # done: testable criteria + validation commands
+└── artifacts/              # implementation-plan page (authored after the Codex gate)
+```
+
+## Self Validation
+
+- [x] Objective, Task Description, and Non-Goals are filled in (no placeholders left)
+- [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
+- [x] Acceptance criteria are specific and testable
+- [x] All four files exist under specs/soriza-cpo-department/ and are saved in the repository
+- [ ] Codex has reviewed the spec and Status reflects the outcome

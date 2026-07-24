@@ -1,0 +1,250 @@
+<title>Soriza design department — implementation plan</title>
+<style>
+  :root {
+    --bg: #FAF8F5; --surface: #F0EDE5; --border: #D4CFC7; --ink: #2C2825;
+    --accent: #B8602A; --muted: #8A837A;
+    --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --body: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--body); font-size: 16px; line-height: 1.55;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 40px 24px 220px; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; }
+  h1 { font-size: 2.1rem; line-height: 1.15; margin: 8px 0 4px; }
+  h2 { font-size: 1.4rem; margin: 44px 0 6px; }
+  h3 { font-size: 1.05rem; margin: 0 0 4px; }
+  .eyebrow {
+    font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600;
+  }
+  .sub { color: var(--muted); margin: 0 0 14px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+  .chip {
+    font-size: .78rem; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface);
+  }
+  .chip.alert { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  code, .mono { font-family: var(--mono); font-size: .86em; }
+  code { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+
+  /* Ladder — the signature */
+  .ladder { display: flex; gap: 0; margin: 26px 0 8px; overflow-x: auto; padding-bottom: 6px; }
+  .rung { flex: 1; min-width: 128px; position: relative; padding: 12px 14px 10px; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; margin-right: 26px; }
+  .rung:last-child { margin-right: 0; }
+  .rung:not(:last-child)::after {
+    content: "→"; position: absolute; right: -21px; top: 42%;
+    color: var(--accent); font-weight: 700;
+  }
+  .rung .who { font-family: var(--display); font-size: 1.05rem; }
+  .rung .cmd { font-family: var(--mono); font-size: .72rem; color: var(--accent); display: block; margin-top: 2px; }
+  .rung .owns { font-size: .78rem; color: var(--muted); margin-top: 6px; }
+  .vera { text-align: center; font-size: .82rem; color: var(--muted); margin-bottom: 22px; }
+  .vera strong { font-family: var(--display); color: var(--ink); }
+
+  /* Decision cards */
+  .card { border: 1px solid var(--border); border-radius: 8px; background: #fff; margin: 14px 0; padding: 16px 18px; }
+  .card .why { color: var(--muted); font-size: .9rem; margin: 6px 0 10px; }
+  .paths { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 640px) { .paths { grid-template-columns: 1fr; } }
+  .path { border: 1.5px solid var(--border); border-radius: 6px; padding: 10px 12px; cursor: pointer; background: var(--bg); }
+  .path .tag { font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .path p { margin: 4px 0 0; font-size: .88rem; }
+  .path.sel { border-color: var(--accent); background: #fff; box-shadow: inset 0 0 0 1px var(--accent); }
+  .path.sel .tag { color: var(--accent); }
+  .note { width: 100%; margin-top: 10px; border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font: inherit; font-size: .85rem; background: var(--bg); color: var(--ink); }
+  .note:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* Build order */
+  .flow { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .child { display: grid; grid-template-columns: 74px 1fr auto; gap: 14px; align-items: baseline; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 6px; background: var(--surface); padding: 12px 16px; }
+  .child .id { font-family: var(--mono); font-weight: 700; }
+  .child .dep { font-size: .76rem; color: var(--muted); white-space: nowrap; }
+  .child p { margin: 2px 0 0; font-size: .88rem; color: var(--ink); }
+  .stamp { font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+
+  details { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 12px 18px; margin: 12px 0; }
+  summary { cursor: pointer; font-family: var(--display); font-size: 1.02rem; }
+  details ul { margin: 10px 0 4px; padding-left: 20px; font-size: .9rem; }
+  details li { margin: 3px 0; }
+
+  /* Prompt bar */
+  .promptbar {
+    position: fixed; left: 0; right: 0; bottom: 0; background: var(--ink); color: var(--bg);
+    padding: 14px 24px 16px; box-shadow: 0 -4px 18px rgba(44,40,37,.18);
+  }
+  .promptbar .inner { max-width: 900px; margin: 0 auto; }
+  .promptbar .lbl { font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: #cfc8bf; display: flex; justify-content: space-between; align-items: center; }
+  #prompt { font-family: var(--mono); font-size: .78rem; white-space: pre-wrap; max-height: 110px; overflow-y: auto; margin: 8px 0 0; }
+  #copy { font: inherit; font-size: .8rem; font-weight: 600; background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+  #copy:focus-visible, .path:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: no-preference) { .path { transition: border-color .15s, box-shadow .15s; } }
+</style>
+
+<div class="wrap">
+  <span class="eyebrow">Implementation plan · epic #43 · approved</span>
+  <h1>soriza-design — slice 1</h1>
+  <p class="sub">Soriza's design department as a five-rung command chain over <code>projects/&lt;client&gt;/</code>. The client owns "what"; the department owns discover → define → design and hands Ringo a brief packet.</p>
+  <div class="chips">
+    <span class="chip">Codex: approved at round 9 — spec status Approved</span>
+    <span class="chip">branch <span class="mono">feat/43-soriza-cpo-department</span></span>
+    <span class="chip">children #44–#48 · one pipeline run each</span>
+    <span class="chip">profile kb-grounded</span>
+  </div>
+
+  <h2>The ladder</h2>
+  <p class="sub">Each rung is a command embodying a named staffer, reads its predecessor's file, and commits per rung. Only intake carries a code gate.</p>
+  <div class="ladder">
+    <div class="rung"><span class="who">Mira</span><span class="cmd">/soriza-design:intake</span><span class="owns">intake.md — DoR Stop hook gates the run</span></div>
+    <div class="rung"><span class="who">Elias</span><span class="cmd">:brief</span><span class="owns">brief.md — narrative-first</span></div>
+    <div class="rung"><span class="who">Ivo</span><span class="cmd">:sitemap</span><span class="owns">sitemap-ia.md — locks pages &amp; sections</span></div>
+    <div class="rung"><span class="who">Juno</span><span class="cmd">:wireframe</span><span class="owns">wireframes/ — lo-fi grayscale HTML</span></div>
+    <div class="rung"><span class="who">Lior</span><span class="cmd">:section-briefs</span><span class="owns">section-briefs/ + draft copy + packet</span></div>
+  </div>
+  <p class="vera"><strong>Vera</strong> (CPO) signs every packet before it reaches Ringo · roster at <code>.claude/rules/soriza/roster.md</code></p>
+
+  <h2>Decisions most likely to move</h2>
+  <p class="sub">Each card shows the locked path and its live alternative. Switch one (or add a note) and the prompt below becomes a plan-revision request; touch nothing and it's the epic kickoff (docs PR merge → child #44).</p>
+  <div id="cards"></div>
+
+  <h2>Build order</h2>
+  <div class="flow">
+    <div class="child"><span class="id">#44</span><span><strong>KB seed</strong><p><code>ai-docs/*</code> pattern in <code>.worktreeinclude</code>; <code>design/</code> group (WCAG 2.2, web.dev Learn Design, NN/g ×2, Google Fonts Knowledge) + memory docs page via <code>/harness-layer:kb add</code>.</p></span><span class="dep">after epic docs merge<br><span class="stamp">sonnet/low</span></span></div>
+    <div class="child"><span class="id">#45</span><span><strong>Foundations</strong><p><code>projects/_template/</code> + nine-skeleton library · six doctrine files + lessons (<code>paths: projects/**</code>) · company roster · AGENTS.md pointers.</p></span><span class="dep">after #44<br><span class="stamp">opus/high + sonnet/medium</span></span></div>
+    <div class="child"><span class="id">#46</span><span><strong>Intake + DoR gate</strong><p><code>:intake</code> (Mira) with session-scoped <code>.intake-in-progress.${CLAUDE_SESSION_ID}</code> markers; Stop hook gates only its own session's markers and cleans only its own (no sweep); session-independence + same-client + re-run + no-cross-deletion tests.</p></span><span class="dep">after #45<br><span class="stamp">opus/high + sonnet/medium</span></span></div>
+    <div class="child"><span class="id">#47</span><span><strong>The ladder</strong><p><code>:brief</code>, <code>:sitemap</code>, <code>:wireframe</code>, <code>:section-briefs</code> — each with a machine-checkable <code>## Rung Contract</code> block; section-briefs reads <code>wireframes/</code>.</p></span><span class="dep">after #46 · ∥ #48<br><span class="stamp">opus/high</span></span></div>
+    <div class="child"><span class="id">#48</span><span><strong>Client git lane</strong><p><code>git-lane.md</code>: issue per engagement, <code>docs/&lt;N&gt;-&lt;client&gt;</code> branch, PRs only at brief-approved (<code>Refs</code>) and packet hand-off (<code>Closes</code>), evidence swap.</p></span><span class="dep">after #45 · ∥ #46/#47<br><span class="stamp">sonnet/medium</span></span></div>
+  </div>
+
+  <h2>Mechanical detail</h2>
+  <details>
+    <summary>Review history &amp; what changed</summary>
+    <ul>
+      <li><strong>Round 1</strong> (changes-requested): artifact "private links" aren't a client surface → delivery modes locked per engagement; newest-modified gate targeting → deterministic; weak validation → assertion scripts.</li>
+      <li><strong>Round 2</strong> (changes-requested): shared target file race → per-client markers, gate-all-marked; section-briefs predecessor corrected to <code>wireframes/</code>; AC7/AC9–AC11 → Rung Contract field assertions.</li>
+      <li><strong>Round 3</strong> (changes-requested): all-marked gating strands unrelated runs → session-scoped markers (<code>${CLAUDE_SESSION_ID}</code> ↔ stdin <code>session_id</code>); AC9–AC11 clause gaps → clause-exact field assertions.</li>
+      <li><strong>Round 4</strong> (changes-requested): complete-client sweep could delete live session markers → sweep removed; AC3/AC6/AC7/AC11 → exact source identities, exact roster rows, AC7 field semantics, exact two-<code>Gate:</code>-bullet mapping.</li>
+      <li><strong>Round 5</strong> (changes-requested): success deleted the marker but a parallel Stop hook can force a continuation → markers retained on success; success idempotent across repeated firings.</li>
+      <li><strong>Round 6</strong> (changes-requested): "absolute" gate vs the documented 8-block Stop-hook cap → platform-bounded guarantee, rung-level DoR refusals as the durable stop; AC1/AC3/AC10 strengthened.</li>
+      <li><strong>Round 7</strong> (changes-requested): AC1 branch-ancestry check (child pipelines provably start after the docs merge); AC12 hard closure assertions.</li>
+      <li><strong>Round 8</strong> (changes-requested): post-#44 KB hydration hand-off (gitignored mirrors never reach <code>main</code>); last two absolute-gate sentences aligned.</li>
+      <li><strong>Round 9</strong>: <strong>approved</strong> — no blocking findings. Spec status: Approved.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>New files by child</summary>
+    <ul>
+      <li>#44 — <code>.worktreeinclude</code> edit; <code>ai-docs/sources.yaml</code> entries (mirrors stay gitignored).</li>
+      <li>#45 — <code>projects/_template/</code> (7 entries + 9 skeletons); <code>.claude/rules/soriza-design/</code> ×7; <code>.claude/rules/soriza/roster.md</code>; AGENTS.md.</li>
+      <li>#46 — <code>.claude/commands/soriza-design/intake.md</code>; <code>.claude/hooks/check_intake_readiness.py</code>; <code>tests/harness-layer/hooks/intake-readiness/</code>; hooks.md row; .gitignore line.</li>
+      <li>#47 — four rung commands under <code>.claude/commands/soriza-design/</code>.</li>
+      <li>#48 — <code>.claude/rules/soriza-design/git-lane.md</code>.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>KB grounding</summary>
+    <ul>
+      <li>skills.md · hooks.md · worktrees.md · artifacts.md · subagents.md · html-artifacts-workflows.md (all fetched 2026-07-23).</li>
+      <li>Conflict resolved: a WorktreeCreate hook skips stock <code>.worktreeinclude</code> — this repo's hook re-implements the copy with <code>fnmatch</code>, so <code>ai-docs/*</code> covers nested mirrors.</li>
+      <li>Helper subagents were permission-denied this session; memory-docs mirror folded into #44.</li>
+    </ul>
+  </details>
+</div>
+
+<div class="promptbar">
+  <div class="inner">
+    <div class="lbl"><span id="mode">Next step — copy into Claude Code</span><button id="copy">Copy prompt</button></div>
+    <div id="prompt"></div>
+  </div>
+</div>
+
+<script>
+  const DECISIONS = [
+    { id: "gate", title: "Intake gate targeting",
+      why: "Rounds 2–4 fix — the gate must be race-free AND strand-free under concurrent intake runs.",
+      chosen: "Session-scoped markers projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}; the Stop hook gates only its own session's markers and removes only its own on exit 0 — the sole marker deletion anywhere (no sweep).",
+      alt: "Gate every marked client + sweep complete-client markers — concurrent sessions strand each other on abandoned or swept markers (rejected in rounds 3–4)." },
+    { id: "pred", title: "section-briefs predecessor",
+      why: "Round-2 fix — every rung must consume its true predecessor.",
+      chosen: "Lior reads wireframes/ (approved layouts + decision-log change requests), with sitemap-ia.md as the inventory source.",
+      alt: "Read sitemap-ia.md directly — lets the build skip the wireframe rung's output (rejected in round 2)." },
+    { id: "delivery", title: "Wireframe client delivery",
+      why: "A fresh artifact is visible only to its author — 'private link' isn't a client surface.",
+      chosen: "Locked per engagement, recorded in decision-log.md: org share, consented public link, or the self-contained HTML file itself. Pilot: Ringo is the client, private suffices.",
+      alt: "Always share a public link — simplest, but publishes every draft to the open internet by default." },
+    { id: "ticket", title: "Engagement ticket model",
+      why: "Client work needs a durable join key without new machinery.",
+      chosen: "One GitHub issue per engagement; branch docs/<N>-<client> via gh issue develop; packet PR carries Closes #N.",
+      alt: "Issueless client/<client> branches — lighter, but breaks the issue-is-the-ticket convention and Model-C linking." },
+    { id: "library", title: "Skeleton library home",
+      why: "Nine section skeletons must be copyable per locked section.",
+      chosen: "projects/_template/section-briefs/_library/<section>.md — travels with every scaffolded client.",
+      alt: "Keep skeletons inside doctrine (section-anatomy.md) — one home, but rungs would copy from rules into client folders." },
+    { id: "slicing", title: "Child slicing",
+      why: "One pipeline run per child; the ledger allows the plan to reshape the split.",
+      chosen: "Five children: #44 KB seed · #45 foundations · #46 intake gate · #47 ladder · #48 git lane.",
+      alt: "Four children — fold the git lane (#48) into foundations (#45); fewer runs, bulkier review." },
+  ];
+  const state = {}; DECISIONS.forEach(d => state[d.id] = { pick: "chosen", note: "" });
+
+  const cards = document.getElementById("cards");
+  DECISIONS.forEach(d => {
+    const el = document.createElement("div"); el.className = "card";
+    // security-scan: allow — static local DECISIONS constant only, no user input reaches this sink
+    el.innerHTML = `<h3>${d.title}</h3><p class="why">${d.why}</p>
+      <div class="paths">
+        <div class="path sel" data-d="${d.id}" data-p="chosen" tabindex="0" role="button" aria-pressed="true"><span class="tag">Locked</span><p>${d.chosen}</p></div>
+        <div class="path" data-d="${d.id}" data-p="alt" tabindex="0" role="button" aria-pressed="false"><span class="tag">Alternative</span><p>${d.alt}</p></div>
+      </div>
+      <input class="note" data-d="${d.id}" placeholder="Optional: a note or a different direction for this decision">`;
+    cards.appendChild(el);
+  });
+
+  function updateAll() {
+    document.querySelectorAll(".path").forEach(p => {
+      const on = state[p.dataset.d].pick === p.dataset.p;
+      p.classList.toggle("sel", on); p.setAttribute("aria-pressed", on);
+    });
+    const tweaks = [];
+    DECISIONS.forEach(d => {
+      const s = state[d.id];
+      if (s.pick === "alt") tweaks.push(`switch "${d.title}" to the alternative (${d.alt.split("—")[0].trim()})`);
+      if (s.note.trim()) tweaks.push(`${d.title}: ${s.note.trim()}`);
+    });
+    const modeEl = document.getElementById("mode");
+    let text;
+    if (tweaks.length) {
+      modeEl.textContent = "Tweak prompt — triggers a plan revision";
+      text = `/harness-layer:harness-plan "Revise the soriza-cpo-department spec (Revision Mode, issue #43): ` +
+        tweaks.join("; ") + `. Keep every other locked decision as-is, sync the child issues, and run the verifying Codex round. ` +
+        `Worktree: .claude/worktrees/soriza-cpo-department"`;
+    } else {
+      modeEl.textContent = "Next step — copy into Claude Code";
+      text = `/harness-layer:harness-build "Run the approved soriza-cpo-department epic (issue #43): merge the epic docs PR #49, then run the child pipelines #44–#48 in dependency order per specs/soriza-cpo-department/tasks.md. Worktree: .claude/worktrees/soriza-cpo-department"`;
+    }
+    document.getElementById("prompt").textContent = text;
+  }
+  document.addEventListener("click", e => {
+    const p = e.target.closest(".path"); if (!p) return;
+    state[p.dataset.d].pick = p.dataset.p; updateAll();
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const p = e.target.closest(".path"); if (!p) return;
+    e.preventDefault(); state[p.dataset.d].pick = p.dataset.p; updateAll();
+  });
+  document.addEventListener("input", e => {
+    if (!e.target.classList.contains("note")) return;
+    state[e.target.dataset.d].note = e.target.value; updateAll();
+  });
+  document.getElementById("copy").addEventListener("click", () => {
+    navigator.clipboard.writeText(document.getElementById("prompt").textContent).then(() => {
+      const b = document.getElementById("copy"); b.textContent = "Copied!";
+      setTimeout(() => b.textContent = "Copy prompt", 1200);
+    });
+  });
+  updateAll();
+</script>

@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unknowns · Commands vs Skills — soriza-design</title>
+<style>
+  :root{
+    --bg:#FAF8F5; --surface:#F0EDE5; --border:#D4CFC7; --text:#2C2825;
+    --accent:#B8602A; --muted:#8A837A;
+    --resolve:#4A6B4A; --accept:#8A6D2F; --discuss:#8C4A3C;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} *{transition:none!important;} }
+  body{
+    background:var(--bg); color:var(--text);
+    font:16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding:0 0 6rem;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 1.25rem;}
+  code, .mono{font-family:"SF Mono", ui-monospace, Menlo, Consolas, monospace; font-size:.86em;}
+  code{background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:.08em .35em; white-space:nowrap;}
+  a{color:var(--accent);}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---------- header ---------- */
+  header{border-bottom:1px solid var(--border); padding:3rem 0 2rem; margin-bottom:2.5rem;}
+  .eyebrow{font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-bottom:.8rem;}
+  h1{font-family:Georgia, "Iowan Old Style", "Times New Roman", serif; font-weight:600; font-size:clamp(1.7rem,4vw,2.5rem); line-height:1.2; letter-spacing:-.01em;}
+  h1 em{font-style:italic; color:var(--accent);}
+  .meta-line{display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1.1rem;}
+  .chip{font-size:.72rem; letter-spacing:.06em; border:1px solid var(--border); border-radius:999px; padding:.2rem .7rem; background:var(--surface); color:var(--muted);}
+  .chip strong{color:var(--text); font-weight:600;}
+
+  /* ---------- verdict ---------- */
+  .verdict{
+    border:1px solid var(--border); border-left:4px solid var(--accent);
+    background:var(--surface); border-radius:8px; padding:1.4rem 1.6rem; margin-bottom:3rem;
+  }
+  .verdict h2{font-family:Georgia,serif; font-size:1.15rem; margin-bottom:.5rem;}
+  .verdict p{font-size:.95rem;}
+  .verdict p + p{margin-top:.6rem;}
+
+  /* ---------- sections ---------- */
+  section{margin-bottom:3.5rem;}
+  .sec-head{display:flex; align-items:baseline; gap:.9rem; border-bottom:1px solid var(--border); padding-bottom:.6rem; margin-bottom:1.5rem;}
+  .sec-head h2{font-family:Georgia,serif; font-size:1.45rem; font-weight:600;}
+  .sec-head .tag{font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--accent);}
+  .sec-intro{color:var(--muted); font-size:.93rem; margin-bottom:1.6rem; max-width:64ch;}
+
+  /* ---------- cards ---------- */
+  .card{border:1px solid var(--border); border-radius:8px; background:#fff; margin-bottom:1.2rem; overflow:hidden;}
+  .card-head{display:flex; align-items:flex-start; gap:.9rem; padding:1.1rem 1.3rem .4rem;}
+  .card-num{font-family:Georgia,serif; font-style:italic; color:var(--accent); font-size:1.05rem; min-width:1.4rem; padding-top:.1rem;}
+  .card h3{font-size:1.04rem; font-weight:650; line-height:1.35;}
+  .card-body{padding:.4rem 1.3rem 1.1rem 3.3rem;}
+  .facet{margin-top:.65rem; font-size:.92rem;}
+  .facet b{font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:.15rem; font-weight:600;}
+  .evidence{margin-top:.8rem; font-size:.8rem; color:var(--muted);}
+  .evidence code{font-size:.92em;}
+  .disp{display:flex; flex-wrap:wrap; gap:.5rem; padding:.85rem 1.3rem; background:var(--surface); border-top:1px solid var(--border);}
+  .disp span.lbl{font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); align-self:center; margin-right:.3rem;}
+  .disp button{
+    font:600 .8rem/1 -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing:.02em;
+    border:1px solid var(--border); border-radius:999px; background:#fff; color:var(--muted);
+    padding:.45rem .95rem; cursor:pointer; transition:all .15s ease;
+  }
+  .disp button:hover{border-color:var(--text); color:var(--text);}
+  .disp button[data-d="resolve"].on{background:var(--resolve); border-color:var(--resolve); color:#fff;}
+  .disp button[data-d="accept"].on{background:var(--accept); border-color:var(--accept); color:#fff;}
+  .disp button[data-d="discuss"].on{background:var(--discuss); border-color:var(--discuss); color:#fff;}
+  @media (max-width:640px){ .card-body{padding-left:1.3rem;} }
+
+  /* ---------- vocabulary ---------- */
+  .model-steps{counter-reset:step; display:grid; gap:1rem; margin-bottom:2.2rem;}
+  .step{border:1px solid var(--border); border-radius:8px; background:#fff; padding:1rem 1.2rem 1rem 3.4rem; position:relative;}
+  .step::before{
+    counter-increment:step; content:counter(step);
+    position:absolute; left:1.1rem; top:1rem;
+    font-family:Georgia,serif; font-style:italic; font-size:1.3rem; color:var(--accent);
+  }
+  .step h4{font-size:.95rem; margin-bottom:.25rem;}
+  .step p{font-size:.9rem; color:var(--text);}
+  .ladder{width:100%; border-collapse:collapse; font-size:.88rem; background:#fff; border:1px solid var(--border); border-radius:8px; overflow:hidden;}
+  .ladder-scroll{overflow-x:auto; border-radius:8px;}
+  .ladder th{font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); text-align:left; padding:.7rem .9rem; background:var(--surface); border-bottom:1px solid var(--border); font-weight:600;}
+  .ladder td{padding:.75rem .9rem; border-bottom:1px solid var(--border); vertical-align:top; min-width:11rem;}
+  .ladder tr:last-child td{border-bottom:none;}
+  .ladder td:first-child{font-weight:650; white-space:nowrap;}
+  .qbar{list-style:none; display:grid; gap:.5rem; margin-top:1rem;}
+  .qbar li{border:1px solid var(--border); border-radius:6px; background:#fff; padding:.65rem .9rem .65rem 2.3rem; font-size:.9rem; position:relative;}
+  .qbar li::before{content:"✓"; position:absolute; left:.85rem; color:var(--accent); font-weight:700;}
+  h3.sub{font-family:Georgia,serif; font-size:1.1rem; margin:2.2rem 0 .9rem;}
+  .payoff{border:1px dashed var(--border); border-radius:8px; padding:1rem 1.2rem; background:#fff; margin-top:.8rem; font-size:.9rem;}
+  .payoff b{display:block; font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.3rem;}
+
+  /* ---------- prompt ---------- */
+  .prompt-sec{border:1px solid var(--border); border-radius:10px; background:var(--surface); padding:1.5rem 1.6rem;}
+  .prompt-sec h2{font-family:Georgia,serif; font-size:1.3rem; margin-bottom:.4rem;}
+  .prompt-sec .hint{font-size:.85rem; color:var(--muted); margin-bottom:1.1rem;}
+  #promptOut{
+    width:100%; background:#fff; border:1px solid var(--border); border-radius:8px;
+    padding:1.1rem 1.2rem; font-family:"SF Mono", ui-monospace, Menlo, monospace;
+    font-size:.8rem; line-height:1.65; white-space:pre-wrap; max-height:30rem; overflow-y:auto;
+  }
+  .copy-row{display:flex; align-items:center; gap:1rem; margin-top:1rem;}
+  #copyBtn{
+    font:600 .9rem/1 -apple-system, BlinkMacSystemFont, sans-serif;
+    background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:.8rem 1.6rem; cursor:pointer; transition:opacity .15s;
+  }
+  #copyBtn:hover{opacity:.88;}
+  #copyMsg{font-size:.85rem; color:var(--resolve); opacity:0; transition:opacity .3s;}
+  #copyMsg.show{opacity:1;}
+  footer{margin-top:3rem; font-size:.78rem; color:var(--muted); text-align:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Soriza · discovery — unknowns pass № 2</div>
+    <h1>Commands, skills, and the machinery underneath — <em>what the rung ladder is actually made of</em></h1>
+    <div class="meta-line">
+      <span class="chip">mode <strong>codebase + domain</strong></span>
+      <span class="chip">slice <strong>soriza-design, slice 1</strong></span>
+      <span class="chip">question <strong>commands + _templates vs skills</strong></span>
+      <span class="chip">worktree <strong class="mono">soriza-cpo-department</strong></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="verdict">
+    <h2>The verdict up front</h2>
+    <p><strong>Commands and skills are the same mechanism now</strong> — the official docs merged them, and a
+    <code>.claude/commands/</code> file supports the identical frontmatter (hooks, model, args, invocation control).
+    The choice is packaging, not capability. For the five rungs, the repo's own decision tree says <strong>flat
+    commands</strong>: they're user-invoked, sequential, and side-effecting, their templates are <em>runtime client
+    scaffolds</em> (they belong in <code>projects/_template/</code>, not inside a skill folder), and the locked
+    <code>/soriza-design:*</code> namespace is itself a commands-subfolder feature.</p>
+    <p>Self-maintenance isn't a skill feature either — it's the repo's memory-series + development-log contract,
+    which the locked decisions already reuse. The cards below carry the evidence; dispose of each to shape the plan prompt.</p>
+  </div>
+
+  <!-- ================= UNKNOWNS BOARD ================= -->
+  <section id="board">
+    <div class="sec-head"><span class="tag">Codebase gap</span><h2>Unknowns board</h2></div>
+    <p class="sec-intro">Six findings from reading this repo's harness — its commands, skills, hooks, rules, and the
+    mirrored official docs. Each card: what it is, why it bites, what to do instead. Set a disposition per card;
+    the prompt at the bottom rebuilds live.</p>
+    <div id="cards"></div>
+  </section>
+
+  <!-- ================= VOCABULARY EXPLAINER ================= -->
+  <section id="vocab">
+    <div class="sec-head"><span class="tag">Domain gap</span><h2>How the skill machinery works</h2></div>
+    <p class="sec-intro">The mental model behind commands/skills in Claude Code, the vocabulary to prompt with,
+    and the quality bar the repo's own <code>meta-skills</code> standard holds authors to.</p>
+
+    <h3 class="sub">Mental model — one mechanism, three loading levels</h3>
+    <div class="model-steps">
+      <div class="step">
+        <h4>Level 1 — the listing (always loaded)</h4>
+        <p>Every skill's <code>description</code> + <code>when_to_use</code> sits in the session's skill listing from
+        the first turn, capped at 1,536 characters. This is the <em>trigger surface</em> — it's how Claude decides to
+        reach for a skill, and it's a small recurring context cost paid by every session in the repo.</p>
+      </div>
+      <div class="step">
+        <h4>Level 2 — the body (loaded on invocation, then it stays)</h4>
+        <p>When you type <code>/name</code> (or Claude auto-triggers it), the markdown body loads into context — and
+        persists across turns for the rest of the session. That's why the house style says keep bodies terse: every
+        line is a recurring token cost after the first load.</p>
+      </div>
+      <div class="step">
+        <h4>Level 3 — supporting files (read only when needed)</h4>
+        <p>A skill <em>directory</em> can carry <code>references/</code>, <code>scripts/</code>, <code>assets/</code> —
+        the body points at them and Claude reads or executes them on demand. This is the one real structural feature a
+        flat command file lacks, and it's the whole "progressive disclosure" story.</p>
+      </div>
+    </div>
+
+    <h3 class="sub">Vocabulary ladder</h3>
+    <div class="ladder-scroll">
+    <table class="ladder">
+      <thead><tr><th>Term</th><th>Plain definition</th><th>Mechanism</th><th>How you'd use it here</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>SKILL.md</td>
+          <td>The entrypoint file of a skill directory.</td>
+          <td><code>.claude/skills/&lt;name&gt;/SKILL.md</code> → <code>/name</code>. A flat <code>.claude/commands/&lt;name&gt;.md</code> produces the same command with the same frontmatter support.</td>
+          <td>The rungs stay flat command files; only <code>meta-*</code>-style tooling with bundled material earns a directory.</td>
+        </tr>
+        <tr>
+          <td>description / when_to_use</td>
+          <td>The trigger surface Claude reads to decide when a skill applies.</td>
+          <td>Always in the listing; truncated at 1,536 chars combined. Claude undertriggers, so descriptions are written "a little pushy."</td>
+          <td>Rungs don't need discoverability — they're invoked by name in a fixed order — so their descriptions can be short and literal.</td>
+        </tr>
+        <tr>
+          <td>disable-model-invocation</td>
+          <td>"Only the human runs this."</td>
+          <td>Frontmatter flag; blocks auto-triggering and preloading. Every pipeline command in this repo sets it.</td>
+          <td>Set on all five rungs so Claude never fires <code>:brief</code> on its own because intake.md "looks ready."</td>
+        </tr>
+        <tr>
+          <td>user-invocable: false</td>
+          <td>"Only Claude loads this — it's knowledge, not an action."</td>
+          <td>Hides the skill from the <code>/</code> menu; Claude pulls it in when relevant.</td>
+          <td>The shape a doctrine file <em>could</em> take — but this repo puts ambient doctrine in path-scoped rules instead (see card 5).</td>
+        </tr>
+        <tr>
+          <td>command-scoped hooks</td>
+          <td>A hook that exists only while one command runs.</td>
+          <td><code>hooks:</code> block in the command's frontmatter — the spec-gate pattern <code>harness-plan.md</code> already uses for its Stop hook.</td>
+          <td>The intake DoR gate: a Stop hook in <code>:intake</code>'s frontmatter, not a global entry in settings.json.</td>
+        </tr>
+        <tr>
+          <td>string substitutions</td>
+          <td>Dynamic values expanded into the body before Claude sees it.</td>
+          <td><code>$1</code>/<code>$ARGUMENTS</code> for args; <code>${CLAUDE_PROJECT_DIR}</code> for repo-root paths; <code>${CLAUDE_SKILL_DIR}</code> for skill-bundled files.</td>
+          <td><code>/soriza-design:intake &lt;client&gt;</code> → <code>$1</code> names the client folder; hook paths use <code>${CLAUDE_PROJECT_DIR}</code>.</td>
+        </tr>
+        <tr>
+          <td>context: fork</td>
+          <td>Run the skill in its own subagent instead of the main conversation.</td>
+          <td>Frontmatter field (+ optional <code>agent:</code> type); keeps heavy work out of the session's context.</td>
+          <td>Not needed for slice 1 — but it's the cheap upgrade path if a rung (e.g. wireframes) ever gets too heavy for one session.</td>
+        </tr>
+        <tr>
+          <td>paths:</td>
+          <td>Glob patterns limiting when a skill auto-activates.</td>
+          <td>Same format as path-specific rules; the skill loads only when work touches matching files.</td>
+          <td>Rules and skills share this scoping idea — <code>.claude/rules/soriza-design/</code> scoped to <code>projects/**/*</code> is the rules-side twin.</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3 class="sub">The quality bar (per this repo's meta-skills standard)</h3>
+    <ul class="qbar">
+      <li>Bodies follow the five-section house template — Purpose · Variables · Instructions · Workflow · Report — in terse, imperative prose.</li>
+      <li>SKILL.md stays under 500 lines; detail moves to supporting files the body points at.</li>
+      <li>Trigger accuracy is tested with evals (with-skill vs baseline subagents), not assumed.</li>
+      <li>Never ship a same-name skill and command — the skill silently wins; delete the loser.</li>
+      <li>State what to do, never why — rationale is context bloat the agent never acts on.</li>
+    </ul>
+
+    <h3 class="sub">Payoff prompts you can now write</h3>
+    <div class="payoff"><b>Authoring a rung</b>"Author <code>/soriza-design:intake</code> as a flat command at <code>.claude/commands/soriza-design/intake.md</code> per the meta-skills house template — <code>disable-model-invocation: true</code>, <code>$1</code> as the client slug, and a command-scoped Stop hook in frontmatter running the DoR gate."</div>
+    <div class="payoff"><b>Scoping the gate</b>"Wire the DoR check like <code>check_spec_completeness.py</code>: PEP 723 uv script, exit 2 with diagnostics when a section is missing, fail-open on plumbing errors, registered in the intake command's frontmatter, with <code>EXPECTED_BINDINGS</code> and contract tests shipping in the same change."</div>
+    <div class="payoff"><b>Future escalation</b>"If a rung outgrows one session's context, move it to <code>context: fork</code> with a named agent before reaching for subagent specialists."</div>
+  </section>
+
+  <!-- ================= PROMPT ================= -->
+  <section class="prompt-sec" id="prompt">
+    <h2>Improved plan prompt</h2>
+    <p class="hint">Assembled live from your card dispositions — resolve folds the fix in as a work order, accept records it as a known assumption, needs-discussion adds a stop-and-confirm. Copy it into <code>/harness-layer:harness-plan</code>.</p>
+    <div id="promptOut" tabindex="0"></div>
+    <div class="copy-row">
+      <button id="copyBtn" type="button">Copy prompt</button>
+      <span id="copyMsg">Copied to clipboard ✓</span>
+    </div>
+  </section>
+
+  <footer>soriza-design discovery · unknowns pass 2 · warm-neutral house palette · self-contained page</footer>
+</div>
+
+<script>
+const CARDS = [
+  {
+    id: "merged",
+    title: "Commands ARE skills — the choice is packaging, not capability",
+    what: "The official docs (mirrored at ai-docs/anthropic/skills.md) merged custom commands into skills: a file at .claude/commands/deploy.md and a skill at .claude/skills/deploy/SKILL.md both create /deploy and support the identical frontmatter — hooks, model, effort, arguments, invocation control, paths. Skills add exactly two things: a directory for supporting files, and auto-trigger discoverability.",
+    bites: "Framing this as \"commands vs skills\" as if they were different capability tiers leads to migrating the rung ladder onto skill directories for features flat files already have — six directories of overhead for zero gain.",
+    instead: "Decide per packaging need only: does the rung need bundled files or auto-triggering? The rungs need neither (user-invoked in a fixed order, templates are runtime data).",
+    evidence: "ai-docs/anthropic/skills.md ('Custom commands have been merged into skills'; 'Files in .claude/commands/ still work and support the same frontmatter')",
+    resolveLine: "Treat commands and skills as one mechanism: author the five rungs as flat command files, since they need neither bundled supporting files nor auto-triggering.",
+    discussQ: "whether any rung genuinely needs skill-directory packaging (bundled files or auto-trigger)"
+  },
+  {
+    id: "namespace",
+    title: "The /soriza-design:* namespace is a commands-subfolder feature",
+    what: "A commands subdirectory namespaces its files: .claude/commands/harness-layer/harness-plan.md → /harness-layer:harness-plan, exactly how this pipeline runs today. Project skill directories are flat (/name); the only skill-side namespacing is plugins (plugin:skill) or nested working-directory skills (apps/web:deploy) — neither fits.",
+    bites: "Choosing skill directories for the rungs silently forfeits the locked /soriza-design:intake … :section-briefs command shape — you'd get /soriza-design-intake at best, or have to wrap the department in a plugin.",
+    instead: "Put the rungs at .claude/commands/soriza-design/{intake,brief,sitemap,wireframe,section-briefs}.md — the namespace falls out of the folder name, matching the locked decision verbatim.",
+    evidence: ".claude/commands/harness-layer/ (live proof); ai-docs/anthropic/skills.md 'How a skill gets its command name' table",
+    resolveLine: "Create the rungs under .claude/commands/soriza-design/ so the folder yields the locked /soriza-design:* namespace.",
+    discussQ: "whether the /soriza-design:* namespace is negotiable (it drives the commands-folder choice)"
+  },
+  {
+    id: "decision-tree",
+    title: "The repo already owns this decision — meta-skills is the authority",
+    what: "The meta-skills skill (references/command-format.md) carries the exact decision tree: needs supporting files or auto-trigger → skill directory; otherwise → flat command file, marked DEFAULT. It also carries the five-section house template (Purpose · Variables · Instructions · Workflow · Report) every team command follows, and every pipeline command sets disable-model-invocation: true.",
+    bites: "Authoring the rungs ad-hoc — or re-deriving the tradeoff from scratch in the plan — duplicates a standard that already exists and risks drifting from the house format the harness-simplifier agent and reviewers enforce.",
+    instead: "Route rung authoring through the meta-skills standard at build time: house template, front-loaded descriptions, disable-model-invocation: true on all five, $1 for the client slug.",
+    evidence: ".claude/skills/meta-skills/references/command-format.md:52 (decision tree); .claude/commands/harness-layer/harness-plan.md frontmatter (live example)",
+    resolveLine: "Have the build author each rung per the meta-skills house template (five sections, disable-model-invocation: true, $1 = client slug), keeping meta-skills the single authority instead of restating format rules in the spec.",
+    discussQ: "whether rung bodies may deviate from the five-section house template"
+  },
+  {
+    id: "templates",
+    title: "Two template kinds — skill-bundled material vs runtime scaffolds. The nine skeletons are the latter",
+    what: "This repo uses templates two ways. Skill-bundled files (meta-skills' assets/, references/) serve the skill's own execution and hide inside .claude/. Runtime scaffolds (specs/_templates/, referenced by path from harness-plan) are copy-and-fill data that becomes committed work product. The nine-skeleton section library is client-deliverable scaffolding — rung output, not rung tooling.",
+    bites: "Bundling the skeletons inside a skill directory buries client-facing material in .claude/, outside the projects/** git lane, the DoR hook's path assumptions, the path-scoped rules family, and Ringo's normal editing loop.",
+    instead: "Ship the skeletons in projects/_template/ (already locked as the first deliverable), referenced by path from the rung commands — the same relationship harness-plan has with specs/_templates/.",
+    evidence: "specs/_templates/ + harness-plan.md:72,80 (path-referenced copy-and-fill); .claude/skills/meta-skills/assets/ (skill-bundled kind)",
+    resolveLine: "Keep all client scaffolding — the nine section skeletons included — in projects/_template/, path-referenced from the rungs exactly like specs/_templates/; skill-bundling is reserved for a command's own tooling.",
+    discussQ: "where the nine section skeletons should live (projects/_template/ vs inside a skill directory)"
+  },
+  {
+    id: "hook",
+    title: "The DoR Stop hook is command-scoped frontmatter, not a settings.json entry — and hooks ship with tests",
+    what: "hooks.md (the authoritative catalog) names the pattern: a hook that must run only inside one command registers in that command's frontmatter — the spec-gate pattern. harness-plan.md does exactly this: a Stop hook running check_spec_completeness.py via uv. Hook development has a fixed contract: PEP 723 uv script, exit 2 only for agent-fixable findings with stderr diagnostics, fail-open otherwise, and the hook lands WITH its test_wiring.py EXPECTED_BINDINGS update and contract tests in the same change.",
+    bites: "Registering the DoR gate globally in settings.json would fire it on every Stop in every session, forcing the script to guess whether an intake run is in progress. Shipping the hook without its wiring test fails review — the ship-together rule is explicit.",
+    instead: "Put the Stop hook in /soriza-design:intake's frontmatter, model the script on check_spec_completeness.py, and plan the tests (tests/harness-layer/hooks/…) into the same child issue as the hook.",
+    evidence: ".claude/rules/harness-layer/hooks.md:33 (frontmatter rule), :38 (ship-together); harness-plan.md:8-13 (live frontmatter Stop hook)",
+    resolveLine: "Register the DoR Stop hook in the intake command's frontmatter (spec-gate pattern, modeled on check_spec_completeness.py), and put its wiring + contract tests in the same child issue so hook and tests ship together.",
+    discussQ: "the DoR hook's failure contract (what counts as agent-fixable exit-2 vs fail-open)"
+  },
+  {
+    id: "memory",
+    title: "\"Self-maintaining rules\" is the memory-series + dev-log contract, not a skill feature",
+    what: "What keeps rules current in this repo is a pipeline contract, not file structure: path-scoped rule families load as ambient memory whenever matching files are touched; the build/review memory steps append one-line lessons to a capped log; at the cap, lessons distill into their rule file. The locked soriza-design decisions already adopt this (six doctrine files + a lessons log on the development-log.md contract). Skills also accept paths: frontmatter, so a doctrine-as-skill is technically possible — but skills load on trigger, while doctrine must bind ambiently, and memory-series.md forbids parallel memory systems.",
+    bites: "Reaching for skill structure to get \"self-maintenance\" builds a second memory system the repo explicitly bans, and doctrine in a skill only constrains behavior when something triggers it — a DoR that loads sometimes gates nothing.",
+    instead: "Keep doctrine in .claude/rules/soriza-design/ (paths: projects/**/*) and let the existing memory steps maintain it. Skills hold procedures; rules hold standing doctrine.",
+    evidence: ".claude/rules/memory-series.md (layout + no parallel systems); .claude/rules/development-log.md (append/distill contract); decisions-draft.md:64-69",
+    resolveLine: "Keep all doctrine in the path-scoped rules family maintained via the existing memory-series/dev-log contract — no doctrine-as-skill, no parallel memory system.",
+    discussQ: "whether any doctrine file should instead be a user-invocable:false knowledge skill"
+  }
+];
+
+const state = {};
+CARDS.forEach(c => state[c.id] = "resolve");
+
+const cardsEl = document.getElementById("cards");
+CARDS.forEach((c, i) => {
+  const el = document.createElement("article");
+  el.className = "card";
+  // security-scan: allow — static in-file card data only, no external input
+  el.innerHTML = `
+    <div class="card-head"><span class="card-num">${String(i+1).padStart(2,"0")}</span><h3>${c.title}</h3></div>
+    <div class="card-body">
+      <div class="facet"><b>What it is</b>${c.what}</div>
+      <div class="facet"><b>Why it bites</b>${c.bites}</div>
+      <div class="facet"><b>Do instead</b>${c.instead}</div>
+      <div class="evidence">Evidence: <code>${c.evidence}</code></div>
+    </div>
+    <div class="disp" role="group" aria-label="Disposition for finding ${i+1}">
+      <span class="lbl">Disposition</span>
+      <button type="button" data-d="resolve">Resolve — fold into plan</button>
+      <button type="button" data-d="accept">Accept as-is</button>
+      <button type="button" data-d="discuss">Needs discussion</button>
+    </div>`;
+  el.querySelectorAll(".disp button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state[c.id] = btn.dataset.d;
+      el.querySelectorAll(".disp button").forEach(b => b.classList.toggle("on", b === btn));
+      updatePrompt();
+    });
+  });
+  el.querySelector('[data-d="resolve"]').classList.add("on");
+  cardsEl.appendChild(el);
+});
+
+function updatePrompt(){
+  const resolved = CARDS.filter(c => state[c.id] === "resolve");
+  const accepted = CARDS.filter(c => state[c.id] === "accept");
+  const discuss  = CARDS.filter(c => state[c.id] === "discuss");
+
+  let p = `Plan the first slice of Soriza's design department (soriza-design, headed by CPO persona Vera) on this repo's harness layer. All product decisions are locked in specs/soriza-cpo-department/discovery/decisions-draft.md — transcribe them verbatim; ask nothing about them. The commands-vs-skills architecture question from the unknowns pass is settled as follows.\n`;
+
+  if (resolved.length){
+    p += `\nArchitecture work orders (from the unknowns pass — read ai-docs/anthropic/skills.md, .claude/skills/meta-skills/references/command-format.md, and .claude/rules/harness-layer/hooks.md before drafting):\n`;
+    resolved.forEach(c => { p += `- ${c.resolveLine}\n`; });
+  }
+  if (accepted.length){
+    p += `\nAccepted as known constraints (note in the spec's assumptions, no action):\n`;
+    accepted.forEach(c => { p += `- ${c.title}.\n`; });
+  }
+  if (discuss.length){
+    p += `\nStop and confirm with Ringo before locking:\n`;
+    discuss.forEach(c => { p += `- Discuss ${c.discussQ}.\n`; });
+  }
+
+  p += `\nBuild scope (unchanged from the locked decisions): one epic with child issues, one pipeline run each — KB/worktree seed (ai-docs pattern in .worktreeinclude at the .gitignore:362 gap; /harness-layer:kb add of the five design sources) · projects/_template/ + .claude/rules/soriza-design/ family + .claude/rules/soriza/roster.md · intake command + DoR Stop hook + tests · remaining ladder commands · projects/**-scoped git-lane rule. Pilot: Soriza's own site, Ringo as client. Out of scope: delivery/production, agent teams, styled directions, client-facing intake surface.\n`;
+  p += `\nWorktree: .claude/worktrees/soriza-cpo-department`;
+
+  document.getElementById("promptOut").textContent = p;
+}
+updatePrompt();
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const txt = document.getElementById("promptOut").textContent;
+  try { await navigator.clipboard.writeText(txt); }
+  catch(e){
+    const ta = document.createElement("textarea");
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); ta.remove();
+  }
+  const msg = document.getElementById("copyMsg");
+  msg.classList.add("show");
+  setTimeout(() => msg.classList.remove("show"), 1800);
+});
+</script>
+</body>
+</html>
