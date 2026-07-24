@@ -93,6 +93,13 @@ never hand-authored; only `.worktreeinclude` and `ai-docs/sources.yaml` are trac
 - **AC mapping to the epic:** child AC1 realizes epic AC2's pre-merge half (pattern +
   matching semantics); child AC2–AC5 realize epic AC3; child AC6 keeps the PR surface exactly
   scoped. Epic AC2's worktree-receives-mirrors half lands with the epic driver's hydration.
+- **Revision (cycle 2, pre-round-3):** verified the round-2 blocker fixes on-branch (kb run
+  record + provenance assertion; working-tree-vs-`origin/main` AC6 surface check) and found
+  one executability defect — the four yaml-parsing validation scripts used `uv run python`,
+  but the project env has no PyYAML (pyproject carries only pytest/ruff), so they crashed on
+  `import yaml`. Changed them to `uv run --with pyyaml python`; no criterion semantics
+  changed. The AC1 fnmatch simulation was re-checked byte-for-byte against
+  `copy_worktree_includes()` in `worktree_create.py` — it matches the hook exactly.
 
 ### Build addendum — kb run record
 

@@ -40,7 +40,9 @@
 
 Run these to prove the criteria above — from the worktree root
 (`/Users/ringo/Desktop/ai-native-startup/.claude/worktrees/soriza-design-kb-seed`), after the
-build tasks complete. Assertion scripts exit non-zero on any failure.
+build tasks complete. Assertion scripts exit non-zero on any failure. The yaml-parsing
+scripts carry their dependency inline (`uv run --with pyyaml`) — the project env has no
+PyYAML; the stdlib-only scripts run with plain `uv run python`.
 
 - `uv run python -c "
   from pathlib import Path
@@ -71,7 +73,7 @@ build tasks complete. Assertion scripts exit non-zero on any failure.
   assert not missed, missed
   print('AC1 ok: %d KB files matched by the include patterns' % len(kb))"` — verifies AC1
   (the hook's exact matching semantics, simulated in-place; mirrors must exist first).
-- `uv run python -c "
+- `uv run --with pyyaml python -c "
   import yaml
   m = yaml.safe_load(open('ai-docs/sources.yaml'))
   d = m.get('design', [])
@@ -89,7 +91,7 @@ build tasks complete. Assertion scripts exit non-zero on any failure.
   print('AC2/AC3/AC4 ok')"` — verifies AC2 + AC3 + AC4 (source identities, groups, fetched
   dates, index rows; the epic-level check additionally pins `w3.org/WAI/WCAG22/quickref` —
   keep that identity unless a documented swap says otherwise).
-- `uv run python -c "
+- `uv run --with pyyaml python -c "
   import yaml
   from pathlib import Path
   m = yaml.safe_load(open('ai-docs/sources.yaml'))
@@ -104,7 +106,7 @@ build tasks complete. Assertion scripts exit non-zero on any failure.
       assert '> **In here:**' in text, e['file'] + ': no In-here line'
   print('AC2/AC3 mirror integrity ok')"` — verifies AC2 + AC3 (mirrors exist, frontmatter
   agrees with the manifest — a fetched mirror, not a hand-authored file).
-- `uv run python -c "
+- `uv run --with pyyaml python -c "
   import yaml
   from pathlib import Path
   m = yaml.safe_load(open('ai-docs/sources.yaml'))
@@ -125,7 +127,7 @@ build tasks complete. Assertion scripts exit non-zero on any failure.
   print('AC2 provenance ok')"` — verifies AC2 (every registered source has exactly one OK
   record in the build addendum; every fixed-identity deviation has a swap line naming the
   original URL — an unrecorded substitution or a mirror with no kb run record fails).
-- `uv run python -c "
+- `uv run --with pyyaml python -c "
   import yaml
   m = yaml.safe_load(open('ai-docs/sources.yaml'))
   entries = [e for g in m.values() for e in g]
