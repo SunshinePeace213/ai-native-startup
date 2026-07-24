@@ -180,17 +180,19 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
   sections / `Commit:` `📝 docs(<client>)` + `Refs #N` on the engagement branch);
   `.claude/hooks/check_intake_readiness.py` (matches stdin `session_id` against the marker
   suffix and gates **only its own session's markers** — blocks until every own-marked
-  client's `intake.md` is complete, then removes only its own markers on exit 0, the sole
-  marker deletion anywhere; fails toward blocking; no own-session marker → block with a
-  clear message; `_`-prefixed folders never valid; hard-coded DoR tuple matching
-  `definition-of-ready.md`; exit-2 per-section diagnostics; fail-open only on malformed
-  stdin/plumbing); a `.gitignore` line for `projects/*/.intake-in-progress.*`; tests under
+  client's `intake.md` is complete, then exits 0 leaving the marker in place so a repeat
+  firing passes again idempotently — the hook never deletes any marker; fails toward
+  blocking; no own-session marker → block with a clear message; `_`-prefixed folders never
+  valid; hard-coded DoR tuple matching `definition-of-ready.md`; exit-2 per-section
+  diagnostics; fail-open only on malformed stdin/plumbing); a `.gitignore` line for
+  `projects/*/.intake-in-progress.*`; tests under
   `tests/harness-layer/hooks/intake-readiness/` (block/allow/fail-open, wiring expectations,
   doctrine-sync test, session-independence regression — session A with complete client A
   exits 0 while session B's incomplete client-B marker exists, and session B still exits 2 —
-  the same-client two-session concurrent case, own-marker cleanup on exit 0, re-run on a
-  complete client — the new session's marker survives — and no-cross-session-deletion —
-  one live session never deletes another's marker); catalog row in
+  the same-client two-session concurrent case, re-run on a complete client — the new
+  session's marker survives — no-cross-session-deletion — no code path deletes any marker —
+  and the cross-hook continuation regression — two successive firings after completion both
+  exit 0, modeling another Stop hook blocking once in between); catalog row in
   `.claude/rules/harness-layer/hooks.md`.
 - Launch prompt:
 

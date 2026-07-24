@@ -182,23 +182,26 @@ Locked at plan time, within the ledger's boundaries:
   `${CLAUDE_SESSION_ID}` is the harness's command-content substitution —
   `ai-docs/anthropic/skills.md`). The Stop hook reads `session_id` from its stdin JSON and
   gates **only the markers carrying its own session id**: exit 2 until every own-marked
-  client's `intake.md` is complete, then exit 0 and remove only its own markers. Each
-  invocation resolves and cleans up exactly its own targets, so concurrent sessions never
-  clobber, release, or strand each other — client A's session completes independently of
-  client B's abandoned incomplete marker, and two concurrent runs of the same client each
-  gate on their own distinct marker file. No own-session marker → exit 2 with a clear message
+  client's `intake.md` is complete, then exit 0 — **leaving the marker in place** *(round-5
+  fix)*, so success is idempotently re-provable: Stop hooks run in parallel and an exit-2
+  from any other Stop hook forces a continuation, meaning this hook can fire again after
+  passing, and it must pass again. Each invocation resolves exactly its own targets, so
+  concurrent sessions never clobber, release, or strand each other — client A's session
+  completes independently of client B's abandoned incomplete marker, and two concurrent runs
+  of the same client each gate on their own distinct marker file. No own-session marker →
+  exit 2 with a clear message
   (inside the command a marker must exist); `_`-prefixed folders are never valid; malformed
-  stdin / unreadable files still fail open. **No process ever touches another session's
-  markers** *(round-4 fix)* — there is no sweep: the only marker deletion is the hook removing
-  its own session's markers on exit 0. Abandoned markers from dead sessions gate nobody
-  (session-scoped matching ignores them) and are harmless gitignored litter. Primary
-  isolation remains one engagement worktree per client (git lane); markers are
-  defense-in-depth. The newest-modified heuristic is dropped. Tests: session-independence
-  regression (session A with complete client A exits 0 while session B's incomplete client-B
-  marker exists; session B still exits 2), the same-client two-session concurrent case, a
-  re-run-on-complete-client case (the new session's marker survives until its own hook
-  removes it), and a no-cross-session-deletion case (one live session never deletes
-  another's marker).
+  stdin / unreadable files still fail open. **Nothing deletes markers at run time**
+  *(rounds 4–5 fix)* — no sweep, and no cleanup-on-success either. Markers of any session are
+  harmless gitignored litter once their run ends (session-scoped matching ignores them), safe
+  to remove manually after an engagement wraps. Primary isolation remains one engagement
+  worktree per client (git lane); markers are defense-in-depth. The newest-modified heuristic
+  is dropped. Tests: session-independence regression (session A with complete client A exits
+  0 while session B's incomplete client-B marker exists; session B still exits 2), the
+  same-client two-session concurrent case, a re-run-on-complete-client case (the new
+  session's marker survives), a no-cross-session-deletion case (no code path deletes any
+  marker), and the cross-hook continuation regression (another Stop hook blocks once between
+  two readiness checks — the second check still exits 0 on the retained marker).
 - **Wireframe delivery modes** *(round-1 fix)*. Publishing an artifact makes it visible only to
   its author (Ringo — the relay); "private links" are Ringo's review surface, not a client
   surface. Client-facing delivery is locked per engagement and recorded in `decision-log.md`:

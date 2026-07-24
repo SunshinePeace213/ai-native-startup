@@ -167,17 +167,19 @@ Use these files to complete the task:
   drops `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}` (gitignored, transient;
   no shared file to overwrite). The hook matches stdin's `session_id` against the marker
   suffix and gates **only its own session's markers**: blocks until each own-marked client's
-  `intake.md` is complete, then removes only its own markers on exit 0. Completing client A
-  never releases client B, and B's abandoned incomplete marker never strands A — each
-  invocation resolves and cleans up exactly its own targets; concurrent runs of the same
-  client each gate on their own distinct marker (primary isolation is one engagement worktree
-  per client; markers are defense-in-depth). No own-session marker → block with a clear
-  message; `_`-prefixed folders never valid; no process ever touches another session's
-  markers — the hook's own exit-0 cleanup is the only marker deletion, and abandoned markers
-  from dead sessions gate nobody; malformed/empty stdin or unreadable files → fail open
-  (exit 0), per the hooks contract. Command-scoped registration means other sessions editing
-  `projects/` are never gated. Tests: session-independence regression, same-client
-  concurrent case, re-run on a complete client, no-cross-session-deletion.
+  `intake.md` is complete, then exits 0 **leaving the marker in place** — Stop hooks run in
+  parallel and another Stop hook's exit 2 forces a continuation, so this hook can fire again
+  after passing and must pass again idempotently. Completing client A never releases client
+  B, and B's abandoned incomplete marker never strands A; concurrent runs of the same client
+  each gate on their own distinct marker (primary isolation is one engagement worktree per
+  client; markers are defense-in-depth). No own-session marker → block with a clear message;
+  `_`-prefixed folders never valid; nothing deletes markers at run time — stale markers are
+  harmless gitignored litter that session-scoped matching ignores; malformed/empty stdin or
+  unreadable files → fail open (exit 0), per the hooks contract. Command-scoped registration
+  means other sessions editing `projects/` are never gated. Tests: session-independence
+  regression, same-client concurrent case, re-run on a complete client,
+  no-cross-session-deletion, cross-hook continuation (a second firing after a pass still
+  exits 0).
 - **Doctrine/hook drift**: the sync test fails if `definition-of-ready.md`'s checklist headings
   and the hook's tuple diverge — the pair ships together or not at all.
 - **Large section inventory**: `:section-briefs` loops inline by default; above ~10 sections it

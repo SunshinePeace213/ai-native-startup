@@ -48,15 +48,17 @@
   `session_id` against the marker suffix, exits 2 with per-section stderr diagnostics while
   any **own-session** marked client's `intake.md` is incomplete/missing, exits 2 with a clear
   message when no own-session marker exists, exits 0 only when every own-marked client is
-  complete — and then removes only its own session's markers, the sole marker deletion in
-  the whole design. `_`-prefixed folders are never valid; fail-open (exit 0) on malformed
-  stdin/plumbing errors. The session-independence regression proves session A (complete
-  client A) exits 0 while session B's incomplete client-B marker exists — neither releasing
-  nor stranding the other — and session B still exits 2 on its own marker; the same-client
-  test proves two concurrent sessions marking one client each gate on their own distinct
-  marker; the re-run regression proves intaking an already-complete client leaves the new
-  session's marker in place until its own hook removes it; the isolation regression proves
-  no code path deletes another session's marker. The hook's required-section tuple matches
+  complete — **leaving markers in place**: the hook never deletes any marker, so success is
+  idempotently re-provable across repeated Stop firings. `_`-prefixed folders are never
+  valid; fail-open (exit 0) on malformed stdin/plumbing errors. The session-independence
+  regression proves session A (complete client A) exits 0 while session B's incomplete
+  client-B marker exists — neither releasing nor stranding the other — and session B still
+  exits 2 on its own marker; the same-client test proves two concurrent sessions marking one
+  client each gate on their own distinct marker; the re-run regression proves intaking an
+  already-complete client leaves the new session's marker in place; the deletion regression
+  proves no code path deletes any marker; the cross-hook continuation regression proves two
+  successive firings after completion both exit 0 (modeling another parallel Stop hook
+  blocking once in between). The hook's required-section tuple matches
   `definition-of-ready.md`'s checklist headings (sync test). All hook tests and the wiring
   pin pass.
 - **AC9** — The four ladder commands exist under `/soriza-design:*`, and each carries a
