@@ -38,16 +38,33 @@ def section_headings(text: str) -> tuple[str, ...]:
     return tuple(SECTION_RE.findall(text))
 
 
+def frontmatter_lines(text: str) -> tuple[str, ...]:
+    """The frontmatter block's physical lines, each right-stripped -- the
+    unit a whole-entry pin is checked against. A substring check would let
+    `# name: spec-review` (commented out) or `x-name: spec-review` (renamed)
+    satisfy a `name: spec-review` pin even though neither line is the live
+    key Claude resolves the skill by; matching a full stripped line closes
+    that gap."""
+    return tuple(line.rstrip() for line in frontmatter(text).splitlines())
+
+
 def missing_pins(text: str, expectations: dict) -> list[str]:
     """Every pin `expectations` names that `text` fails to satisfy; [] when clean.
 
-    `expectations` keys: `frontmatter` (literal lines expected inside the
-    frontmatter block) and `clause` (literals expected anywhere in the body).
+    `expectations` keys: `frontmatter` (whole `key: value` lines, matched
+    exactly against a frontmatter physical line), `frontmatter_fragment` (a
+    literal that is deliberately part of a longer frontmatter value rather
+    than a whole entry, kept as a substring check -- unused by either skill
+    today but mirrors test_command_contracts.py's pin classes), and `clause`
+    (literals expected anywhere in the body).
     """
     problems = []
     for literal in expectations.get("frontmatter", ()):
+        if literal not in frontmatter_lines(text):
+            problems.append(f"frontmatter entry missing: {literal!r}")
+    for literal in expectations.get("frontmatter_fragment", ()):
         if literal not in frontmatter(text):
-            problems.append(f"frontmatter missing: {literal!r}")
+            problems.append(f"frontmatter fragment missing: {literal!r}")
     for literal in expectations.get("clause", ()):
         if literal not in text:
             problems.append(f"clause missing: {literal!r}")
@@ -168,3 +185,39 @@ def test_required_sections_appear_in_matching_template(load_hook_module):
         template_sections = section_headings(template_text)
         missing = [s for s in sections if s not in template_sections]
         assert not missing, (filename, missing)
+
+
+def _frontmatter_entry_mutated(text: str, entry: str, replacement: str) -> str:
+    """`text` with the exact frontmatter line `entry` swapped for
+    `replacement` -- simulates a key being commented out or renamed while
+    the pinned text still appears somewhere on the line."""
+    pattern = re.compile(rf"^{re.escape(entry)}$", re.MULTILINE)
+    mutated, count = pattern.subn(lambda _m: replacement, text, count=1)
+    assert count == 1, f"expected exactly one frontmatter line {entry!r} to mutate"
+    return mutated
+
+
+@pytest.mark.parametrize("skill", sorted(SKILL_EXPECTATIONS))
+def test_commented_frontmatter_entry_is_flagged(skill):
+    """CX1-2: a commented-out `name:` (`# name: spec-review`) still contains
+    the pinned text as a substring, so the substring check this suite used
+    to run would pass it silently even though Claude can no longer resolve
+    the skill by that key. Only matching a whole, exact frontmatter line
+    catches it."""
+    entry = f"name: {skill}"
+    text = (SKILLS_DIR / skill / "SKILL.md").read_text()
+    mutated = _frontmatter_entry_mutated(text, entry, f"# {entry}")
+    problems = missing_pins(mutated, SKILL_EXPECTATIONS[skill])
+    assert any(entry in p for p in problems), problems
+
+
+@pytest.mark.parametrize("skill", sorted(SKILL_EXPECTATIONS))
+def test_prefixed_frontmatter_entry_is_flagged(skill):
+    """CX1-2: a renamed key (`old-name: spec-review`) is a dead key Claude's
+    frontmatter parser ignores, but it still contains the pinned text as a
+    substring -- only matching a whole, exact frontmatter line catches it."""
+    entry = f"name: {skill}"
+    text = (SKILLS_DIR / skill / "SKILL.md").read_text()
+    mutated = _frontmatter_entry_mutated(text, entry, f"old-{entry}")
+    problems = missing_pins(mutated, SKILL_EXPECTATIONS[skill])
+    assert any(entry in p for p in problems), problems

@@ -31,7 +31,7 @@ import os
 import re
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 REQUIRED_SECTIONS: dict[str, tuple[str, ...]] = {
     "spec.md": (
@@ -160,17 +160,18 @@ def validation_bullets(text: str) -> list[tuple[int, str]]:
     return out
 
 
-def command_target(content: str) -> str | None:
-    """The root-relative path a bullet's committed-check invocation runs, or
-    None if it invokes neither `uv run --script` nor `uv run pytest`."""
+def command_target(content: str) -> tuple[str, str] | None:
+    """(kind, path) for a bullet's committed-check invocation -- kind is
+    'script' (`uv run --script`) or 'pytest' (`uv run pytest`), path is the
+    target it names -- or None if it invokes neither."""
     for span in _CODE.findall(content):
         span = span.strip()
         m = re.match(r"uv run --script\s+(\S+)", span)
         if m:
-            return m.group(1)
+            return ("script", m.group(1))
         m = re.match(r"uv run pytest\s+(\S+)", span)
         if m:
-            return m.group(1).split("::")[0]
+            return ("pytest", m.group(1).split("::")[0])
     return None
 
 
@@ -189,13 +190,26 @@ def lint_validation_commands(folder: Path, root: Path) -> tuple[list[str], list[
                 f"  - {loc}: no stage tag ([plan-time]/[child-build-time]/[post-merge]): {bullet}"
             )
             continue
-        path = command_target(bullet)
-        if path is None:
+        target = command_target(bullet)
+        if target is None:
             blocks.append(
                 f"  - {loc}: invokes neither `uv run --script …` nor `uv run pytest …`: {bullet}"
             )
             continue
-        if not (root / path).exists():
+        kind, path = target
+        pure = PurePosixPath(path)
+        if pure.is_absolute() or ".." in pure.parts:
+            blocks.append(
+                f"  - {loc}: check path must be repo-relative (no absolute or '..'): {path}"
+            )
+            continue
+        if kind == "script":
+            checks_dir = PurePosixPath(folder.relative_to(root)) / "checks"
+            if checks_dir not in pure.parents:
+                blocks.append(f"  - {loc}: script check must live under {checks_dir}/: {path}")
+                continue
+        present = (root / path).is_file() if kind == "script" else (root / path).exists()
+        if not present:
             if stage == "[plan-time]":
                 blocks.append(f"  - {loc}: [plan-time] check path does not exist: {path}")
             else:

@@ -16,19 +16,29 @@ text = SPEC.read_text()
 block = re.search(r"## Load-Bearing Contract Inventory\n(.*?)\nCross-consistency", text, re.S)
 assert block, "no ## Load-Bearing Contract Inventory table found"
 
+KINDS = {"frontmatter", "sections", "clause"}
+
 rows: list[tuple[str, str, str]] = []
+failures: list[str] = []
 for line in block.group(1).splitlines():
     if not line.startswith("|") or set(line) <= {"|", "-", " "}:
         continue
     cells = [c.strip().strip("`") for c in line.strip("|").split("|")]
-    if len(cells) != 3 or cells[0] == "File":
+    if len(cells) != 3:
+        failures.append(f"malformed inventory row (expected 3 cells): {line!r}")
+        continue
+    if cells[0] == "File":
         continue
     rows.append((cells[0], cells[1], cells[2]))
 
-assert len(rows) >= 30, f"inventory parser matched only {len(rows)} rows — parsing is broken"
+assert len(rows) >= 30 or failures, (
+    f"inventory parser matched only {len(rows)} rows — parsing is broken"
+)
 
-failures: list[str] = []
 for file_path, kind, literal in rows:
+    if kind not in KINDS:
+        failures.append(f"{file_path}: unknown kind '{kind}' — must be one of {sorted(KINDS)}")
+        continue
     path = Path(file_path)
     if not path.is_file():
         failures.append(f"{file_path}: file missing")

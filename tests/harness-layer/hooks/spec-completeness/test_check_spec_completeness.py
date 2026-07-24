@@ -334,6 +334,68 @@ def test_lint_plan_time_missing_script_blocks(tmp_path, run_hook, sections):
     assert "specs/p/checks/ac1.py" in proc.stderr
 
 
+def test_lint_absolute_target_blocks(tmp_path, run_hook, sections):
+    """An absolute check path discards the gated root, so `(root / path)` would
+    resolve to a file anywhere on disk and could smuggle a check that lives
+    outside the plan past the gate; a committed check must be repo-relative, so
+    an absolute target is a form violation -> block, never a silent pass."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    create_check(tmp_path, "specs/p/checks/ac1.py")
+    write_ac_validation(folder, ["- `[plan-time]` `uv run --script /tmp/ac1.py` — verifies AC1."])
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 2
+    assert "check path must be repo-relative" in proc.stderr
+    assert "/tmp/ac1.py" in proc.stderr
+
+
+def test_lint_parent_traversal_target_blocks(tmp_path, run_hook, sections):
+    """A `..` segment lets a target escape the gated root (e.g. a sibling
+    worktree's checks/), defeating the point of validating the plan's OWN
+    committed checks; traversal is a form violation -> block, even though the
+    resolved file may well exist."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    create_check(tmp_path, "specs/p/checks/ac1.py")
+    write_ac_validation(
+        folder,
+        ["- `[plan-time]` `uv run --script specs/p/checks/../../q/checks/ac1.py` — verifies AC1."],
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 2
+    assert "check path must be repo-relative" in proc.stderr
+
+
+def test_lint_directory_as_script_target_blocks(tmp_path, run_hook, sections):
+    """`uv run --script` runs a single file; a directory at the target path is
+    not a runnable check, and plain `.exists()` would wrongly bless it. A
+    plan-time script must be a regular file present now, so a directory target
+    fails the existence rule -> block."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    (tmp_path / "specs" / "p" / "checks" / "ac1.py").mkdir(parents=True)  # a dir, not a file
+    write_ac_validation(
+        folder, ["- `[plan-time]` `uv run --script specs/p/checks/ac1.py` — verifies AC1."]
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 2
+    assert "[plan-time] check path does not exist" in proc.stderr
+    assert "specs/p/checks/ac1.py" in proc.stderr
+
+
+def test_lint_other_plan_script_target_blocks(tmp_path, run_hook, sections):
+    """A script target under a DIFFERENT plan's checks/ (here specs/other/) is
+    not this plan's committed check even when the file exists; each plan must
+    validate its own checks, so a foreign-plan script is a form violation ->
+    block naming the required specs/<this-plan>/checks/ location."""
+    create_check(tmp_path, "specs/other/checks/ac1.py")  # exists, but wrong plan
+    folder = write_plan(tmp_path / "specs", "p", sections)  # newest -> the gated plan
+    write_ac_validation(
+        folder, ["- `[plan-time]` `uv run --script specs/other/checks/ac1.py` — verifies AC1."]
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 2
+    assert "script check must live under specs/p/checks/" in proc.stderr
+    assert "specs/other/checks/ac1.py" in proc.stderr
+
+
 def test_lint_bullet_without_stage_tag_blocks(tmp_path, run_hook, sections):
     """Every command bullet must carry a stage tag so reviewers know the earliest
     point it can pass; an untagged bullet is unrunnable-by-schedule and blocks,

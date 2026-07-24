@@ -40,18 +40,34 @@ def section_headings(text: str) -> tuple[str, ...]:
     return tuple(SECTION_RE.findall(text))
 
 
+def frontmatter_lines(text: str) -> tuple[str, ...]:
+    """The frontmatter block's physical lines, each right-stripped -- the
+    unit a whole-entry pin is checked against. A substring check would let
+    `# model: fable` (commented out) or `x-model: fable` (renamed) satisfy a
+    `model: fable` pin even though neither line is a live key the harness
+    reads; matching a full stripped line closes that gap."""
+    return tuple(line.rstrip() for line in frontmatter(text).splitlines())
+
+
 def missing_pins(text: str, expectations: dict) -> list[str]:
     """Every pin `expectations` names that `text` fails to satisfy; [] when clean.
 
-    `expectations` keys: `frontmatter` (literal lines expected inside the
-    frontmatter block), `sections` (the exact `##` heading tuple, in order --
-    missing AND unexpected headings both count, and so does reordering), and
-    `clause` (literals expected anywhere in the body).
+    `expectations` keys: `frontmatter` (whole `key: value` lines, matched
+    exactly against a frontmatter physical line), `frontmatter_fragment` (a
+    literal that is deliberately part of a longer frontmatter value -- e.g. a
+    script name buried inside a nested `hooks:` command -- kept as a
+    substring check because it is not a whole entry on its own), `sections`
+    (the exact `##` heading tuple, in order -- missing AND unexpected
+    headings both count, and so does reordering), and `clause` (literals
+    expected anywhere in the body).
     """
     problems = []
     for literal in expectations.get("frontmatter", ()):
+        if literal not in frontmatter_lines(text):
+            problems.append(f"frontmatter entry missing: {literal!r}")
+    for literal in expectations.get("frontmatter_fragment", ()):
         if literal not in frontmatter(text):
-            problems.append(f"frontmatter missing: {literal!r}")
+            problems.append(f"frontmatter fragment missing: {literal!r}")
     if "sections" in expectations:
         expected = expectations["sections"]
         actual = section_headings(text)
@@ -78,8 +94,8 @@ COMMAND_EXPECTATIONS = {
             "effort: xhigh",
             "disable-model-invocation: true",
             "disallowed-tools: Task, EnterPlanMode",
-            "check_spec_completeness.py",
         ),
+        "frontmatter_fragment": ("check_spec_completeness.py",),
         "sections": (
             "Variables",
             "Instructions",
@@ -266,3 +282,43 @@ def test_instructions_section_removal_is_flagged(filename, commit, pr):
     stripped = _section_stripped(text, "Instructions")
     problems = missing_pins(stripped, COMMAND_EXPECTATIONS[filename])
     assert any("Instructions" in p for p in problems), (commit, pr, problems)
+
+
+def _frontmatter_entry_mutated(text: str, entry: str, replacement: str) -> str:
+    """`text` with the exact frontmatter line `entry` swapped for
+    `replacement` -- simulates a key being commented out or renamed while
+    the pinned text still appears somewhere on the line."""
+    pattern = re.compile(rf"^{re.escape(entry)}$", re.MULTILINE)
+    mutated, count = pattern.subn(lambda _m: replacement, text, count=1)
+    assert count == 1, f"expected exactly one frontmatter line {entry!r} to mutate"
+    return mutated
+
+
+FRONTMATTER_ENTRY_MUTATION_CASES = [
+    ("harness-plan.md", "model: fable"),
+    ("harness-ship.md", "allowed-tools: Bash(git *), Bash(gh *)"),
+    ("harness-unknowns.md", "disallowed-tools: Task, EnterPlanMode"),
+]
+
+
+@pytest.mark.parametrize("filename,entry", FRONTMATTER_ENTRY_MUTATION_CASES)
+def test_commented_frontmatter_entry_is_flagged(filename, entry):
+    """CX1-2: a commented-out key (`# model: fable`) still contains the
+    pinned text as a substring, so the substring check this suite used to
+    run would pass it silently even though the key no longer takes effect.
+    Only matching a whole, exact frontmatter line catches it."""
+    text = (COMMANDS_DIR / filename).read_text()
+    mutated = _frontmatter_entry_mutated(text, entry, f"# {entry}")
+    problems = missing_pins(mutated, COMMAND_EXPECTATIONS[filename])
+    assert any(entry in p for p in problems), problems
+
+
+@pytest.mark.parametrize("filename,entry", FRONTMATTER_ENTRY_MUTATION_CASES)
+def test_prefixed_frontmatter_entry_is_flagged(filename, entry):
+    """CX1-2: a renamed key (`x-model: fable`) is a dead key the frontmatter
+    parser ignores, but it still contains the pinned text as a substring --
+    only matching a whole, exact frontmatter line catches it."""
+    text = (COMMANDS_DIR / filename).read_text()
+    mutated = _frontmatter_entry_mutated(text, entry, f"x-{entry}")
+    problems = missing_pins(mutated, COMMAND_EXPECTATIONS[filename])
+    assert any(entry in p for p in problems), problems
