@@ -108,7 +108,14 @@ Volatile first — full record in [decisions.md](./decisions.md):
 - **Branch:** chore/44-soriza-design-kb-seed
 - **Worktree:** /Users/ringo/Desktop/ai-native-startup/.claude/worktrees/soriza-design-kb-seed
 - **Review profile:** kb-grounded
-- **PR:** <filled by /harness-layer:harness-build>
+- **PR:** #50 (draft) — <https://github.com/SunshinePeace213/ai-native-startup/pull/50>
+- **Hand-off SHA:** ffc268e6749ff96ebef888ba7a9d480ccff9063a
+- **Hand-off notes:** two epic-authorized source swaps recorded in the decisions.md build
+  addendum (NN/g Top-10 404 → 113-guidelines; JS-only fonts.google.com/knowledge →
+  web.dev/learn/design/typography), the second gated by spec amendment `efac876`
+  (Codex round 5, approved). Validator 9/9 green; tidy clean, 0 auto-fixes. Post-merge:
+  epic driver hydrates the main checkout via `/harness-layer:kb` before creating
+  dependent child worktrees.
 
 ## Relevant Files
 
