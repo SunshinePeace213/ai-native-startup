@@ -85,11 +85,11 @@
 </style>
 
 <div class="wrap">
-  <span class="eyebrow">Implementation plan · epic #43 · needs-human</span>
+  <span class="eyebrow">Implementation plan · epic #43 · approved</span>
   <h1>soriza-design — slice 1</h1>
   <p class="sub">Soriza's design department as a five-rung command chain over <code>projects/&lt;client&gt;/</code>. The client owns "what"; the department owns discover → define → design and hands Ringo a brief packet.</p>
   <div class="chips">
-    <span class="chip alert">Codex: needs-human — cap hit again at round 4, all fixes applied, verifying round 5 pending</span>
+    <span class="chip">Codex: approved at round 9 — spec status Approved</span>
     <span class="chip">branch <span class="mono">feat/43-soriza-cpo-department</span></span>
     <span class="chip">children #44–#48 · one pipeline run each</span>
     <span class="chip">profile kb-grounded</span>
@@ -107,7 +107,7 @@
   <p class="vera"><strong>Vera</strong> (CPO) signs every packet before it reaches Ringo · roster at <code>.claude/rules/soriza/roster.md</code></p>
 
   <h2>Decisions most likely to move</h2>
-  <p class="sub">Each card shows the locked path and its live alternative. Switch one (or add a note) and the prompt below becomes a plan-revision request; touch nothing and it's the verify-round-5 run.</p>
+  <p class="sub">Each card shows the locked path and its live alternative. Switch one (or add a note) and the prompt below becomes a plan-revision request; touch nothing and it's the epic kickoff (docs PR merge → child #44).</p>
   <div id="cards"></div>
 
   <h2>Build order</h2>
@@ -126,8 +126,12 @@
       <li><strong>Round 1</strong> (changes-requested): artifact "private links" aren't a client surface → delivery modes locked per engagement; newest-modified gate targeting → deterministic; weak validation → assertion scripts.</li>
       <li><strong>Round 2</strong> (changes-requested): shared target file race → per-client markers, gate-all-marked; section-briefs predecessor corrected to <code>wireframes/</code>; AC7/AC9–AC11 → Rung Contract field assertions.</li>
       <li><strong>Round 3</strong> (changes-requested): all-marked gating strands unrelated runs → session-scoped markers (<code>${CLAUDE_SESSION_ID}</code> ↔ stdin <code>session_id</code>); AC9–AC11 clause gaps → clause-exact field assertions.</li>
-      <li><strong>Round 4</strong> (changes-requested): complete-client sweep could delete live session markers → sweep removed, hook's own exit-0 cleanup is the sole deletion; AC3/AC6/AC7/AC11 → exact source identities, exact roster rows, AC7 field semantics, exact two-<code>Gate:</code>-bullet mapping.</li>
-      <li>Cap is 2 rounds/cycle → <strong>needs-human</strong> again; every blocker is already fixed on the branch — a plan re-run (Revision Mode) runs the verifying round 5 and clears the label.</li>
+      <li><strong>Round 4</strong> (changes-requested): complete-client sweep could delete live session markers → sweep removed; AC3/AC6/AC7/AC11 → exact source identities, exact roster rows, AC7 field semantics, exact two-<code>Gate:</code>-bullet mapping.</li>
+      <li><strong>Round 5</strong> (changes-requested): success deleted the marker but a parallel Stop hook can force a continuation → markers retained on success; success idempotent across repeated firings.</li>
+      <li><strong>Round 6</strong> (changes-requested): "absolute" gate vs the documented 8-block Stop-hook cap → platform-bounded guarantee, rung-level DoR refusals as the durable stop; AC1/AC3/AC10 strengthened.</li>
+      <li><strong>Round 7</strong> (changes-requested): AC1 branch-ancestry check (child pipelines provably start after the docs merge); AC12 hard closure assertions.</li>
+      <li><strong>Round 8</strong> (changes-requested): post-#44 KB hydration hand-off (gitignored mirrors never reach <code>main</code>); last two absolute-gate sentences aligned.</li>
+      <li><strong>Round 9</strong>: <strong>approved</strong> — no blocking findings. Spec status: Approved.</li>
     </ul>
   </details>
   <details>
@@ -219,7 +223,7 @@
         `Worktree: .claude/worktrees/soriza-cpo-department"`;
     } else {
       modeEl.textContent = "Next step — copy into Claude Code";
-      text = `/harness-layer:harness-plan "Verify the round-4 fixes on the soriza-cpo-department spec (Revision Mode, issue #43) — no scope changes; run the verifying Codex round 5 and, on approval, remove the status:needs-human label. Worktree: .claude/worktrees/soriza-cpo-department"`;
+      text = `/harness-layer:harness-build "Run the approved soriza-cpo-department epic (issue #43): merge the epic docs PR #49, then run the child pipelines #44–#48 in dependency order per specs/soriza-cpo-department/tasks.md. Worktree: .claude/worktrees/soriza-cpo-department"`;
     }
     document.getElementById("prompt").textContent = text;
   }

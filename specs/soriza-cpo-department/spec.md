@@ -1,7 +1,7 @@
 # Spec: Soriza design department — slice 1 (soriza-design)
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
   <!-- Lifecycle, set by /harness-layer:harness-plan: Drafted for Review → Approved (on a Codex
        `approved` verdict). A cycle that ends still changes-requested — or with Codex unavailable —
        records needs-human in ## Codex Verification and keeps this status. One value only. -->
@@ -243,18 +243,17 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** needs-human (blockers) — second cycle's cap (rounds 3–4) reached at
-  changes-requested. Cycle 1 (rounds 1–2): all blockers fixed on this branch. Cycle 2:
-  round 3 — 2 blockers (all-client marker gating strands unrelated runs → session-scoped
-  markers keyed to stdin `session_id` / `${CLAUDE_SESSION_ID}`; AC9–AC11 clause gaps →
-  clause-exact field assertions) — fixed and re-reviewed. Round 4 — 2 blockers
-  (complete-client sweep can delete live session markers → sweep removed entirely, hook's
-  own exit-0 cleanup is the sole marker deletion, plus re-run and cross-session-deletion
-  regressions; AC3/AC6/AC7/AC11 assertion gaps → exact source identities + index check,
-  exact per-staffer roster rows, AC7 field semantics, exact two-`- Gate:`-bullet mapping) —
-  **fixes applied on this branch after the cap**; they await a verifying round via a plan
-  re-run (Revision Mode, round 5).
-- **Rejected findings:** none — every blocking finding from all four rounds was applied;
+- **Outcome:** **approved at round 9** (2026-07-24, reviewed head `ceba2d0`). Nine rounds
+  across five cycles, every blocking finding applied on this branch. Highlights per round:
+  1–2 delivery modes locked, deterministic gate targeting, Rung Contract blocks, chain order;
+  3 session-scoped markers (`${CLAUDE_SESSION_ID}` ↔ stdin `session_id`) + clause-exact
+  AC9–AC11; 4 marker sweep removed (no run-time marker deletion beyond design intent) +
+  AC3/AC6/AC7/AC11 exactness; 5 markers retained on success (idempotent across repeated Stop
+  firings); 6 platform-bounded gate (8-block Stop-hook cap acknowledged; rung-level DoR
+  refusals are the durable stop) + AC1/AC3/AC10 gaps; 7 AC1 branch-ancestry check + AC12
+  hard assertions; 8 post-#44 KB hydration hand-off + last absolute-gate language aligned;
+  9 approved, no blocking findings.
+- **Rejected findings:** none — every blocking finding from all nine rounds was applied;
   round-1 advisory (add html-artifacts-workflows.md to KB References) also applied.
 
 ## References
