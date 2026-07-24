@@ -1,0 +1,139 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soriza CPO — Interview · Sign-off</title>
+<style>
+  :root{
+    --bg:#FAF8F5; --surface:#F0EDE5; --border:#D4CFC7; --text:#2C2825;
+    --accent:#B8602A; --muted:#8A837A;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.55;padding:0 20px 140px}
+  .wrap{max-width:880px;margin:0 auto}
+  header{padding:44px 0 26px;border-bottom:2px solid var(--text);margin-bottom:26px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(26px,4vw,38px);line-height:1.15;text-wrap:balance}
+  header p{color:var(--muted);margin-top:10px;max-width:62ch}
+  h2.group{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:30px 0 12px}
+  .dec{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:10px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:start}
+  .dec .q{font-weight:600}
+  .dec .a{font-size:14px;color:var(--text)}
+  .dec .a strong{color:var(--accent);font-weight:600}
+  .dec .why{font-size:13px;color:var(--muted);max-width:66ch}
+  .dec .body{min-width:0}
+  .flag{grid-row:span 3;align-self:center;background:var(--bg);border:1.5px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:var(--sans);color:var(--muted);white-space:nowrap}
+  .flag:hover{border-color:var(--accent);color:var(--text)}
+  .flag.on{border-color:var(--accent);background:#F6E9DF;color:var(--accent);font-weight:600}
+  .flag:focus-visible,.copy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .flagnote{grid-column:1/-1;display:none}
+  .dec.flagged .flagnote{display:block}
+  .flagnote textarea{width:100%;min-height:40px;background:var(--bg);border:1px solid var(--accent);border-radius:6px;padding:8px 12px;font-family:var(--sans);font-size:14px;color:var(--text);resize:vertical}
+  ul.plain{list-style:none}
+  ul.plain li{padding:7px 0 7px 20px;position:relative;border-bottom:1px dotted var(--border);font-size:14px}
+  ul.plain li::before{content:"";position:absolute;left:2px;top:14px;width:8px;height:8px;border-radius:99px;background:var(--border)}
+  ul.plain.assume li::before{background:#6B8F4E}
+  .promptbar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:2px solid var(--text);padding:14px 20px}
+  .promptbar .inner{max-width:880px;margin:0 auto;display:flex;gap:16px;align-items:flex-start}
+  .promptbar pre{flex:1;font-family:var(--mono);font-size:12px;line-height:1.5;white-space:pre-wrap;max-height:92px;overflow-y:auto;color:var(--text)}
+  .copy{background:var(--text);color:var(--bg);border:none;border-radius:6px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--sans)}
+  .copy:hover{filter:brightness(1.25)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Soriza design department · Interview · Signed off</div>
+    <h1>Every decision, replayed and approved.</h1>
+    <p>Two page rounds plus two direct follow-ups resolved all open dimensions; the sign-off amendments (naming, roster, staff personas) are folded in below. This page is the committed record — the ledger lives in decisions-draft.md beside it.</p>
+  </header>
+  <div id="groups"></div>
+
+  <h2 class="group">Assumptions — plan/build settle these</h2>
+  <ul class="plain assume">
+    <li>Per-file skeleton headings in <code>projects/_template/</code> are settled at plan time.</li>
+    <li>The Definition-of-Ready checklist content is authored at build time inside <code>definition-of-ready.md</code>.</li>
+    <li>Epic child-issue slicing is proposed at plan time (roughly: KB/worktree seed · template + rules family · intake + DoR hook · ladder commands · git lane).</li>
+  </ul>
+
+  <h2 class="group">Out of scope</h2>
+  <ul class="plain">
+    <li>Delivery/production — a future CTO department.</li>
+    <li>Agent team per engagement — revisit after the ladder proves out.</li>
+    <li>Styled design directions for wireframes — lo-fi only in slice 1.</li>
+    <li>Client-facing intake surface — Ringo relays; no client-visible pages beyond shared wireframe links.</li>
+  </ul>
+</div>
+
+<div class="promptbar">
+  <div class="inner">
+    <pre id="prompt"></pre>
+    <button class="copy" onclick="copyPrompt()" id="copybtn">Copy as prompt</button>
+  </div>
+</div>
+
+<script>
+const GROUPS=[
+ {name:"Locked before the interview",items:[
+  {id:"home",q:"Client-project home",a:"projects/<client>/ in this repo — brief, section briefs, IA, wireframes, asset checklist, decision log; the folder structure is the first deliverable."},
+  {id:"bound",q:"Human/agent boundary",a:"Agents draft everything intake → brief packet; Ringo owns asset/template collection and Claude Design prototyping. The packet is the hand-off."},
+  {id:"mem",q:"Department memory",a:"Path-scoped rules family (now .claude/rules/soriza-design/, see amendments) plus a lessons log on the development-log.md contract. No parallel memory system."},
+  {id:"wt",q:"KB in worktrees",a:"An ai-docs/ pattern in .worktreeinclude copies cached mirrors into every fresh worktree (gap confirmed at .gitignore:362)."},
+  {id:"epic",q:"Scoping",a:"One epic with child issues, one pipeline run per child — never one giant spec."},
+  {id:"ladder",q:"Workflow",a:"The fidelity ladder — intake → brief → sitemap/IA → wireframe → section briefs — gated by the intake questionnaire and a Definition of Ready. Delivery is out of scope."}]},
+ {name:"Resolved in round 1",items:[
+  {id:"org",q:"Org shape",a:"Per-rung command chain: /soriza-design:intake → :brief → :sitemap → :wireframe → :section-briefs.",why:"Each rung reads the previous rung's file in projects/<client>/, is gated by its DoR, and commits as it goes. One session's judgment end to end; specialists and teams stay easy upgrades."},
+  {id:"git",q:"Client-work git lane",a:"PR per gate.",why:"Rungs commit to the engagement branch; a 📝 docs(<client>) PR only at gate points (brief approved, packet hand-off). A projects/**-scoped rule swaps Test Evidence for DoR checklist + decision-log entry + client sign-off."},
+  {id:"wire",q:"Wireframes",a:"Lo-fi grayscale, one self-contained page per screen, published as private artifact links Ringo shares.",why:"Structure-only keeps client feedback on layout; copy-as-prompt returns reactions as structured change requests appended to decision-log.md."},
+  {id:"doct",q:"Doctrine depth",a:"Every rules file carries real starter doctrine day one — drafted at build, reviewed by Ringo in the PR.",why:"Stubs gate nothing; lessons refine real content instead of filling voids."},
+  {id:"pilot",q:"Pilot engagement",a:"Soriza's own site — Ringo is the client.",why:"Real stakes and a real reviewer while the ladder shakes out; no external deadline."}]},
+ {name:"Resolved in round 2",items:[
+  {id:"copy",q:"Copywriting capability",a:"Copywriting is first-class doctrine: a sixth rules file copywriting.md (slogans, headlines, section copy). Section briefs deliver draft copy held to it; the packet carries a typography-direction page.",why:"Your field experience: clients reject pages over weak copy and fonts, not just structure. The department must know how to write, not only how to structure."},
+  {id:"kb",q:"KB design/ first cut",a:"Five official sources: WCAG 2.2 quickref, web.dev Learn Design, one NN/g cornerstone (homepage/IA), NN/g writing-for-the-web, Google Fonts Knowledge.",why:"The lean trio grounds structure and accessibility; the two additions ground copy and typography. Homegrown doctrine stays in the rules family, never fake mirrors."},
+  {id:"inv",q:"Page & section inventory",a:"Dynamic per client: the sitemap/IA rung locks how many pages and which sections per page. The template ships a nine-skeleton starter library of essential modern sections — header/navigation, hero, logo tape, features/solutions (bento), testimonials, pricing/plans, content/blog, footer, plus a standalone CTA band — not a fixed set.",why:"Ringo's essential-sections list, supplied at sign-off. Scope is set with the client at the IA rung; the :section-briefs rung loops the locked inventory inline, with parallel fan-out as the escape hatch for large inventories."},
+  {id:"intake",q:"Intake flow",a:"Ringo relays the client: /soriza-cpo:intake interviews you holding the client's raw materials (call notes, emails, existing site).",why:"Keeps client-communication doctrine simple; no client-facing surface in slice 1."},
+  {id:"nest",q:"Nesting fact-check",a:"Closed: Claude Code subagents nest since v2.1.172 with a fixed depth cap (verified in ai-docs/anthropic/subagents.md). All org shapes were technically viable; the chain won on judgment."}]},
+ {name:"Sign-off amendments",items:[
+  {id:"name",q:"Org unit name",a:"soriza-design — rules family .claude/rules/soriza-design/, commands /soriza-design:*. The CPO is the C-suite persona heading the department, not the department name.",why:"Correct org semantics; a future CTO heads their own department the same way."},
+  {id:"roster",q:"Staff roster",a:"Company-wide file .claude/rules/soriza/roster.md — C-suite, departments, each staffer's name, position, deliverable owned, status.",why:"Ringo wants a visible org chart of Soriza's staff; company scope already fits the future CTO department."},
+  {id:"staff",q:"Staff personas",a:"Names locked in the interview: Vera (CPO) · Mira (intake lead) · Elias (brief writer) · Ivo (IA architect) · Juno (wireframer) · Lior (copywriter / section-brief author).",why:"Names are personas attached to roles — they survive a later move from command rung to subagent. Ringo picked each name directly."}]}
+];
+const state={};
+function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+const root=document.getElementById("groups");
+GROUPS.forEach(g=>{
+  root.appendChild(el("h2","group",g.name));
+  g.items.forEach(d=>{
+    state[d.id]={flag:false,note:""};
+    const card=el("div","dec");card.id="dec-"+d.id;
+    const body=el("div","body");
+    body.appendChild(el("div","q",d.q));
+    body.appendChild(el("div","a",d.a));
+    if(d.why)body.appendChild(el("div","why",d.why));
+    card.appendChild(body);
+    const b=el("button","flag","Flag");
+    b.addEventListener("click",()=>{state[d.id].flag=!state[d.id].flag;
+      b.classList.toggle("on",state[d.id].flag);b.textContent=state[d.id].flag?"Flagged":"Flag";
+      card.classList.toggle("flagged",state[d.id].flag);updatePrompt();});
+    card.appendChild(b);
+    const fn=el("div","flagnote"),ta=el("textarea");
+    ta.placeholder="What should change?";
+    ta.addEventListener("input",()=>{state[d.id].note=ta.value;updatePrompt();});
+    fn.appendChild(ta);card.appendChild(fn);
+    root.appendChild(card);
+  });
+});
+function updatePrompt(){
+  const flags=[];
+  GROUPS.forEach(g=>g.items.forEach(d=>{const s=state[d.id];
+    if(s.flag)flags.push(`- ${d.q}: ${s.note.trim()||"(flagged, no note)"}`);}));
+  document.getElementById("prompt").textContent=flags.length
+    ?`Sign-off with corrections — Soriza CPO department:\n${flags.join("\n")}\nEverything not flagged is approved. Revise and replay.`
+    :"Sign-off: approved — lock the ledger and write specs/soriza-cpo-department/discovery/decisions-draft.md as replayed.";
+}
+function copyPrompt(){
+  navigator.clipboard.writeText(document.getElementById("prompt").textContent).then(()=>{
+    const b=document.getElementById("copybtn");b.textContent="Copied!";setTimeout(()=>b.textContent="Copy as prompt",1500);});
+}
+updatePrompt();
+</script>
