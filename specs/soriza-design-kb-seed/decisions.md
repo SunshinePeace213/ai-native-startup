@@ -161,6 +161,9 @@ One line per `/harness-layer:kb add` run, verbatim from the kb report:
 - FAIL <https://www.nngroup.com/articles/top-10-guidelines-for-homepage-usability/> → swapped to <https://www.nngroup.com/articles/113-design-guidelines-homepage-usability/>: proposed URL returns HTTP 404; substitute is the canonical superset of the dead Top-10 digest, same topic — epic-driver-authorized 2026-07-24
 - OK design/nngroup-homepage-usability.md <https://www.nngroup.com/articles/113-design-guidelines-homepage-usability/>
 - OK design/nngroup-writing-for-the-web.md <https://www.nngroup.com/articles/how-users-read-on-the-web/>
+- FAIL <https://fonts.google.com/knowledge> → swapped to <https://web.dev/learn/design/typography>: JS-only SPA with zero server-rendered text (sub-pages and m3.material.io likewise); official web.dev typography module server-renders fully — epic-authorized 2026-07-24
+- OK design/learn-design-typography.md <https://web.dev/learn/design/typography>
+- OK anthropic/memory.md <https://code.claude.com/docs/en/memory>
 
 ## Assumptions
 

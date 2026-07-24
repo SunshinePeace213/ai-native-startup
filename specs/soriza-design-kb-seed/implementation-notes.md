@@ -62,3 +62,17 @@
   Resume paths (all need a plan-level amendment): (a) approve the web.dev/typography swap +
   AC2 marker adjustment, (b) pick a different official static typography source, (c) drop
   or redefine source 5.
+- **2026-07-24 · build resumed after gated amendment** — the halt was resolved through the
+  proper gate: spec amendment `efac876` (authored by Ringo, Codex round 5 approved,
+  0 blocking — `reviews/codex-spec-review-round-5.md`) resolves source 5 to
+  `https://web.dev/learn/design/typography`, moves AC2 to exact-URL equality over the
+  resolved five, requires one FAIL/swap line per authorized swap, and CLOSES substitution
+  (any new failure of the final five is a hard stop). Build resumed on head `b36b756`.
+- **2026-07-24 · kb-seed-design complete (5/5) + kb-seed-memory hand-off** — kb-builder
+  registered `design/learn-design-typography.md` (typography swap FAIL/OK pair appended)
+  and `anthropic/memory.md` (canonical URL unchanged, 461-line mirror). Verified on disk:
+  design group equals the resolved identity set exactly, manifest 32 entries / 32 unique
+  URLs, zero `fetched: null`, all six mirrors carry matching frontmatter + In-here lines,
+  index.md lists all six. Builder deviations flagged: memory fetcher wrapped its OK line in
+  extra prose (verified independently, harmless); markdown formatter angle-bracketed the
+  addendum URLs (non-breaking — validation matches by substring). No blockers.
