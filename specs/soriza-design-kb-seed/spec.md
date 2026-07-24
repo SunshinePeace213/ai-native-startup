@@ -1,7 +1,7 @@
 # Spec: Seed the design KB group + worktree availability (child #44 of epic #43)
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
   <!-- Lifecycle, set by /harness-layer:harness-plan: Drafted for Review → Approved (on a Codex
        `approved` verdict). A cycle that ends still changes-requested — or with Codex unavailable —
        records needs-human in ## Codex Verification and keeps this status. One value only. -->
@@ -184,15 +184,16 @@ All new files are gitignored KB output in this worktree — none are tracked:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** **needs-human (blockers)** — 2026-07-24, cycle cap (2 new rounds) reached
-  still `changes-requested`. Round 1 (head `6c44157`): AC1/AC6 validation commands were
-  diagnostic, not asserting — fixed (single-pattern + `origin/main` baseline assertion;
-  exact-surface assertion). Round 2 (head `bfb5c10`): AC2 substitution/mirror provenance not
-  observable, AC6 surface check sequenced against `HEAD` before the build commit — fixed
-  on this branch (kb run record in decisions.md parsed by a new provenance assertion;
-  working-tree-vs-`origin/main` surface check) but **not yet re-verified by Codex**. A
-  revision cycle (rounds continue at 3) must confirm the round-2 fixes.
-- **Rejected findings:** none — every blocking finding from both rounds was applied.
+- **Outcome:** **approved at round 4** — 2026-07-24, revision cycle 2 (rounds 3–4,
+  `gpt-5.6-terra`). Cycle 1 history: round 1 (head `6c44157`) AC1/AC6 validation
+  diagnostic-not-asserting — fixed; round 2 (head `bfb5c10`) AC2 provenance unobservable +
+  AC6 sequenced against `HEAD` pre-commit — fixed; cycle capped at needs-human. Cycle 2:
+  pre-round-3 revision fixed the yaml validation scripts' missing PyYAML dep
+  (`uv run --with pyyaml`); round 3 (head `9ea0377`) found the substitution flow
+  unrealizable (dangling `fetched: null` provisional entry) and AC2 contradicting the
+  general substitution rule — fixed by the WCAG-only replacement contract (head `1dccea3`);
+  round 4 approved with 0 blocking findings and no advisories.
+- **Rejected findings:** none — every blocking finding from all four rounds was applied.
 
 ## References
 
@@ -216,4 +217,4 @@ and no `artifacts/` (simple plan — no implementation-plan page).
 - [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
 - [x] Acceptance criteria are specific and testable
 - [x] All four files exist under specs/soriza-design-kb-seed/ and are saved in the repository
-- [ ] Codex has reviewed the spec and Status reflects the outcome
+- [x] Codex has reviewed the spec and Status reflects the outcome
