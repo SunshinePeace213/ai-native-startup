@@ -20,7 +20,8 @@ Three deliverables, all mechanical:
 2. **`design/` KB group** — five official sources registered and mirrored via
    `/harness-layer:kb add <url> design` (explicit group argument — host-based defaulting would
    misfile them): W3C WCAG 2.2 quickref, web.dev Learn Design, NN/g homepage cornerstone,
-   NN/g writing-for-the-web, Google Fonts Knowledge.
+   NN/g writing-for-the-web, and the web.dev Learn Design typography module (epic-authorized
+   swap — `fonts.google.com/knowledge` is a JS-only SPA shell that mirrors empty).
 3. **Anthropic memory page** — `https://code.claude.com/docs/en/memory` registered and
    mirrored under the `anthropic` group (gap found at epic plan time).
 
@@ -62,16 +63,18 @@ Volatile first — full record in [decisions.md](./decisions.md):
    | 1 | W3C WCAG 2.2 quickref | `https://www.w3.org/WAI/WCAG22/quickref/` | `design` |
    | 2 | web.dev Learn Design | `https://web.dev/learn/design` | `design` |
    | 3 | NN/g homepage cornerstone | `https://www.nngroup.com/articles/113-design-guidelines-homepage-usability/` (build-time swap — proposed Top-10 digest URL 404'd; epic-driver-authorized, recorded in decisions.md build addendum) | `design` |
-   | 4 | NN/g writing for the web | canonical `nngroup.com/articles/…` page picked at build | `design` |
-   | 5 | Google Fonts Knowledge | `https://fonts.google.com/knowledge` | `design` |
+   | 4 | NN/g writing for the web | `https://www.nngroup.com/articles/how-users-read-on-the-web/` (build-time pick) | `design` |
+   | 5 | Typography — web.dev Learn Design module | `https://web.dev/learn/design/typography` (build-time swap — `https://fonts.google.com/knowledge` and its sub-pages are JS-only SPA shells that mirror empty; epic-driver-authorized, recorded in decisions.md build addendum) | `design` |
    | 6 | Claude Code memory docs | `https://code.claude.com/docs/en/memory` | `anthropic` |
 
-   Constraint from the epic's validation: exactly two `nngroup.com/articles/` URLs, one of
-   them containing `homepage`. Substitution is defined for exactly one identity — the WCAG
-   quickref, whose locked fallback is `https://www.w3.org/TR/WCAG22/`, with the swap
-   recorded in decisions.md. Any other source refusing to fetch is a stop condition: halt
-   the build and propose an official alternative to Ringo (the existing NN/g rule,
-   generalized) — never improvise a substitute.
+   The table is the RESOLVED identity set (build evidence, 2026-07-24): rows 3 and 5 carry
+   epic-authorized swaps recorded in the decisions.md build addendum, grounded in the epic
+   ledger's "KB source refuses fetching" edge case. Epic constraint holds: exactly two
+   `nngroup.com/articles/` URLs, one containing `homepage`. Substitution is now closed —
+   any NEW fetch failure among the final five identities is a stop condition: halt the
+   build and propose an official alternative to Ringo; never improvise a substitute. (The
+   WCAG quickref's anticipated `https://www.w3.org/TR/WCAG22/` fallback was never needed —
+   it mirrored OK.)
 2. **Registration goes through `/harness-layer:kb add <url> <group>`** — the manifest is the
    source of truth, fetching fans out to `kb-fetcher` subagents per the kb command's own
    contract, and the `design` group is passed explicitly (host-based defaulting would
@@ -81,10 +84,12 @@ Volatile first — full record in [decisions.md](./decisions.md):
    **Replacement contract on `FAIL`:** kb has no remove operation and a failed `add` leaves
    its provisional entry `fetched: null` in the manifest — the builder deletes that
    provisional entry from `sources.yaml` (the manifest is the one hand-editable tracked
-   file; registration itself still flows only through `add`), then for the WCAG quickref
-   only runs one extra `add` for the locked fallback, appending both the FAIL/swap line and
-   the substitute's OK line to the run record. Final state after a substitution is still
-   exactly five fully-fetched `design` entries.
+   file; registration itself still flows only through `add`), then runs one extra `add` for
+   the epic-authorized substitute, appending both the FAIL/swap line and the substitute's
+   OK line to the run record. Exercised twice under epic authorization (rows 3 and 5); the
+   identity set is now resolved-final, so any NEW failure among the final five is a stop
+   condition — no further substitutes. Final state is exactly five fully-fetched `design`
+   entries.
 3. **The pattern is a single `ai-docs/*` line** (plus a one-line comment above it). The
    repo's `WorktreeCreate` hook replaces stock `.worktreeinclude` processing and re-implements
    the copy with `fnmatch` against `git ls-files -oi --exclude-standard` — `fnmatch`'s `*`
@@ -133,13 +138,13 @@ All new files are gitignored KB output in this worktree — none are tracked:
 ## Edge Cases
 
 - **Source refuses fetching**: `/kb` reports `FAIL` and leaves the provisional entry
-  `fetched: null` → the builder removes that entry from `sources.yaml`, then follows the
-  replacement contract: WCAG quickref → one extra `add` for the locked fallback
-  `https://www.w3.org/TR/WCAG22/`, swap recorded in decisions.md; any other source
-  (web.dev, fonts.google.com, either NN/g pick) → stop and propose an official alternative
-  to Ringo. Never hand-author, never fake a `fetched` date.
-- **Thin mirror from a JS-heavy page**: the WCAG quickref may mirror thin → treat as the
-  `FAIL` case above (remove the entry, `add` the locked fallback, record the swap).
+  `fetched: null` → the builder removes that entry from `sources.yaml`. Both anticipated
+  failures are resolved (rows 3 and 5's epic-authorized swaps, recorded in the decisions.md
+  build addendum); any NEW failure among the final five identities → stop and propose an
+  official alternative to Ringo. Never hand-author, never fake a `fetched` date.
+- **Thin mirror from a JS-heavy page**: treat as the `FAIL` case above — remove the entry
+  and stop (this is how `fonts.google.com/knowledge` resolved: JS-only SPA shell → the
+  epic-authorized `https://web.dev/learn/design/typography` swap).
 - **Canonicalization collision**: kb dedupes entries whose URLs canonicalize identically —
   if an NN/g pick collapses into the other, pick a different canonical article so the group
   keeps five entries (two of them NN/g).

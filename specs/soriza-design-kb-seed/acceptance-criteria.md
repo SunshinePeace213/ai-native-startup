@@ -13,21 +13,23 @@
   hook's exact matching semantics (`fnmatch` of each pattern against the relative path or
   basename of every untracked-and-ignored file), the pattern matches every `ai-docs/` file
   reported by `git ls-files -oi --exclude-standard` in this worktree.
-- **AC2** — `ai-docs/sources.yaml` carries a `design` group with exactly five entries
-  matching the spec's identity table (one w3.org, one web.dev/learn/design, exactly two
-  `nngroup.com/articles/` with one containing `homepage`, one fonts.google.com/knowledge) —
-  each with a canonical `url`, a `file` under `design/`, and a non-null `fetched` date, and
-  each mirror file existing on disk with frontmatter (`source:` matching the manifest url,
-  `fetched:` matching the manifest date) and a `> **In here:**` line. Provenance is
-  observable: decisions.md's `### Build addendum — kb run record` carries exactly one
-  `- OK <file> <canonical url>` line per registered source. The only permitted identity
-  deviation is the WCAG quickref swapped to the locked fallback
-  `https://www.w3.org/TR/WCAG22/`, carried by a FAIL/swap line naming the original URL
-  (the failed provisional entry is deleted from the manifest first, so the group still
-  holds exactly five fully-fetched entries); the web.dev, fonts.google.com, and NN/g
-  identities are unconditional — their fetch failure is a build stop, never a swap. A
-  mirror without its OK record, a WCAG deviation without its swap line, or any other
-  identity deviation — fails.
+- **AC2** — `ai-docs/sources.yaml` carries a `design` group whose five entries' urls equal
+  the resolved identity set exactly — `https://www.w3.org/WAI/WCAG22/quickref/`,
+  `https://web.dev/learn/design`,
+  `https://www.nngroup.com/articles/113-design-guidelines-homepage-usability/`,
+  `https://www.nngroup.com/articles/how-users-read-on-the-web/`,
+  `https://web.dev/learn/design/typography` (exact-URL equality, not substring markers —
+  the substring `web.dev/learn/design` matches two of them) — each with a `file` under
+  `design/` and a non-null `fetched` date, and each mirror file existing on disk with
+  frontmatter (`source:` matching the manifest url, `fetched:` matching the manifest date)
+  and a `> **In here:**` line. Provenance is observable: decisions.md's
+  `### Build addendum — kb run record` carries exactly one `- OK <file> <canonical url>`
+  line per registered source, plus exactly one FAIL/swap line for each of the two
+  epic-authorized swaps (NN/g homepage Top-10 404 → `113-design-guidelines-homepage-usability`;
+  JS-only `fonts.google.com/knowledge` → `web.dev/learn/design/typography`), each naming
+  original and substitute. Any other identity deviation fails; a NEW fetch failure among
+  the final five is a build stop, never a swap. A mirror without its OK record — or an
+  authorized swap without its FAIL line — fails.
 - **AC3** — The `anthropic` group carries exactly one entry whose url contains
   `code.claude.com/docs/en/memory`, with a `file` under `anthropic/`, a non-null `fetched`
   date, and its mirror on disk with matching frontmatter.
@@ -83,19 +85,22 @@ PyYAML; the stdlib-only scripts run with plain `uv run python`.
   m = yaml.safe_load(open('ai-docs/sources.yaml'))
   d = m.get('design', [])
   assert len(d) == 5 and all(e['fetched'] and e['file'].startswith('design/') for e in d), d
-  urls = [e['url'] for e in d]
-  for marker in ['w3.org', 'web.dev/learn/design', 'fonts.google.com/knowledge']:
-      assert sum(marker in u for u in urls) == 1, 'missing/duplicate source: ' + marker
-  assert sum('nngroup.com/articles/' in u for u in urls) == 2, 'expected exactly two NN/g articles'
-  assert any('nngroup.com' in u and 'homepage' in u for u in urls), 'NN/g homepage cornerstone missing'
+  expected = sorted([
+      'https://www.w3.org/WAI/WCAG22/quickref/',
+      'https://web.dev/learn/design',
+      'https://www.nngroup.com/articles/113-design-guidelines-homepage-usability/',
+      'https://www.nngroup.com/articles/how-users-read-on-the-web/',
+      'https://web.dev/learn/design/typography'])
+  assert sorted(e['url'] for e in d) == expected, sorted(e['url'] for e in d)
   mem = [e for e in m['anthropic'] if 'code.claude.com/docs/en/memory' in e['url']]
   assert len(mem) == 1 and mem[0]['fetched'] and mem[0]['file'].startswith('anthropic/'), mem
   idx = open('ai-docs/index.md').read()
   for e in d + mem:
       assert e['file'] in idx, 'index.md missing entry for ' + e['file']
-  print('AC2/AC3/AC4 ok')"` — verifies AC2 + AC3 + AC4 (source identities, groups, fetched
-  dates, index rows; the epic-level check additionally pins `w3.org/WAI/WCAG22/quickref` —
-  keep that identity unless a documented swap says otherwise).
+  print('AC2/AC3/AC4 ok')"` — verifies AC2 + AC3 + AC4 (exact resolved source identities —
+  subsuming the epic's two-NN/g and homepage-marker constraints — groups, fetched dates,
+  index rows; the epic-level AC3 URL-marker adjustment for the documented swaps happens at
+  the epic's `validate-all`, not here).
 - `uv run --with pyyaml python -c "
   import yaml
   from pathlib import Path
@@ -124,17 +129,23 @@ PyYAML; the stdlib-only scripts run with plain `uv run python`.
   for e in new:
       ok = [l for l in lines if l.startswith('- OK') and e['file'] in l and e['url'] in l]
       assert len(ok) == 1, 'expected exactly one OK record line for %s, got %d' % (e['file'], len(ok))
-  urls = [e['url'] for e in m.get('design', [])]
-  for fixed in ['web.dev/learn/design', 'fonts.google.com/knowledge']:
-      assert sum(fixed in u for u in urls) == 1, 'unconditional identity missing (its failure stops the build, never swaps): ' + fixed
-  if not any('w3.org/WAI/WCAG22/quickref' in u for u in urls):
-      assert any('w3.org/TR/WCAG22' in u for u in urls), 'WCAG identity missing and substitute is not the locked fallback'
-      swap = [l for l in lines if l.startswith('- FAIL') and 'w3.org/WAI/WCAG22/quickref' in l and 'w3.org/TR/WCAG22' in l]
-      assert len(swap) == 1, 'WCAG substitution without exactly one recorded FAIL/swap line'
+  urls = sorted(e['url'] for e in m.get('design', []))
+  expected = sorted([
+      'https://www.w3.org/WAI/WCAG22/quickref/',
+      'https://web.dev/learn/design',
+      'https://www.nngroup.com/articles/113-design-guidelines-homepage-usability/',
+      'https://www.nngroup.com/articles/how-users-read-on-the-web/',
+      'https://web.dev/learn/design/typography'])
+  assert urls == expected, 'design group deviates from the resolved identity set: %r' % urls
+  swaps = [('nngroup.com/articles/top-10-guidelines-for-homepage-usability', '113-design-guidelines-homepage-usability'),
+           ('fonts.google.com/knowledge', 'web.dev/learn/design/typography')]
+  for orig, sub in swaps:
+      rec = [l for l in lines if l.startswith('- FAIL') and orig in l and sub in l]
+      assert len(rec) == 1, 'authorized swap %s -> %s lacks exactly one FAIL/swap line' % (orig, sub)
   print('AC2 provenance ok')"` — verifies AC2 (every registered source has exactly one OK
-  record in the build addendum; web.dev and fonts.google identities are unconditional; the
-  only permitted deviation is WCAG quickref → the locked `w3.org/TR/WCAG22` fallback, which
-  must carry exactly one FAIL/swap line naming both the original and substitute URLs).
+  record in the build addendum; the design group equals the resolved identity set exactly;
+  each epic-authorized swap carries exactly one FAIL/swap line naming original and
+  substitute — any other deviation fails, and a NEW fetch failure stops the build).
 - `uv run --with pyyaml python -c "
   import yaml
   m = yaml.safe_load(open('ai-docs/sources.yaml'))

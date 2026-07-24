@@ -64,13 +64,18 @@
 - **Parallel:** false
 - **Satisfies:** AC2, AC4, AC5, AC6
 - Run `/harness-layer:kb add <url> design` once per source, sequentially, in the spec's
-  table order (1, 2, 5 as listed; pick the two NN/g canonical `articles/` URLs at this
-  point — proposed homepage cornerstone first, then the writing-for-the-web article).
+  table order. **Resume state (2026-07-24):** sources 1–4 are mirrored and recorded in the
+  decisions.md build addendum; the remaining run is source 5 —
+  `add https://web.dev/learn/design/typography design` (epic-authorized swap for the
+  JS-only `https://fonts.google.com/knowledge`, whose provisional entry is already
+  deleted). After its OK, append to the addendum the swap line
+  `- FAIL <https://fonts.google.com/knowledge> → swapped to <https://web.dev/learn/design/typography>: <reason>`
+  followed by the run's `- OK <file> <canonical url>` line.
 - After each run, confirm the kb report: OK → canonical url + today's `fetched` written to
   the manifest, mirror on disk. FAIL → delete the failed provisional entry (left
-  `fetched: null` by `add`) from `ai-docs/sources.yaml`, then: WCAG quickref → run one
-  extra `add https://www.w3.org/TR/WCAG22/ design` and record the swap; any other source
-  → STOP the build and propose an official alternative to Ringo (spec.md `## Edge Cases`).
+  `fetched: null` by `add`) from `ai-docs/sources.yaml`, then STOP the build and propose an
+  official alternative to Ringo (spec.md `## Edge Cases`) — the identity set is
+  resolved-final; no further swaps.
 - After each run, append its result verbatim to decisions.md
   `### Build addendum — kb run record`: `- OK <file> <canonical url>` on success; on a
   substitution additionally `- FAIL <original url> → swapped to <substitute url>: <reason>`.

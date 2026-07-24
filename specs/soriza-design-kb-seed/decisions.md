@@ -36,7 +36,9 @@ never hand-authored; only `.worktreeinclude` and `ai-docs/sources.yaml` are trac
 - **Q:** Which sources seed the `design/` group?
   - **A:** Exactly five: W3C WCAG 2.2 quickref, web.dev Learn Design, one NN/g homepage
     cornerstone, NN/g writing-for-the-web, Google Fonts Knowledge (identity table in
-    spec.md `## Requirements & Decisions`).
+    spec.md `## Requirements & Decisions`). *Resolved at build:* the Fonts Knowledge slot
+    is filled by the epic-authorized `web.dev/learn/design/typography` swap — see the
+    refuses-fetching decision below and the cycle-3 revision log.
   - **Why:** Epic ledger — the lean trio grounds structure/accessibility; the two additions
     ground copy and typography per Ringo's client-feedback experience. Rules out the broad
     sweep and deferring the seed.
@@ -61,18 +63,24 @@ never hand-authored; only `.worktreeinclude` and `ai-docs/sources.yaml` are trac
   - **A:** `/kb` reports `FAIL` and leaves the provisional entry `fetched: null` in the
     manifest (kb has no remove operation; `add` appends first, updates only OK entries).
     The builder deletes that provisional entry from `sources.yaml` — a null entry would
-    poison every future sync's work set — then: WCAG quickref → one extra
-    `add https://www.w3.org/TR/WCAG22/ design` run (the locked, only permitted substitute)
-    with the FAIL/swap line and the substitute's OK line both appended to the build
-    addendum; any other source (web.dev, fonts.google.com, either NN/g pick) → stop and
-    propose an official alternative to Ringo. Never hand-author a mirror, never fake a
-    `fetched` date. Hand-deleting the dead entry is manifest hygiene, not registration —
-    registration still flows only through `add`.
-  - **Why:** Epic edge case "KB source refuses fetching" + plan-time assumptions; the
-    replacement contract keeps the final manifest shape achievable (exactly five
-    fully-fetched `design` entries) after a substitution, and locking the substitute set to
-    the one anticipated failure (the JS-heavy quickref) keeps every other identity
-    unconditional for validation.
+    poison every future sync's work set — then registers the epic-authorized substitute
+    with one extra `add` run (the FAIL/swap line and the substitute's OK line both appended
+    to the build addendum), or stops and proposes an official alternative to Ringo when no
+    substitute is authorized. **Resolved at build (2026-07-24):** both real failures were
+    substituted under the epic ledger's "KB source refuses fetching" edge case — the NN/g
+    homepage Top-10 URL (HTTP 404) → `113-design-guidelines-homepage-usability`, and
+    `fonts.google.com/knowledge` (JS-only SPA shell) →
+    `https://web.dev/learn/design/typography`. The WCAG quickref's anticipated
+    `w3.org/TR/WCAG22` fallback was never needed — it mirrored OK. The identity set is now
+    resolved-final: any NEW failure among the final five is a stop condition. Never
+    hand-author a mirror, never fake a `fetched` date. Hand-deleting the dead entry is
+    manifest hygiene, not registration — registration still flows only through `add`.
+  - **Why:** The epic ledger's "KB source refuses fetching" edge case prescribes
+    substituting the canonical same-topic page with a recorded swap; the replacement
+    contract keeps the final manifest shape achievable (exactly five fully-fetched `design`
+    entries) after a substitution. Round 3's WCAG-only narrowing predated knowing which
+    source would actually fail — the epic authorization supersedes it now that the real
+    failures are known, and closing the set afterwards keeps validation exact.
 
 - **Q:** Child pipeline mechanics?
   - **A:** Issue #44 pre-filed (no issue creation); branch `chore/44-soriza-design-kb-seed`
@@ -120,6 +128,24 @@ never hand-authored; only `.worktreeinclude` and `ai-docs/sources.yaml` are trac
   `https://www.w3.org/TR/WCAG22/`; every other source refusing to fetch is now a stop
   condition (the NN/g rule, generalized). AC2 and its provenance assertion updated to
   match; spec.md Requirements/Edge Cases and tasks.md task 2 carry the contract.
+- **Revision (cycle 3, pre-round-5):** applied the build's resolved outcomes — source 5's
+  identity is now `https://web.dev/learn/design/typography` (file
+  `design/learn-design-typography.md`), replacing round 3's "fonts fetch failure is a
+  build stop, never a swap" clause, and the identity table reflects the applied NN/g
+  homepage swap (Top-10 URL 404 → `113-design-guidelines-homepage-usability`, applied
+  during the build under epic authorization). Evidence, curl-verified during the build:
+  `fonts.google.com/knowledge` and its sub-pages (introducing_type, choosing_type,
+  glossary) and `m3.material.io/styles/typography/overview` are JS-only SPA shells with
+  zero server-rendered `<p>` tags; `web.dev/learn/design/typography` server-renders the
+  full official Learn Design typography module (49 p-tags). Authorized by the epic
+  ledger's "KB source refuses fetching" edge case and its AC3 note sanctioning URL-marker
+  adjustment for documented swaps; round 3's WCAG-only narrowing predated knowing which
+  source would actually fail. AC2's identity assertions moved from substring markers to
+  exact-URL equality over the final five URLs (the substring `web.dev/learn/design` now
+  matches two of them), and the provenance assertion requires exactly one FAIL/swap line
+  per authorized swap. Stop conditions remain for any NEW failure of the final five. The
+  epic-level AC3 marker adjustment happens at the epic's `validate-all`, not in this
+  child.
 
 ### Build addendum — kb run record
 
