@@ -160,17 +160,17 @@ def validation_bullets(text: str) -> list[tuple[int, str]]:
     return out
 
 
-def command_target(content: str) -> tuple[str, str] | None:
-    """(kind, path) for a bullet's committed-check invocation, or None if it
-    invokes neither `uv run --script` nor `uv run pytest`."""
+def command_target(content: str) -> str | None:
+    """The root-relative path a bullet's committed-check invocation runs, or
+    None if it invokes neither `uv run --script` nor `uv run pytest`."""
     for span in _CODE.findall(content):
         span = span.strip()
         m = re.match(r"uv run --script\s+(\S+)", span)
         if m:
-            return ("script", m.group(1))
+            return m.group(1)
         m = re.match(r"uv run pytest\s+(\S+)", span)
         if m:
-            return ("pytest", m.group(1).split("::")[0])
+            return m.group(1).split("::")[0]
     return None
 
 
@@ -189,13 +189,12 @@ def lint_validation_commands(folder: Path, root: Path) -> tuple[list[str], list[
                 f"  - {loc}: no stage tag ([plan-time]/[child-build-time]/[post-merge]): {bullet}"
             )
             continue
-        target = command_target(bullet)
-        if target is None:
+        path = command_target(bullet)
+        if path is None:
             blocks.append(
                 f"  - {loc}: invokes neither `uv run --script …` nor `uv run pytest …`: {bullet}"
             )
             continue
-        _, path = target
         if not (root / path).exists():
             if stage == "[plan-time]":
                 blocks.append(f"  - {loc}: [plan-time] check path does not exist: {path}")
