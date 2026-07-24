@@ -36,43 +36,52 @@
   structure row; the set of root-level markdown files is unchanged (no new root memory file).
 - **AC7** — `/soriza-design:intake` exists with `disable-model-invocation: true` and the Stop
   hook registered in its frontmatter, and carries a `## Rung Contract` block whose fields
-  assert: `Staffer:` Mira; `First write:` the per-client marker
-  `projects/<client>/.intake-in-progress` (plus the sweep of markers on already-complete
-  clients); `Writes:` `projects/<client>/intake.md`; an idempotent never-clobber scaffold from
-  `_template`; `Refusal:` and `Commit:` clauses. The marker pattern
-  `projects/*/.intake-in-progress` is gitignored.
-- **AC8** — `check_intake_readiness.py` blocks until **every** marked client's `intake.md` is
-  complete: exit 2 with per-section stderr diagnostics on any incomplete/missing marked
-  `intake.md`; exit 2 with a clear message when no marker exists; `_`-prefixed folders are
-  never valid; exit 0 only when all marked clients are complete; fail-open (exit 0) on
-  malformed stdin/plumbing errors. The cross-client regression test proves a complete client A
-  cannot release an incomplete marked client B, and the two-marker test covers concurrent
-  intakes. The hook's required-section tuple matches `definition-of-ready.md`'s checklist
-  headings (sync test). All hook tests and the wiring pin pass.
+  assert: `Staffer:` Mira; `First write:` the session-scoped marker
+  `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}` (plus the sweep of markers on
+  already-complete clients); `Writes:` `projects/<client>/intake.md`; an idempotent
+  never-clobber scaffold from `_template`; `Refusal:` and `Commit:` clauses. The marker
+  pattern `projects/*/.intake-in-progress.*` is gitignored.
+- **AC8** — `check_intake_readiness.py` scopes to its own session: it matches stdin's
+  `session_id` against the marker suffix, exits 2 with per-section stderr diagnostics while
+  any **own-session** marked client's `intake.md` is incomplete/missing, exits 2 with a clear
+  message when no own-session marker exists, exits 0 only when every own-marked client is
+  complete — and then removes only its own session's markers. `_`-prefixed folders are never
+  valid; fail-open (exit 0) on malformed stdin/plumbing errors. The session-independence
+  regression proves session A (complete client A) exits 0 while session B's incomplete
+  client-B marker exists — neither releasing nor stranding the other — and session B still
+  exits 2 on its own marker; the same-client test proves two concurrent sessions marking one
+  client each gate on their own distinct marker. The hook's required-section tuple matches
+  `definition-of-ready.md`'s checklist headings (sync test). All hook tests and the wiring
+  pin pass.
 - **AC9** — The four ladder commands exist under `/soriza-design:*`, and each carries a
   `## Rung Contract` block whose fields assert the exact chain — brief: Elias,
   reads `intake.md`, writes `brief.md`; sitemap: Ivo, reads `brief.md`, writes
   `sitemap-ia.md`; wireframe: Juno, reads `sitemap-ia.md`, writes into `wireframes/`;
   section-briefs: Lior, **reads `wireframes/`** (plus `decision-log.md` change requests, with
-  `sitemap-ia.md` as inventory source), writes into `section-briefs/` — plus a `DoR gate:`
-  field naming the gated predecessor artifact, a `Refusal:` field (refuse and name what's
-  missing), and a `Commit:` field (per-rung commit on the engagement branch).
-- **AC10** — `wireframe.md`'s contract block additionally asserts: lo-fi grayscale,
-  self-contained HTML with **no external dependencies**, one page per screen in
-  `projects/<client>/wireframes/`; `Publish:` best-effort (never blocks) and **all three**
-  locked delivery modes (org share / consented public link / the HTML file itself) recorded in
-  `decision-log.md`; copy-as-prompt reactions appended to `decision-log.md` as structured
-  change requests. `section-briefs.md`'s contract block additionally asserts: inline inventory
-  loop, parallel fan-out only for large inventories, draft copy (slogan/headline/body) held to
-  `copywriting.md`, and a `Packet:` field listing brief + sitemap-ia + wireframes + section
-  briefs + typography-direction page + asset checklist + decision log, with `Sign-off:` Vera
-  before hand-off.
+  `sitemap-ia.md` as inventory source), writes into `section-briefs/`. Per rung, clause-exact:
+  `DoR gate:` names that rung's exact gated predecessor artifact (intake.md / brief.md /
+  sitemap-ia.md / wireframes/); `Refusal:` states refuse **and** names that same missing
+  artifact; `Commit:` states all three of `docs(<client>)`, `Refs #`, and the engagement
+  branch.
+- **AC10** — `wireframe.md`'s contract block carries, as parsed fields: `Format:` asserting
+  lo-fi grayscale, self-contained, **no external dependencies**, and one page per screen in
+  `wireframes/`; `Publish:` asserting best-effort (never blocks) and **all three** locked
+  delivery modes (org share / consented public link / the HTML file itself) recorded in
+  `decision-log.md`; `Reactions:` asserting copy-as-prompt reactions appended to
+  `decision-log.md` as structured change requests. `section-briefs.md`'s contract block
+  carries, as parsed fields: `Inventory:` asserting inline loop by default and parallel
+  fan-out only for large inventories; `Copy:` asserting draft copy (slogan/headline/body)
+  held to `copywriting.md`; a `Packet:` field listing brief + sitemap-ia + wireframes +
+  section briefs + typography-direction page + asset checklist + decision log; and
+  `Sign-off:` Vera before hand-off.
 - **AC11** — `.claude/rules/soriza-design/git-lane.md` exists, `projects/**`-scoped, and
   asserts clause-level: the engagement issue/branch model (`docs/<N>-<client>` via
   `gh issue develop`); per-rung commits (`📝 docs(<client>)` + `Refs #N`); PRs at **exactly
-  two gate points** — "brief approved" (`Refs #N`) and "packet hand-off" (`Closes #N`) — and
-  no PR-per-deliverable; and the evidence swap sentence (DoR checklist + decision-log entry +
-  client sign-off **replace** Test Evidence in `projects/**` PRs).
+  two gate points**, each stated as its own one-line bullet pairing the gate name with its
+  reference keyword — the "brief approved" bullet carries `Refs #N` and no `Closes`, the
+  "packet hand-off" bullet carries `Closes #N` (swapped semantics fail); an explicit
+  no-PR-per-deliverable clause; and the evidence swap sentence (DoR checklist + decision-log
+  entry + client sign-off **replace** Test Evidence in `projects/**` PRs).
 - **AC12** — Every child issue #44–#48 is closed by its own merged PR (one pipeline run per
   child); epic #43's checklist is fully ticked.
 
@@ -138,11 +147,12 @@ any failure.
   assert block, 'no ## Rung Contract block'
   fields = dict(re.findall(r'\*{0,2}(Staffer|Reads|Writes|First write|DoR gate|Refusal|Commit)\*{0,2}:\s*(.+)', block.group(1)))
   assert set(fields) == {'Staffer','Reads','Writes','First write','DoR gate','Refusal','Commit'}, fields
-  assert 'Mira' in fields['Staffer'] and '.intake-in-progress' in fields['First write']
+  assert 'Mira' in fields['Staffer']
+  assert '.intake-in-progress.' in fields['First write'] and 'CLAUDE_SESSION_ID' in fields['First write'], 'marker not session-scoped'
   assert 'intake.md' in fields['Writes']
   assert re.search(r'never clobber|existing|idempotent', text, re.I), 'no idempotence clause'
   assert 'sweep' in text.lower(), 'no stale-marker sweep clause'
-  ignored = subprocess.run(['git','check-ignore','projects/x/.intake-in-progress'],capture_output=True).returncode == 0
+  ignored = subprocess.run(['git','check-ignore','projects/x/.intake-in-progress.abc123'],capture_output=True).returncode == 0
   assert ignored, 'marker pattern not gitignored'
   print('AC7 ok')"` — verifies AC7 (field-level contract, not keywords).
 - `uv run pytest tests/harness-layer/hooks/ -k "intake or wiring"` — verifies AC8 (contract,
@@ -164,12 +174,13 @@ any failure.
       for req in ['Staffer','Reads','Writes','DoR gate','Refusal','Commit']:
           assert req in f, '%s: missing field %s' % (name, req)
       assert who in f['Staffer'] and src in f['Reads'] and dst in f['Writes'], (name, f)
-      assert f['DoR gate'].strip(), name + ': empty DoR gate'
-      assert re.search(r'refuse|name.*missing', f['Refusal'], re.I), name + ': weak refusal clause'
-      assert re.search(r'engagement branch|docs\(', f['Commit']), name + ': commit not on engagement lane'
+      assert src in f['DoR gate'], name + ': DoR gate does not name the exact predecessor artifact'
+      assert re.search(r'refuse', f['Refusal'], re.I) and src in f['Refusal'], name + ': refusal must refuse AND name the missing artifact'
+      for clause in ['docs(', 'Refs #', 'engagement branch']:
+          assert clause in f['Commit'], '%s: Commit missing clause %s' % (name, clause)
   f = contract('section-briefs')
   assert 'sitemap-ia.md' in f['Reads'] and 'decision-log' in f['Reads'], 'section-briefs: inventory/change-request inputs missing'
-  print('AC9 ok')"` — verifies AC9 (exact chain, field-level).
+  print('AC9 ok')"` — verifies AC9 (exact chain; DoR/refusal/commit clause-exact per rung).
 - `uv run python -c "
   from pathlib import Path
   import re
@@ -178,27 +189,38 @@ any failure.
       block = re.search(r'## Rung Contract\n(.*?)(\n## |\Z)', text, re.S)
       return text, dict(re.findall(r'\*{0,2}([A-Z][\w -]+)\*{0,2}:\s*(.+)', block.group(1)))
   w, wf = contract('wireframe')
-  assert 'Publish' in wf, 'wireframe: no Publish field'
-  for clause in ['best-effort','org share','public link','HTML file']:
+  for req in ['Format','Publish','Reactions']:
+      assert req in wf, 'wireframe: missing field ' + req
+  for clause in ['grayscale','self-contained','no external dependencies','one page per screen']:
+      assert clause in wf['Format'], 'wireframe Format missing: ' + clause
+  for clause in ['best-effort','org share','public link','HTML file','decision-log']:
       assert clause in wf['Publish'], 'wireframe Publish missing: ' + clause
-  for clause in ['grayscale','self-contained','no external dependencies','copy-as-prompt','decision-log']:
-      assert clause in w, 'wireframe.md missing: ' + clause
+  for clause in ['copy-as-prompt','decision-log','change request']:
+      assert clause in wf['Reactions'], 'wireframe Reactions missing: ' + clause
   s, sf = contract('section-briefs')
-  assert 'Packet' in sf and 'Sign-off' in sf, 'section-briefs: Packet/Sign-off fields missing'
+  for req in ['Inventory','Copy','Packet','Sign-off']:
+      assert req in sf, 'section-briefs: missing field ' + req
+  for clause in ['inline','fan-out','large']:
+      assert clause in sf['Inventory'], 'section-briefs Inventory missing: ' + clause
+  for clause in ['slogan','headline','body','copywriting']:
+      assert clause in sf['Copy'], 'section-briefs Copy missing: ' + clause
   for item in ['brief','sitemap-ia','wireframes','typography','asset','decision log']:
       assert item in sf['Packet'], 'Packet missing: ' + item
   assert 'Vera' in sf['Sign-off']
-  for clause in ['inline','fan-out','copywriting','slogan','headline']:
-      assert clause in s, 'section-briefs.md missing: ' + clause
-  print('AC10 ok')"` — verifies AC10 (delivery modes, packet contents, sign-off — field-level).
+  print('AC10 ok')"` — verifies AC10 (format, delivery modes, reactions, inventory, copy, packet, sign-off — all parsed fields).
 - `uv run python -c "
   from pathlib import Path
   import re
   text = Path('.claude/rules/soriza-design/git-lane.md').read_text()
   assert re.search(r'paths:\s*\n?\s*-?\s*.projects/\*\*', text), 'no paths scope'
-  for needle in ['docs/<N>-<client>','gh issue develop','Refs #','Closes #']:
+  for needle in ['docs/<N>-<client>','gh issue develop','docs(<client>)','Refs #N']:
       assert needle in text, 'git-lane.md missing: ' + needle
-  assert 'brief approved' in text and 'packet hand-off' in text, 'gate points not both named'
+  lines = text.splitlines()
+  ba = [l for l in lines if 'brief approved' in l]
+  ph = [l for l in lines if 'packet hand-off' in l]
+  assert ba and ph, 'gate points not both named'
+  assert any('Refs #' in l and 'Closes' not in l for l in ba), 'brief-approved gate must pair with Refs #N (and never Closes)'
+  assert any('Closes #' in l for l in ph), 'packet hand-off gate must pair with Closes #N'
   assert re.search(r'(replace|instead of).{0,60}Test Evidence|Test Evidence.{0,60}(replaced|swap)', text, re.S), 'no evidence-swap clause'
   for needle in ['DoR checklist','decision-log','sign-off']:
       assert needle in text, 'evidence swap incomplete: ' + needle

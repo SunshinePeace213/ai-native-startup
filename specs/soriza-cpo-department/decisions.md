@@ -176,19 +176,26 @@ Locked at plan time, within the ledger's boundaries:
 - **DoR gate source of truth.** `check_intake_readiness.py` hard-codes its required-sections
   tuple (precedent: `check_spec_completeness.py`); `definition-of-ready.md` carries the same
   checklist for humans and rungs; a sync test asserts the two match so they cannot drift.
-- **DoR gate targeting is deterministic** *(round-1 fix, refined round 2)*. The intake
-  command's **first write** drops a per-client marker `projects/<client>/.intake-in-progress`
-  (gitignored, transient) — there is no shared target file to overwrite, so concurrent intake
-  runs cannot clobber each other's state. The hook gates **every marked client**: the run may
-  end only when each `projects/*/.intake-in-progress` folder has a complete `intake.md` — it
-  fails toward blocking, so completing client A can never release an incomplete marked client
-  B, in the same checkout or across sessions. No marker anywhere → exit 2 with a clear message
+- **DoR gate targeting is session-scoped** *(round-1 fix, refined rounds 2–3)*. The intake
+  command's **first write** drops a session-scoped per-client marker
+  `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}` (gitignored, transient;
+  `${CLAUDE_SESSION_ID}` is the harness's command-content substitution —
+  `ai-docs/anthropic/skills.md`). The Stop hook reads `session_id` from its stdin JSON and
+  gates **only the markers carrying its own session id**: exit 2 until every own-marked
+  client's `intake.md` is complete, then exit 0 and remove only its own markers. Each
+  invocation resolves and cleans up exactly its own targets, so concurrent sessions never
+  clobber, release, or strand each other — client A's session completes independently of
+  client B's abandoned incomplete marker, and two concurrent runs of the same client each
+  gate on their own distinct marker file. No own-session marker → exit 2 with a clear message
   (inside the command a marker must exist); `_`-prefixed folders are never valid; malformed
-  stdin / unreadable files still fail open. The intake command's scaffold step also sweeps
-  markers from clients whose `intake.md` is already complete, so stale markers self-clean.
-  Primary isolation remains one engagement worktree per client (git lane); markers are
-  defense-in-depth. The newest-modified heuristic is dropped. Tests: cross-client regression
-  (complete A + incomplete marked B → block) and the two-marker concurrent case.
+  stdin / unreadable files still fail open. Abandoned markers from dead sessions gate nobody;
+  the intake command's scaffold step sweeps markers (any session) only from clients whose
+  `intake.md` is already complete — removing a passing gate is harmless, removing a live
+  incomplete gate never happens. Primary isolation remains one engagement worktree per client
+  (git lane); markers are defense-in-depth. The newest-modified heuristic is dropped. Tests:
+  session-independence regression (session A with complete client A exits 0 while session B's
+  incomplete client-B marker exists; session B still exits 2) and the same-client two-session
+  concurrent case.
 - **Wireframe delivery modes** *(round-1 fix)*. Publishing an artifact makes it visible only to
   its author (Ringo — the relay); "private links" are Ringo's review surface, not a client
   surface. Client-facing delivery is locked per engagement and recorded in `decision-log.md`:
@@ -197,12 +204,17 @@ Locked at plan time, within the ledger's boundaries:
   recorded, or sending the self-contained HTML files directly (they are dependency-free by
   design, so the file *is* the deliverable). The rung must treat publishing as best-effort and
   never promise a private URL to someone outside the author's account.
-- **Rung Contract blocks** *(round-2 fix)*. Every `/soriza-design:*` command carries a
-  `## Rung Contract` section with labeled fields — `Staffer:`, `Reads:`, `Writes:`,
-  `First write:` (intake only), `DoR gate:`, `Refusal:`, `Commit:`, plus rung-specific fields
-  (wireframe: `Publish:` best-effort + the three delivery modes + no external dependencies;
-  section-briefs: `Packet:` full contents + `Sign-off:` Vera). The contract block is the
-  machine-checkable surface: validation asserts field-level clauses, not loose keywords.
+- **Rung Contract blocks** *(round-2 fix, tightened round 3)*. Every `/soriza-design:*`
+  command carries a `## Rung Contract` section with labeled fields — `Staffer:`, `Reads:`,
+  `Writes:`, `First write:` (intake only), `DoR gate:`, `Refusal:`, `Commit:`, plus
+  rung-specific fields (wireframe: `Format:`, `Publish:`, `Reactions:`; section-briefs:
+  `Inventory:`, `Copy:`, `Packet:`, `Sign-off:` Vera). The contract block is the
+  machine-checkable surface, and validation is clause-exact within each parsed field:
+  `DoR gate:` and `Refusal:` must name the rung's exact predecessor artifact; `Commit:` must
+  state `docs(<client>)` + `Refs #` + engagement branch; the previously loose whole-file
+  checks (inline/fan-out, copy doctrine, format clauses) moved into fields; git-lane gate
+  points are asserted as one-line bullets pairing each gate name with its reference keyword
+  so swapped `Refs`/`Closes` semantics fail.
 - **Chain order corrected** *(round-2 fix)*. `:section-briefs`' predecessor is the wireframe
   rung: Lior **reads `wireframes/`** (approved layouts + the change requests in
   `decision-log.md`) and uses `sitemap-ia.md` as the inventory source. Every rung consumes its

@@ -88,10 +88,11 @@ Volatile first — full record in [decisions.md](./decisions.md):
    "One desired action"). Live alternative rejected: a hardcoded five-section brief.
 3. **Intake gate is code, and deterministic**: `check_intake_readiness.py`, a uv-script Stop
    hook in `/soriza-design:intake`'s frontmatter; hard-coded section tuple + doctrine sync
-   test; the gate targets per-client `projects/<client>/.intake-in-progress` markers (the
-   command's first write) and blocks until **every** marked client's `intake.md` is complete —
-   race-free under concurrent runs, never a newest-modified heuristic. Live alternative
-   rejected: model-side checklist only.
+   test; the gate targets session-scoped per-client markers
+   `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}` (the command's first write)
+   and blocks until every client marked **by its own session** has a complete `intake.md` —
+   race-free and strand-free under concurrent runs, never a newest-modified heuristic. Live
+   alternative rejected: model-side checklist only.
 4. **Epic mechanics**: children #44–#48 already filed; one pipeline run per child in dependency
    order #44 → #45 → {#46 → #47, #48}; epic planning docs land on `main` via a draft
    `📝 docs(spec)` PR (`Refs #43`) so child worktrees (branched fresh from `origin/main`) can
@@ -144,11 +145,11 @@ Use these files to complete the task:
 - `.claude/rules/soriza-design/git-lane.md` — the client git lane, `paths: ["projects/**/*"]` (#48).
 - `.claude/commands/soriza-design/{intake,brief,sitemap,wireframe,section-briefs}.md` — the five
   rungs (#46, #47).
-- `.claude/hooks/check_intake_readiness.py` — the DoR Stop gate (#46); gates the per-client
-  `projects/<client>/.intake-in-progress` markers (transient; the pattern gets a `.gitignore`
-  line in #46).
-- `tests/harness-layer/hooks/intake-readiness/` — contract + doctrine-sync + cross-client
-  regression + concurrent two-marker tests (#46).
+- `.claude/hooks/check_intake_readiness.py` — the DoR Stop gate (#46); gates its own
+  session's `projects/<client>/.intake-in-progress.<session-id>` markers (transient; the
+  pattern gets a `.gitignore` line in #46).
+- `tests/harness-layer/hooks/intake-readiness/` — contract + doctrine-sync +
+  session-independence regression + same-client concurrent tests (#46).
 - `specs/soriza-design-{kb-seed,foundations,intake-gate,ladder,git-lane}/` — the five child spec
   folders, created by each child's own plan run (not by this one).
 
@@ -162,15 +163,20 @@ Use these files to complete the task:
   A worktree created before #44 ships simply lacks mirrors → run `/harness-layer:kb` inside it.
 - **Re-running `:intake` on an existing client**: scaffold step must be idempotent — never
   clobber an existing `projects/<client>/`; re-interview updates `intake.md` in place.
-- **DoR hook resolution**: deterministic and race-free — the intake command's first write drops
-  `projects/<client>/.intake-in-progress` (gitignored, transient; no shared file to overwrite);
-  the hook blocks until **every** marked client's `intake.md` is complete, so completing client
-  A can never release an incomplete marked client B, even under concurrent intake runs (primary
-  isolation is one engagement worktree per client; markers are defense-in-depth). No marker
-  anywhere → block with a clear message; `_`-prefixed folders never valid; the command sweeps
-  markers from already-complete clients; malformed/empty stdin or unreadable files → fail open
-  (exit 0), per the hooks contract. Command-scoped registration means other sessions editing
-  `projects/` are never gated. Tests: cross-client regression + two-marker concurrent case.
+- **DoR hook resolution**: session-scoped and race-free — the intake command's first write
+  drops `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}` (gitignored, transient;
+  no shared file to overwrite). The hook matches stdin's `session_id` against the marker
+  suffix and gates **only its own session's markers**: blocks until each own-marked client's
+  `intake.md` is complete, then removes only its own markers on exit 0. Completing client A
+  never releases client B, and B's abandoned incomplete marker never strands A — each
+  invocation resolves and cleans up exactly its own targets; concurrent runs of the same
+  client each gate on their own distinct marker (primary isolation is one engagement worktree
+  per client; markers are defense-in-depth). No own-session marker → block with a clear
+  message; `_`-prefixed folders never valid; the command sweeps markers only from
+  already-complete clients; malformed/empty stdin or unreadable files → fail open (exit 0),
+  per the hooks contract. Command-scoped registration means other sessions editing
+  `projects/` are never gated. Tests: session-independence regression + same-client
+  concurrent case.
 - **Doctrine/hook drift**: the sync test fails if `definition-of-ready.md`'s checklist headings
   and the hook's tuple diverge — the pair ships together or not at all.
 - **Large section inventory**: `:section-briefs` loops inline by default; above ~10 sections it

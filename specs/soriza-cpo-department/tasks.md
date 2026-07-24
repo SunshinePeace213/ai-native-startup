@@ -169,20 +169,24 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
 - **Parallel:** false
 - **Satisfies:** AC7, AC8
 - Scope: `.claude/commands/soriza-design/intake.md` (Mira; **first write** drops the
-  per-client marker `projects/<client>/.intake-in-progress`; sweeps markers from
-  already-complete clients; idempotent scaffold from `_template` — never clobbers; interviews
-  Ringo per `intake-standards.md`; writes `projects/<client>/intake.md`; commits per the git
-  lane; Stop hook registered in frontmatter; carries a `## Rung Contract` block with labeled
-  fields `Staffer:` / `Reads:` / `Writes:` / `First write:` / `DoR gate:` / `Refusal:` /
-  `Commit:`); `.claude/hooks/check_intake_readiness.py` (blocks until **every** marked client's
-  `intake.md` is complete — fails toward blocking; no marker anywhere → block with a clear
+  session-scoped per-client marker
+  `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}`; sweeps markers — any
+  session — only from already-complete clients; idempotent scaffold from `_template` — never
+  clobbers; interviews Ringo per `intake-standards.md`; writes `projects/<client>/intake.md`;
+  commits per the git lane; Stop hook registered in frontmatter; carries a `## Rung Contract`
+  block with labeled fields `Staffer:` / `Reads:` / `Writes:` / `First write:` /
+  `DoR gate:` / `Refusal:` / `Commit:`); `.claude/hooks/check_intake_readiness.py` (matches
+  stdin `session_id` against the marker suffix and gates **only its own session's markers** —
+  blocks until every own-marked client's `intake.md` is complete, then removes only its own
+  markers on exit 0; fails toward blocking; no own-session marker → block with a clear
   message; `_`-prefixed folders never valid; hard-coded DoR tuple matching
   `definition-of-ready.md`; exit-2 per-section diagnostics; fail-open only on malformed
-  stdin/plumbing); a `.gitignore` line for `projects/*/.intake-in-progress`; tests under
+  stdin/plumbing); a `.gitignore` line for `projects/*/.intake-in-progress.*`; tests under
   `tests/harness-layer/hooks/intake-readiness/` (block/allow/fail-open, wiring expectations,
-  doctrine-sync test, cross-client regression — complete A must not release incomplete marked
-  B — and the concurrent two-marker case); catalog row in
-  `.claude/rules/harness-layer/hooks.md`.
+  doctrine-sync test, session-independence regression — session A with complete client A
+  exits 0 while session B's incomplete client-B marker exists, and session B still exits 2 —
+  and the same-client two-session concurrent case, plus own-marker cleanup on exit 0);
+  catalog row in `.claude/rules/harness-layer/hooks.md`.
 - Launch prompt:
 
   ```text
@@ -219,10 +223,16 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
   inventory with parallel fan-out escape hatch, draft copy per copywriting.md,
   typography-direction page, packet assembly + Vera sign-off). Every rung: reads its actual
   predecessor's output, refuses on unmet DoR naming what's missing, commits per rung, and
-  carries a `## Rung Contract` block (`Staffer:` / `Reads:` / `Writes:` / `DoR gate:` /
-  `Refusal:` / `Commit:`, plus `Publish:` with best-effort + the three delivery modes + no
-  external dependencies for wireframe, and `Packet:` + `Sign-off:` for section-briefs) — the
-  machine-checkable surface the validation asserts field by field.
+  carries a `## Rung Contract` block whose fields the validation asserts clause by clause:
+  `Staffer:` / `Reads:` / `Writes:`; `DoR gate:` naming the exact gated predecessor artifact
+  (intake.md / brief.md / sitemap-ia.md / wireframes/); `Refusal:` stating refuse **and**
+  naming that same missing artifact; `Commit:` stating all three of `📝 docs(<client>)`,
+  `Refs #N`, and the engagement branch. Wireframe adds `Format:` (lo-fi grayscale,
+  self-contained, no external dependencies, one page per screen), `Publish:` (best-effort +
+  the three delivery modes recorded in decision-log.md), and `Reactions:` (copy-as-prompt
+  reactions appended to decision-log.md as structured change requests). Section-briefs adds
+  `Inventory:` (inline loop by default, parallel fan-out only for large inventories),
+  `Copy:` (slogan/headline/body held to copywriting.md), `Packet:`, and `Sign-off:` Vera.
 - Launch prompt:
 
   ```text
@@ -246,10 +256,12 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
 - **Satisfies:** AC11
 - Scope: `.claude/rules/soriza-design/git-lane.md` (`paths: ["projects/**/*"]`): one issue per
   engagement; engagement branch `docs/<N>-<client>` via `gh issue develop`; engagement worktree
-  named after the client; rung commits `📝 docs(<client>): … / Refs #N`; PRs only at gate
-  points (brief approved → `Refs #N`; packet hand-off → `Closes #N`); for `projects/**` PRs the
-  DoR checklist + decision-log entry + client sign-off replace the docs template's Test
-  Evidence block.
+  named after the client; rung commits `📝 docs(<client>): … / Refs #N`; PRs at exactly two
+  gate points, each stated as its own bullet pairing the gate name with its reference keyword
+  on one line — one bullet for "brief approved" carrying `Refs #N` (and no `Closes`), one for
+  "packet hand-off" carrying `Closes #N` — plus an explicit no-PR-per-deliverable clause; for
+  `projects/**` PRs the DoR checklist + decision-log entry + client sign-off replace the docs
+  template's Test Evidence block.
 - Launch prompt:
 
   ```text
