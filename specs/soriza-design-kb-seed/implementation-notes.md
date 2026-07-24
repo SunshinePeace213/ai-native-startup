@@ -76,3 +76,22 @@
   index.md lists all six. Builder deviations flagged: memory fetcher wrapped its OK line in
   extra prose (verified independently, harmless); markdown formatter angle-bracketed the
   addendum URLs (non-breaking — validation matches by substring). No blockers.
+- **2026-07-24 · validate-all hand-off** — validator (fresh agent) ran all 9 validation
+  commands from the worktree root: all green, AC1–AC6 PASS, no deviations, no fixes needed.
+  Notable: AC1 fnmatch simulation matched 7 KB files; AC6 exact-surface confirmed the
+  tracked diff outside `specs/` is exactly `.worktreeinclude` + `ai-docs/sources.yaml` with
+  no stray untracked files.
+- **2026-07-24 · tidy** — harness-simplifier (opus) reviewed the two touched files vs
+  `origin/main` at head `b46b05e`: clean, 0 auto-fixes; one non-defect flagged (double
+  em-dash in the typography entry's machine-managed topic line, left untouched).
+  code-simplifier skipped — no app code in this change. No tidy commit needed.
+- **2026-07-24 · draft PR** — #50 opened
+  (<https://github.com/SunshinePeace213/ai-native-startup/pull/50>), labels `chore` +
+  `priority:P2` mirroring issue #44, body from the chore template with Plan links,
+  Closes #44, stage table (Implementation + Tidy ticked), Agent Task Manifest from the
+  hand-offs, tidy report posted as the `<!-- report:tidy -->` comment and linked under
+  Review Reports.
+- **2026-07-24 · memory step** — the memory-marked task (worktreeinclude-pattern) called
+  for a dev-log lesson on the worktree-include/WorktreeCreate-hook interplay only if it bit
+  during the build. It did not bite: the single `ai-docs/*` pattern worked first try under
+  the hook's fnmatch semantics (AC1 simulation green, 7 files). No dev-log entry recorded.
