@@ -80,21 +80,32 @@
       <span class="chip">Issue #54</span><span class="chip">Epic #53</span>
       <span class="chip">chore/54-harness-self-improvement</span>
       <span class="chip">kb-grounded</span>
-      <span class="chip warn">needs-human · CX2-1 open</span>
+      <span class="chip">approved · codex round 4</span>
     </div>
   </header>
 
   <div class="notice">
-    <strong>One blocker left after Codex rounds 1–2.</strong> CX1-1..CX1-3 (fixture reach, discovery scope,
-    CI filters) were fixed in-cycle; CX2-1 remains: the per-task effort stamps have no deployment mechanism
-    the Agent tool honors. The default prompt below hands that decision to the interview; toggling any
-    alternative switches to a revision prompt instead.
+    <strong>Approved at Codex round 4.</strong> Cycle 3 cleared CX2-1 with five pinned-effort executor
+    subagents (<code>.claude/agents/effort-low..max.md</code>, shipped with the plan): tasks carry concrete
+    model + effort stamps again and deploy as <code>Agent({subagent_type: "effort-&lt;tier&gt;", model:
+    "&lt;alias&gt;"})</code>. Round 3's CX3-1 — descriptions can't <em>enforce</em> explicit-only routing —
+    was fixed by reframing it as best-effort discouragement. The spec is ready to build.
   </div>
 
   <section>
     <div class="kicker">Most likely to change</div>
     <h2>Volatile decisions</h2>
     <p class="lede">Each card shows the locked path and its one live alternative. Pick the alternative (or leave a note) and the prompt at the bottom rewrites itself.</p>
+
+    <div class="card" data-key="executors">
+      <div class="card-head"><h3>How each task runs at its stamped effort</h3><span class="stamp block">CX2-1 FIX</span></div>
+      <p class="impact">The Agent tool has no effort parameter — a definition's <code>effort</code> frontmatter is the only per-agent pin, so five generic executors ship with this plan revision.</p>
+      <div class="options">
+        <button class="opt sel" data-side="chosen"><span class="tag">Chosen</span>Pinned-effort executors in <code>.claude/agents/</code> (<code>effort-low</code> … <code>effort-max</code>): frontmatter pins effort, the stamped model alias passes per invocation, board protocol unchanged; mechanic documented in model-selection.md §Mechanics.</button>
+        <button class="opt" data-side="alt"><span class="tag">Alternative</span>Workflow-based deployment (per-agent effort option) — also honors stamps, but restructures the task-tools board orchestration.</button>
+      </div>
+      <input class="note" placeholder="Optional note for the revision prompt…">
+    </div>
 
     <div class="card" data-key="channel">
       <div class="card-head"><h3>How the Stop gate finds <em>this</em> session's plan</h3><span class="stamp block">EXIT 2 GATE</span></div>
@@ -117,7 +128,7 @@
     </div>
 
     <div class="card" data-key="pins">
-      <div class="card-head"><h3>Contract-pin strictness</h3><span class="stamp neutral">79 PINS</span></div>
+      <div class="card-head"><h3>Contract-pin strictness</h3><span class="stamp neutral">84 PINS</span></div>
       <p class="impact">The suite pins frontmatter literals, exact <code>##</code> section sets, and parsed clauses for 9 commands + 2 review skills — the #40/#42 replays live here.</p>
       <div class="options">
         <button class="opt sel" data-side="chosen"><span class="tag">Chosen</span>Exact section tuples — a missing <em>or unexpected</em> heading fails; intentional changes update the pin in the same commit (wiring-test model).</button>
@@ -151,22 +162,23 @@
     <div class="kicker">Sequence</div>
     <h2>Build order</h2>
     <div class="ladder">
-      <div class="rung"><span class="who">1 · builder-hook · opus</span><p>Re-target the Stop gate to the invoking session; rewrite targeting tests; add the concurrency regressions (foreign root never blocks, never masks).</p></div>
-      <div class="rung"><span class="who">2 · builder-hook · opus</span><p>Extend the same gate with the validation-command lint + absolute-promise warnings; block/allow/warn tests.</p></div>
-      <div class="rung par"><span class="who">3 · builder-contracts · sonnet — parallel</span><p>Prompt-contract suite in <code>tests/harness-layer/prompts/</code> from the spec's inventory (first promoting <code>load_hook_module</code> to <code>tests/harness-layer/conftest.py</code>), plus cross-consistency asserts and the #40/#42 replay tests.</p></div>
-      <div class="rung par"><span class="who">4 · builder-ci · sonnet — parallel</span><p><code>.github/workflows/harness-tests.yml</code>, action versions verified against official docs at build time.</p></div>
-      <div class="rung"><span class="who">5 · validator · sonnet</span><p>Run every validation command and the full <code>tests/harness-layer</code> suite; per-AC evidence.</p></div>
+      <div class="rung"><span class="who">1 · builder-hook · opus/medium · effort-medium</span><p>Re-target the Stop gate to the invoking session; rewrite targeting tests; add the concurrency regressions (foreign root never blocks, never masks).</p></div>
+      <div class="rung"><span class="who">2 · builder-hook · opus/medium · resumed (same pin)</span><p>Extend the same gate with the validation-command lint + absolute-promise warnings; block/allow/warn tests.</p></div>
+      <div class="rung par"><span class="who">3 · builder-contracts · sonnet/high · effort-high — parallel</span><p>Prompt-contract suite in <code>tests/harness-layer/prompts/</code> from the spec's inventory (first promoting <code>load_hook_module</code> to <code>tests/harness-layer/conftest.py</code>), plus cross-consistency asserts and the #40/#42 replay tests.</p></div>
+      <div class="rung par"><span class="who">4 · builder-ci · sonnet/low · effort-low — parallel</span><p><code>.github/workflows/harness-tests.yml</code>, action versions verified against official docs at build time.</p></div>
+      <div class="rung"><span class="who">5 · validator · sonnet/low · effort-low</span><p>Run every validation command and the full <code>tests/harness-layer</code> suite; per-AC evidence.</p></div>
     </div>
-    <p class="lede">Per-task efforts are the open CX2-1 decision — stamps read "session-inherited" until the interview picks the delivery mechanism.</p>
+    <p class="lede">Every task deploys through its stamped tier's executor — <code>Agent({subagent_type: "effort-&lt;tier&gt;", model: "&lt;stamped alias&gt;"})</code>.</p>
   </section>
 
   <section>
     <div class="kicker">Collapsed — mechanical detail</div>
     <h2>Reference</h2>
-    <details><summary>Load-bearing inventory (79 pins, verified at plan time)</summary><div>
+    <details><summary>Load-bearing inventory (84 pins, verified at plan time)</summary><div>
       <p><code>checks/ac5_inventory.py</code> already passes against the tree. Coverage:</p>
       <ul>
         <li>9 command files — frontmatter literals (model/effort/<code>disable-model-invocation</code>/tool grants/hook registration) + exact section sets</li>
+        <li>5 pinned-effort executor definitions — <code>effort: &lt;tier&gt;</code> frontmatter pins (AC5-only scope; plan-shipped, not build-time suite subjects)</li>
         <li>Parsed clauses — verdict-line grammar (em-dash exact), <code>CX&lt;N&gt;-&lt;i&gt;</code>, marker keys (<code>plan-links</code>, <code>codex-spec-round-N</code>, <code>report:tidy</code>, <code>report:codex-round-N</code>), report paths, push refspec, <code>--match-head-commit</code></li>
         <li>Cross-consistency — hook <code>REQUIRED_SECTIONS</code> ⊆ template headings; command↔skill report-filename + verdict-grammar agreement</li>
       </ul>
@@ -195,8 +207,7 @@
     <div class="promptbox">
       <div class="bar">
         <div class="presets" role="group" aria-label="Ready-made prompts">
-          <button id="p-interview" aria-pressed="true">resolve blocker</button>
-          <button id="p-build" aria-pressed="false">skip to build</button>
+          <button id="p-build" aria-pressed="true">start build</button>
         </div>
         <button id="copy">Copy</button>
       </div>
@@ -209,13 +220,14 @@
 <script>
   const WORKTREE = "Worktree: .claude/worktrees/harness-self-improvement";
   const LABELS = {
+    executors:"deploy per-task effort via Workflow orchestration instead of the pinned-effort executor subagents",
     channel:  "resolve the gate's root via session_id-keyed marker files instead of the stdin cwd chain",
     blockwarn:"make the absolute-promise wording heuristic blocking (exit 2), not warn-only",
     pins:     "relax the contract suite to subset section pins (required headings only, additions free)",
     stages:   "require ALL referenced validation paths to exist at plan time, not just [plan-time] scripts",
     ci:       "use default pull_request trigger types only (drop the edited type)"
   };
-  const state = { preset: "interview", tweaks: {}, notes: {} };
+  const state = { preset: "build", tweaks: {}, notes: {} };
 
   document.querySelectorAll(".card").forEach(card => {
     const key = card.dataset.key;
@@ -229,7 +241,7 @@
       state.notes[key] = e.target.value.trim(); render();
     });
   });
-  const presets = { "p-interview": "interview", "p-build": "build" };
+  const presets = { "p-build": "build" };
   Object.entries(presets).forEach(([id, val]) => {
     document.getElementById(id).addEventListener("click", () => {
       state.preset = val;
@@ -245,10 +257,8 @@
     if (changes.length || notes.length) {
       text = `/harness-layer:harness-plan "Revise the harness-self-improvement Plan 1 spec (issue #54): ` +
         [...changes, ...notes].join("; ") + `. Keep every other locked decision as drafted. ${WORKTREE}"`;
-    } else if (state.preset === "build") {
-      text = `/harness-layer:harness-build harness-self-improvement\n\n(Heads-up: the spec is needs-human — CX2-1 open: per-task effort deployment. Prefer resolving it via the interview first.)`;
     } else {
-      text = `/harness-layer:harness-interview "Resolve these review blockers: CX2-1 — per-task effort stamps need a deployment mechanism the Agent tool can honor (candidates: effort-bearing builder agent definitions in .claude/agents/, Workflow-based deployment, or revising model-selection.md's per-task effort mandate). ${WORKTREE}"`;
+      text = `/harness-layer:harness-build harness-self-improvement`;
     }
     document.getElementById("prompt").textContent = text;
   }
