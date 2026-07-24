@@ -136,6 +136,37 @@ future CTO department, out of scope.
   - **A:** Soriza's own site — Ringo is the client. No external prior-art paths were named.
   - **Why:** Real stakes and a real reviewer while the ladder shakes out; no external deadline.
 
+## Resolved Decisions — codex round-2 blocker pass (2026-07-24)
+
+> Verification interview after commit 46f9f80; zero open questions — all three answered by the
+> branch state and signed off directly.
+
+- **Q:** How is the intake Stop-hook race between concurrent client intakes resolved?
+  - **A:** Per-client markers: the intake command's first write drops
+    `projects/<client>/.intake-in-progress` (pattern gitignored); the hook gates until every
+    marked client's `intake.md` is complete and sweeps markers on already-complete clients. No
+    shared `.intake-target` file remains. AC8 carries the cross-client regression plus a
+    two-marker concurrent-intake test.
+  - **Why:** A single shared target file is overwritten by whichever invocation runs last;
+    per-client markers make the gate invocation-scoped without needing session identity.
+
+- **Q:** What does the final rung read as its predecessor?
+  - **A:** `section-briefs` (Lior) reads `wireframes/` — the approved layouts plus
+    `decision-log.md` change requests — with `sitemap-ia.md` retained only as inventory
+    context. Task 5 and AC9's chain mapping both assert it.
+  - **Why:** The ladder's contract is each rung consumes the previous rung's output; mapping
+    the final rung to `sitemap-ia.md` let a build skip the wireframe output and still pass.
+
+- **Q:** How do AC7 and AC9–AC11 avoid passing on loose keyword presence?
+  - **A:** Each command carries a `## Rung Contract` block; the validation commands regex-parse
+    the block and assert individual fields — `Staffer:`, `First write:` (marker-first),
+    `Reads:`/`Writes:`, `DoR gate:`, `Refusal:`, `Commit:`, `Publish:` (best-effort + all
+    three delivery modes, no external dependencies), `Packet:` contents, `Sign-off:` Vera, the
+    git lane's exactly-two gate points, and the evidence-swap clause — failing when any
+    required instruction is absent or contradicted.
+  - **Why:** Keyword checks pass on mentions; field assertions fail when the contract is
+    missing or contradicted, which is what the review demanded.
+
 ## Assumptions
 
 - Per-file skeleton headings in `projects/_template/` are settled at plan time — invalidated if
