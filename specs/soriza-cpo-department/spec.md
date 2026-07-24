@@ -88,8 +88,10 @@ Volatile first — full record in [decisions.md](./decisions.md):
    "One desired action"). Live alternative rejected: a hardcoded five-section brief.
 3. **Intake gate is code, and deterministic**: `check_intake_readiness.py`, a uv-script Stop
    hook in `/soriza-design:intake`'s frontmatter; hard-coded section tuple + doctrine sync
-   test; the gated client comes from `projects/.intake-target` (written by the command), never
-   from a newest-modified heuristic. Live alternative rejected: model-side checklist only.
+   test; the gate targets per-client `projects/<client>/.intake-in-progress` markers (the
+   command's first write) and blocks until **every** marked client's `intake.md` is complete —
+   race-free under concurrent runs, never a newest-modified heuristic. Live alternative
+   rejected: model-side checklist only.
 4. **Epic mechanics**: children #44–#48 already filed; one pipeline run per child in dependency
    order #44 → #45 → {#46 → #47, #48}; epic planning docs land on `main` via a draft
    `📝 docs(spec)` PR (`Refs #43`) so child worktrees (branched fresh from `origin/main`) can
@@ -141,10 +143,11 @@ Use these files to complete the task:
 - `.claude/rules/soriza-design/git-lane.md` — the client git lane, `paths: ["projects/**/*"]` (#48).
 - `.claude/commands/soriza-design/{intake,brief,sitemap,wireframe,section-briefs}.md` — the five
   rungs (#46, #47).
-- `.claude/hooks/check_intake_readiness.py` — the DoR Stop gate (#46); reads
-  `projects/.intake-target` (transient, gets a `.gitignore` line in #46).
+- `.claude/hooks/check_intake_readiness.py` — the DoR Stop gate (#46); gates the per-client
+  `projects/<client>/.intake-in-progress` markers (transient; the pattern gets a `.gitignore`
+  line in #46).
 - `tests/harness-layer/hooks/intake-readiness/` — contract + doctrine-sync + cross-client
-  regression tests (#46).
+  regression + concurrent two-marker tests (#46).
 - `specs/soriza-design-{kb-seed,foundations,intake-gate,ladder,git-lane}/` — the five child spec
   folders, created by each child's own plan run (not by this one).
 
@@ -158,13 +161,15 @@ Use these files to complete the task:
   A worktree created before #44 ships simply lacks mirrors → run `/harness-layer:kb` inside it.
 - **Re-running `:intake` on an existing client**: scaffold step must be idempotent — never
   clobber an existing `projects/<client>/`; re-interview updates `intake.md` in place.
-- **DoR hook resolution**: deterministic — the intake command records the invoked client in
-  `projects/.intake-target` (gitignored, transient) as its first write; the hook gates exactly
-  that client's `intake.md`. Missing/invalid/`_`-prefixed target or missing `intake.md` → block
-  with a clear message (inside the command a target must exist); malformed/empty stdin or
-  unreadable files → fail open (exit 0), per the hooks contract. A complete client A can never
-  release an incomplete client B (cross-client regression test). Command-scoped registration
-  means other sessions editing `projects/` are never gated.
+- **DoR hook resolution**: deterministic and race-free — the intake command's first write drops
+  `projects/<client>/.intake-in-progress` (gitignored, transient; no shared file to overwrite);
+  the hook blocks until **every** marked client's `intake.md` is complete, so completing client
+  A can never release an incomplete marked client B, even under concurrent intake runs (primary
+  isolation is one engagement worktree per client; markers are defense-in-depth). No marker
+  anywhere → block with a clear message; `_`-prefixed folders never valid; the command sweeps
+  markers from already-complete clients; malformed/empty stdin or unreadable files → fail open
+  (exit 0), per the hooks contract. Command-scoped registration means other sessions editing
+  `projects/` are never gated. Tests: cross-client regression + two-marker concurrent case.
 - **Doctrine/hook drift**: the sync test fails if `definition-of-ready.md`'s checklist headings
   and the hook's tuple diverge — the pair ships together or not at all.
 - **Large section inventory**: `:section-briefs` loops inline by default; above ~10 sections it
@@ -213,8 +218,14 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** pending — recorded after the Codex review loop
-- **Rejected findings:** pending
+- **Outcome:** needs-human (blockers) — cycle cap (2 rounds) reached at changes-requested.
+  Round 1: 3 blockers (artifact sharing model, gate targeting, weak validation) — fixed and
+  re-reviewed. Round 2: 3 blockers (target-file race → per-client markers, section-briefs
+  predecessor → wireframes/, AC7/AC9–AC11 keyword-loose → Rung Contract field assertions) —
+  **fixes applied on this branch after the cap**; they await a verifying round via a plan
+  re-run (Revision Mode, round 3).
+- **Rejected findings:** none — every blocking finding from both rounds was applied; round-1
+  advisory (add html-artifacts-workflows.md to KB References) also applied.
 
 ## References
 

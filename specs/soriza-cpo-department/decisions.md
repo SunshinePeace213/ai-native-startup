@@ -176,14 +176,19 @@ Locked at plan time, within the ledger's boundaries:
 - **DoR gate source of truth.** `check_intake_readiness.py` hard-codes its required-sections
   tuple (precedent: `check_spec_completeness.py`); `definition-of-ready.md` carries the same
   checklist for humans and rungs; a sync test asserts the two match so they cannot drift.
-- **DoR gate targeting is deterministic** *(round-1 fix)*. The intake command's first write
-  records the invoked client slug in `projects/.intake-target` (gitignored, transient,
-  overwritten per run); the hook reads it and gates exactly `projects/<target>/intake.md`.
-  Missing/invalid target, `_`-prefixed target, or a target folder without `intake.md` → exit 2
-  with a clear message (inside the command a target must exist, so blocking is correct);
-  malformed stdin / unreadable files still fail open. The newest-modified heuristic is dropped —
-  a complete client A can never release an incomplete client B (cross-client regression test
-  required).
+- **DoR gate targeting is deterministic** *(round-1 fix, refined round 2)*. The intake
+  command's **first write** drops a per-client marker `projects/<client>/.intake-in-progress`
+  (gitignored, transient) — there is no shared target file to overwrite, so concurrent intake
+  runs cannot clobber each other's state. The hook gates **every marked client**: the run may
+  end only when each `projects/*/.intake-in-progress` folder has a complete `intake.md` — it
+  fails toward blocking, so completing client A can never release an incomplete marked client
+  B, in the same checkout or across sessions. No marker anywhere → exit 2 with a clear message
+  (inside the command a marker must exist); `_`-prefixed folders are never valid; malformed
+  stdin / unreadable files still fail open. The intake command's scaffold step also sweeps
+  markers from clients whose `intake.md` is already complete, so stale markers self-clean.
+  Primary isolation remains one engagement worktree per client (git lane); markers are
+  defense-in-depth. The newest-modified heuristic is dropped. Tests: cross-client regression
+  (complete A + incomplete marked B → block) and the two-marker concurrent case.
 - **Wireframe delivery modes** *(round-1 fix)*. Publishing an artifact makes it visible only to
   its author (Ringo — the relay); "private links" are Ringo's review surface, not a client
   surface. Client-facing delivery is locked per engagement and recorded in `decision-log.md`:
@@ -192,6 +197,16 @@ Locked at plan time, within the ledger's boundaries:
   recorded, or sending the self-contained HTML files directly (they are dependency-free by
   design, so the file *is* the deliverable). The rung must treat publishing as best-effort and
   never promise a private URL to someone outside the author's account.
+- **Rung Contract blocks** *(round-2 fix)*. Every `/soriza-design:*` command carries a
+  `## Rung Contract` section with labeled fields — `Staffer:`, `Reads:`, `Writes:`,
+  `First write:` (intake only), `DoR gate:`, `Refusal:`, `Commit:`, plus rung-specific fields
+  (wireframe: `Publish:` best-effort + the three delivery modes + no external dependencies;
+  section-briefs: `Packet:` full contents + `Sign-off:` Vera). The contract block is the
+  machine-checkable surface: validation asserts field-level clauses, not loose keywords.
+- **Chain order corrected** *(round-2 fix)*. `:section-briefs`' predecessor is the wireframe
+  rung: Lior **reads `wireframes/`** (approved layouts + the change requests in
+  `decision-log.md`) and uses `sitemap-ia.md` as the inventory source. Every rung consumes its
+  actual predecessor's output; none can be skipped.
 - **Issue types.** #44 and #48 are `chore` (tooling/process); #45–#47 are `feat`; the epic
   carries `feat` + `epic`. All `priority:P2` (no external deadline).
 - **Memory-doc gap folded into #44.** The official memory/rules docs page

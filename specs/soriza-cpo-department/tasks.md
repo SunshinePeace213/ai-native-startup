@@ -168,17 +168,20 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
 - **Model / Effort:** `opus` / `high` (intake command), `sonnet` / `medium` (hook + tests)
 - **Parallel:** false
 - **Satisfies:** AC7, AC8
-- Scope: `.claude/commands/soriza-design/intake.md` (Mira; records the invoked client in
-  `projects/.intake-target` as its first write; idempotent scaffold from `_template` — never
-  clobbers; interviews Ringo per `intake-standards.md`; writes `projects/<client>/intake.md`;
-  commits per the git lane; Stop hook registered in frontmatter);
-  `.claude/hooks/check_intake_readiness.py` (gates exactly the `.intake-target` client —
-  missing/invalid/`_`-prefixed target or missing `intake.md` blocks with a clear message;
-  hard-coded DoR tuple matching `definition-of-ready.md`; exit-2 per-section diagnostics;
-  fail-open only on malformed stdin/plumbing); a `.gitignore` line for
-  `projects/.intake-target`; tests under `tests/harness-layer/hooks/intake-readiness/`
-  (block/allow/fail-open, wiring expectations, doctrine-sync test, and the cross-client
-  regression: a complete client A must not release an incomplete target B); catalog row in
+- Scope: `.claude/commands/soriza-design/intake.md` (Mira; **first write** drops the
+  per-client marker `projects/<client>/.intake-in-progress`; sweeps markers from
+  already-complete clients; idempotent scaffold from `_template` — never clobbers; interviews
+  Ringo per `intake-standards.md`; writes `projects/<client>/intake.md`; commits per the git
+  lane; Stop hook registered in frontmatter; carries a `## Rung Contract` block with labeled
+  fields `Staffer:` / `Reads:` / `Writes:` / `First write:` / `DoR gate:` / `Refusal:` /
+  `Commit:`); `.claude/hooks/check_intake_readiness.py` (blocks until **every** marked client's
+  `intake.md` is complete — fails toward blocking; no marker anywhere → block with a clear
+  message; `_`-prefixed folders never valid; hard-coded DoR tuple matching
+  `definition-of-ready.md`; exit-2 per-section diagnostics; fail-open only on malformed
+  stdin/plumbing); a `.gitignore` line for `projects/*/.intake-in-progress`; tests under
+  `tests/harness-layer/hooks/intake-readiness/` (block/allow/fail-open, wiring expectations,
+  doctrine-sync test, cross-client regression — complete A must not release incomplete marked
+  B — and the concurrent two-marker case); catalog row in
   `.claude/rules/harness-layer/hooks.md`.
 - Launch prompt:
 
@@ -211,9 +214,15 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
   best-effort — private to Ringo, with the client-delivery mode locked per engagement (org
   share / consented public link / the HTML file itself) and recorded in decision-log.md,
   copy-as-prompt reactions appended to decision-log.md), `section-briefs.md`
-  (Lior, inline loop over the locked inventory with parallel fan-out escape hatch, draft copy
-  per copywriting.md, typography-direction page, packet assembly + Vera sign-off). Every rung:
-  reads the previous rung's file, refuses on unmet DoR naming what's missing, commits per rung.
+  (Lior, **reads `wireframes/`** — the approved layouts plus the change requests in
+  decision-log.md — with `sitemap-ia.md` as the inventory source; inline loop over the locked
+  inventory with parallel fan-out escape hatch, draft copy per copywriting.md,
+  typography-direction page, packet assembly + Vera sign-off). Every rung: reads its actual
+  predecessor's output, refuses on unmet DoR naming what's missing, commits per rung, and
+  carries a `## Rung Contract` block (`Staffer:` / `Reads:` / `Writes:` / `DoR gate:` /
+  `Refusal:` / `Commit:`, plus `Publish:` with best-effort + the three delivery modes + no
+  external dependencies for wireframe, and `Packet:` + `Sign-off:` for section-briefs) — the
+  machine-checkable surface the validation asserts field by field.
 - Launch prompt:
 
   ```text
