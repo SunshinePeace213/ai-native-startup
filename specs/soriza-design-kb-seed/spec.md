@@ -197,8 +197,12 @@ All new files are gitignored KB output in this worktree — none are tracked:
   (`uv run --with pyyaml`); round 3 (head `9ea0377`) found the substitution flow
   unrealizable (dangling `fetched: null` provisional entry) and AC2 contradicting the
   general substitution rule — fixed by the WCAG-only replacement contract (head `1dccea3`);
-  round 4 approved with 0 blocking findings and no advisories.
-- **Rejected findings:** none — every blocking finding from all four rounds was applied.
+  round 4 approved with 0 blocking findings and no advisories. Cycle 3 (round 5,
+  `gpt-5.6-terra`): mid-build amendment gated after the build halted on source 5 —
+  resolved identity set (web.dev typography swap + applied NN/g homepage swap) and
+  exact-URL AC2 assertions (head `efac876`) — **approved at round 5**, 0 blocking
+  findings, no advisories. Status stays Approved.
+- **Rejected findings:** none — every blocking finding from all five rounds was applied.
 
 ## References
 
