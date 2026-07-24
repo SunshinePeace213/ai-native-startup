@@ -114,7 +114,12 @@ survive reformatting.
 - **Branch:** `chore/54-harness-self-improvement`
 - **Worktree:** /Users/ringo/Desktop/ai-native-startup/.claude/worktrees/harness-self-improvement
 - **Review profile:** kb-grounded
-- **PR:** <#M — filled by /harness-layer:harness-build>
+- **PR:** #55 (draft) — <https://github.com/SunshinePeace213/ai-native-startup/pull/55>
+- **Hand-off SHA:** bf8c826a (last implementation push; review derives its own range)
+- **Hand-off note:** full suite runs 656 passed / 2 failed — both failures pre-existing on
+  `main` in `tests/harness-layer/hooks/auto-format/test_python.py` (ruff quote drift, outside
+  this plan's diff; disclosed in the PR's Test Evidence). The first `harness-tests` CI run on
+  PR #55 will show them.
 
 ## Load-Bearing Contract Inventory
 
