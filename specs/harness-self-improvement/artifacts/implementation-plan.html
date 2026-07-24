@@ -80,14 +80,15 @@
       <span class="chip">Issue #54</span><span class="chip">Epic #53</span>
       <span class="chip">chore/54-harness-self-improvement</span>
       <span class="chip">kb-grounded</span>
-      <span class="chip warn">needs-human · codex-unavailable</span>
+      <span class="chip warn">needs-human · CX2-1 open</span>
     </div>
   </header>
 
   <div class="notice">
-    <strong>Codex review has not run yet.</strong> This session couldn't spawn the review runner, so the spec
-    is drafted but unreviewed. The default prompt below launches the review cycle as-is; toggling any
-    alternative switches it to a revision prompt instead.
+    <strong>One blocker left after Codex rounds 1–2.</strong> CX1-1..CX1-3 (fixture reach, discovery scope,
+    CI filters) were fixed in-cycle; CX2-1 remains: the per-task effort stamps have no deployment mechanism
+    the Agent tool honors. The default prompt below hands that decision to the interview; toggling any
+    alternative switches to a revision prompt instead.
   </div>
 
   <section>
@@ -139,7 +140,7 @@
       <div class="card-head"><h3>CI trigger shape</h3><span class="stamp neutral">OBSERVATIONAL</span></div>
       <p class="impact">One workflow: checkout → astral-sh/setup-uv → <code>uv run pytest tests/harness-layer</code>. Not a required check yet (human follow-up).</p>
       <div class="options">
-        <button class="opt sel" data-side="chosen"><span class="tag">Chosen</span><code>pull_request</code> incl. the <code>edited</code> type + five path filters + title-based <code>[skip-ci]</code> skip, so a late title edit still takes effect.</button>
+        <button class="opt sel" data-side="chosen"><span class="tag">Chosen</span><code>pull_request</code> incl. the <code>edited</code> type + seven path filters (incl. <code>specs/_templates/**</code> and the workflow itself) + title-based <code>[skip-ci]</code> skip.</button>
         <button class="opt" data-side="alt"><span class="tag">Alternative</span>Default trigger types only — simpler file, but <code>[skip-ci]</code> added after opening is ignored until the next push.</button>
       </div>
       <input class="note" placeholder="Optional note for the revision prompt…">
@@ -150,12 +151,13 @@
     <div class="kicker">Sequence</div>
     <h2>Build order</h2>
     <div class="ladder">
-      <div class="rung"><span class="who">1 · builder-hook · opus/medium</span><p>Re-target the Stop gate to the invoking session; rewrite targeting tests; add the concurrency regressions (foreign root never blocks, never masks).</p></div>
-      <div class="rung"><span class="who">2 · builder-hook · opus/medium</span><p>Extend the same gate with the validation-command lint + absolute-promise warnings; block/allow/warn tests.</p></div>
-      <div class="rung par"><span class="who">3 · builder-contracts · sonnet/high — parallel</span><p>Prompt-contract suite in <code>tests/harness-layer/prompts/</code> from the spec's inventory, plus cross-consistency asserts and the #40/#42 replay tests.</p></div>
-      <div class="rung par"><span class="who">4 · builder-ci · sonnet/low — parallel</span><p><code>.github/workflows/harness-tests.yml</code>, action versions verified against official docs at build time.</p></div>
-      <div class="rung"><span class="who">5 · validator · sonnet/low</span><p>Run every validation command and the full <code>tests/harness-layer</code> suite; per-AC evidence.</p></div>
+      <div class="rung"><span class="who">1 · builder-hook · opus</span><p>Re-target the Stop gate to the invoking session; rewrite targeting tests; add the concurrency regressions (foreign root never blocks, never masks).</p></div>
+      <div class="rung"><span class="who">2 · builder-hook · opus</span><p>Extend the same gate with the validation-command lint + absolute-promise warnings; block/allow/warn tests.</p></div>
+      <div class="rung par"><span class="who">3 · builder-contracts · sonnet — parallel</span><p>Prompt-contract suite in <code>tests/harness-layer/prompts/</code> from the spec's inventory (first promoting <code>load_hook_module</code> to <code>tests/harness-layer/conftest.py</code>), plus cross-consistency asserts and the #40/#42 replay tests.</p></div>
+      <div class="rung par"><span class="who">4 · builder-ci · sonnet — parallel</span><p><code>.github/workflows/harness-tests.yml</code>, action versions verified against official docs at build time.</p></div>
+      <div class="rung"><span class="who">5 · validator · sonnet</span><p>Run every validation command and the full <code>tests/harness-layer</code> suite; per-AC evidence.</p></div>
     </div>
+    <p class="lede">Per-task efforts are the open CX2-1 decision — stamps read "session-inherited" until the interview picks the delivery mechanism.</p>
   </section>
 
   <section>
@@ -193,7 +195,7 @@
     <div class="promptbox">
       <div class="bar">
         <div class="presets" role="group" aria-label="Ready-made prompts">
-          <button id="p-review" aria-pressed="true">run review cycle</button>
+          <button id="p-interview" aria-pressed="true">resolve blocker</button>
           <button id="p-build" aria-pressed="false">skip to build</button>
         </div>
         <button id="copy">Copy</button>
@@ -213,7 +215,7 @@
     stages:   "require ALL referenced validation paths to exist at plan time, not just [plan-time] scripts",
     ci:       "use default pull_request trigger types only (drop the edited type)"
   };
-  const state = { preset: "review", tweaks: {}, notes: {} };
+  const state = { preset: "interview", tweaks: {}, notes: {} };
 
   document.querySelectorAll(".card").forEach(card => {
     const key = card.dataset.key;
@@ -227,7 +229,7 @@
       state.notes[key] = e.target.value.trim(); render();
     });
   });
-  const presets = { "p-review": "review", "p-build": "build" };
+  const presets = { "p-interview": "interview", "p-build": "build" };
   Object.entries(presets).forEach(([id, val]) => {
     document.getElementById(id).addEventListener("click", () => {
       state.preset = val;
@@ -244,9 +246,9 @@
       text = `/harness-layer:harness-plan "Revise the harness-self-improvement Plan 1 spec (issue #54): ` +
         [...changes, ...notes].join("; ") + `. Keep every other locked decision as drafted. ${WORKTREE}"`;
     } else if (state.preset === "build") {
-      text = `/harness-layer:harness-build harness-self-improvement\n\n(Heads-up: the spec is still needs-human — no Codex round ran. Prefer running the review cycle first.)`;
+      text = `/harness-layer:harness-build harness-self-improvement\n\n(Heads-up: the spec is needs-human — CX2-1 open: per-task effort deployment. Prefer resolving it via the interview first.)`;
     } else {
-      text = `/harness-layer:harness-plan "Run the Codex spec-review cycle for the drafted Plan 1 spec at specs/harness-self-improvement/ — no content changes; on approval, remove the status:needs-human label on issue #54. ${WORKTREE}"`;
+      text = `/harness-layer:harness-interview "Resolve these review blockers: CX2-1 — per-task effort stamps need a deployment mechanism the Agent tool can honor (candidates: effort-bearing builder agent definitions in .claude/agents/, Workflow-based deployment, or revising model-selection.md's per-task effort mandate). ${WORKTREE}"`;
     }
     document.getElementById("prompt").textContent = text;
   }
