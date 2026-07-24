@@ -179,21 +179,25 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
   definition-of-ready.md / `Refusal:` refuse to conclude naming intake.md's missing
   sections / `Commit:` `📝 docs(<client>)` + `Refs #N` on the engagement branch);
   `.claude/hooks/check_intake_readiness.py` (matches stdin `session_id` against the marker
-  suffix and gates **only its own session's markers** — blocks until every own-marked
-  client's `intake.md` is complete, then exits 0 leaving the marker in place so a repeat
-  firing passes again idempotently — the hook never deletes any marker; fails toward
-  blocking; no own-session marker → block with a clear message; `_`-prefixed folders never
-  valid; hard-coded DoR tuple matching `definition-of-ready.md`; exit-2 per-section
-  diagnostics; fail-open only on malformed stdin/plumbing); a `.gitignore` line for
+  suffix and gates **only its own session's markers** — exit 2 while any own-marked client's
+  `intake.md` is incomplete, exit 0 once all are complete, leaving the marker in place so a
+  repeat firing passes again idempotently — the hook never deletes any marker; the block is
+  platform-bounded at 8 consecutive Stop-hook blocks per hooks.md — the hook ignores
+  `stop_hook_active` and never fakes success, and the rungs' DoR refusals are the durable
+  stop for an escaped incomplete intake; fails toward blocking; no own-session marker →
+  block with a clear message; `_`-prefixed folders never valid; hard-coded DoR tuple
+  matching `definition-of-ready.md`; exit-2 per-section diagnostics; fail-open only on
+  malformed stdin/plumbing); a `.gitignore` line for
   `projects/*/.intake-in-progress.*`; tests under
   `tests/harness-layer/hooks/intake-readiness/` (block/allow/fail-open, wiring expectations,
   doctrine-sync test, session-independence regression — session A with complete client A
   exits 0 while session B's incomplete client-B marker exists, and session B still exits 2 —
   the same-client two-session concurrent case, re-run on a complete client — the new
   session's marker survives — no-cross-session-deletion — no code path deletes any marker —
-  and the cross-hook continuation regression — two successive firings after completion both
-  exit 0, modeling another Stop hook blocking once in between); catalog row in
-  `.claude/rules/harness-layer/hooks.md`.
+  the cross-hook continuation regression — two successive firings after completion both
+  exit 0, modeling another Stop hook blocking once in between — and block-consistency — an
+  incomplete intake yields exit 2 on every firing, `stop_hook_active: true` included);
+  catalog row in `.claude/rules/harness-layer/hooks.md`.
 - Launch prompt:
 
   ```text
@@ -235,8 +239,9 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
   (intake.md / brief.md / sitemap-ia.md / wireframes/); `Refusal:` stating refuse **and**
   naming that same missing artifact; `Commit:` stating all three of `📝 docs(<client>)`,
   `Refs #N`, and the engagement branch. Wireframe adds `Format:` (lo-fi grayscale,
-  self-contained, no external dependencies, one page per screen), `Publish:` (best-effort +
-  the three delivery modes recorded in decision-log.md), and `Reactions:` (copy-as-prompt
+  self-contained, no external dependencies, one page per screen), `Publish:` (best-effort —
+  publishing never blocks — plus the three delivery modes including the consented public
+  link, recorded in decision-log.md), and `Reactions:` (copy-as-prompt
   reactions appended to decision-log.md as structured change requests). Section-briefs adds
   `Inventory:` (inline loop by default, parallel fan-out only for large inventories),
   `Copy:` (slogan/headline/body held to copywriting.md), `Packet:`, and `Sign-off:` Vera.

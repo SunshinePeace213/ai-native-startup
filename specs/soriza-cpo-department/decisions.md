@@ -181,11 +181,18 @@ Locked at plan time, within the ledger's boundaries:
   `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}` (gitignored, transient;
   `${CLAUDE_SESSION_ID}` is the harness's command-content substitution —
   `ai-docs/anthropic/skills.md`). The Stop hook reads `session_id` from its stdin JSON and
-  gates **only the markers carrying its own session id**: exit 2 until every own-marked
-  client's `intake.md` is complete, then exit 0 — **leaving the marker in place** *(round-5
-  fix)*, so success is idempotently re-provable: Stop hooks run in parallel and an exit-2
-  from any other Stop hook forces a continuation, meaning this hook can fire again after
-  passing, and it must pass again. Each invocation resolves exactly its own targets, so
+  gates **only the markers carrying its own session id**: exit 2 while any own-marked
+  client's `intake.md` is incomplete, exit 0 once all are complete — **leaving the marker in
+  place** *(round-5 fix)*, so success is idempotently re-provable: Stop hooks run in
+  parallel and an exit-2 from any other Stop hook forces a continuation, meaning this hook
+  can fire again after passing, and it must pass again. The block is **platform-bounded**
+  *(round-6 fix)*: Claude Code overrides a Stop hook after 8 consecutive blocks and ends the
+  turn (`hooks.md`; raisable via `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` — not required here). The
+  hook deliberately ignores `stop_hook_active` (the condition is resolvable; the cap is the
+  stuck-loop escape) and never fakes success — an override leaves `intake.md` incomplete on
+  disk, where every ladder rung's `DoR gate:`/`Refusal:` refusal is the durable stop: an
+  escaped incomplete intake cannot climb the ladder. Each invocation resolves exactly its
+  own targets, so
   concurrent sessions never clobber, release, or strand each other — client A's session
   completes independently of client B's abandoned incomplete marker, and two concurrent runs
   of the same client each gate on their own distinct marker file. No own-session marker →
@@ -200,8 +207,10 @@ Locked at plan time, within the ledger's boundaries:
   0 while session B's incomplete client-B marker exists; session B still exits 2), the
   same-client two-session concurrent case, a re-run-on-complete-client case (the new
   session's marker survives), a no-cross-session-deletion case (no code path deletes any
-  marker), and the cross-hook continuation regression (another Stop hook blocks once between
-  two readiness checks — the second check still exits 0 on the retained marker).
+  marker), the cross-hook continuation regression (another Stop hook blocks once between
+  two readiness checks — the second check still exits 0 on the retained marker), and
+  block-consistency (an incomplete intake yields exit 2 on every firing, including with
+  `stop_hook_active: true`).
 - **Wireframe delivery modes** *(round-1 fix)*. Publishing an artifact makes it visible only to
   its author (Ringo — the relay); "private links" are Ringo's review surface, not a client
   surface. Client-facing delivery is locked per engagement and recorded in `decision-log.md`:

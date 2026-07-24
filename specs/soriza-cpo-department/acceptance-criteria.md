@@ -46,7 +46,10 @@
   `projects/*/.intake-in-progress.*` is gitignored.
 - **AC8** — `check_intake_readiness.py` scopes to its own session: it matches stdin's
   `session_id` against the marker suffix, exits 2 with per-section stderr diagnostics while
-  any **own-session** marked client's `intake.md` is incomplete/missing, exits 2 with a clear
+  any **own-session** marked client's `intake.md` is incomplete/missing — a
+  **platform-bounded** block (Claude Code overrides after 8 consecutive Stop-hook blocks;
+  the hook ignores `stop_hook_active`, never fakes success, and the rungs' DoR refusals
+  catch an escaped incomplete intake) — exits 2 with a clear
   message when no own-session marker exists, exits 0 only when every own-marked client is
   complete — **leaving markers in place**: the hook never deletes any marker, so success is
   idempotently re-provable across repeated Stop firings. `_`-prefixed folders are never
@@ -58,7 +61,9 @@
   already-complete client leaves the new session's marker in place; the deletion regression
   proves no code path deletes any marker; the cross-hook continuation regression proves two
   successive firings after completion both exit 0 (modeling another parallel Stop hook
-  blocking once in between). The hook's required-section tuple matches
+  blocking once in between); the block-consistency regression proves an incomplete intake
+  yields exit 2 on every firing, including with `stop_hook_active: true`. The hook's
+  required-section tuple matches
   `definition-of-ready.md`'s checklist headings (sync test). All hook tests and the wiring
   pin pass.
 - **AC9** — The four ladder commands exist under `/soriza-design:*`, and each carries a
@@ -100,7 +105,17 @@ Run these to prove the criteria above (from the repo root, on `main`, after all 
 merge — each child also runs its own subset at its build). Assertion scripts exit non-zero on
 any failure.
 
-- `git log --oneline origin/main -- specs/soriza-cpo-department/ | head -3` — verifies AC1. Non-empty after the epic docs PR merges.
+- `uv run python -c "
+  import json, subprocess
+  def q(args): return json.loads(subprocess.run(['gh']+args,capture_output=True,text=True,check=True).stdout)
+  pr = q(['pr','view','49','--json','state,body,mergedAt,baseRefName'])
+  assert pr['state'] == 'MERGED' and pr['baseRefName'] == 'main' and pr['mergedAt'], pr
+  assert '#43' in pr['body'], 'epic docs PR does not reference #43'
+  for n in ['44','45','46','47','48']:
+      for c in q(['issue','view',n,'--json','closedByPullRequestsReferences'])['closedByPullRequestsReferences']:
+          cpr = q(['pr','view',str(c['number']),'--json','createdAt'])
+          assert cpr['createdAt'] > pr['mergedAt'], 'child PR #%s predates the epic docs merge' % c['number']
+  print('AC1 ok')"` — verifies AC1 (PR #49 merged to main referencing #43, and every child PR was opened after that merge).
 - `grep -n "ai-docs" .worktreeinclude` — verifies AC2 (pattern present). Full check: create a scratch worktree (`EnterWorktree` or `git worktree add` + the WorktreeCreate hook) and assert `ai-docs/anthropic/*.md` exists inside it.
 - `uv run python -c "
   import yaml
@@ -115,7 +130,9 @@ any failure.
   idx = open('ai-docs/index.md').read()
   for e in d:
       assert e['file'] in idx, 'index.md missing entry for ' + e['file']
-  assert any('code.claude.com/docs/en/memory' in e['url'] for e in m['anthropic'])
+  mem = [e for e in m['anthropic'] if 'code.claude.com/docs/en/memory' in e['url']]
+  assert len(mem) == 1 and mem[0]['fetched'] and mem[0]['file'].startswith('anthropic/'), mem
+  assert mem[0]['file'] in idx, 'index.md missing entry for ' + mem[0]['file']
   print('AC3 ok')"` — verifies AC3 (exact source identities + index entries; adjust a URL marker only if #44 recorded a documented same-topic swap).
 - `uv run python -c "
   from pathlib import Path
@@ -218,7 +235,7 @@ any failure.
       assert req in wf, 'wireframe: missing field ' + req
   for clause in ['grayscale','self-contained','no external dependencies','one page per screen']:
       assert clause in wf['Format'], 'wireframe Format missing: ' + clause
-  for clause in ['best-effort','org share','public link','HTML file','decision-log']:
+  for clause in ['best-effort','never block','org share','consent','public link','HTML file','decision-log']:
       assert clause in wf['Publish'], 'wireframe Publish missing: ' + clause
   for clause in ['copy-as-prompt','decision-log','change request']:
       assert clause in wf['Reactions'], 'wireframe Reactions missing: ' + clause

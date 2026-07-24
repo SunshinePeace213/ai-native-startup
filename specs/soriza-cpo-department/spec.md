@@ -90,9 +90,12 @@ Volatile first — full record in [decisions.md](./decisions.md):
    hook in `/soriza-design:intake`'s frontmatter; hard-coded section tuple + doctrine sync
    test; the gate targets session-scoped per-client markers
    `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}` (the command's first write)
-   and blocks until every client marked **by its own session** has a complete `intake.md` —
-   race-free and strand-free under concurrent runs, never a newest-modified heuristic. Live
-   alternative rejected: model-side checklist only.
+   and blocks an incomplete stop — up to the platform's Stop-hook cap of 8 consecutive
+   blocks (`ai-docs/anthropic/hooks.md`), after which Claude Code overrides and ends the
+   turn; the durable guarantee is the next rung's `DoR gate:` refusal, so an escaped
+   incomplete intake still cannot climb the ladder. Race-free and strand-free under
+   concurrent runs, never a newest-modified heuristic. Live alternative rejected: model-side
+   checklist only.
 4. **Epic mechanics**: children #44–#48 already filed; one pipeline run per child in dependency
    order #44 → #45 → {#46 → #47, #48}; epic planning docs land on `main` via a draft
    `📝 docs(spec)` PR (`Refs #43`) so child worktrees (branched fresh from `origin/main`) can
@@ -166,20 +169,30 @@ Use these files to complete the task:
 - **DoR hook resolution**: session-scoped and race-free — the intake command's first write
   drops `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}` (gitignored, transient;
   no shared file to overwrite). The hook matches stdin's `session_id` against the marker
-  suffix and gates **only its own session's markers**: blocks until each own-marked client's
-  `intake.md` is complete, then exits 0 **leaving the marker in place** — Stop hooks run in
-  parallel and another Stop hook's exit 2 forces a continuation, so this hook can fire again
-  after passing and must pass again idempotently. Completing client A never releases client
-  B, and B's abandoned incomplete marker never strands A; concurrent runs of the same client
-  each gate on their own distinct marker (primary isolation is one engagement worktree per
-  client; markers are defense-in-depth). No own-session marker → block with a clear message;
+  suffix and gates **only its own session's markers**: exit 2 while any own-marked client's
+  `intake.md` is incomplete, exit 0 once all are complete — **leaving the marker in place** —
+  Stop hooks run in parallel and another Stop hook's exit 2 forces a continuation, so this
+  hook can fire again after passing and must pass again idempotently. The block is
+  **platform-bounded, not absolute**: Claude Code overrides a Stop hook after 8 consecutive
+  blocks and ends the turn (`hooks.md`; cap raisable via `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP`,
+  which this design does not require). The hook deliberately does not short-circuit on
+  `stop_hook_active` — the gated condition is resolvable (the command keeps interviewing to
+  fill `intake.md`), and the platform cap is the stuck-loop escape. After an override the
+  intake simply remains incomplete on disk, and the durable guarantee is rung-level: every
+  ladder rung's `DoR gate:`/`Refusal:` refuses an incomplete predecessor, so an escaped
+  incomplete intake cannot progress. Completing client A never releases client B, and B's
+  abandoned incomplete marker never strands A; concurrent runs of the same client each gate
+  on their own distinct marker (primary isolation is one engagement worktree per client;
+  markers are defense-in-depth). No own-session marker → block with a clear message;
   `_`-prefixed folders never valid; nothing deletes markers at run time — stale markers are
   harmless gitignored litter that session-scoped matching ignores; malformed/empty stdin or
   unreadable files → fail open (exit 0), per the hooks contract. Command-scoped registration
   means other sessions editing `projects/` are never gated. Tests: session-independence
   regression, same-client concurrent case, re-run on a complete client,
   no-cross-session-deletion, cross-hook continuation (a second firing after a pass still
-  exits 0).
+  exits 0), and block-consistency (an incomplete intake yields exit 2 on every firing,
+  including with `stop_hook_active: true` — the hook never fakes success; the override is
+  the platform's call).
 - **Doctrine/hook drift**: the sync test fails if `definition-of-ready.md`'s checklist headings
   and the hook's tuple diverge — the pair ships together or not at all.
 - **Large section inventory**: `:section-briefs` loops inline by default; above ~10 sections it
