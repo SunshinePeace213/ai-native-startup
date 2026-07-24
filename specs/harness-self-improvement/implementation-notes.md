@@ -48,3 +48,23 @@
 - **2026-07-25 · lesson** — deploying stamped effort via `Agent({subagent_type:
   "effort-<tier>", model: <alias>})` worked first try for all five deployments, including the
   resume-keeps-pin case (builder-hook tasks 1→2).
+- **2026-07-25 · review round 1** — Codex (`gpt-5.6-sol`/`xhigh`, kb-grounded, full range
+  841e772..470047f): changes-requested — CX1-1 lint accepts out-of-plan/absolute/traversing
+  check paths; CX1-2 frontmatter pins were substring checks (commented/renamed keys stayed
+  green); CX1-3 AC5 parser silently skipped malformed rows and unknown kinds. One advisory
+  (GitHub Actions KB gap) → PR Follow-ups. Report committed 6158aee.
+- **2026-07-25 · round-1 fixes** — three parallel fixers, all `(new)` → default tiers:
+  CX1-1 opus/`effort-medium` (hook + 4 negative tests), CX1-2 sonnet/`effort-high`
+  (line-anchored entry pins, fragment pins split out, 10 mutation tests), CX1-3
+  sonnet/`effort-medium` (fail-loud AC5 parser, both failure modes demonstrated). Combined
+  verification: AC4/AC5 ok, suite 670 passed / 2 pre-existing failed. One fix commit d978440.
+- **2026-07-25 · review round 2 (terminal)** — Codex (`gpt-5.6-sol`/`high`, delta
+  470047f..d978440): changes-requested — CX1-1..CX1-3 all confirmed fixed; CX2-1 (new,
+  comment-accuracy): the CX1-2 mutation-test docstrings falsely claim frontmatter `name:`
+  controls skill resolution (it is directory-keyed — `ai-docs/anthropic/skills.md`). Attempt
+  budget (2) spent → PR #55 left draft; the human owns CX2-1 (docstring rewrite only, the
+  pins themselves are correct).
+- **2026-07-25 · lesson** — a "pin" asserted by substring is not a pin: a commented or
+  prefixed key keeps it green. Pin whole frontmatter entries line-anchored and replay the
+  mutation as a test — and make each docstring state the real mechanism (Codex's
+  comment-accuracy lens blocks false rationale even when the assert is right).

@@ -1,0 +1,384 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dev Notes — harness-self-improvement Plan 1</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --ok: #5A7D4E;
+    --block: #9C3B32;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header { border-bottom: 2px solid var(--text); padding-bottom: 20px; margin-bottom: 24px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(20px, 3.4vw, 28px);
+    letter-spacing: 0.02em;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+  .statusbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .pill {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    white-space: nowrap;
+  }
+  .pill.draft { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .pill.blocker { border-color: var(--block); color: var(--block); font-weight: 600; }
+
+  .cols { display: grid; grid-template-columns: 232px 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+
+  .controls { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 18px; }
+  @media (max-width: 760px) { .controls { position: static; } }
+  .group h2 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--text); border-color: var(--text); color: var(--bg); }
+  .chip:focus-visible, .toggle input:focus-visible, select:focus-visible, .copy:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+  .toggle input { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; }
+  select {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .count { font-size: 12px; color: var(--muted); }
+
+  /* Timeline rail */
+  .timeline { list-style: none; margin: 0; padding: 0 0 0 26px; position: relative; }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 7px; top: 10px; bottom: 10px;
+    width: 2px;
+    background: var(--border);
+  }
+  .entry { position: relative; padding: 0 0 22px 14px; }
+  .entry:last-child { padding-bottom: 0; }
+  .node {
+    position: absolute;
+    left: -26px; top: 5px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--muted);
+    background: var(--bg);
+  }
+  .entry[data-kind="build"]     .node { background: var(--muted); border-color: var(--muted); }
+  .entry[data-kind="fix"]       .node { background: var(--ok); border-color: var(--ok); }
+  .entry[data-kind="review"]    .node { background: var(--block); border-color: var(--block); border-radius: 3px; }
+  .entry[data-kind="deviation"] .node { background: var(--bg); border-color: var(--block); border-style: dashed; }
+  .entry[data-kind="lesson"]    .node { background: var(--bg); border-color: var(--ok); }
+  .entry.head .node { background: var(--bg); border: 3px solid var(--accent); width: 18px; height: 18px; left: -27px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .entry.head .card { border-color: var(--accent); }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .kind {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .entry[data-kind="build"]     .kind { color: var(--muted); }
+  .entry[data-kind="fix"]       .kind { color: var(--ok); }
+  .entry[data-kind="review"]    .kind { color: var(--block); }
+  .entry[data-kind="deviation"] .kind { color: var(--block); }
+  .entry[data-kind="lesson"]    .kind { color: var(--ok); }
+  .sha {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+  .card h3 { margin: 0 0 4px; font-size: 15px; font-weight: 650; text-wrap: balance; }
+  .card p { margin: 0; font-size: 13.5px; color: var(--text); max-width: 62ch; }
+  .card p code, .prompt-note code {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 0 4px;
+  }
+  .empty { color: var(--muted); font-size: 13px; padding: 8px 0 0 14px; }
+
+  /* Prompt block */
+  .promptbox { margin-top: 32px; border-top: 2px solid var(--text); padding-top: 18px; }
+  .promptbox .rowtop { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .copy {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 16px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--bg);
+    cursor: pointer;
+  }
+  .copy:hover { filter: brightness(0.94); }
+  pre#prompt {
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .entry .card { transition: border-color 120ms ease; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">specs/harness-self-improvement · dev log · rendered by /harness-layer:harness-review</p>
+    <h1>Dev Notes — Plan 1: machine-check substrate</h1>
+    <div class="statusbar">
+      <span class="pill draft">PR #55 · draft</span>
+      <span class="pill blocker">1 open blocker · CX2-1</span>
+      <span class="pill">issue #54 · epic #53</span>
+      <span class="pill">rounds: R1 changes-requested → fixes → R2 changes-requested</span>
+      <span class="pill">suite 670 passed · 2 pre-existing failures</span>
+    </div>
+  </header>
+
+  <div class="cols">
+    <aside class="controls">
+      <div class="group">
+        <h2>Show entry kinds</h2>
+        <div class="chips" id="kindChips"></div>
+      </div>
+      <div class="group">
+        <h2>Focus</h2>
+        <label class="toggle"><input type="checkbox" id="blockersOnly"> Open blocker only</label>
+      </div>
+      <div class="group">
+        <h2>Prompt intent</h2>
+        <select id="intent">
+          <option value="resolve" selected>Resolve the open blocker</option>
+          <option value="handoff">Hand-off summary for a teammate</option>
+        </select>
+      </div>
+      <p class="count" id="count"></p>
+    </aside>
+
+    <ol class="timeline" id="timeline"></ol>
+  </div>
+
+  <div class="promptbox">
+    <div class="rowtop">
+      <h2 class="eyebrow" style="margin:0">Copy as prompt</h2>
+      <button class="copy" id="copyBtn">Copy prompt</button>
+    </div>
+    <pre id="prompt"></pre>
+  </div>
+</div>
+
+<script>
+  const ENTRIES = [
+    { kind: "build", title: "Build start", sha: null,
+      body: "Build lead entered the recorded worktree (remote branch chore/54-harness-self-improvement); board created from tasks.md; builders deployed via the CX2-1 pinned-effort executor mechanism." },
+    { kind: "build", title: "Phase 2 hand-off — ci-workflow", sha: "673e044",
+      body: "builder-ci (sonnet / effort-low): .github/workflows/harness-tests.yml created, AC4 check green. Action pins verified against official docs: actions/checkout@v7, astral-sh/setup-uv@v8 with cache. Judgment call: floating major-version tags, flagged for review." },
+    { kind: "build", title: "Phase 1 hand-off — retarget-stop-gate", sha: "5b62f53",
+      body: "builder-hook (opus / effort-medium): gate re-targeted to stdin cwd with the fixed single-root fallback chain; cross-worktree glob deleted; concurrency regressions both directions plus decoy and fail-open. 21 tests passed." },
+    { kind: "build", title: "Phase 2 hand-off — contract-tests", sha: "e3d6f33",
+      body: "builder-contracts (sonnet / effort-high): load_hook_module promoted to tests/harness-layer/conftest.py; prompts suite (20 tests) pins every inventory row verbatim; #40/#42 replays cite the restore commits. Surfaced 2 pre-existing auto-format failures, confirmed via stash." },
+    { kind: "build", title: "Phase 1 hand-off — stop-gate-lint", sha: "643ee48",
+      body: "builder-hook resumed on the same effort-medium pin: validation-command lint added after the required-sections check; block/warn split per the locked decision; 10 new tests; live run on the real repo exits 0 with warn-only wording lines." },
+    { kind: "deviation", title: "Deviation — board access", sha: null,
+      body: "Plan said builders flip their own task status; the Task* board tools were unavailable in every subagent context, so the build lead flipped each status from the hand-offs. No effect on deliverables." },
+    { kind: "build", title: "Phase 3 — validate-all", sha: null,
+      body: "Validator (sonnet / effort-low): AC1–AC5 all PASS (AC5: 84 inventory rows). Full suite 656 passed, 2 failed — both pre-existing on main (auto-format ruff quote drift), disclosed in PR test evidence." },
+    { kind: "build", title: "Tidy pass", sha: "353a7cc",
+      body: "harness-simplifier + code-simplifier (opus): 2 behavior-preserving fixes; 51 tests green post-tidy. Report posted as the tidy marker comment." },
+    { kind: "build", title: "Draft PR opened", sha: null,
+      body: "PR #55 (chore, priority:P2, Closes #54, Part of #53); stage table ticks Implementation and Tidy." },
+    { kind: "lesson", title: "Lesson — pinned-effort executors work", sha: null,
+      body: "Deploying stamped effort via Agent({subagent_type: \"effort-<tier>\", model: <alias>}) worked first try for all five deployments, including the resume-keeps-pin case." },
+    { kind: "review", title: "Review round 1 — changes-requested", sha: "6158aee",
+      body: "Codex gpt-5.6-sol / xhigh, kb-grounded, full range 841e772..470047f. CX1-1: lint accepts absolute, traversing, and out-of-plan check paths. CX1-2: frontmatter pins were substring checks — commented or renamed keys stayed green. CX1-3: AC5 parser silently skipped malformed rows and unknown kinds. Advisory: GitHub Actions KB gap → PR Follow-ups." },
+    { kind: "fix", title: "Round-1 fixes — CX1-1..CX1-3", sha: "d978440",
+      body: "Three parallel fixers at default tiers: opus/effort-medium hardened the hook (+4 negative tests); sonnet/effort-high made entry pins line-anchored with 10 mutation tests; sonnet/effort-medium made the AC5 parser fail loud. Combined: AC4/AC5 ok, 670 passed, 2 pre-existing failures unchanged." },
+    { kind: "review", title: "Review round 2 — changes-requested (terminal)", sha: null, head: true,
+      body: "Codex gpt-5.6-sol / high, delta 470047f..d978440. CX1-1..CX1-3 all confirmed fixed. CX2-1 (new, comment-accuracy): the new mutation-test docstrings in tests/harness-layer/prompts/test_skill_contracts.py claim frontmatter name: controls skill resolution — resolution is directory-keyed (ai-docs/anthropic/skills.md). Docstring rewrite only; the pins themselves are correct. Attempt budget spent → PR left draft." },
+    { kind: "lesson", title: "Lesson — substring pins are not pins", sha: null,
+      body: "A commented or prefixed key keeps a substring assertion green. Pin whole frontmatter entries line-anchored, ship the mutation replay as a test, and make each docstring state the real mechanism — the comment-accuracy lens blocks false rationale even when the assert is right." },
+  ];
+
+  const KINDS = [
+    { id: "build", label: "build" },
+    { id: "review", label: "review" },
+    { id: "fix", label: "fixes" },
+    { id: "deviation", label: "deviations" },
+    { id: "lesson", label: "lessons" },
+  ];
+
+  const state = {
+    kinds: new Set(KINDS.map(k => k.id)),
+    blockersOnly: false,
+    intent: "resolve",
+  };
+
+  const chipsEl = document.getElementById("kindChips");
+  KINDS.forEach(k => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.textContent = k.label;
+    b.setAttribute("aria-pressed", "true");
+    b.addEventListener("click", () => {
+      if (state.kinds.has(k.id)) state.kinds.delete(k.id);
+      else state.kinds.add(k.id);
+      b.setAttribute("aria-pressed", state.kinds.has(k.id) ? "true" : "false");
+      updateAll();
+    });
+    chipsEl.appendChild(b);
+  });
+
+  document.getElementById("blockersOnly").addEventListener("change", e => {
+    state.blockersOnly = e.target.checked;
+    updateAll();
+  });
+  document.getElementById("intent").addEventListener("change", e => {
+    state.intent = e.target.value;
+    updateAll();
+  });
+
+  function visibleEntries() {
+    if (state.blockersOnly) return ENTRIES.filter(e => e.head);
+    return ENTRIES.filter(e => state.kinds.has(e.kind));
+  }
+
+  function el(tag, className, text) {
+    const n = document.createElement(tag);
+    if (className) n.className = className;
+    if (text) n.textContent = text;
+    return n;
+  }
+
+  function renderTimeline() {
+    const ol = document.getElementById("timeline");
+    ol.replaceChildren();
+    const list = visibleEntries();
+    list.forEach(e => {
+      const li = el("li", "entry" + (e.head ? " head" : ""));
+      li.dataset.kind = e.kind;
+      const node = el("span", "node");
+      node.setAttribute("aria-hidden", "true");
+      const meta = el("div", "meta");
+      meta.appendChild(el("span", "kind", e.kind));
+      if (e.sha) meta.appendChild(el("span", "sha", e.sha));
+      if (e.head) {
+        const head = el("span", "sha", "HEAD · open");
+        head.style.borderColor = "var(--accent)";
+        head.style.color = "var(--accent)";
+        meta.appendChild(head);
+      }
+      meta.appendChild(el("span", "count", "2026-07-25"));
+      const card = el("div", "card");
+      card.appendChild(meta);
+      card.appendChild(el("h3", null, e.title));
+      card.appendChild(el("p", null, e.body));
+      li.appendChild(node);
+      li.appendChild(card);
+      ol.appendChild(li);
+    });
+    if (!list.length) {
+      ol.appendChild(el("li", "empty", "No entries match — turn a kind back on to see the log."));
+    }
+    document.getElementById("count").textContent = `${list.length} of ${ENTRIES.length} entries shown`;
+  }
+
+  const PROMPTS = {
+    resolve: `Resolve the open review blocker on PR #55 (plan specs/harness-self-improvement/, issue #54).
+
+CX2-1 (comment-accuracy, docstrings only — the assertions are correct): the mutation-test docstrings in tests/harness-layer/prompts/test_skill_contracts.py claim frontmatter "name:" controls skill resolution. Resolution is directory-keyed (ai-docs/anthropic/skills.md); "name:" is declared metadata. Rewrite those docstrings to say the tests enforce the declared metadata / inventory contract, without the resolution claim, keeping every assertion unchanged.
+
+Then rerun: /harness-layer:harness-review harness-self-improvement
+Worktree: .claude/worktrees/harness-self-improvement (branch chore/54-harness-self-improvement).`,
+    handoff: `Status of PR #55 (harness-self-improvement Plan 1, issue #54, epic #53):
+
+Build shipped the machine-check substrate — session-scoped Stop gate + validation-command lint, prompt-contract suite (tests/harness-layer/prompts/), CI workflow (harness-tests.yml). Codex review round 1 (kb-grounded) found 3 blockers, all fixed and confirmed in round 2: lint path hardening, line-anchored frontmatter pins with mutation replays, fail-loud AC5 parser. Round 2 left 1 open blocker — CX2-1, a docstring-accuracy rewrite in test_skill_contracts.py (no assertion changes) — so the PR is draft. Suite: 670 passed, 2 pre-existing auto-format failures disclosed in Test Evidence. Next: fix CX2-1, rerun /harness-layer:harness-review harness-self-improvement, then /harness-layer:harness-ship.`,
+  };
+
+  function updatePrompt() {
+    document.getElementById("prompt").textContent = PROMPTS[state.intent];
+  }
+
+  function updateAll() { renderTimeline(); updatePrompt(); }
+
+  document.getElementById("copyBtn").addEventListener("click", () => {
+    navigator.clipboard.writeText(document.getElementById("prompt").textContent).then(() => {
+      const b = document.getElementById("copyBtn");
+      const t = b.textContent;
+      b.textContent = "Copied!";
+      setTimeout(() => { b.textContent = t; }, 1200);
+    });
+  });
+
+  updateAll();
+</script>
