@@ -67,15 +67,24 @@ Volatile first — full record in [decisions.md](./decisions.md):
    | 6 | Claude Code memory docs | `https://code.claude.com/docs/en/memory` | `anthropic` |
 
    Constraint from the epic's validation: exactly two `nngroup.com/articles/` URLs, one of
-   them containing `homepage`. A refused source is substituted with the canonical same-topic
-   page (WCAG fallback: `https://www.w3.org/TR/WCAG22/`) and the swap recorded in
-   decisions.md.
+   them containing `homepage`. Substitution is defined for exactly one identity — the WCAG
+   quickref, whose locked fallback is `https://www.w3.org/TR/WCAG22/`, with the swap
+   recorded in decisions.md. Any other source refusing to fetch is a stop condition: halt
+   the build and propose an official alternative to Ringo (the existing NN/g rule,
+   generalized) — never improvise a substitute.
 2. **Registration goes through `/harness-layer:kb add <url> <group>`** — the manifest is the
    source of truth, fetching fans out to `kb-fetcher` subagents per the kb command's own
    contract, and the `design` group is passed explicitly (host-based defaulting would
    misfile w3.org/web.dev/nngroup/fonts.google.com). Six sequential `add` runs; each syncs
    just its new entry, and each run's result is appended verbatim to decisions.md
    `### Build addendum — kb run record` — the observable provenance AC2 parses.
+   **Replacement contract on `FAIL`:** kb has no remove operation and a failed `add` leaves
+   its provisional entry `fetched: null` in the manifest — the builder deletes that
+   provisional entry from `sources.yaml` (the manifest is the one hand-editable tracked
+   file; registration itself still flows only through `add`), then for the WCAG quickref
+   only runs one extra `add` for the locked fallback, appending both the FAIL/swap line and
+   the substitute's OK line to the run record. Final state after a substitution is still
+   exactly five fully-fetched `design` entries.
 3. **The pattern is a single `ai-docs/*` line** (plus a one-line comment above it). The
    repo's `WorktreeCreate` hook replaces stock `.worktreeinclude` processing and re-implements
    the copy with `fnmatch` against `git ls-files -oi --exclude-standard` — `fnmatch`'s `*`
@@ -123,12 +132,14 @@ All new files are gitignored KB output in this worktree — none are tracked:
 
 ## Edge Cases
 
-- **Source refuses fetching** (NN/g robots, WCAG quickref JS app): `/kb` reports `FAIL` and
-  leaves `fetched: null` → substitute the canonical same-topic page, record the swap in
-  decisions.md. Never hand-author, never fake a `fetched` date. NN/g blocked entirely →
-  stop and propose a different official IA/copy source to Ringo (epic assumption).
-- **Thin mirror from a JS-heavy page**: the WCAG quickref may mirror thin → fall back to
-  `https://www.w3.org/TR/WCAG22/` and record the substitution.
+- **Source refuses fetching**: `/kb` reports `FAIL` and leaves the provisional entry
+  `fetched: null` → the builder removes that entry from `sources.yaml`, then follows the
+  replacement contract: WCAG quickref → one extra `add` for the locked fallback
+  `https://www.w3.org/TR/WCAG22/`, swap recorded in decisions.md; any other source
+  (web.dev, fonts.google.com, either NN/g pick) → stop and propose an official alternative
+  to Ringo. Never hand-author, never fake a `fetched` date.
+- **Thin mirror from a JS-heavy page**: the WCAG quickref may mirror thin → treat as the
+  `FAIL` case above (remove the entry, `add` the locked fallback, record the swap).
 - **Canonicalization collision**: kb dedupes entries whose URLs canonicalize identically —
   if an NN/g pick collapses into the other, pick a different canonical article so the group
   keeps five entries (two of them NN/g).
@@ -141,8 +152,9 @@ All new files are gitignored KB output in this worktree — none are tracked:
   present in the *creating* checkout — this worktree's mirrors never reach `main`, hence the
   epic driver's post-merge hydration (a Non-Goal here). Validation therefore simulates the
   hook's `fnmatch` matching in-place instead of creating a scratch worktree.
-- **Partial failure mid-sequence**: each `add` is independent; a failed source leaves its
-  entry `fetched: null` for substitution without disturbing entries already fetched.
+- **Partial failure mid-sequence**: each `add` is independent; a failed source leaves only
+  its own provisional entry `fetched: null` without disturbing entries already fetched, and
+  the replacement contract (remove + locked-fallback `add`, or stop) applies to it alone.
 
 ## Red Flags
 

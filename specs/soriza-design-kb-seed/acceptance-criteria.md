@@ -20,9 +20,14 @@
   each mirror file existing on disk with frontmatter (`source:` matching the manifest url,
   `fetched:` matching the manifest date) and a `> **In here:**` line. Provenance is
   observable: decisions.md's `### Build addendum — kb run record` carries exactly one
-  `- OK <file> <canonical url>` line per registered source, and any deviation from the
-  identity table's fixed URLs carries a swap line naming the original URL. A mirror without
-  its OK record — or a fixed-identity deviation without a swap line — fails.
+  `- OK <file> <canonical url>` line per registered source. The only permitted identity
+  deviation is the WCAG quickref swapped to the locked fallback
+  `https://www.w3.org/TR/WCAG22/`, carried by a FAIL/swap line naming the original URL
+  (the failed provisional entry is deleted from the manifest first, so the group still
+  holds exactly five fully-fetched entries); the web.dev, fonts.google.com, and NN/g
+  identities are unconditional — their fetch failure is a build stop, never a swap. A
+  mirror without its OK record, a WCAG deviation without its swap line, or any other
+  identity deviation — fails.
 - **AC3** — The `anthropic` group carries exactly one entry whose url contains
   `code.claude.com/docs/en/memory`, with a `file` under `anthropic/`, a non-null `fetched`
   date, and its mirror on disk with matching frontmatter.
@@ -120,13 +125,16 @@ PyYAML; the stdlib-only scripts run with plain `uv run python`.
       ok = [l for l in lines if l.startswith('- OK') and e['file'] in l and e['url'] in l]
       assert len(ok) == 1, 'expected exactly one OK record line for %s, got %d' % (e['file'], len(ok))
   urls = [e['url'] for e in m.get('design', [])]
-  for fixed in ['w3.org/WAI/WCAG22/quickref', 'web.dev/learn/design', 'fonts.google.com/knowledge']:
-      if not any(fixed in u for u in urls):
-          swap = [l for l in lines if 'swap' in l.lower() and fixed in l]
-          assert swap, 'fixed identity %s deviated without a recorded swap line' % fixed
+  for fixed in ['web.dev/learn/design', 'fonts.google.com/knowledge']:
+      assert sum(fixed in u for u in urls) == 1, 'unconditional identity missing (its failure stops the build, never swaps): ' + fixed
+  if not any('w3.org/WAI/WCAG22/quickref' in u for u in urls):
+      assert any('w3.org/TR/WCAG22' in u for u in urls), 'WCAG identity missing and substitute is not the locked fallback'
+      swap = [l for l in lines if l.startswith('- FAIL') and 'w3.org/WAI/WCAG22/quickref' in l and 'w3.org/TR/WCAG22' in l]
+      assert len(swap) == 1, 'WCAG substitution without exactly one recorded FAIL/swap line'
   print('AC2 provenance ok')"` — verifies AC2 (every registered source has exactly one OK
-  record in the build addendum; every fixed-identity deviation has a swap line naming the
-  original URL — an unrecorded substitution or a mirror with no kb run record fails).
+  record in the build addendum; web.dev and fonts.google identities are unconditional; the
+  only permitted deviation is WCAG quickref → the locked `w3.org/TR/WCAG22` fallback, which
+  must carry exactly one FAIL/swap line naming both the original and substitute URLs).
 - `uv run --with pyyaml python -c "
   import yaml
   m = yaml.safe_load(open('ai-docs/sources.yaml'))

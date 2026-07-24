@@ -42,9 +42,10 @@ never hand-authored; only `.worktreeinclude` and `ai-docs/sources.yaml` are trac
     sweep and deferring the seed.
 
 - **Q:** How are sources registered?
-  - **A:** `/harness-layer:kb add <url> design` per source — six sequential `add` runs, the
-    group argument always explicit; fetching fans out to `kb-fetcher` subagents per the kb
-    command's contract.
+  - **A:** `/harness-layer:kb add <url> design` per source — six sequential `add` runs (a
+    recorded WCAG substitution adds one replacement run after the failed provisional entry
+    is removed), the group argument always explicit; fetching fans out to `kb-fetcher`
+    subagents per the kb command's contract.
   - **Why:** The manifest is the source of truth and `add` registers-then-syncs just the new
     entry. Host-based group defaulting would misfile w3.org/web.dev/nngroup/fonts.google.com
     (issue #44 body). Rules out hand-editing sources.yaml followed by a bulk sync, and rules
@@ -57,11 +58,21 @@ never hand-authored; only `.worktreeinclude` and `ai-docs/sources.yaml` are trac
     with this child's kb runs.
 
 - **Q:** What happens when a source refuses fetching or mirrors thin?
-  - **A:** `/kb` reports `FAIL` and leaves `fetched: null`; the build substitutes the
-    canonical same-topic page (WCAG fallback: `https://www.w3.org/TR/WCAG22/`) and records
-    the swap here as a build addendum. Never hand-author a mirror, never fake a `fetched`
-    date. NN/g blocked entirely → stop and propose a different official source to Ringo.
-  - **Why:** Epic edge case "KB source refuses fetching" + plan-time assumptions.
+  - **A:** `/kb` reports `FAIL` and leaves the provisional entry `fetched: null` in the
+    manifest (kb has no remove operation; `add` appends first, updates only OK entries).
+    The builder deletes that provisional entry from `sources.yaml` — a null entry would
+    poison every future sync's work set — then: WCAG quickref → one extra
+    `add https://www.w3.org/TR/WCAG22/ design` run (the locked, only permitted substitute)
+    with the FAIL/swap line and the substitute's OK line both appended to the build
+    addendum; any other source (web.dev, fonts.google.com, either NN/g pick) → stop and
+    propose an official alternative to Ringo. Never hand-author a mirror, never fake a
+    `fetched` date. Hand-deleting the dead entry is manifest hygiene, not registration —
+    registration still flows only through `add`.
+  - **Why:** Epic edge case "KB source refuses fetching" + plan-time assumptions; the
+    replacement contract keeps the final manifest shape achievable (exactly five
+    fully-fetched `design` entries) after a substitution, and locking the substitute set to
+    the one anticipated failure (the JS-heavy quickref) keeps every other identity
+    unconditional for validation.
 
 - **Q:** Child pipeline mechanics?
   - **A:** Issue #44 pre-filed (no issue creation); branch `chore/44-soriza-design-kb-seed`
@@ -100,6 +111,15 @@ never hand-authored; only `.worktreeinclude` and `ai-docs/sources.yaml` are trac
   `import yaml`. Changed them to `uv run --with pyyaml python`; no criterion semantics
   changed. The AC1 fnmatch simulation was re-checked byte-for-byte against
   `copy_worktree_includes()` in `worktree_create.py` — it matches the hook exactly.
+- **Revision (round 3 fixes):** the substitution flow was unrealizable — a FAILed `add`
+  leaves a `fetched: null` provisional entry kb cannot remove, conflicting with AC2's
+  exactly-five-fetched shape, and AC2's unconditional web.dev/fonts.google markers
+  contradicted the general substitute-anything rule. Resolved by defining the replacement
+  contract (delete the dead provisional entry from `sources.yaml`, then one extra `add`)
+  and locking substitution to the single anticipated failure — WCAG quickref →
+  `https://www.w3.org/TR/WCAG22/`; every other source refusing to fetch is now a stop
+  condition (the NN/g rule, generalized). AC2 and its provenance assertion updated to
+  match; spec.md Requirements/Edge Cases and tasks.md task 2 carry the contract.
 
 ### Build addendum — kb run record
 

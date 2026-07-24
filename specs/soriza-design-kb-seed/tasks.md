@@ -67,8 +67,10 @@
   table order (1, 2, 5 as listed; pick the two NN/g canonical `articles/` URLs at this
   point — proposed homepage cornerstone first, then the writing-for-the-web article).
 - After each run, confirm the kb report: OK → canonical url + today's `fetched` written to
-  the manifest, mirror on disk; FAIL → leave `fetched: null`, substitute the canonical
-  same-topic page per spec.md `## Edge Cases`.
+  the manifest, mirror on disk. FAIL → delete the failed provisional entry (left
+  `fetched: null` by `add`) from `ai-docs/sources.yaml`, then: WCAG quickref → run one
+  extra `add https://www.w3.org/TR/WCAG22/ design` and record the swap; any other source
+  → STOP the build and propose an official alternative to Ringo (spec.md `## Edge Cases`).
 - After each run, append its result verbatim to decisions.md
   `### Build addendum — kb run record`: `- OK <file> <canonical url>` on success; on a
   substitution additionally `- FAIL <original url> → swapped to <substitute url>: <reason>`.
