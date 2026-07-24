@@ -37,8 +37,21 @@ Run these to prove the criteria above — from the worktree root
 (`/Users/ringo/Desktop/ai-native-startup/.claude/worktrees/soriza-design-kb-seed`), after the
 build tasks complete. Assertion scripts exit non-zero on any failure.
 
-- `grep -n -B1 "^ai-docs/\*$" .worktreeinclude` — verifies AC1 (pattern present, comment
-  line above it). A pass shows the comment line then `ai-docs/*`.
+- `uv run python -c "
+  from pathlib import Path
+  import subprocess
+  lines = Path('.worktreeinclude').read_text().splitlines()
+  idx = [i for i, l in enumerate(lines) if l.strip() == 'ai-docs/*']
+  assert len(idx) == 1, 'expected exactly one ai-docs/* line, got %d' % len(idx)
+  i = idx[0]
+  assert i > 0 and lines[i-1].strip().startswith('#'), 'no comment line directly above ai-docs/*'
+  baseline = subprocess.run(['git','show','origin/main:.worktreeinclude'],
+                            capture_output=True, text=True, check=True).stdout.splitlines()
+  rest = lines[:i-1] + lines[i+1:]
+  assert rest == baseline, 'pre-existing lines changed: %r != baseline %r' % (rest, baseline)
+  print('AC1 ok: one pattern, comment above, baseline preserved')"` — verifies AC1 (exactly
+  one `ai-docs/*` line, a comment directly above it, and every other line byte-equal to the
+  `origin/main` baseline — duplicates, edits, or extra patterns all fail).
 - `uv run python -c "
   from fnmatch import fnmatch
   from pathlib import Path
@@ -98,5 +111,10 @@ build tasks complete. Assertion scripts exit non-zero on any failure.
   verifies AC6 (the manifest is the only tracked file under `ai-docs/`).
 - `git check-ignore -q ai-docs/index.md && echo "AC6 ignore ok"` — verifies AC6 (the
   regenerated index stays ignored).
-- `git diff --name-only origin/main...HEAD -- ':!specs'` — verifies AC6. A pass prints
-  exactly two lines: `.worktreeinclude` and `ai-docs/sources.yaml`.
+- `uv run python -c "
+  import subprocess
+  out = subprocess.run(['git','diff','--name-only','origin/main...HEAD','--',':!specs'],
+                       capture_output=True, text=True, check=True).stdout.split()
+  assert sorted(out) == ['.worktreeinclude', 'ai-docs/sources.yaml'], out
+  print('AC6 exact-surface ok')"` — verifies AC6 (the non-spec change surface equals exactly
+  those two paths — any extra, missing, or renamed path fails).
