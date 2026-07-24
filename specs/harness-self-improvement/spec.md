@@ -1,7 +1,7 @@
 # Spec: harness-self-improvement — Plan 1: machine-check substrate
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
   <!-- Lifecycle, set by /harness-layer:harness-plan: Drafted for Review → Approved (on a Codex
        `approved` verdict). A cycle that ends still changes-requested — or with Codex unavailable —
        records needs-human in ## Codex Verification and keeps this status. One value only. -->
@@ -284,10 +284,20 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** needs-human (blockers) — cycle 2 ran rounds 1–2 (`gpt-5.6-sol` / `xhigh`; reports under `reviews/`). Round 1 (head `976d18f`): changes-requested, CX1-1..CX1-4. Round 2 (head `57cd02d`, delta): CX1-1..CX1-3 fixed; CX2-1 (repeat of CX1-4) still blocking at the cycle cap.
-- **Open blocker:** CX2-1 — per-task effort stamps need a deployment mechanism the Agent tool can honor (candidates: effort-bearing builder agent definitions, Workflow deployment, or revising model-selection.md's stamping mandate). First repeat: the next fix re-derives from root cause at an escalated tier, never re-applying session-inherited stamps.
+- **Outcome:** approved at round 4 — cycle 3 (this revision, after cycle 2's needs-human) ran
+  rounds 3–4 (`gpt-5.6-sol` / `xhigh`; reports under `reviews/`). Round 3 (head `4ff9f29`,
+  delta vs `57cd02d`): changes-requested — CX2-1 fixed by the pinned-effort executors; CX3-1
+  new. Round 4 (head `9be1c35`, delta): CX3-1 fixed; approved.
+  Approved SHA: `9be1c35e537bc0b7c2a2a5b8ccaeab653476b853`.
+- **History:** cycle 2 (rounds 1–2) ended needs-human on CX2-1 (repeat of CX1-4); the CX2-1
+  interview pass locked the executor mechanism this revision implements.
+- **Advisories (recorded as follow-ups in decisions.md, never fixed this run):** ship only the
+  executor tiers plans actually stamp; defer `xhigh`/`max`.
 - **Rejected findings:** none.
-- **Note:** the `codex-runner` subagent could not be deployed (Agent tool denied in this background session); the runner contract — verbatim command, verdict-line verification, single retry — was executed inline via Bash instead, disclosed in the run report.
+- **Note:** as in cycle 2, the `codex-runner` subagent could not be deployed (Agent tool denied
+  in this background session); the runner contract — verbatim command, verdict-line
+  verification, single retry — was executed inline via Bash, disclosed here. The
+  `claude-code-guide` cross-check was likewise unavailable (see decisions.md `## KB References`).
 
 ## References
 
@@ -311,4 +321,4 @@ specs/harness-self-improvement/
 - [x] Requirements trace to tasks in tasks.md and to checks in acceptance-criteria.md
 - [x] Acceptance criteria are specific and testable
 - [x] All four files exist under specs/harness-self-improvement/ and are saved in the repository
-- [x] Codex has reviewed the spec and Status reflects the outcome (needs-human: blockers — CX2-1 open, see `## Codex Verification`)
+- [x] Codex has reviewed the spec and Status reflects the outcome (approved at round 4, see `## Codex Verification`)
