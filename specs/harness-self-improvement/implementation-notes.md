@@ -76,3 +76,9 @@
 - **2026-07-25 · review round 3 (terminal)** — Codex (`gpt-5.6-sol`/`medium`, delta
   d978440..a19b6ac, kb-grounded): approved — CX2-1 confirmed fixed, 0 raw findings, all
   four validation commands PASS. PR #55 flipped ready at the approved head.
+- **2026-07-25 · post-approval CI fix** — the PR's first `harness-tests` run failed at job
+  setup: `astral-sh/setup-uv@v8` is not a published tag (the repo tags only `v1`–`v7`;
+  verified via `git ls-remote`) — the build-time "verified against official docs" claim
+  was wrong. Pin corrected to `@v7`; AC4 checker and the 59 spec-completeness + prompt
+  tests re-run green. Head moves past approved a19b6ac → needs a re-approval delta round
+  before ship.
