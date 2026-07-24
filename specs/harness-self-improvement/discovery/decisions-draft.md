@@ -1,8 +1,9 @@
 # Decisions: harness-self-improvement
 
-> Interview ledger (2 rounds, all recommendations accepted). The plan transcribes this
-> verbatim into decisions.md. Evidence base: soriza-cpo-department's 9 spec rounds,
-> restore commits #40/#42, the never-fired #52 convergence machinery (841e772), and
+> Interview ledger (2 rounds, all recommendations accepted; plus a 1-round CX2-1
+> blocker pass, all recommendations accepted). The plan transcribes this verbatim into
+> decisions.md. Evidence base: soriza-cpo-department's 9 spec rounds, restore commits
+> #40/#42, the never-fired #52 convergence machinery (841e772), and
 > development-log.md's single line.
 
 ## Summary
@@ -82,6 +83,50 @@ ships inside the PR's reviewed diff, machine-checked before merge — never post
 - **Q:** CI workflow details? (#6)
   - **A:** GitHub Actions on PRs touching `.claude/**`, `.agents/**`, `tests/**`, `pyproject.toml`/`uv.lock`; astral-sh/setup-uv; `uv run pytest tests/harness-layer`; honors the `[skip-ci]` title token per git-workflow.md.
   - **Why:** Matches the repo's uv/pytest conventions; [skip-ci] stays the documented emergency bypass.
+
+### Resolved in the CX2-1 pass (effort deployment)
+
+- **Q:** How does the build deploy each task at its stamped effort? (CX2-1 blocker)
+  - **A:** Effort-bearing subagent definitions in project `.claude/agents/`: thin
+    pinned-effort executors deployed via `Agent({subagent_type: "effort-<tier>",
+    model: <task's stamped alias>})`. `tasks.md` restores concrete per-task effort
+    stamps and sets each task's Agent Type to the matching executor.
+  - **Why:** `effort` exists only as subagent-definition frontmatter
+    (`ai-docs/anthropic/subagents.md`); the Agent tool overrides only `model`
+    per invocation. This honors both stamps while keeping the task-tools board
+    protocol intact — Workflow deployment would restructure orchestration, and
+    revising the mandate would give up per-task effort differentiation.
+- **Q:** Naming and reuse scope of the executor definitions?
+  - **A:** Generic pinned-effort executors named `effort-low` … `effort-max`,
+    reusable by any explicit deployment (builders, review-fix escalations) — not
+    build-scoped `builder-*` names.
+  - **Why:** model-selection.md's stamps apply beyond the build stage; one generic
+    set serves every deployer.
+- **Q:** Which effort tiers get a definition?
+  - **A:** All five: `effort-low`, `effort-medium`, `effort-high`, `effort-xhigh`,
+    `effort-max`.
+  - **Why:** The mechanism is total — a future plan stamping `xhigh`/`max` never
+    re-hits this blocker; each file is ~6 lines.
+- **Q:** Definition shape?
+  - **A:** Minimal executor: `name`, an explicit-deployment-only `description` (so it
+    never auto-delegates), `effort` frontmatter; no `model` (the plan's stamp passes
+    per-invocation), no tools restriction; a 2–3-line body — the deploying prompt
+    carries all task context. Authored per the meta-agent standard.
+  - **Why:** KISS harness rules; baking the board protocol into bodies would
+    duplicate task-tools.md.
+- **Q:** Automated verification for the mechanism?
+  - **A:** Inventory only — the five definition files enter the spec's file
+    inventory, covered by the existing AC5 inventory check. No bespoke
+    stamp→definition mapping script.
+  - **Why:** File presence is what regresses; a mapping script is speculative
+    machinery.
+- **Q:** References and documentation home?
+  - **A:** Mirror the existing `.claude/agents/*.md` house style; the deployment
+    mechanic (stamped effort → `effort-<tier>` subagent type) is documented in
+    `model-selection.md` §Mechanics only.
+  - **Why:** AGENTS.md forbids duplicating model-selection guidance elsewhere;
+    `harness-build.md` needs no edit — its "each on the model/effort its task
+    stamps" promise becomes true again.
 
 ## Assumptions
 

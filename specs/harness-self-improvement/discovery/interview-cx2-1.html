@@ -1,0 +1,328 @@
+<title>CX2-1 Interview — Effort Deployment</title>
+<style>
+  :root {
+    --bg: #FAF8F5; --surface: #F0EDE5; --border: #D4CFC7; --text: #2C2825;
+    --accent: #B8602A; --muted: #8A837A; --resolved: #5F7A50;
+    --accent-soft: rgba(184, 96, 42, .09); --resolved-soft: rgba(95, 122, 80, .12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 64px; }
+  .eyebrow {
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin-bottom: 6px;
+  }
+  h1 {
+    font-family: Charter, Georgia, serif; font-size: 30px; font-weight: 600;
+    margin: 0 0 8px; text-wrap: balance;
+  }
+  .lede { color: var(--muted); max-width: 62ch; margin: 0 0 20px; }
+  .lede code, .card code, .ctx code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .88em;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px; white-space: nowrap;
+  }
+  .masterbar { display: flex; gap: 10px; align-items: center; margin-bottom: 28px; flex-wrap: wrap; }
+  .btn {
+    font: 600 13px/1 -apple-system, sans-serif; padding: 10px 16px; cursor: pointer;
+    border-radius: 6px; border: 1px solid var(--accent); transition: background .15s;
+  }
+  .btn.primary { background: var(--accent); color: #FAF8F5; }
+  .btn.primary:hover { background: #9E5124; }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn.ghost:hover { background: var(--accent-soft); }
+  .btn:focus-visible, .chip:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .masternote { font-size: 13px; color: var(--muted); }
+  .layout { display: grid; grid-template-columns: 1fr 264px; gap: 28px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } .sidebar { position: static; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 22px; margin-bottom: 18px; transition: opacity .25s;
+  }
+  .card.disabled { opacity: .45; }
+  .card.disabled .chips, .card.disabled textarea { pointer-events: none; }
+  .qhead { display: flex; gap: 10px; align-items: baseline; margin-bottom: 4px; }
+  .qid {
+    font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--accent);
+    font-weight: 700; letter-spacing: .05em;
+  }
+  .qtitle { font-family: Charter, Georgia, serif; font-size: 19px; font-weight: 600; }
+  .blast { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-left: auto; white-space: nowrap; }
+  .ctx { font-size: 13.5px; color: var(--muted); margin: 4px 0 14px; max-width: 68ch; }
+  .condnote { display: none; font-size: 13px; color: var(--muted); font-style: italic; margin: 8px 0 0; }
+  .card.disabled .condnote { display: block; }
+  .chips { display: flex; flex-direction: column; gap: 8px; }
+  .chip {
+    text-align: left; background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 11px 14px; cursor: pointer; font: inherit; color: inherit;
+    transition: border-color .12s, background .12s;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .chip.sel { border-color: var(--accent); background: var(--accent-soft); }
+  .chip .cl { font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chip .cd { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .rec {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px 8px;
+  }
+  textarea {
+    width: 100%; margin-top: 10px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 10px; font: 13px/1.5 -apple-system, sans-serif;
+    color: var(--text); resize: vertical; min-height: 34px;
+  }
+  textarea::placeholder { color: var(--muted); }
+
+  .sidebar { position: sticky; top: 20px; }
+  .sidebar h2 {
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; margin: 0 0 10px;
+  }
+  .ledger { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .lrow { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; }
+  .lrow + .lrow { border-top: 1px solid rgba(212, 207, 199, .5); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .lrow.resolved .dot { background: var(--resolved); }
+  .lrow.open .dot { background: var(--accent); }
+  .lrow.na .dot { background: transparent; border: 1.5px solid var(--border); }
+  .lrow.na, .lrow.resolved { color: var(--muted); }
+  .lrow .tag { margin-left: auto; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+  .lrow.resolved .tag { color: var(--resolved); }
+  .lrow.open .tag { color: var(--accent); }
+  .lrow.na .tag { color: var(--muted); }
+  .lsec { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 12px 0 2px; }
+  .lsec:first-child { margin-top: 0; }
+
+  .promptpanel { margin-top: 30px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; }
+  .promptpanel h2 { font-family: Charter, Georgia, serif; font-size: 18px; margin: 0 0 4px; }
+  .promptpanel p { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  #prompt {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; line-height: 1.6;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; white-space: pre-wrap; overflow-x: auto; margin-bottom: 12px;
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Interview · Round 1 · signed off — all recommendations accepted</div>
+  <h1>CX2-1 — a deployment mechanism for per-task effort</h1>
+  <p class="lede">
+    The spec review blocked on one contract gap: <code>model-selection.md</code> mandates a model <em>and effort</em> stamp
+    per task, but the <code>Agent</code> tool only accepts a per-invocation <code>model</code> — effort lives solely in
+    subagent-definition frontmatter (<code>ai-docs/anthropic/subagents.md</code>). Pick the mechanism; the follow-up cards
+    apply only to the definitions route and disable themselves otherwise.
+  </p>
+  <div class="masterbar">
+    <button class="btn primary" id="acceptAll">Accept all recommendations</button>
+    <button class="btn ghost" id="copyBtn">Copy answers as prompt</button>
+    <span class="masternote" id="progress"></span>
+  </div>
+
+  <div class="layout">
+    <div class="cards" id="cards"></div>
+
+    <aside class="sidebar">
+      <h2>Coverage ledger</h2>
+      <div class="ledger" id="ledger"></div>
+    </aside>
+  </div>
+
+  <div class="promptpanel">
+    <h2>Copy as prompt</h2>
+    <p>Paste this back into the interview via the "Other" option.</p>
+    <div id="prompt"></div>
+    <button class="btn primary" id="copyBtn2">Copy</button>
+  </div>
+</div>
+
+<script>
+  const QUESTIONS = [
+    {
+      id: "Q1", key: "mechanism", title: "Deployment mechanism", blast: "architecture",
+      ctx: "How does the build deploy each task at its stamped effort? This decides the whole fix shape.",
+      opts: [
+        { v: "defs", rec: true, l: "Effort-bearing agent definitions in .claude/agents/",
+          d: "Thin pinned-effort executor definitions; deploy via Agent({subagent_type, model}). Matches the reviewer's suggested fix and keeps the task-tools board protocol intact." },
+        { v: "workflow", l: "Workflow-based deployment",
+          d: "harness-build deploys builders through Workflow agent(), which takes effort per call. Restructures orchestration; loses SendMessage resume and the board-native flow." },
+        { v: "mandate", l: "Revise model-selection.md's mandate",
+          d: "Effort stamps bind only mechanisms that accept them (frontmatter, workflow stages, codex exec); Agent-tool tasks run at session effort. No new files, but gives up per-task effort differentiation — the thing the reviewer flagged." },
+      ],
+    },
+    {
+      id: "Q2", key: "naming", cond: true, title: "Naming & reuse scope", blast: "reuse",
+      ctx: "Who may deploy these definitions, and what are they called?",
+      opts: [
+        { v: "generic", rec: true, l: "Generic pinned-effort executors: effort-low … effort-max",
+          d: "Any explicit deployment (builders, review-fix agents, escalations) reuses them — model-selection.md's stamps apply beyond the build stage." },
+        { v: "builder", l: "Build-scoped: builder-low … builder-high",
+          d: "Named for the build pipeline only; other stages needing pinned effort would add their own later." },
+      ],
+    },
+    {
+      id: "Q3", key: "tiers", cond: true, title: "Effort-tier coverage", blast: "completeness",
+      ctx: "model-selection.md lists five Claude efforts; this plan's tasks currently use three.",
+      opts: [
+        { v: "five", rec: true, l: "All five: low, medium, high, xhigh, max",
+          d: "The mechanism is total — a future plan stamping xhigh or max never re-hits this blocker. Five ~6-line files." },
+        { v: "three", l: "Only the three this plan uses: low, medium, high",
+          d: "Minimum for the current tasks; extend when a plan first needs xhigh/max." },
+      ],
+    },
+    {
+      id: "Q4", key: "shape", cond: true, title: "Definition shape", blast: "authoring",
+      ctx: "What goes in each definition file? (No model frontmatter either way — the plan's model stamp passes per-invocation; effort frontmatter carries the pin.)",
+      opts: [
+        { v: "minimal", rec: true, l: "Minimal executor",
+          d: "name, description marked explicit-deployment-only (so it never auto-delegates), effort, no tools restriction; a 2–3 line body — the deploying prompt carries all task context." },
+        { v: "charter", l: "Builder charter body",
+          d: "Additionally bake the task-tools board protocol (flip in_progress/completed, hand-off format) into the body." },
+      ],
+    },
+    {
+      id: "Q5", key: "check", cond: true, title: "Regression check", blast: "verification",
+      ctx: "Does the plan add automated verification for the new mechanism?",
+      opts: [
+        { v: "inventory", rec: true, l: "Inventory only",
+          d: "List the new definition files in the spec's file inventory — the existing AC5 inventory check covers their presence. No bespoke check." },
+        { v: "mapping", l: "Add a stamp→definition mapping check",
+          d: "A small script verifying every effort stamped in tasks.md has a matching definition file." },
+      ],
+    },
+    {
+      id: "Q6", key: "refs", title: "References / prior art", blast: "references",
+      ctx: "Is there existing code the fix should mirror? Point at a path in free text if so.",
+      opts: [
+        { v: "house", rec: true, l: "House style + meta-agent standard",
+          d: "Mirror the existing .claude/agents/*.md files' shape; the meta-agent skill governs frontmatter and description wording." },
+        { v: "other", l: "Other prior art",
+          d: "Name the path in the note below." },
+      ],
+    },
+  ];
+
+  const LEDGER = [
+    { sec: "Resolved from codebase / KB" },
+    { t: "Root cause (no Agent-tool effort param)", s: "resolved" },
+    { t: "Distribution: project .claude/agents/", s: "resolved" },
+    { t: "Docs home: model-selection.md Mechanics", s: "resolved" },
+    { t: "harness-build.md unchanged", s: "resolved" },
+    { t: "Escalated-tier redo (spec records it)", s: "resolved" },
+    { t: "Context budget (defs load only on deploy)", s: "resolved" },
+    { sec: "Open this round" },
+    { t: "Mechanism", s: "open", q: "Q1" },
+    { t: "Naming & reuse", s: "open", q: "Q2", cond: true },
+    { t: "Tier coverage", s: "open", q: "Q3", cond: true },
+    { t: "Definition shape", s: "open", q: "Q4", cond: true },
+    { t: "Regression check", s: "open", q: "Q5", cond: true },
+    { t: "References", s: "open", q: "Q6" },
+    { sec: "Not applicable" },
+    { t: "Users · data model · perf · security", s: "na" },
+    { t: "Observability · rollout", s: "na" },
+  ];
+
+  const state = {
+    answers: { mechanism: "defs", naming: "generic", tiers: "five", shape: "minimal", check: "inventory", refs: "house" },
+    notes: {},
+  };
+  const defsRoute = () => !state.answers.mechanism || state.answers.mechanism === "defs";
+
+  function render() {
+    const host = document.getElementById("cards");
+    host.innerHTML = "";
+    for (const q of QUESTIONS) {
+      const off = q.cond && !defsRoute();
+      const card = document.createElement("div");
+      card.className = "card" + (off ? " disabled" : "");
+      card.innerHTML =
+        `<div class="qhead"><span class="qid">${q.id}</span><span class="qtitle">${q.title}</span><span class="blast">${q.blast}</span></div>` +
+        `<p class="ctx">${q.ctx}</p>`;
+      const chips = document.createElement("div");
+      chips.className = "chips";
+      for (const o of q.opts) {
+        const b = document.createElement("button");
+        b.className = "chip" + (state.answers[q.key] === o.v ? " sel" : "");
+        b.innerHTML = `<div class="cl">${o.l}${o.rec ? ' <span class="rec">Recommended</span>' : ""}</div><div class="cd">${o.d}</div>`;
+        b.onclick = () => { state.answers[q.key] = o.v; update(); };
+        chips.appendChild(b);
+      }
+      card.appendChild(chips);
+      const ta = document.createElement("textarea");
+      ta.placeholder = "Optional note — nuance, a different option, a path…";
+      ta.value = state.notes[q.key] || "";
+      ta.oninput = () => { state.notes[q.key] = ta.value; updatePrompt(); };
+      card.appendChild(ta);
+      const cn = document.createElement("p");
+      cn.className = "condnote";
+      cn.textContent = "Applies only to the agent-definitions route — inactive for the current Q1 pick.";
+      card.appendChild(cn);
+      host.appendChild(card);
+    }
+    renderLedger();
+  }
+
+  function renderLedger() {
+    const host = document.getElementById("ledger");
+    host.innerHTML = "";
+    for (const r of LEDGER) {
+      if (r.sec) {
+        const s = document.createElement("div");
+        s.className = "lsec"; s.textContent = r.sec;
+        host.appendChild(s); continue;
+      }
+      let status = r.s;
+      if (r.q) {
+        const q = QUESTIONS.find(x => x.q === r.q) || QUESTIONS.find(x => x.id === r.q);
+        if (r.cond && !defsRoute()) status = "na";
+        else if (q && state.answers[q.key]) status = "resolved";
+      }
+      const row = document.createElement("div");
+      row.className = "lrow " + status;
+      row.innerHTML = `<span class="dot"></span><span>${r.t}</span><span class="tag">${status === "na" ? "N/A" : status}</span>`;
+      host.appendChild(row);
+    }
+    const active = QUESTIONS.filter(q => !(q.cond && !defsRoute()));
+    const done = active.filter(q => state.answers[q.key]).length;
+    document.getElementById("progress").textContent = `${done} of ${active.length} answered`;
+  }
+
+  function optLabel(q, v) { const o = q.opts.find(o => o.v === v); return o ? o.l : v; }
+
+  function updatePrompt() {
+    const lines = ["Round 1 answers — CX2-1 effort-deployment interview:"];
+    for (const q of QUESTIONS) {
+      if (q.cond && !defsRoute()) continue;
+      const a = state.answers[q.key];
+      const note = (state.notes[q.key] || "").trim();
+      if (!a && !note) continue;
+      let line = `- ${q.id} ${q.title}: ${a ? optLabel(q, a) : "(no pick)"}`;
+      if (note) line += ` — note: ${note}`;
+      lines.push(line);
+    }
+    if (lines.length === 1) lines.push("(no answers yet)");
+    document.getElementById("prompt").textContent = lines.join("\n");
+  }
+
+  function update() { render(); updatePrompt(); }
+
+  document.getElementById("acceptAll").onclick = () => {
+    for (const q of QUESTIONS) {
+      if (q.cond && !defsRoute()) continue;
+      if (!state.answers[q.key]) state.answers[q.key] = q.opts.find(o => o.rec).v;
+    }
+    update();
+  };
+  function copy(btn) {
+    navigator.clipboard.writeText(document.getElementById("prompt").textContent).then(() => {
+      const t = btn.textContent; btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = t; }, 1200);
+    });
+  }
+  document.getElementById("copyBtn").onclick = e => copy(e.target);
+  document.getElementById("copyBtn2").onclick = e => copy(e.target);
+  update();
+</script>
