@@ -20,7 +20,9 @@ the previous rung's file, is gated by its Definition of Ready, and commits per r
 additionally gated by a uv-script Stop hook (code, not model memory). Doctrine lives in a
 path-scoped rules family with real starter content day one; copywriting is first-class (section
 briefs deliver draft copy; the packet carries a typography-direction page). Wireframes are lo-fi
-grayscale HTML pages published as private artifact links. The KB gains a `design/` group of five
+grayscale HTML pages published as artifacts — private to Ringo by default, with the client-facing
+delivery mode locked per engagement (org share, consented public link, or the self-contained HTML
+file itself) and recorded in the decision log. The KB gains a `design/` group of five
 official sources, plus worktree availability for all mirrors. Client deliverables ride a
 design-shaped git lane (PR per gate point, evidence block swapped).
 
@@ -32,8 +34,8 @@ own site, with Ringo as the client.
 
 When this epic is done, `/soriza-design:intake <client>` through `/soriza-design:section-briefs
 <client>` can run end to end against a real `projects/<client>/` folder — every rung gated by
-real doctrine, intake blocked by the DoR hook until complete, wireframes shareable as private
-links, and the final packet (brief, IA, wireframes, per-section briefs with draft copy,
+real doctrine, intake blocked by the DoR hook until complete, wireframes reviewable as artifacts with a locked
+client-delivery mode, and the final packet (brief, IA, wireframes, per-section briefs with draft copy,
 typography direction, asset checklist, decision log) signed by Vera and handed to Ringo — with
 all five children shipped through their own plan → build → review → ship runs (#44–#48 closed
 by their PRs).
@@ -84,9 +86,10 @@ Volatile first — full record in [decisions.md](./decisions.md):
 2. **Section inventory is dynamic per client**: the sitemap/IA rung locks pages and sections
    with the client from a nine-skeleton starter library (each skeleton carries "One job" and
    "One desired action"). Live alternative rejected: a hardcoded five-section brief.
-3. **Intake gate is code**: `check_intake_readiness.py`, a uv-script Stop hook in
-   `/soriza-design:intake`'s frontmatter; hard-coded section tuple + doctrine sync test. Live
-   alternative rejected: model-side checklist only.
+3. **Intake gate is code, and deterministic**: `check_intake_readiness.py`, a uv-script Stop
+   hook in `/soriza-design:intake`'s frontmatter; hard-coded section tuple + doctrine sync
+   test; the gated client comes from `projects/.intake-target` (written by the command), never
+   from a newest-modified heuristic. Live alternative rejected: model-side checklist only.
 4. **Epic mechanics**: children #44–#48 already filed; one pipeline run per child in dependency
    order #44 → #45 → {#46 → #47, #48}; epic planning docs land on `main` via a draft
    `📝 docs(spec)` PR (`Refs #43`) so child worktrees (branched fresh from `origin/main`) can
@@ -138,8 +141,10 @@ Use these files to complete the task:
 - `.claude/rules/soriza-design/git-lane.md` — the client git lane, `paths: ["projects/**/*"]` (#48).
 - `.claude/commands/soriza-design/{intake,brief,sitemap,wireframe,section-briefs}.md` — the five
   rungs (#46, #47).
-- `.claude/hooks/check_intake_readiness.py` — the DoR Stop gate (#46).
-- `tests/harness-layer/hooks/intake-readiness/` — contract + doctrine-sync tests (#46).
+- `.claude/hooks/check_intake_readiness.py` — the DoR Stop gate (#46); reads
+  `projects/.intake-target` (transient, gets a `.gitignore` line in #46).
+- `tests/harness-layer/hooks/intake-readiness/` — contract + doctrine-sync + cross-client
+  regression tests (#46).
 - `specs/soriza-design-{kb-seed,foundations,intake-gate,ladder,git-lane}/` — the five child spec
   folders, created by each child's own plan run (not by this one).
 
@@ -153,11 +158,13 @@ Use these files to complete the task:
   A worktree created before #44 ships simply lacks mirrors → run `/harness-layer:kb` inside it.
 - **Re-running `:intake` on an existing client**: scaffold step must be idempotent — never
   clobber an existing `projects/<client>/`; re-interview updates `intake.md` in place.
-- **DoR hook resolution**: gates the newest-modified `projects/<client>/intake.md`, excluding
-  `_template`; no `projects/` dir or no client folder → block with a clear message (the command
-  should have scaffolded one); malformed/empty stdin or unreadable files → fail open (exit 0),
-  per the hooks contract. Command-scoped registration means other sessions editing `projects/`
-  are never gated.
+- **DoR hook resolution**: deterministic — the intake command records the invoked client in
+  `projects/.intake-target` (gitignored, transient) as its first write; the hook gates exactly
+  that client's `intake.md`. Missing/invalid/`_`-prefixed target or missing `intake.md` → block
+  with a clear message (inside the command a target must exist); malformed/empty stdin or
+  unreadable files → fail open (exit 0), per the hooks contract. A complete client A can never
+  release an incomplete client B (cross-client regression test). Command-scoped registration
+  means other sessions editing `projects/` are never gated.
 - **Doctrine/hook drift**: the sync test fails if `definition-of-ready.md`'s checklist headings
   and the hook's tuple diverge — the pair ships together or not at all.
 - **Large section inventory**: `:section-briefs` loops inline by default; above ~10 sections it
@@ -165,6 +172,10 @@ Use these files to complete the task:
   merged packet.
 - **Artifact publish fails or is denied**: wireframe HTML files remain the canonical
   deliverable; the rung notes "publish skipped" in `decision-log.md` and never blocks.
+- **Client can't open an artifact link**: a fresh artifact is visible only to its author — the
+  rung never promises a private URL to an external client; it locks the delivery mode per
+  engagement (org share / consented public link / the HTML file itself) and records it in
+  `decision-log.md`.
 - **Client name collisions / naming**: client folder names are kebab-case; `_`-prefixed folders
   are reserved (template, libraries) and never treated as clients.
 - **Concurrent child pipelines**: #46/#47 vs #48 may run in parallel — they touch disjoint

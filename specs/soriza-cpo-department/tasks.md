@@ -168,13 +168,18 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
 - **Model / Effort:** `opus` / `high` (intake command), `sonnet` / `medium` (hook + tests)
 - **Parallel:** false
 - **Satisfies:** AC7, AC8
-- Scope: `.claude/commands/soriza-design/intake.md` (Mira; idempotent scaffold from
-  `_template`; interviews Ringo per `intake-standards.md`; writes `projects/<client>/intake.md`;
+- Scope: `.claude/commands/soriza-design/intake.md` (Mira; records the invoked client in
+  `projects/.intake-target` as its first write; idempotent scaffold from `_template` — never
+  clobbers; interviews Ringo per `intake-standards.md`; writes `projects/<client>/intake.md`;
   commits per the git lane; Stop hook registered in frontmatter);
-  `.claude/hooks/check_intake_readiness.py` (newest client folder excluding `_`-prefixed,
-  hard-coded DoR tuple matching `definition-of-ready.md`, exit-2 diagnostics, fail-open);
-  tests under `tests/harness-layer/hooks/intake-readiness/` (block/allow/fail-open, wiring
-  expectations, doctrine-sync test); catalog row in `.claude/rules/harness-layer/hooks.md`.
+  `.claude/hooks/check_intake_readiness.py` (gates exactly the `.intake-target` client —
+  missing/invalid/`_`-prefixed target or missing `intake.md` blocks with a clear message;
+  hard-coded DoR tuple matching `definition-of-ready.md`; exit-2 per-section diagnostics;
+  fail-open only on malformed stdin/plumbing); a `.gitignore` line for
+  `projects/.intake-target`; tests under `tests/harness-layer/hooks/intake-readiness/`
+  (block/allow/fail-open, wiring expectations, doctrine-sync test, and the cross-client
+  regression: a complete client A must not release an incomplete target B); catalog row in
+  `.claude/rules/harness-layer/hooks.md`.
 - Launch prompt:
 
   ```text
@@ -202,8 +207,10 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
 - Scope: four commands under `.claude/commands/soriza-design/` — `brief.md` (Elias, reads
   intake.md, writes brief.md per brief-format.md), `sitemap.md` (Ivo, locks page + section
   inventory from the skeleton library into sitemap-ia.md), `wireframe.md` (Juno, one
-  self-contained lo-fi grayscale HTML per screen in `wireframes/`, private artifact publish
-  best-effort, copy-as-prompt reactions appended to decision-log.md), `section-briefs.md`
+  self-contained lo-fi grayscale HTML per screen in `wireframes/`, artifact publish
+  best-effort — private to Ringo, with the client-delivery mode locked per engagement (org
+  share / consented public link / the HTML file itself) and recorded in decision-log.md,
+  copy-as-prompt reactions appended to decision-log.md), `section-briefs.md`
   (Lior, inline loop over the locked inventory with parallel fan-out escape hatch, draft copy
   per copywriting.md, typography-direction page, packet assembly + Vera sign-off). Every rung:
   reads the previous rung's file, refuses on unmet DoR naming what's missing, commits per rung.

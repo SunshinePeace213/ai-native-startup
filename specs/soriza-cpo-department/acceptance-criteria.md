@@ -3,6 +3,9 @@
 > The definition of "done" for [spec.md](./spec.md). Every criterion is observable and testable, and
 > every task in tasks.md should map to at least one criterion here. Epic-level: AC2–AC11 are
 > verified child by child as each ships, then all together on `main` by `validate-all`.
+> Rung-prompt *runtime* behavior is validated at three layers: structural assertions below,
+> each child's harness-review, and the pilot's first intake (gaps land in
+> `soriza-design/lessons.md`).
 
 ## Acceptance Criteria
 
@@ -18,57 +21,147 @@
   lists them; no mirror was hand-authored.
 - **AC4** — `projects/_template/` contains exactly the client scaffold: `intake.md`,
   `brief.md`, `sitemap-ia.md`, `asset-checklist.md`, `decision-log.md`, `wireframes/README.md`,
-  `section-briefs/README.md`, and `section-briefs/_library/` with nine skeletons
+  `section-briefs/README.md`, and `section-briefs/_library/` with exactly nine skeletons
   (header-navigation, hero, logo-tape, features-solutions, testimonials, pricing-plans,
-  content-blog, footer, cta-band) — every skeleton carrying a "One job" and a "One desired
-  action" field.
+  content-blog, footer, cta-band) — every skeleton carrying both a "One job" and a "One desired
+  action" field. No extra or missing files.
 - **AC5** — `.claude/rules/soriza-design/` holds `client-communication.md`,
   `intake-standards.md`, `definition-of-ready.md`, `brief-format.md`, `section-anatomy.md`,
   `copywriting.md`, and `lessons.md`, each with `paths:` frontmatter scoping to
   `projects/**/*`, each with real starter content (no TBD/stub markers); `lessons.md` follows
   the development-log.md contract.
-- **AC6** — `.claude/rules/soriza/roster.md` lists all six staff (Vera, Mira, Elias, Ivo, Juno,
-  Lior) with name, position, deliverable owned, and status; `AGENTS.md` points to the roster
-  and the rules family and carries a `projects/` structure row; no new root-level markdown
-  memory file exists.
+- **AC6** — `.claude/rules/soriza/roster.md` has one table row per staffer — Vera, Mira, Elias,
+  Ivo, Juno, Lior — each row filling all four columns (name, position, deliverable owned,
+  status); `AGENTS.md` points to the roster and the rules family and carries a `projects/`
+  structure row; the set of root-level markdown files is unchanged (no new root memory file).
 - **AC7** — `/soriza-design:intake` exists with `disable-model-invocation: true` and the Stop
-  hook registered in its frontmatter; the command scaffolds `projects/<client>/` from the
-  template idempotently (never clobbers) and writes `intake.md`.
-- **AC8** — `check_intake_readiness.py` blocks (exit 2, per-section stderr diagnostics) on a
-  missing or incomplete newest `projects/<client>/intake.md`, passes (exit 0) on a complete
-  one, ignores `_`-prefixed folders, and fails open on malformed stdin/plumbing errors; its
-  required-section tuple matches `definition-of-ready.md`'s checklist headings (sync test); all
-  hook tests and the wiring pin pass.
+  hook registered in its frontmatter; its body instructs recording the invoked client in
+  `projects/.intake-target` as the first write, scaffolding `projects/<client>/` from the
+  template idempotently (explicit never-clobber language), and writing `intake.md`;
+  `projects/.intake-target` is gitignored.
+- **AC8** — `check_intake_readiness.py` gates exactly the `.intake-target` client: it blocks
+  (exit 2, per-section stderr diagnostics) on a missing or incomplete target `intake.md`,
+  blocks on a missing/invalid/`_`-prefixed target, passes (exit 0) on a complete target, and
+  fails open on malformed stdin/plumbing errors. The cross-client regression test proves a
+  complete client A cannot release an incomplete target client B. The hook's required-section
+  tuple matches `definition-of-ready.md`'s checklist headings (sync test). All hook tests and
+  the wiring pin pass.
 - **AC9** — The four ladder commands exist under `/soriza-design:*`; each names its staffer,
-  reads the previous rung's file, refuses on unmet DoR naming what's missing, and commits per
-  rung on the engagement branch.
+  names its input file (previous rung) and output file, carries explicit DoR-refusal language
+  (refuse and name what's missing), and carries a per-rung commit step on the engagement
+  branch.
 - **AC10** — `wireframe.md` mandates lo-fi grayscale self-contained HTML (one page per screen,
-  no external dependencies) in `projects/<client>/wireframes/`, best-effort private artifact
-  publishing, and copy-as-prompt reactions appended to `decision-log.md` as structured change
-  requests; `section-briefs.md` mandates the inline inventory loop with parallel fan-out only
-  for large inventories, draft copy (slogan/headline/body) held to `copywriting.md`, a
-  typography-direction page, and Vera's sign-off before hand-off.
+  no external dependencies) in `projects/<client>/wireframes/`, best-effort artifact publishing
+  (private to the author), a locked per-engagement client-delivery mode (org share / consented
+  public link / the HTML file itself) recorded in `decision-log.md`, and copy-as-prompt
+  reactions appended to `decision-log.md` as structured change requests. `section-briefs.md`
+  mandates the inline inventory loop with parallel fan-out only for large inventories, draft
+  copy (slogan/headline/body) held to `copywriting.md`, a typography-direction page, and Vera's
+  sign-off before hand-off.
 - **AC11** — `.claude/rules/soriza-design/git-lane.md` exists, `projects/**`-scoped, defining
-  the engagement issue/branch model, per-rung commits, gate-point-only PRs, and the evidence
-  swap (DoR checklist + decision-log entry + client sign-off replace Test Evidence).
+  the engagement issue/branch model (`docs/<N>-<client>` via `gh issue develop`), per-rung
+  commits (`📝 docs(<client>)` + `Refs #N`), gate-point-only PRs with `Closes #N` at packet
+  hand-off, and the evidence swap (DoR checklist + decision-log entry + client sign-off replace
+  Test Evidence).
 - **AC12** — Every child issue #44–#48 is closed by its own merged PR (one pipeline run per
   child); epic #43's checklist is fully ticked.
 
 ## Validation Commands
 
-Run these to prove the criteria above. Map each command to the criteria it verifies.
+Run these to prove the criteria above (from the repo root, on `main`, after all child PRs
+merge — each child also runs its own subset at its build). Assertion scripts exit non-zero on
+any failure.
 
 - `git log --oneline origin/main -- specs/soriza-cpo-department/ | head -3` — verifies AC1. Non-empty after the epic docs PR merges.
-- `grep -n "ai-docs" .worktreeinclude` — verifies AC2. Shows the `ai-docs/*` line.
-- `uv run --script .claude/hooks/worktree/worktree_create.py < /dev/null; echo ok` — AC2 plumbing sanity only (fail-open); the real check is a fresh `EnterWorktree` containing `ai-docs/*/…` mirrors.
-- `uv run python -c "import yaml,sys; m=yaml.safe_load(open('ai-docs/sources.yaml')); d=m.get('design',[]); assert len(d)==5 and all(e['fetched'] for e in d), d; print('design ok')"` — verifies AC3.
-- `grep -c "code.claude.com/docs/en/memory" ai-docs/sources.yaml` — verifies AC3 (≥1).
-- `ls projects/_template/ projects/_template/section-briefs/_library/ | wc -l` && `grep -rL "One desired action" projects/_template/section-briefs/_library/` — verifies AC4. Nine library files; the `-L` list is empty.
-- `for f in client-communication intake-standards definition-of-ready brief-format section-anatomy copywriting lessons; do head -5 ".claude/rules/soriza-design/$f.md" | grep -q "projects/\*\*" && echo "$f ok"; done` — verifies AC5 scoping; `grep -rn "TBD\|TODO\|fill me" .claude/rules/soriza-design/` returns nothing.
-- `grep -c "Vera\|Mira\|Elias\|Ivo\|Juno\|Lior" .claude/rules/soriza/roster.md` — verifies AC6 (≥6); `grep -n "roster\|soriza-design\|projects/" AGENTS.md` shows the pointers.
-- `head -20 .claude/commands/soriza-design/intake.md | grep -E "disable-model-invocation|check_intake_readiness"` — verifies AC7.
-- `uv run pytest tests/harness-layer/hooks/ -k "intake or wiring"` — verifies AC8. All green.
-- `ls .claude/commands/soriza-design/` — verifies AC9. Five files: intake, brief, sitemap, wireframe, section-briefs.
-- `grep -ln "grayscale\|copy-as-prompt" .claude/commands/soriza-design/wireframe.md && grep -ln "typography\|sign-off\|fan-out" .claude/commands/soriza-design/section-briefs.md` — verifies AC10.
-- `head -5 .claude/rules/soriza-design/git-lane.md | grep "projects/\*\*"` && `grep -n "Test Evidence" .claude/rules/soriza-design/git-lane.md` — verifies AC11.
-- `gh issue list --search "44 45 46 47 48" --state closed --json number,closedByPullRequestsReferences` and `gh issue view 43` — verifies AC12. Five closed children, each with its own PR; epic checklist ticked.
+- `grep -n "ai-docs" .worktreeinclude` — verifies AC2 (pattern present). Full check: create a scratch worktree (`EnterWorktree` or `git worktree add` + the WorktreeCreate hook) and assert `ai-docs/anthropic/*.md` exists inside it.
+- `uv run python -c "
+  import yaml
+  m = yaml.safe_load(open('ai-docs/sources.yaml'))
+  d = m.get('design', [])
+  assert len(d) == 5 and all(e['fetched'] and e['file'].startswith('design/') for e in d), d
+  assert any('code.claude.com/docs/en/memory' in e['url'] for e in m['anthropic'])
+  print('AC3 ok')"` — verifies AC3.
+- `uv run python -c "
+  from pathlib import Path
+  t = Path('projects/_template')
+  files = sorted(str(p.relative_to(t)) for p in t.rglob('*') if p.is_file())
+  lib = ['section-briefs/_library/%s.md' % n for n in
+         ['content-blog','cta-band','features-solutions','footer','header-navigation',
+          'hero','logo-tape','pricing-plans','testimonials']]
+  expected = sorted(['intake.md','brief.md','sitemap-ia.md','asset-checklist.md',
+                     'decision-log.md','wireframes/README.md','section-briefs/README.md'] + lib)
+  assert files == expected, (files, expected)
+  for s in lib:
+      text = (t / s).read_text()
+      assert 'One job' in text and 'One desired action' in text, s
+  print('AC4 ok')"` — verifies AC4 (exact file set + both fields in all nine skeletons).
+- `uv run python -c "
+  from pathlib import Path
+  import re
+  fam = Path('.claude/rules/soriza-design')
+  names = ['client-communication','intake-standards','definition-of-ready','brief-format',
+           'section-anatomy','copywriting','lessons']
+  for n in names:
+      text = (fam / (n + '.md')).read_text()
+      assert re.search(r'paths:\s*\n?\s*-?\s*.projects/\*\*', text), n + ': no paths scope'
+      assert len(text.splitlines()) >= 15, n + ': suspiciously thin'
+      assert not re.search(r'TBD|TODO|fill me|placeholder', text, re.I), n + ': stub marker'
+  print('AC5 ok')"` — verifies AC5.
+- `uv run python -c "
+  from pathlib import Path
+  import subprocess
+  text = Path('.claude/rules/soriza/roster.md').read_text()
+  for who in ['Vera','Mira','Elias','Ivo','Juno','Lior']:
+      row = [l for l in text.splitlines() if l.strip().startswith('|') and who in l]
+      assert row and row[0].count('|') >= 5, who + ': missing row or column'
+  agents = Path('AGENTS.md').read_text()
+  assert 'soriza/roster.md' in agents and 'soriza-design' in agents and 'projects/' in agents
+  root_md = sorted(p for p in subprocess.run(['git','ls-files','*.md'],capture_output=True,text=True).stdout.splitlines() if '/' not in p)
+  assert root_md == ['AGENTS.md','CLAUDE.md'], root_md
+  print('AC6 ok')"` — verifies AC6 (adjust the expected root-md list only if `main` already tracks another root file at merge time).
+- `uv run python -c "
+  from pathlib import Path
+  import subprocess
+  text = Path('.claude/commands/soriza-design/intake.md').read_text()
+  for needle in ['disable-model-invocation: true','check_intake_readiness.py','Stop',
+                 '.intake-target','Mira','intake-standards']:
+      assert needle in text, 'intake.md missing: ' + needle
+  assert any(w in text for w in ['never clobber','existing folder','idempotent']), 'no idempotence language'
+  ignored = subprocess.run(['git','check-ignore','projects/.intake-target'],capture_output=True).returncode == 0
+  assert ignored, 'projects/.intake-target not gitignored'
+  print('AC7 ok')"` — verifies AC7.
+- `uv run pytest tests/harness-layer/hooks/ -k "intake or wiring"` — verifies AC8 (contract,
+  fail-open, doctrine-sync, cross-client regression, wiring pin). All green.
+- `uv run python -c "
+  from pathlib import Path
+  rungs = {'brief': ('Elias','intake.md','brief.md'),
+           'sitemap': ('Ivo','brief.md','sitemap-ia.md'),
+           'wireframe': ('Juno','sitemap-ia.md','wireframes/'),
+           'section-briefs': ('Lior','sitemap-ia.md','section-briefs/')}
+  for name, (who, src, dst) in rungs.items():
+      text = Path('.claude/commands/soriza-design/%s.md' % name).read_text()
+      for needle in [who, src, dst, 'commit']:
+          assert needle in text, '%s.md missing: %s' % (name, needle)
+      assert any(w in text.lower() for w in ['refuse','missing','not ready','stop']), name + ': no DoR refusal language'
+  print('AC9 ok')"` — verifies AC9.
+- `uv run python -c "
+  from pathlib import Path
+  w = Path('.claude/commands/soriza-design/wireframe.md').read_text()
+  for needle in ['grayscale','self-contained','decision-log','copy-as-prompt']:
+      assert needle in w, 'wireframe.md missing: ' + needle
+  assert 'public link' in w or 'delivery mode' in w, 'wireframe.md: no client-delivery lock'
+  s = Path('.claude/commands/soriza-design/section-briefs.md').read_text()
+  for needle in ['fan-out','copywriting','typography','sign-off','Vera']:
+      assert needle in s, 'section-briefs.md missing: ' + needle
+  print('AC10 ok')"` — verifies AC10.
+- `uv run python -c "
+  from pathlib import Path
+  import re
+  text = Path('.claude/rules/soriza-design/git-lane.md').read_text()
+  assert re.search(r'paths:\s*\n?\s*-?\s*.projects/\*\*', text), 'no paths scope'
+  for needle in ['docs/<N>-<client>','gh issue develop','Refs #','Closes #','Test Evidence',
+                 'decision-log','sign-off']:
+      assert needle in text, 'git-lane.md missing: ' + needle
+  print('AC11 ok')"` — verifies AC11.
+- `gh issue view 43 --json body -q .body | grep -c "\- \[x\] #4"` — verifies AC12 (expect 5); and
+  `for n in 44 45 46 47 48; do gh issue view $n --json state,closedByPullRequestsReferences -q '[.state, (.closedByPullRequestsReferences|length)] | @tsv'; done` — every child CLOSED with ≥1 closing PR.

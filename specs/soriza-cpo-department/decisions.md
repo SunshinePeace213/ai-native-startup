@@ -176,6 +176,22 @@ Locked at plan time, within the ledger's boundaries:
 - **DoR gate source of truth.** `check_intake_readiness.py` hard-codes its required-sections
   tuple (precedent: `check_spec_completeness.py`); `definition-of-ready.md` carries the same
   checklist for humans and rungs; a sync test asserts the two match so they cannot drift.
+- **DoR gate targeting is deterministic** *(round-1 fix)*. The intake command's first write
+  records the invoked client slug in `projects/.intake-target` (gitignored, transient,
+  overwritten per run); the hook reads it and gates exactly `projects/<target>/intake.md`.
+  Missing/invalid target, `_`-prefixed target, or a target folder without `intake.md` → exit 2
+  with a clear message (inside the command a target must exist, so blocking is correct);
+  malformed stdin / unreadable files still fail open. The newest-modified heuristic is dropped —
+  a complete client A can never release an incomplete client B (cross-client regression test
+  required).
+- **Wireframe delivery modes** *(round-1 fix)*. Publishing an artifact makes it visible only to
+  its author (Ringo — the relay); "private links" are Ringo's review surface, not a client
+  surface. Client-facing delivery is locked per engagement and recorded in `decision-log.md`:
+  (a) pilot — Ringo *is* the client, the private artifact suffices; (b) external clients —
+  organization sharing on Team/Enterprise, or an explicit public link with client consent
+  recorded, or sending the self-contained HTML files directly (they are dependency-free by
+  design, so the file *is* the deliverable). The rung must treat publishing as best-effort and
+  never promise a private URL to someone outside the author's account.
 - **Issue types.** #44 and #48 are `chore` (tooling/process); #45–#47 are `feat`; the epic
   carries `feat` + `epic`. All `priority:P2` (no external deadline).
 - **Memory-doc gap folded into #44.** The official memory/rules docs page
@@ -240,6 +256,9 @@ Docs consulted for this plan's harness claims (review profile: **kb-grounded**):
   you"; sharing happens from the page header — grounds the private-wireframe-links flow.
 - `ai-docs/anthropic/subagents.md` (fetched 2026-07-23) — carried from the discovery ledger's
   closed nesting fact-check; no subagents ship in slice 1.
+- `ai-docs/anthropic/html-artifacts-workflows.md` (fetched 2026-07-23) — the copy-as-prompt
+  two-way page pattern the wireframe rung's reaction loop is built on *(added at round 1 on
+  Codex's recommendation)*.
 
 Conflicts reconciled:
 
@@ -258,8 +277,18 @@ Process notes:
   memory/rules page mirror is folded into #44 rather than hand-authored (mirrors are never
   hand-written).
 - No doc consulted was older than STALE_AFTER (30 days); no `/kb` refresh needed for this plan.
+- The `sonnet` review-runner subagent was also permission-denied, so the lead ran the exact
+  `codex exec` review command via Bash itself (same worktree, model, effort, prompt, and verdict
+  file) — a documented deviation preserving the gate's substance; digests were still relayed to
+  the issue by the lead, and Codex still never called `gh`.
 
 ### Follow-ups (advisories, future plans)
 
 - After the ladder proves out in the pilot, revisit subagent specialists / engagement teams
   (out-of-scope ledger items) as their own discovery chain.
+- Round-1 advisory (applied): `html-artifacts-workflows.md` added to KB References above — no
+  further action.
+- Rung-prompt *runtime* behavior (idempotent scaffold, DoR refusal wording, per-rung commits)
+  is validated structurally at build, by each child's harness-review, and live at the pilot's
+  first intake — if the pilot exposes gaps, they land in `soriza-design/lessons.md` and, if
+  structural, as a revision of #46/#47.
