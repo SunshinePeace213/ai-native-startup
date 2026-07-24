@@ -102,7 +102,9 @@ future CTO department, out of scope.
 - **Q:** How do the client's answers reach `/soriza-design:intake`?
   - **A:** Ringo relays the client: intake interviews Ringo, who holds the client's raw materials
     (call notes, emails, existing site). A uv-script Stop hook verifies every Definition-of-Ready
-    section exists in `projects/<client>/intake.md` before the run may end.
+    section exists in `projects/<client>/intake.md` and blocks an incomplete stop — bounded by
+    the platform's 8-consecutive-block Stop-hook cap; the durable guarantee is every rung's DoR
+    refusal on an incomplete predecessor.
   - **Why:** Keeps client-communication doctrine simple; no client-facing surface in slice 1. The
     gate is code, not model memory (precedent: harness-plan's check_spec_completeness.py).
 

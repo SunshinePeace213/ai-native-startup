@@ -34,7 +34,7 @@ own site, with Ringo as the client.
 
 When this epic is done, `/soriza-design:intake <client>` through `/soriza-design:section-briefs
 <client>` can run end to end against a real `projects/<client>/` folder — every rung gated by
-real doctrine, intake blocked by the DoR hook until complete, wireframes reviewable as artifacts with a locked
+real doctrine, intake gated by the DoR hook (bounded by the platform's 8-block Stop-hook cap, with every rung's DoR refusal as the durable stop), wireframes reviewable as artifacts with a locked
 client-delivery mode, and the final packet (brief, IA, wireframes, per-section briefs with draft copy,
 typography direction, asset checklist, decision log) signed by Vera and handed to Ringo — with
 all five children shipped through their own plan → build → review → ship runs (#44–#48 closed
@@ -161,9 +161,11 @@ Use these files to complete the task:
 - **KB source refuses fetching** (NN/g robots, WCAG quickref JS app): `/kb` reports FAIL and
   leaves `fetched: null`; #44 substitutes the canonical page for the same topic and records the
   swap — never a hand-authored mirror, never a fake `fetched` date.
-- **Worktree copy misses mirrors**: `.worktreeinclude` copies only untracked-and-ignored files —
-  correct here since mirrors are gitignored; `sources.yaml` is tracked and arrives via checkout.
-  A worktree created before #44 ships simply lacks mirrors → run `/harness-layer:kb` inside it.
+- **Worktree copy misses mirrors**: `.worktreeinclude` copies only untracked-and-ignored files
+  **present in the creating checkout** — #44's mirrors never land on `main`, so after #44's PR
+  merges the epic driver hydrates the main checkout with `/harness-layer:kb` (the merged
+  `sources.yaml` drives the sync) before creating any dependent child's worktree. A worktree
+  created without that hydration simply lacks mirrors → run `/harness-layer:kb` inside it.
 - **Re-running `:intake` on an existing client**: scaffold step must be idempotent — never
   clobber an existing `projects/<client>/`; re-interview updates `intake.md` in place.
 - **DoR hook resolution**: session-scoped and race-free — the intake command's first write

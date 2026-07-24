@@ -116,6 +116,11 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
   writing-for-the-web (canonical article picked at build), Google Fonts Knowledge
   (`https://fonts.google.com/knowledge`); plus `add https://code.claude.com/docs/en/memory`
   (anthropic group). Fetch failures → substitute canonical page, record swap; never hand-author.
+- **Hydration hand-off (epic driver, after #44's PR merges):** mirrors and `ai-docs/index.md`
+  are gitignored, so #44's worktree copies never reach `main` — before creating any dependent
+  child's worktree, run `/harness-layer:kb` in the main checkout (the merged `sources.yaml`
+  drives the sync, which fetches the mirrors and regenerates the index there); worktrees
+  created from that checkout then receive the KB via `.worktreeinclude`.
 - Launch prompt for the child plan run:
 
   ```text
@@ -131,7 +136,9 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
 ### 3. Child #45 — foundations: template, doctrine family, roster
 
 - **Task ID:** child-45-foundations
-- **Depends On:** child-44-kb-seed
+- **Depends On:** child-44-kb-seed (including its post-merge hydration hand-off — the epic
+  driver creates this child's worktree only after `/harness-layer:kb` has hydrated the main
+  checkout)
 - **Assigned To:** epic-driver → doctrine-writer, structure-builder, validator
 - **Agent Type:** general-purpose
 - **Model / Effort:** `opus` / `high` (doctrine + skeletons), `sonnet` / `medium` (scaffold/roster/AGENTS.md)

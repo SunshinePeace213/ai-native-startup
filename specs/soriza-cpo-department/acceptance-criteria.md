@@ -12,8 +12,11 @@
 - **AC1** — The epic planning docs (`specs/soriza-cpo-department/` including discovery/ and
   artifacts/) are merged to `main` via a docs PR referencing #43, before any child pipeline
   starts.
-- **AC2** — `.worktreeinclude` contains an `ai-docs/*` pattern, and a freshly created worktree
-  receives the cached mirrors (untracked-and-ignored files under `ai-docs/`).
+- **AC2** — `.worktreeinclude` contains an `ai-docs/*` pattern, and a worktree freshly created
+  from the hydrated main checkout receives the cached mirrors (untracked-and-ignored files
+  under `ai-docs/`). Mirrors are gitignored and never land on `main` via #44's PR — the epic
+  driver's post-merge hydration (`/harness-layer:kb` in the main checkout) is what puts them
+  in the creating checkout.
 - **AC3** — `ai-docs/sources.yaml` carries a `design` group with five entries (WCAG 2.2
   quickref, web.dev Learn Design, NN/g homepage cornerstone, NN/g writing-for-the-web, Google
   Fonts Knowledge) plus an `anthropic` entry for the memory docs page — each with a canonical
@@ -135,7 +138,7 @@ any failure.
   mem = [e for e in m['anthropic'] if 'code.claude.com/docs/en/memory' in e['url']]
   assert len(mem) == 1 and mem[0]['fetched'] and mem[0]['file'].startswith('anthropic/'), mem
   assert mem[0]['file'] in idx, 'index.md missing entry for ' + mem[0]['file']
-  print('AC3 ok')"` — verifies AC3 (exact source identities + index entries; adjust a URL marker only if #44 recorded a documented same-topic swap).
+  print('AC3 ok')"` — verifies AC3 (exact source identities + index entries; run from the hydrated main checkout — after the post-#44 `/harness-layer:kb` sync — since mirrors and index.md are gitignored; adjust a URL marker only if #44 recorded a documented same-topic swap).
 - `uv run python -c "
   from pathlib import Path
   t = Path('projects/_template')
