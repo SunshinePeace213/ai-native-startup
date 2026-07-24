@@ -1,0 +1,20 @@
+### Round 1 — Verdict: changes-requested
+
+Scope: full
+Reviewed head SHA: 976d18f0d90aae25ab2293930558995883ea60b2
+Validation:
+- [plan-time] `uv run --script specs/harness-self-improvement/checks/ac5_inventory.py` → PASS
+- deferred: 3 child-build-time, 0 post-merge
+
+- **CX1-1 (new) — AC3's hook↔template test cannot use the required fixture from its planned location.** Task 3 places the cross-consistency test under `tests/harness-layer/prompts/` and requires `load_hook_module`, but that fixture lives in `tests/harness-layer/hooks/conftest.py`, whose pytest scope does not reach the sibling `prompts/` directory; the plan also says to leave that conftest as-is. The AC3 validation command would therefore fail with an unavailable fixture. Fix: either promote `load_hook_module` to a common `tests/harness-layer/conftest.py` and update the stated file scope, or keep this assertion under the hooks subtree and include it explicitly in AC3's validation command.
+- **CX1-2 (new) — The discovery-command scope contradicts the plan's Non-Goals.** `spec.md` excludes self-improvement machinery for `unknowns`, `brainstorm`, `prototypes`, and `interview`, while the Load-Bearing Contract Inventory, AC3, and Task 3 require contract machinery for all four commands. The builder cannot satisfy both scopes. Fix: either remove those four commands from the inventory/AC3/Task 3, or narrow the Non-Goal to name the specific later-plan machinery that remains excluded.
+- **CX1-3 (new) — The CI path filter omits a harness surface the new suite explicitly tests.** AC3 makes `specs/_templates/` a contract subject through the `REQUIRED_SECTIONS` coupling, but AC4 locks the workflow to five filters that omit `specs/_templates/**`; a template-only PR can therefore break the harness contract without running the suite, contradicting the Objective's automatic coverage for harness-touching PRs. The workflow file itself is also omitted from that trigger scope. Fix: revise the locked CI decision, AC4, Task 4, and `ac4_ci_workflow.py` to include `specs/_templates/**` and `.github/workflows/harness-tests.yml` (or narrow the Objective and remove the uncovered coupling).
+- **CX1-4 (new) — The build cannot deploy the concurrent builders at their stamped effort levels.** `tasks.md` assigns concurrent `general-purpose` agents different efforts (`medium`, `high`, and `low`), and `harness-build.md` promises to deploy each task at its stamped model/effort, but `.claude/rules/task-tools.md` exposes only a per-invocation `model` on `Agent`. The cached subagent reference documents `effort` on a subagent definition, not as a per-invocation override (`ai-docs/anthropic/subagents.md`, “Supported frontmatter fields” and “Choose a model”). Fix: specify deployable agent definitions carrying each effort, update the deployment mechanism to support an effort override, or change the task assignments to an effort configuration the existing mechanism can actually honor.
+
+**Recommendations (advisory, non-blocking):**
+
+- Tighten the committed checks: `ac5_inventory.py` currently accepts section presence in any order and frontmatter literals anywhere in the file despite the inventory's exact/frontmatter semantics, while `ac4_ci_workflow.py` checks token presence rather than the exact filter set and job-level placement.
+- Add an AC1 regression whose stdin `cwd` is a nested directory in a temporary git worktree; the planned outside-git cases do not prove the primary `git -C <cwd> rev-parse --show-toplevel` branch.
+- Refresh `decisions.md`'s grounding notes: the cached skills reference now documents both `model` and `effort`, and the hooks reference defines `${CLAUDE_PROJECT_DIR}` as the project root. The GitHub Actions and setup-uv mirrors remain the material KB gap to fill before build.
+
+**Issue-comment digest:** Round 1, changes-requested — 4 blocking (0 repeats): AC3 cannot reach its required hook fixture, discovery commands are simultaneously in and out of scope, CI omits a tested harness surface, and the concurrent builders' stamped effort levels are not deployable by the specified mechanism. Next: reconcile these four contracts, then re-review.
