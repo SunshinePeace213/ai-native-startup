@@ -4,6 +4,25 @@
     "pr": "",
     "sessionUrl": false
   },
+  "permissions": {
+    "allow": [
+      "Bash(codex exec *)",
+      "Bash(git push origin HEAD:refs/heads/*)",
+      "Bash(git push -u origin HEAD:refs/heads/*)",
+      "Bash(git fetch *)",
+      "Bash(gh issue create *)",
+      "Bash(gh issue develop *)",
+      "Bash(gh issue edit *)",
+      "Bash(gh issue comment *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr comment *)",
+      "Bash(gh pr ready *)",
+      "Bash(gh pr merge *)",
+      "Bash(gh api --method PATCH repos/*)",
+      "Bash(uv run pytest *)",
+      "Bash(uv run --script specs/*)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
