@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Self-improving harness — intervention ladder</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --serif: Charter, Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--sans);
+    font-size: 15px; line-height: 1.55;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(28px, 4.5vw, 40px);
+    line-height: 1.15; letter-spacing: -.01em; max-width: 21em;
+  }
+  .lede { color: var(--muted); max-width: 46em; margin-top: 14px; }
+  .lede strong { color: var(--text); font-weight: 600; }
+
+  .evidence {
+    margin-top: 28px; border: 1px solid var(--border); background: var(--surface);
+    border-radius: 8px; padding: 18px 20px;
+  }
+  .evidence h2 {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 10px;
+  }
+  .evidence ul { list-style: none; }
+  .evidence li { padding: 3px 0 3px 16px; position: relative; font-size: 13.5px; }
+  .evidence li::before { content: '·'; position: absolute; left: 2px; color: var(--accent); font-weight: 700; }
+  .evidence code { font-family: var(--mono); font-size: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+
+  /* ladder */
+  .ladder { margin-top: 48px; position: relative; }
+  .ladder-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .ladder-head h2 { font-family: var(--serif); font-size: 24px; font-weight: 600; }
+  .ladder-head .axis { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .08em; }
+
+  .rung { display: grid; grid-template-columns: 72px 1fr; gap: 0 20px; position: relative; }
+  .rail {
+    position: relative; display: flex; flex-direction: column; align-items: center; padding-top: 26px;
+  }
+  .rail::before {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
+    background: var(--border);
+  }
+  .rung:first-of-type .rail::before { top: 26px; }
+  .rung:last-of-type .rail::before { bottom: auto; height: 26px; }
+  .size-badge {
+    position: relative; z-index: 1; font-family: var(--mono); font-weight: 700;
+    border: 2px solid var(--border); background: var(--bg); color: var(--muted);
+    border-radius: 999px; display: grid; place-items: center;
+  }
+  .s-S  .size-badge { width: 30px; height: 30px; font-size: 11px; }
+  .s-M  .size-badge { width: 38px; height: 38px; font-size: 12px; }
+  .s-L  .size-badge { width: 46px; height: 46px; font-size: 13px; }
+  .s-XL .size-badge { width: 54px; height: 54px; font-size: 14px; border-color: var(--accent); color: var(--accent); }
+  .rung.picked .size-badge { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+
+  .card {
+    border: 1px solid var(--border); background: var(--surface); border-radius: 10px;
+    padding: 18px 20px 16px; margin: 10px 0;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .rung.picked .card { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .card-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .card h3 { font-family: var(--serif); font-size: 18.5px; font-weight: 600; }
+  .chip {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px 2px;
+    white-space: nowrap;
+  }
+  .impact { margin-top: 8px; }
+  .facts { margin-top: 10px; display: grid; gap: 5px; font-size: 13.5px; }
+  .facts .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-right: 6px; }
+  .facts code { font-family: var(--mono); font-size: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+  .decide { color: var(--muted); }
+  .decide .k { color: var(--muted); }
+
+  .resonate {
+    margin-top: 14px; font-family: var(--mono); font-size: 12px; letter-spacing: .04em;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+    border-radius: 6px; padding: 7px 14px; cursor: pointer;
+  }
+  .resonate:hover { border-color: var(--accent); color: var(--accent); }
+  .rung.picked .resonate { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+
+  /* pick bar */
+  .pickbar {
+    position: sticky; bottom: 0; z-index: 5; margin-top: 40px;
+    background: var(--bg); border-top: 2px solid var(--accent);
+    padding: 12px 0; display: flex; align-items: center; gap: 16px;
+  }
+  .pickbar .count { font-family: var(--serif); font-size: 22px; font-weight: 600; color: var(--accent); min-width: 2ch; text-align: right; }
+  .pickbar .label { font-size: 13px; color: var(--muted); flex: 1; }
+  .copy-btn {
+    font-family: var(--mono); font-size: 13px; background: var(--accent); color: var(--bg);
+    border: none; border-radius: 6px; padding: 10px 18px; cursor: pointer;
+  }
+  .copy-btn:hover { filter: brightness(.92); }
+
+  .prompt-section { margin-top: 28px; }
+  .prompt-section h2 { font-family: var(--serif); font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+  .prompt-section p { color: var(--muted); font-size: 13.5px; margin-bottom: 12px; }
+  #prompt-out {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.6; white-space: pre-wrap;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px; max-height: 380px; overflow: auto;
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 560px) {
+    .rung { grid-template-columns: 44px 1fr; gap: 0 12px; }
+    .s-S .size-badge, .s-M .size-badge, .s-L .size-badge, .s-XL .size-badge { width: 32px; height: 32px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Discovery · brainstorm pass · harness-self-improvement · 2026-07-24</div>
+  <h1>Ten places to close the loop — cheapest rung first</h1>
+  <p class="lede">The pipeline finds its own defects but never <strong>keeps</strong> what it learns: findings die in review reports, prompt files regress untested, and known defect classes wait for the most expensive stage to catch them again. Each rung below is one intervention, anchored to real files. Toggle what resonates; the prompt at the bottom assembles only your picks. Discovery commands stay out of scope.</p>
+
+  <div class="evidence">
+    <h2>The evidence every rung stands on</h2>
+    <ul>
+      <li>soriza-cpo-department took <strong>9 spec rounds</strong>; loose validation commands recur in rounds 1–4, 6, 7; promises exceeding platform contracts in rounds 1, 5, 6, 8.</li>
+      <li>Rounds-to-approval across all nine plans: 5, 6, 2, 6, 5, 10, 9, 7, 5 — nothing computes the trend.</li>
+      <li><code>#40</code>/<code>#42</code> restored <code>## Report</code> and <code>## Instructions</code> sections silently dropped from the build/review commands — <code>.claude/commands/</code> has zero tests and <code>.github/</code> has no CI workflows.</li>
+      <li><code>#52</code>'s convergence machinery (CX IDs, repeat tags, delta rounds, churn guard) landed hours ago and has never fired.</li>
+      <li>The recurring defect classes live as prose in <code>.agents/skills/spec-review/SKILL.md</code>; the only plan-time machine check is section presence (<code>check_spec_completeness.py</code>).</li>
+      <li><code>development-log.md</code> holds one line ever — the write-only end of the loop.</li>
+    </ul>
+  </div>
+
+  <div class="ladder">
+    <div class="ladder-head">
+      <h2>The ladder</h2>
+      <span class="axis">cost ↓ rises S → XL</span>
+    </div>
+    <div id="rungs"></div>
+  </div>
+
+  <div class="pickbar">
+    <span class="count" id="pick-count">0</span>
+    <span class="label" id="pick-label">picks resonate — toggle cards above; the refined prompt updates live</span>
+    <button class="copy-btn" id="copy-btn">Copy as prompt</button>
+  </div>
+
+  <div class="prompt-section">
+    <h2>Refined prompt</h2>
+    <p>Carries the original constraints, your resonating picks with their code anchors, and what each still needs decided. Self-contained — paste it into the next pass without this page.</p>
+    <div id="prompt-out"></div>
+  </div>
+</div>
+
+<script>
+const RUNGS = [
+  {
+    id: 'contract-tests', size: 'S', stage: 'Verify',
+    title: 'Prompt-contract tests for the pipeline commands',
+    impact: 'A command-file edit that drops a load-bearing section fails a test instead of surfacing two plans later as a restore commit.',
+    today: 'Hooks are pinned by tests/harness-layer/hooks/test_wiring.py + contract suites; the command prompt files that regressed in #40/#42 have zero coverage.',
+    pointers: 'tests/harness-layer/hooks/test_wiring.py · .claude/commands/harness-layer/*.md',
+    decide: 'What to pin — required ## sections + frontmatter keys only, or also load-bearing clauses (refspec push rule, verdict contract)? Golden files vs structural asserts.',
+    prompt: 'Add prompt-contract tests for .claude/commands/harness-layer/*.md and the .agents/skills/ review skills, mirroring how tests/harness-layer/hooks/test_wiring.py pins hook registrations — required sections, frontmatter keys, and load-bearing clauses; would have caught the #40/#42 regressions. Decide: structural asserts vs golden files, and which clauses count as load-bearing.'
+  },
+  {
+    id: 'plan-lint', size: 'S', stage: 'Encode',
+    title: 'Plan-time lint for the two chronic finding classes',
+    impact: 'The two classes that burned most of soriza-cpo’s 9 rounds get flagged before Codex ever runs — review rounds stop paying for lintable defects.',
+    today: 'check_spec_completeness.py gates only file/section presence; assertion-free validation commands and absolute-promise wording are caught by Codex at review time, round after round.',
+    pointers: '.claude/hooks/check_spec_completeness.py · .agents/skills/spec-review/SKILL.md (Promise/mechanism mismatch, Validation-convention violations)',
+    decide: 'Block vs warn; and how to lint promises without violating #52’s own "never regex-parse prose" calibration — structural checks (every Validation Commands bullet invokes a committed checks/ script) are safe, promise-word heuristics may not be.',
+    prompt: 'Extend the plan-time Stop gate (.claude/hooks/check_spec_completeness.py or a sibling) to machine-check the two chronic classes from soriza-cpo: Validation Commands bullets that don’t invoke a committed checks/ script, and absolute-promise wording near hook mechanisms. Decide: block vs warn, and how to reconcile prose-linting with the spec-review skill’s "never regex-parse prose" calibration.'
+  },
+  {
+    id: 'ledger', size: 'S', stage: 'Instrument',
+    title: 'A structured findings ledger mined from the review reports',
+    impact: 'Fifty-five review reports stop being write-only — every CX finding becomes one queryable row: plan, round, class, repeat-of, disposition.',
+    today: 'The reports are already semi-structured (verdict first line, CX<N>-<i> IDs, new/repeat tags per the spec-review output contract) but nothing parses them.',
+    pointers: 'specs/*/reviews/*.md (55 files) · .agents/skills/spec-review/SKILL.md § Output contract',
+    decide: 'Schema and home (committed JSONL vs markdown table); backfill the nine existing plans or start fresh; parser script vs the review command appending at its terminal step.',
+    prompt: 'Create a structured findings ledger parsed from specs/*/reviews/*.md — the reports already carry verdict lines, CX<N>-<i> IDs, and new/repeat tags per the spec-review output contract. One row per blocking finding: plan, round, class, repeat-of, disposition. Decide: schema and home, backfill vs fresh start, and whether a parser script or the review command’s terminal step maintains it.'
+  },
+  {
+    id: 'health', size: 'M', stage: 'Instrument',
+    title: 'Health metrics computed from files the pipeline already commits',
+    impact: '"Is the layer improving?" becomes a number: rounds-to-approval trend, repeat-rate, findings per class — instead of a feeling.',
+    today: 'Rounds-to-approval is derivable today (5, 6, 2, 6, 5, 10, 9, 7, 5 across specs/*/reviews/) but nobody computes it; the unknowns pass named the quality bar, nothing measures against it.',
+    pointers: 'specs/*/reviews/ · specs/harness-self-improvement/discovery/unknowns-self-improvement.html (quality bar)',
+    decide: 'Delivery surface (a script, a committed dashboard page, a ship-step report line) and refresh trigger (post-merge, per-ship, manual).',
+    prompt: 'Compute harness health metrics from files the pipeline already commits — rounds-to-approval per plan (currently 5, 6, 2, 6, 5, 10, 9, 7, 5), repeat-rate, finding-class frequencies — reading the findings ledger or specs/*/reviews/ directly. Decide: delivery surface (script vs committed dashboard page vs ship-report line) and refresh trigger.'
+  },
+  {
+    id: 'ci', size: 'M', stage: 'Verify',
+    title: 'CI that runs the harness test suite on every harness PR',
+    impact: 'The regression protection actually gates merges — a broken hook or dropped command section can’t reach main even when nobody runs pytest locally.',
+    today: '.github/ holds only issue and PR templates — no workflows directory, no CI. tests/harness-layer/ exists and runs only when a human remembers.',
+    pointers: '.github/ (no workflows/) · tests/harness-layer/ · uv run pytest',
+    decide: 'Trigger paths (.claude/**, .agents/**, tests/**), uv setup on the runner, and whether [skip-ci] tokens from git-workflow.md must be honored.',
+    prompt: 'Add a GitHub Actions workflow — the repo currently has none — running uv run pytest tests/harness-layer on PRs touching .claude/**, .agents/**, or tests/**. Decide: exact trigger paths, uv setup on the runner, and honoring the [skip-ci] token from git-workflow.md.'
+  },
+  {
+    id: 'disposition', size: 'M', stage: 'Encode',
+    title: 'Every blocking finding ends with an encode-or-accept disposition',
+    impact: 'The loop’s missing step: a finding is closed only when it names the constraint that now catches its class — or is explicitly accepted as a one-off.',
+    today: 'harness-review’s memory step writes prose dev-log lines (one line ever); findings are fixed in the spec and forgotten — nothing asks "what now catches this class earlier?"',
+    pointers: '.claude/commands/harness-layer/harness-review.md (step 7 memory step) · .claude/rules/development-log.md',
+    decide: 'Where the step lives (review terminal step vs ship), what dispositions are legal (test / lint / hook / template edit / accepted), and what enforces follow-through on "encoded" claims.',
+    prompt: 'Add an encode-or-accept disposition step to the pipeline: every blocking finding closes with either the machine-checked constraint (test / lint / hook / template edit) that now catches its class at the earliest stage, or an explicit accepted-one-off record — written to the findings ledger, replacing the prose-only dev-log memory step as the loop’s Encode stage. Decide: whether it lives in harness-review’s terminal step or harness-ship, and what enforces follow-through.'
+  },
+  {
+    id: 'retire', size: 'M', stage: 'Encode',
+    title: 'A retirement pass — every mechanism cites its crash, or leaves',
+    impact: 'The layer stops ratcheting toward bloat: constraints whose failure class has stopped firing get flagged for removal instead of loading into every session forever.',
+    today: 'Only development-log.md has a shrink rule (40-line cap, distill-then-delete). #52 added a large clause count in one commit; nothing has ever removed a mechanism.',
+    pointers: '.claude/rules/development-log.md (the one existing cap) · 841e772 (#52) · .claude/agents/harness-simplifier.md',
+    decide: 'The evidence threshold (class silent for N plans), review cadence, who proposes removals (harness-simplifier?), and who approves them.',
+    prompt: 'Add a mechanism-retirement pass: every encoded constraint (hook check, rule clause, skill class) cites the failure class it encodes, and a periodic pass flags constraints whose class hasn’t fired in N plans for removal — extending development-log.md’s distill-then-delete cap to the whole layer. Decide: evidence threshold, cadence, and who proposes vs approves removals.'
+  },
+  {
+    id: 'fire-drill', size: 'L', stage: 'Verify',
+    title: 'Fire-drill the #52 convergence machinery on seeded defects',
+    impact: 'The escalation ladder, churn guard, and delta rounds get proven on a synthetic plan before a real 9-round cycle depends on them.',
+    today: 'The machinery merged hours ago and has never executed: no repeat tag has been emitted, no tier-up escalation has run, no delta round has scoped a diff.',
+    pointers: '841e772 · .agents/skills/spec-review/SKILL.md · .claude/agents/codex-runner.md · dev-log 2026-07-24 (codex sandbox needs network flag)',
+    decide: 'Real codex exec calls in tests (cost + sandbox network flag) vs asserting only the parseable output contract; one-off drill vs a repeatable fixture suite.',
+    prompt: 'Fire-drill the never-exercised #52 convergence machinery: a fixture plan with seeded defects driven through spec-review via codex exec, asserting the verdict-line format, CX repeat tags, tier-up escalation, and delta-round scoping actually behave as specified. Decide: real codex calls (cost, sandbox network flag per the dev-log lesson) vs contract-only asserts, and one-off drill vs repeatable suite.'
+  },
+  {
+    id: 'registry', size: 'L', stage: 'Encode',
+    title: 'A constraint registry — each finding class lives at its cheapest stage',
+    impact: 'The "earliest stage" principle becomes architecture: template beats checklist beats lint beats hook beats review; Codex only carries what machines can’t check.',
+    today: 'Defect classes exist in exactly one place — spec-review prose at the most expensive stage. Templates, the Stop gate, and check scripts each encode fragments with no map between them.',
+    pointers: '.agents/skills/spec-review/SKILL.md § What to judge · specs/_templates/ · specs/*/checks/ · check_spec_completeness.py',
+    decide: 'Registry home and format; how spec-review references it without prompt bloat; the promotion path when a review-only class becomes lintable.',
+    prompt: 'Build a constraint registry mapping every known finding class to the cheapest stage that can catch it (template > checklist > lint > hook > review), with each entry citing its evidence; migrate the classes currently living only in spec-review prose, leaving review to carry only what machines can’t check. Decide: registry home/format, how spec-review references it without bloat, and the promotion path for newly lintable classes.'
+  },
+  {
+    id: 'retro-loop', size: 'XL', stage: 'Full loop',
+    title: 'Close the loop: a retro stage that ships the next constraint itself',
+    impact: 'The harness plans its own improvement: after every ship it mines the ledger, proposes the highest-value constraint, and drives it through its own plan → build → review pipeline.',
+    today: 'Stages 1–2 of the control loop run well; 3–5 (diagnose, encode, verify) barely exist. No command owns "what should the harness learn from this plan?"',
+    pointers: 'the whole ladder below it · specs/harness-self-improvement/discovery/unknowns-self-improvement.html (5-stage model)',
+    decide: 'Autonomy level (proposes for approval vs ships small constraints itself), trigger (every ship vs repeat-threshold), and how it proves a constraint works before adopting it.',
+    prompt: 'Add a retro stage that closes the loop end-to-end: after every ship it mines the findings ledger and health metrics, proposes the next machine-checked constraint, and drives it through the pipeline’s own plan → build → review stages. Decide: autonomy level (propose vs ship), trigger cadence, and how a constraint proves itself before adoption.'
+  },
+];
+
+const state = { picks: new Set() };
+
+function render() {
+  const host = document.getElementById('rungs');
+  host.innerHTML = RUNGS.map(r => `
+    <div class="rung s-${r.size} ${state.picks.has(r.id) ? 'picked' : ''}" id="rung-${r.id}">
+      <div class="rail"><div class="size-badge">${r.size}</div></div>
+      <div class="card">
+        <div class="card-top">
+          <h3>${r.title}</h3>
+          <span class="chip">${r.stage}</span>
+        </div>
+        <p class="impact">${r.impact}</p>
+        <div class="facts">
+          <div><span class="k">Today</span>${r.today}</div>
+          <div><span class="k">Anchors</span><code>${r.pointers}</code></div>
+          <div class="decide"><span class="k">To decide</span>${r.decide}</div>
+        </div>
+        <button class="resonate" data-id="${r.id}" aria-pressed="${state.picks.has(r.id)}">
+          ${state.picks.has(r.id) ? '✓ resonates' : 'this resonates'}
+        </button>
+      </div>
+    </div>`).join('');
+  host.querySelectorAll('.resonate').forEach(b => b.addEventListener('click', () => toggle(b.dataset.id)));
+  updateBar(); updatePrompt();
+}
+
+function toggle(id) {
+  state.picks.has(id) ? state.picks.delete(id) : state.picks.add(id);
+  render();
+}
+
+function updateBar() {
+  document.getElementById('pick-count').textContent = state.picks.size;
+  document.getElementById('pick-label').textContent = state.picks.size === 0
+    ? 'picks resonate — toggle cards above; the refined prompt updates live'
+    : `pick${state.picks.size === 1 ? '' : 's'} resonate — the refined prompt below carries only these`;
+}
+
+function buildPrompt() {
+  const picked = RUNGS.filter(r => state.picks.has(r.id));
+  const head = `Make the harness-layer pipeline (plan → build → review → ship) self-improving: every failure it produces becomes a machine-checked constraint at the earliest stage that could have caught it, and the layer's health becomes measurable. Ground everything in the repo's own evidence: soriza-cpo-department took 9 spec rounds (loose validation commands recur in rounds 1–4/6/7, promises exceeding platform contracts in rounds 1/5/6/8); restore commits #40/#42 prove the command prompt files regress with zero test coverage and no CI exists; the #52 convergence machinery has never fired; development-log.md holds one line. The discovery commands are out of scope.`;
+  const tail = `\n\nStop for confirmation before locking which interventions form the first plan.\nWorktree: .claude/worktrees/harness-self-improvement`;
+  if (picked.length === 0) {
+    return head + `\n\nInterventions: none picked yet — toggle the cards above to assemble the scope.` + tail;
+  }
+  const body = picked.map((r, i) => `${i + 1}. [${r.size}] ${r.prompt}\n   Anchors: ${r.pointers}`).join('\n');
+  return head + `\n\nBuild the plan around these ${picked.length} intervention${picked.length === 1 ? '' : 's'} (cheapest first):\n\n` + body + tail;
+}
+
+function updatePrompt() {
+  document.getElementById('prompt-out').textContent = buildPrompt();
+}
+
+document.getElementById('copy-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('copy-btn');
+  try { await navigator.clipboard.writeText(buildPrompt()); } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = buildPrompt(); document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+  }
+  btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy as prompt', 1400);
+});
+
+render();
+</script>
+</body>
+</html>
