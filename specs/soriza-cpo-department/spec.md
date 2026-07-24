@@ -172,11 +172,12 @@ Use these files to complete the task:
   invocation resolves and cleans up exactly its own targets; concurrent runs of the same
   client each gate on their own distinct marker (primary isolation is one engagement worktree
   per client; markers are defense-in-depth). No own-session marker → block with a clear
-  message; `_`-prefixed folders never valid; the command sweeps markers only from
-  already-complete clients; malformed/empty stdin or unreadable files → fail open (exit 0),
-  per the hooks contract. Command-scoped registration means other sessions editing
-  `projects/` are never gated. Tests: session-independence regression + same-client
-  concurrent case.
+  message; `_`-prefixed folders never valid; no process ever touches another session's
+  markers — the hook's own exit-0 cleanup is the only marker deletion, and abandoned markers
+  from dead sessions gate nobody; malformed/empty stdin or unreadable files → fail open
+  (exit 0), per the hooks contract. Command-scoped registration means other sessions editing
+  `projects/` are never gated. Tests: session-independence regression, same-client
+  concurrent case, re-run on a complete client, no-cross-session-deletion.
 - **Doctrine/hook drift**: the sync test fails if `definition-of-ready.md`'s checklist headings
   and the hook's tuple diverge — the pair ships together or not at all.
 - **Large section inventory**: `:section-briefs` loops inline by default; above ~10 sections it
@@ -225,14 +226,19 @@ Use these files to complete the task:
 
 <!-- CLAUDE-OWNED. The outcome summary Claude records after the Codex loop. -->
 
-- **Outcome:** needs-human (blockers) — cycle cap (2 rounds) reached at changes-requested.
-  Round 1: 3 blockers (artifact sharing model, gate targeting, weak validation) — fixed and
-  re-reviewed. Round 2: 3 blockers (target-file race → per-client markers, section-briefs
-  predecessor → wireframes/, AC7/AC9–AC11 keyword-loose → Rung Contract field assertions) —
+- **Outcome:** needs-human (blockers) — second cycle's cap (rounds 3–4) reached at
+  changes-requested. Cycle 1 (rounds 1–2): all blockers fixed on this branch. Cycle 2:
+  round 3 — 2 blockers (all-client marker gating strands unrelated runs → session-scoped
+  markers keyed to stdin `session_id` / `${CLAUDE_SESSION_ID}`; AC9–AC11 clause gaps →
+  clause-exact field assertions) — fixed and re-reviewed. Round 4 — 2 blockers
+  (complete-client sweep can delete live session markers → sweep removed entirely, hook's
+  own exit-0 cleanup is the sole marker deletion, plus re-run and cross-session-deletion
+  regressions; AC3/AC6/AC7/AC11 assertion gaps → exact source identities + index check,
+  exact per-staffer roster rows, AC7 field semantics, exact two-`- Gate:`-bullet mapping) —
   **fixes applied on this branch after the cap**; they await a verifying round via a plan
-  re-run (Revision Mode, round 3).
-- **Rejected findings:** none — every blocking finding from both rounds was applied; round-1
-  advisory (add html-artifacts-workflows.md to KB References) also applied.
+  re-run (Revision Mode, round 5).
+- **Rejected findings:** none — every blocking finding from all four rounds was applied;
+  round-1 advisory (add html-artifacts-workflows.md to KB References) also applied.
 
 ## References
 

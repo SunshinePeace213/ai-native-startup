@@ -188,14 +188,17 @@ Locked at plan time, within the ledger's boundaries:
   client B's abandoned incomplete marker, and two concurrent runs of the same client each
   gate on their own distinct marker file. No own-session marker → exit 2 with a clear message
   (inside the command a marker must exist); `_`-prefixed folders are never valid; malformed
-  stdin / unreadable files still fail open. Abandoned markers from dead sessions gate nobody;
-  the intake command's scaffold step sweeps markers (any session) only from clients whose
-  `intake.md` is already complete — removing a passing gate is harmless, removing a live
-  incomplete gate never happens. Primary isolation remains one engagement worktree per client
-  (git lane); markers are defense-in-depth. The newest-modified heuristic is dropped. Tests:
-  session-independence regression (session A with complete client A exits 0 while session B's
-  incomplete client-B marker exists; session B still exits 2) and the same-client two-session
-  concurrent case.
+  stdin / unreadable files still fail open. **No process ever touches another session's
+  markers** *(round-4 fix)* — there is no sweep: the only marker deletion is the hook removing
+  its own session's markers on exit 0. Abandoned markers from dead sessions gate nobody
+  (session-scoped matching ignores them) and are harmless gitignored litter. Primary
+  isolation remains one engagement worktree per client (git lane); markers are
+  defense-in-depth. The newest-modified heuristic is dropped. Tests: session-independence
+  regression (session A with complete client A exits 0 while session B's incomplete client-B
+  marker exists; session B still exits 2), the same-client two-session concurrent case, a
+  re-run-on-complete-client case (the new session's marker survives until its own hook
+  removes it), and a no-cross-session-deletion case (one live session never deletes
+  another's marker).
 - **Wireframe delivery modes** *(round-1 fix)*. Publishing an artifact makes it visible only to
   its author (Ringo — the relay); "private links" are Ringo's review surface, not a client
   surface. Client-facing delivery is locked per engagement and recorded in `decision-log.md`:

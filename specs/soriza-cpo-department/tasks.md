@@ -170,23 +170,28 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
 - **Satisfies:** AC7, AC8
 - Scope: `.claude/commands/soriza-design/intake.md` (Mira; **first write** drops the
   session-scoped per-client marker
-  `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}`; sweeps markers — any
-  session — only from already-complete clients; idempotent scaffold from `_template` — never
+  `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}`; never touches any other
+  session's markers — there is no sweep; idempotent scaffold from `_template` — never
   clobbers; interviews Ringo per `intake-standards.md`; writes `projects/<client>/intake.md`;
   commits per the git lane; Stop hook registered in frontmatter; carries a `## Rung Contract`
-  block with labeled fields `Staffer:` / `Reads:` / `Writes:` / `First write:` /
-  `DoR gate:` / `Refusal:` / `Commit:`); `.claude/hooks/check_intake_readiness.py` (matches
-  stdin `session_id` against the marker suffix and gates **only its own session's markers** —
-  blocks until every own-marked client's `intake.md` is complete, then removes only its own
-  markers on exit 0; fails toward blocking; no own-session marker → block with a clear
-  message; `_`-prefixed folders never valid; hard-coded DoR tuple matching
+  block with labeled fields `Staffer:` Mira / `Reads:` intake-standards.md / `Writes:`
+  intake.md / `First write:` the session-scoped marker / `DoR gate:` intake.md complete per
+  definition-of-ready.md / `Refusal:` refuse to conclude naming intake.md's missing
+  sections / `Commit:` `📝 docs(<client>)` + `Refs #N` on the engagement branch);
+  `.claude/hooks/check_intake_readiness.py` (matches stdin `session_id` against the marker
+  suffix and gates **only its own session's markers** — blocks until every own-marked
+  client's `intake.md` is complete, then removes only its own markers on exit 0, the sole
+  marker deletion anywhere; fails toward blocking; no own-session marker → block with a
+  clear message; `_`-prefixed folders never valid; hard-coded DoR tuple matching
   `definition-of-ready.md`; exit-2 per-section diagnostics; fail-open only on malformed
   stdin/plumbing); a `.gitignore` line for `projects/*/.intake-in-progress.*`; tests under
   `tests/harness-layer/hooks/intake-readiness/` (block/allow/fail-open, wiring expectations,
   doctrine-sync test, session-independence regression — session A with complete client A
   exits 0 while session B's incomplete client-B marker exists, and session B still exits 2 —
-  and the same-client two-session concurrent case, plus own-marker cleanup on exit 0);
-  catalog row in `.claude/rules/harness-layer/hooks.md`.
+  the same-client two-session concurrent case, own-marker cleanup on exit 0, re-run on a
+  complete client — the new session's marker survives — and no-cross-session-deletion —
+  one live session never deletes another's marker); catalog row in
+  `.claude/rules/harness-layer/hooks.md`.
 - Launch prompt:
 
   ```text
@@ -257,11 +262,11 @@ all children closed by their PRs, validation commands green, ladder pilot-ready 
 - Scope: `.claude/rules/soriza-design/git-lane.md` (`paths: ["projects/**/*"]`): one issue per
   engagement; engagement branch `docs/<N>-<client>` via `gh issue develop`; engagement worktree
   named after the client; rung commits `📝 docs(<client>): … / Refs #N`; PRs at exactly two
-  gate points, each stated as its own bullet pairing the gate name with its reference keyword
-  on one line — one bullet for "brief approved" carrying `Refs #N` (and no `Closes`), one for
-  "packet hand-off" carrying `Closes #N` — plus an explicit no-PR-per-deliverable clause; for
-  `projects/**` PRs the DoR checklist + decision-log entry + client sign-off replace the docs
-  template's Test Evidence block.
+  gate points, stated as exactly two one-line bullets prefixed `- Gate:` pairing the gate
+  name with its reference keyword — `- Gate: brief approved …` carrying `Refs #N` (never
+  `Closes`), `- Gate: packet hand-off …` carrying `Closes #N` — no other `- Gate:` bullets,
+  plus an explicit no-PR-per-deliverable clause; for `projects/**` PRs the DoR checklist +
+  decision-log entry + client sign-off replace the docs template's Test Evidence block.
 - Launch prompt:
 
   ```text

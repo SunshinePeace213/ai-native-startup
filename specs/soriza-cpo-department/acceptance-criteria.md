@@ -36,21 +36,27 @@
   structure row; the set of root-level markdown files is unchanged (no new root memory file).
 - **AC7** — `/soriza-design:intake` exists with `disable-model-invocation: true` and the Stop
   hook registered in its frontmatter, and carries a `## Rung Contract` block whose fields
-  assert: `Staffer:` Mira; `First write:` the session-scoped marker
-  `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}` (plus the sweep of markers on
-  already-complete clients); `Writes:` `projects/<client>/intake.md`; an idempotent
-  never-clobber scaffold from `_template`; `Refusal:` and `Commit:` clauses. The marker
-  pattern `projects/*/.intake-in-progress.*` is gitignored.
+  assert, clause-exact: `Staffer:` Mira; `Reads:` `intake-standards.md`; `First write:` the
+  session-scoped marker `projects/<client>/.intake-in-progress.${CLAUDE_SESSION_ID}`;
+  `Writes:` `projects/<client>/intake.md`; `DoR gate:` `intake.md` complete per
+  `definition-of-ready.md`; `Refusal:` states refuse and names `intake.md`; `Commit:` states
+  all three of `docs(<client>)`, `Refs #`, and the engagement branch. The command body
+  asserts an idempotent never-clobber scaffold from `_template` and never touches another
+  session's markers (no sweep clause anywhere). The marker pattern
+  `projects/*/.intake-in-progress.*` is gitignored.
 - **AC8** — `check_intake_readiness.py` scopes to its own session: it matches stdin's
   `session_id` against the marker suffix, exits 2 with per-section stderr diagnostics while
   any **own-session** marked client's `intake.md` is incomplete/missing, exits 2 with a clear
   message when no own-session marker exists, exits 0 only when every own-marked client is
-  complete — and then removes only its own session's markers. `_`-prefixed folders are never
-  valid; fail-open (exit 0) on malformed stdin/plumbing errors. The session-independence
-  regression proves session A (complete client A) exits 0 while session B's incomplete
-  client-B marker exists — neither releasing nor stranding the other — and session B still
-  exits 2 on its own marker; the same-client test proves two concurrent sessions marking one
-  client each gate on their own distinct marker. The hook's required-section tuple matches
+  complete — and then removes only its own session's markers, the sole marker deletion in
+  the whole design. `_`-prefixed folders are never valid; fail-open (exit 0) on malformed
+  stdin/plumbing errors. The session-independence regression proves session A (complete
+  client A) exits 0 while session B's incomplete client-B marker exists — neither releasing
+  nor stranding the other — and session B still exits 2 on its own marker; the same-client
+  test proves two concurrent sessions marking one client each gate on their own distinct
+  marker; the re-run regression proves intaking an already-complete client leaves the new
+  session's marker in place until its own hook removes it; the isolation regression proves
+  no code path deletes another session's marker. The hook's required-section tuple matches
   `definition-of-ready.md`'s checklist headings (sync test). All hook tests and the wiring
   pin pass.
 - **AC9** — The four ladder commands exist under `/soriza-design:*`, and each carries a
@@ -77,11 +83,12 @@
 - **AC11** — `.claude/rules/soriza-design/git-lane.md` exists, `projects/**`-scoped, and
   asserts clause-level: the engagement issue/branch model (`docs/<N>-<client>` via
   `gh issue develop`); per-rung commits (`📝 docs(<client>)` + `Refs #N`); PRs at **exactly
-  two gate points**, each stated as its own one-line bullet pairing the gate name with its
-  reference keyword — the "brief approved" bullet carries `Refs #N` and no `Closes`, the
-  "packet hand-off" bullet carries `Closes #N` (swapped semantics fail); an explicit
-  no-PR-per-deliverable clause; and the evidence swap sentence (DoR checklist + decision-log
-  entry + client sign-off **replace** Test Evidence in `projects/**` PRs).
+  two gate points**, stated as exactly two one-line `- Gate:` bullets whose normalized
+  {gate name → reference keyword} set equals exactly {"brief approved" → `Refs #N`,
+  "packet hand-off" → `Closes #N`} — extra gate bullets, missing pairs, bullets carrying
+  both keywords, or swapped semantics all fail; an explicit no-PR-per-deliverable clause;
+  and the evidence swap sentence (DoR checklist + decision-log entry + client sign-off
+  **replace** Test Evidence in `projects/**` PRs).
 - **AC12** — Every child issue #44–#48 is closed by its own merged PR (one pipeline run per
   child); epic #43's checklist is fully ticked.
 
@@ -98,8 +105,16 @@ any failure.
   m = yaml.safe_load(open('ai-docs/sources.yaml'))
   d = m.get('design', [])
   assert len(d) == 5 and all(e['fetched'] and e['file'].startswith('design/') for e in d), d
+  urls = [e['url'] for e in d]
+  for marker in ['w3.org/WAI/WCAG22/quickref','web.dev/learn/design','fonts.google.com/knowledge']:
+      assert sum(marker in u for u in urls) == 1, 'missing/duplicate source: ' + marker
+  assert sum('nngroup.com/articles/' in u for u in urls) == 2, 'expected exactly the two NN/g articles'
+  assert any('nngroup.com' in u and 'homepage' in u for u in urls), 'NN/g homepage cornerstone missing'
+  idx = open('ai-docs/index.md').read()
+  for e in d:
+      assert e['file'] in idx, 'index.md missing entry for ' + e['file']
   assert any('code.claude.com/docs/en/memory' in e['url'] for e in m['anthropic'])
-  print('AC3 ok')"` — verifies AC3.
+  print('AC3 ok')"` — verifies AC3 (exact source identities + index entries; adjust a URL marker only if #44 recorded a documented same-topic swap).
 - `uv run python -c "
   from pathlib import Path
   t = Path('projects/_template')
@@ -130,9 +145,12 @@ any failure.
   from pathlib import Path
   import subprocess
   text = Path('.claude/rules/soriza/roster.md').read_text()
+  rows = [[c.strip() for c in l.strip().strip('|').split('|')] for l in text.splitlines() if l.strip().startswith('|')]
+  body = [r for r in rows if r and r[0] and not set(''.join(r)) <= set('-: ') and r[0] not in ('Name','Staffer')]
   for who in ['Vera','Mira','Elias','Ivo','Juno','Lior']:
-      row = [l for l in text.splitlines() if l.strip().startswith('|') and who in l]
-      assert row and row[0].count('|') >= 5, who + ': missing row or column'
+      mine = [r for r in body if r[0] == who]
+      assert len(mine) == 1, who + ': expected exactly one roster row keyed by name'
+      assert len(mine[0]) >= 4 and all(mine[0][:4]), who + ': all four columns must be non-empty'
   agents = Path('AGENTS.md').read_text()
   assert 'soriza/roster.md' in agents and 'soriza-design' in agents and 'projects/' in agents
   root_md = sorted(p for p in subprocess.run(['git','ls-files','*.md'],capture_output=True,text=True).stdout.splitlines() if '/' not in p)
@@ -148,13 +166,18 @@ any failure.
   fields = dict(re.findall(r'\*{0,2}(Staffer|Reads|Writes|First write|DoR gate|Refusal|Commit)\*{0,2}:\s*(.+)', block.group(1)))
   assert set(fields) == {'Staffer','Reads','Writes','First write','DoR gate','Refusal','Commit'}, fields
   assert 'Mira' in fields['Staffer']
+  assert 'intake-standards' in fields['Reads'], 'Reads must name intake-standards.md'
   assert '.intake-in-progress.' in fields['First write'] and 'CLAUDE_SESSION_ID' in fields['First write'], 'marker not session-scoped'
   assert 'intake.md' in fields['Writes']
+  assert 'intake.md' in fields['DoR gate'] and 'definition-of-ready' in fields['DoR gate'], 'DoR gate must name intake.md + definition-of-ready.md'
+  assert re.search(r'refuse', fields['Refusal'], re.I) and 'intake.md' in fields['Refusal'], 'Refusal must refuse AND name intake.md'
+  for clause in ['docs(', 'Refs #', 'engagement branch']:
+      assert clause in fields['Commit'], 'Commit missing clause ' + clause
   assert re.search(r'never clobber|existing|idempotent', text, re.I), 'no idempotence clause'
-  assert 'sweep' in text.lower(), 'no stale-marker sweep clause'
+  assert 'sweep' not in text.lower(), 'sweep clause present — no process may touch other sessions markers'
   ignored = subprocess.run(['git','check-ignore','projects/x/.intake-in-progress.abc123'],capture_output=True).returncode == 0
   assert ignored, 'marker pattern not gitignored'
-  print('AC7 ok')"` — verifies AC7 (field-level contract, not keywords).
+  print('AC7 ok')"` — verifies AC7 (clause-exact contract fields; no sweep).
 - `uv run pytest tests/harness-layer/hooks/ -k "intake or wiring"` — verifies AC8 (contract,
   fail-open, doctrine-sync, cross-client regression, wiring pin). All green.
 - `uv run python -c "
@@ -216,11 +239,15 @@ any failure.
   for needle in ['docs/<N>-<client>','gh issue develop','docs(<client>)','Refs #N']:
       assert needle in text, 'git-lane.md missing: ' + needle
   lines = text.splitlines()
-  ba = [l for l in lines if 'brief approved' in l]
-  ph = [l for l in lines if 'packet hand-off' in l]
-  assert ba and ph, 'gate points not both named'
-  assert any('Refs #' in l and 'Closes' not in l for l in ba), 'brief-approved gate must pair with Refs #N (and never Closes)'
-  assert any('Closes #' in l for l in ph), 'packet hand-off gate must pair with Closes #N'
+  gates = [l for l in lines if l.strip().startswith('- Gate:')]
+  assert len(gates) == 2, 'expected exactly two - Gate: bullets, got %d' % len(gates)
+  norm = set()
+  for l in gates:
+      assert not ('Refs #' in l and 'Closes #' in l), 'gate bullet carries both reference keywords'
+      name = 'brief approved' if 'brief approved' in l else ('packet hand-off' if 'packet hand-off' in l else '?')
+      ref = 'Refs' if 'Refs #' in l else ('Closes' if 'Closes #' in l else '?')
+      norm.add((name, ref))
+  assert norm == {('brief approved','Refs'), ('packet hand-off','Closes')}, norm
   assert re.search(r'(replace|instead of).{0,60}Test Evidence|Test Evidence.{0,60}(replaced|swap)', text, re.S), 'no evidence-swap clause'
   for needle in ['DoR checklist','decision-log','sign-off']:
       assert needle in text, 'evidence swap incomplete: ' + needle
