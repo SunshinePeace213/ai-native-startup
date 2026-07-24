@@ -200,13 +200,22 @@ const RUNGS = [
     prompt: 'Create a structured findings ledger parsed from specs/*/reviews/*.md — the reports already carry verdict lines, CX<N>-<i> IDs, and new/repeat tags per the spec-review output contract. One row per blocking finding: plan, round, class, repeat-of, disposition. Decide: schema and home, backfill vs fresh start, and whether a parser script or the review command’s terminal step maintains it.'
   },
   {
+    id: 'stop-gate-scope', size: 'S', stage: 'Encode',
+    title: 'Fix the plan Stop gate’s wrong-target defect — the class Codex keeps flagging',
+    impact: 'The harness applies its own review lesson to itself: the spec-completeness gate stops guessing "newest-modified folder" and gates the plan the session actually drafted.',
+    today: 'check_spec_completeness.py gates the newest-modified plan folder across main and every worktree — the exact wrong-target class Codex blocked for four rounds in soriza’s intake hook; parallel background jobs make the race real. Its tests don’t cover concurrency.',
+    pointers: '.claude/hooks/check_spec_completeness.py (newest_plan_folder) · specs/soriza-cpo-department/reviews/ rounds 1–4 · tests/harness-layer/hooks/spec-completeness/',
+    decide: 'The targeting channel (session-scoped marker vs hook-input worktree), and whether this ships as the first proof of the encode loop — a review finding class becoming a harness fix plus regression test.',
+    prompt: 'Fix the plan Stop gate’s own wrong-target defect: check_spec_completeness.py gates the newest-modified plan folder across all worktrees — the same defect class Codex blocked for four rounds in soriza-cpo’s intake hook. Re-target it to the invoking session’s plan, with concurrency regression tests. Decide: the targeting channel, and whether this ships as the first proof of the encode loop.'
+  },
+  {
     id: 'health', size: 'M', stage: 'Instrument',
     title: 'Health metrics computed from files the pipeline already commits',
     impact: '"Is the layer improving?" becomes a number: rounds-to-approval trend, repeat-rate, findings per class — instead of a feeling.',
     today: 'Rounds-to-approval is derivable today (5, 6, 2, 6, 5, 10, 9, 7, 5 across specs/*/reviews/) but nobody computes it; the unknowns pass named the quality bar, nothing measures against it.',
     pointers: 'specs/*/reviews/ · specs/harness-self-improvement/discovery/unknowns-self-improvement.html (quality bar)',
     decide: 'Delivery surface (a script, a committed dashboard page, a ship-step report line) and refresh trigger (post-merge, per-ship, manual).',
-    prompt: 'Compute harness health metrics from files the pipeline already commits — rounds-to-approval per plan (currently 5, 6, 2, 6, 5, 10, 9, 7, 5), repeat-rate, finding-class frequencies — reading the findings ledger or specs/*/reviews/ directly. Decide: delivery surface (script vs committed dashboard page vs ship-report line) and refresh trigger.'
+    prompt: 'Compute harness health metrics from files the pipeline already commits — rounds-to-approval per plan (currently 5, 6, 2, 6, 5, 10, 9, 7, 5), repeat-rate, finding-class frequencies, and post-approval escapes (defects found after an approved round, like the #40/#42 regressions) as the reviewer-quality signal — reading the findings ledger or specs/*/reviews/ directly. Decide: delivery surface (script vs committed dashboard page vs ship-report line) and refresh trigger.'
   },
   {
     id: 'ci', size: 'M', stage: 'Verify',
@@ -218,13 +227,22 @@ const RUNGS = [
     prompt: 'Add a GitHub Actions workflow — the repo currently has none — running uv run pytest tests/harness-layer on PRs touching .claude/**, .agents/**, or tests/**. Decide: exact trigger paths, uv setup on the runner, and honoring the [skip-ci] token from git-workflow.md.'
   },
   {
-    id: 'disposition', size: 'M', stage: 'Encode',
-    title: 'Every blocking finding ends with an encode-or-accept disposition',
-    impact: 'The loop’s missing step: a finding is closed only when it names the constraint that now catches its class — or is explicitly accepted as a one-off.',
-    today: 'harness-review’s memory step writes prose dev-log lines (one line ever); findings are fixed in the spec and forgotten — nothing asks "what now catches this class earlier?"',
-    pointers: '.claude/commands/harness-layer/harness-review.md (step 7 memory step) · .claude/rules/development-log.md',
-    decide: 'Where the step lives (review terminal step vs ship), what dispositions are legal (test / lint / hook / template edit / accepted), and what enforces follow-through on "encoded" claims.',
-    prompt: 'Add an encode-or-accept disposition step to the pipeline: every blocking finding closes with either the machine-checked constraint (test / lint / hook / template edit) that now catches its class at the earliest stage, or an explicit accepted-one-off record — written to the findings ledger, replacing the prose-only dev-log memory step as the loop’s Encode stage. Decide: whether it lives in harness-review’s terminal step or harness-ship, and what enforces follow-through.'
+    id: 'pr-learning-gate', size: 'M', stage: 'Encode',
+    title: 'The PR carries its self-learning — machine-checked before merge',
+    impact: 'A PR is incomplete until it ships what the layer learned: rule/memory edits and encode-or-accept dispositions ride the same PR, so learning can’t be forgotten once the PR merges and the same error can’t return unrecorded.',
+    today: 'The memory step exists (build step 9, review step 7) but is prose-only and unenforced — development-log.md holds one line after nine shipped plans; no PR template has a learning section; ship verifies only ready + checks + head SHA. And the memory write lands in the post-approval terminal commit — the one commit Codex never reviews.',
+    pointers: '.github/PULL_REQUEST_TEMPLATE/*.md · harness-review.md step 7 · harness-ship.md step 2 · .claude/rules/development-log.md',
+    decide: 'Gate placement (ready-flip vs ship vs both); legal payloads (rule/memory edit, ledger disposition, explicit "nothing to record"); and timing — moving the learning write before the final reviewed round so it stops shipping unreviewed.',
+    prompt: 'Make self-learning a machine-checked part of PR completeness: every PR template gains a ## Self-Learning section filled from finding dispositions and the rule/memory edits shipped in the same PR; the ready-flip and harness-ship refuse a PR whose review rounds had blocking findings but whose diff carries no learning payload (or explicit accepted-one-off). Decide: gate placement (ready-flip vs ship vs both), legal payload forms, and moving the learning write before the final reviewed round — today it lands in the post-approval terminal commit Codex never reviews.'
+  },
+  {
+    id: 'fix-verify', size: 'M', stage: 'Detect',
+    title: 'Verify fixes against their CX IDs before paying for the next round',
+    impact: 'Rounds stop being the fix-checker: a cheap pre-round pass demands evidence per blocking finding, so "partially resolved" chains like soriza rounds 2–4 don’t each burn a full Codex round to discover an incomplete fix.',
+    today: 'After changes-requested, fixers commit and the only verification is the next codex exec round; soriza’s reports disposition prior blockers "not fixed / partially resolved" round after round.',
+    pointers: 'harness-review.md step 6 · harness-plan.md § Codex Cross-Review step 4 · specs/soriza-cpo-department/reviews/ rounds 2–4 (Prior blockers lines)',
+    decide: 'Who verifies (the fixer’s hand-off contract, a cheap second agent, or a scripted checklist keyed by CX ID), and whether a failed verification can cancel the scheduled round.',
+    prompt: 'Add a cheap fix-verification pass between changes-requested and the next paid round: each CX finding’s fix must present evidence (diff hunk + rationale, or a failing-then-passing check) validated by a cheap agent before the next codex exec spawns — targeting the "partially resolved" chains that stretched soriza to 9 rounds. Decide: who verifies, and whether failed verification cancels the round.'
   },
   {
     id: 'retire', size: 'M', stage: 'Encode',
@@ -305,7 +323,7 @@ function updateBar() {
 
 function buildPrompt() {
   const picked = RUNGS.filter(r => state.picks.has(r.id));
-  const head = `Make the harness-layer pipeline (plan → build → review → ship) self-improving: every failure it produces becomes a machine-checked constraint at the earliest stage that could have caught it, and the layer's health becomes measurable. Ground everything in the repo's own evidence: soriza-cpo-department took 9 spec rounds (loose validation commands recur in rounds 1–4/6/7, promises exceeding platform contracts in rounds 1/5/6/8); restore commits #40/#42 prove the command prompt files regress with zero test coverage and no CI exists; the #52 convergence machinery has never fired; development-log.md holds one line. The discovery commands are out of scope.`;
+  const head = `Make the harness-layer pipeline (plan → build → review → ship) self-improving: every failure it produces becomes a machine-checked constraint at the earliest stage that could have caught it, and the layer's health becomes measurable. Ground everything in the repo's own evidence: soriza-cpo-department took 9 spec rounds (loose validation commands recur in rounds 1–4/6/7, promises exceeding platform contracts in rounds 1/5/6/8); restore commits #40/#42 prove the command prompt files regress with zero test coverage and no CI exists; the #52 convergence machinery has never fired; development-log.md holds one line. The discovery commands are out of scope. Standing requirement: self-learning ships inside the PR itself, machine-checked as part of PR completeness (rule/memory edits and finding dispositions in the same PR, gated before merge) — never a post-merge activity the user can forget.`;
   const tail = `\n\nStop for confirmation before locking which interventions form the first plan.\nWorktree: .claude/worktrees/harness-self-improvement`;
   if (picked.length === 0) {
     return head + `\n\nInterventions: none picked yet — toggle the cards above to assemble the scope.` + tail;
