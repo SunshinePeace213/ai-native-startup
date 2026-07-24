@@ -9,16 +9,14 @@ the repo-routing GIT_* variables are scrubbed -- so a hook under test can
 never read or touch the host's git state by accident. Tests express intent
 with `env_overrides` / `unset_env` instead of hand-building environments.
 
-`load_hook_module` is the one blessed way to import a hook module
-in-process: the module name derives from the hooks-relative path, so two
-families' `_common.py` can never collide in sys.modules, and sys.path is
-never mutated.
+`load_hook_module` (the blessed way to import a hook module in-process)
+lives in the parent tests/harness-layer/conftest.py so the prompts suite
+can share it too; hook tests keep resolving it there via pytest's normal
+conftest lookup.
 """
 
-import importlib.util
 import json
 import os
-import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -81,21 +79,3 @@ def edit_payload():
         return json.dumps({"tool_name": tool_name, "tool_input": {"file_path": str(path)}})
 
     return _payload
-
-
-@pytest.fixture(scope="session")
-def load_hook_module():
-    """Import a hook module under a name derived from its hooks-relative path
-    (auto-format/_common.py -> auto_format__common), cached per worker."""
-    cache: dict = {}
-
-    def _load(rel_path: str):
-        if rel_path not in cache:
-            name = re.sub(r"\W", "_", rel_path.removesuffix(".py"))
-            spec = importlib.util.spec_from_file_location(name, HOOKS_ROOT / rel_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            cache[rel_path] = module
-        return cache[rel_path]
-
-    return _load
