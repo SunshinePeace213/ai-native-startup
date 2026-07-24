@@ -1,0 +1,292 @@
+<title>Self-improving harness — unknowns & vocabulary</title>
+<style>
+  :root {
+    --bg: #FAF8F5; --surface: #F0EDE5; --border: #D4CFC7; --text: #2C2825;
+    --accent: #B8602A; --muted: #8A837A;
+    --ok: #5A7A52; --warn: #A5822B;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 0 0 360px;
+  }
+  main { max-width: 900px; margin: 0 auto; padding: 48px 24px 0; }
+  h1 { font-family: var(--serif); font-size: 2.1rem; font-weight: 600; text-wrap: balance; }
+  h2 { font-family: var(--serif); font-size: 1.45rem; font-weight: 600; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 10px 0 0; max-width: 68ch; }
+  .eyebrow {
+    font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 10px;
+  }
+  section { margin-top: 56px; }
+  .lede { color: var(--muted); max-width: 68ch; margin: 4px 0 24px; }
+
+  /* ---- control loop (signature) ---- */
+  .loop { display: flex; flex-wrap: wrap; gap: 0; align-items: stretch; margin: 26px 0 8px; }
+  .loop .stage {
+    flex: 1 1 150px; background: var(--surface); border: 1px solid var(--border);
+    padding: 14px 14px 16px; position: relative; min-width: 150px;
+  }
+  .loop .stage + .stage { border-left: none; }
+  .loop .stage .n { font-family: var(--mono); font-size: .7rem; color: var(--accent); }
+  .loop .stage b { display: block; font-size: .95rem; margin: 2px 0 4px; }
+  .loop .stage p { font-size: .8rem; color: var(--muted); line-height: 1.45; }
+  .loop-note { font-size: .85rem; color: var(--muted); max-width: 68ch; }
+  .loop-note b { color: var(--text); }
+
+  /* ---- cards ---- */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 4px solid var(--border); padding: 20px 22px; margin: 18px 0;
+    transition: border-color .15s;
+  }
+  .card[data-disp="resolve"] { border-left-color: var(--accent); }
+  .card[data-disp="accept"] { border-left-color: var(--ok); }
+  .card[data-disp="discuss"] { border-left-color: var(--warn); }
+  .card h3 { font-size: 1.06rem; margin-bottom: 8px; }
+  .card .tag { font-family: var(--mono); font-size: .7rem; color: var(--accent); margin-right: 8px; }
+  .card .what, .card .bites, .card .instead { font-size: .9rem; margin: 8px 0; }
+  .card .lbl { font-weight: 700; font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .card .ev {
+    font-family: var(--mono); font-size: .78rem; background: var(--bg);
+    border: 1px solid var(--border); padding: 8px 10px; margin: 10px 0; color: #57504a;
+    overflow-x: auto;
+  }
+  .disp { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .disp button {
+    font: 600 .8rem/1 inherit; padding: 8px 14px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); cursor: pointer; border-radius: 3px;
+  }
+  .disp button:hover { border-color: var(--muted); }
+  .card[data-disp="resolve"] button[data-d="resolve"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .card[data-disp="accept"]  button[data-d="accept"]  { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .card[data-disp="discuss"] button[data-d="discuss"] { background: var(--warn); border-color: var(--warn); color: #fff; }
+
+  /* ---- vocabulary ---- */
+  .term { border-top: 1px solid var(--border); padding: 16px 0; display: grid; grid-template-columns: 220px 1fr; gap: 18px; }
+  .term:last-of-type { border-bottom: 1px solid var(--border); }
+  .term b { font-size: .98rem; }
+  .term .plain { font-size: .88rem; }
+  .term .mech { font-size: .84rem; color: var(--muted); margin-top: 4px; }
+  .term .pro { font-family: var(--mono); font-size: .78rem; color: var(--accent); margin-top: 6px; }
+  @media (max-width: 640px) { .term { grid-template-columns: 1fr; gap: 6px; } }
+
+  .bar li { font-size: .9rem; margin: 8px 0 8px 4px; }
+  .bar { padding-left: 20px; }
+
+  /* ---- prompt dock ---- */
+  #dock {
+    position: fixed; left: 0; right: 0; bottom: 0; background: #2C2825; color: #EDE8E0;
+    border-top: 3px solid var(--accent); padding: 14px 24px 18px; max-height: 330px;
+  }
+  #dock .row { max-width: 900px; margin: 0 auto; display: flex; gap: 14px; align-items: flex-start; }
+  #prompt {
+    flex: 1; font-family: var(--mono); font-size: .74rem; line-height: 1.5;
+    white-space: pre-wrap; overflow-y: auto; max-height: 250px; color: #D8D2C8;
+  }
+  #dock .side { display: flex; flex-direction: column; gap: 8px; min-width: 130px; }
+  #copy {
+    font: 700 .85rem/1 inherit; padding: 10px 16px; background: var(--accent);
+    color: #fff; border: none; cursor: pointer; border-radius: 3px;
+  }
+  #tally { font-size: .74rem; color: #A69E92; }
+  #dock .dk { font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: #A69E92; margin-bottom: 8px; }
+</style>
+
+<main>
+  <div class="eyebrow">Discovery · unknowns pass · both gaps · 2026-07-24</div>
+  <h1>Why the pipeline keeps finding new issues — and what a self-improving harness actually is</h1>
+  <p class="sub">Everything below is grounded in this repo: the review verdicts under <code>specs/*/reviews/</code>, the git history of <code>.claude/commands/harness-layer/</code>, and the dev logs of the last two builds. Disposition each card; the prompt at the bottom assembles itself.</p>
+
+  <section id="model">
+    <div class="eyebrow">The mental model</div>
+    <h2>A self-improving harness is a closed control loop, not a pile of prompts</h2>
+    <p class="lede">"Agents train agents" has a precise meaning in the field: every failure becomes a <em>machine-checked constraint</em> at the earliest stage that could have caught it. Prose memory is the weakest encoding; a hook or test is the strongest. Your pipeline currently runs stages 1–2 well and stages 3–5 barely at all.</p>
+    <div class="loop">
+      <div class="stage"><span class="n">1</span><b>Instrument</b><p>Emit measurable traces: review rounds, finding classes, deviations. You have the files; nothing counts them.</p></div>
+      <div class="stage"><span class="n">2</span><b>Detect</b><p>Classify failures against a stable taxonomy. You classify at routing time (spec / approach / detail) but persist nothing.</p></div>
+      <div class="stage"><span class="n">3</span><b>Diagnose</b><p>Root-cause: was it the spec, the builder, the reviewer — or the harness itself? The fourth answer is never recorded.</p></div>
+      <div class="stage"><span class="n">4</span><b>Encode</b><p>Fix at the cheapest stage: template &gt; checklist &gt; lint &gt; hook. A dev-log line is a queue entry, not a fix.</p></div>
+      <div class="stage"><span class="n">5</span><b>Verify</b><p>Regression evals so the harness never silently loses what it learned. Today only hooks have tests.</p></div>
+    </div>
+    <p class="loop-note"><b>The aviation model:</b> every item on a pre-flight checklist is a past crash. A recurring Codex finding class that hasn't become a plan-time check yet is a crash you're scheduled to have again.</p>
+  </section>
+
+  <section id="board">
+    <div class="eyebrow">Codebase gap · unknowns board</div>
+    <h2>Seven things the pipeline's own files say about the friction</h2>
+    <p class="lede">Each card: what it is, why it bites, what to do instead — with the evidence line that makes it real. <b>Fix</b> folds it into the improved prompt as a work item; <b>Accept</b> records it as a known risk; <b>Discuss</b> flags it for the interview.</p>
+    <div id="cards"></div>
+  </section>
+
+  <section id="vocab">
+    <div class="eyebrow">Domain gap · vocabulary ladder</div>
+    <h2>The six terms that let you prompt for this precisely</h2>
+    <div id="terms"></div>
+  </section>
+
+  <section id="quality">
+    <div class="eyebrow">Domain gap · quality bar</div>
+    <h2>How professionals judge whether a harness is actually improving</h2>
+    <p class="lede">Not by feel. By these, each derivable from files the pipeline already commits:</p>
+    <ul class="bar">
+      <li><b>Rounds-to-approval trends down</b> across consecutive plans (soriza-cpo: 9 spec rounds; kb-seed: 5 + 2 — today nobody computes the trend).</li>
+      <li><b>No finding class ever recurs twice</b> — a second occurrence means stage 4 (Encode) failed, not that the builder was careless.</li>
+      <li><b>The harness eval suite is green on every harness commit</b> — a prompt-file edit that drops a load-bearing section fails CI, instead of surfacing two plans later.</li>
+      <li><b>The pipeline's own machinery produces zero dev-log deviations</b> — every "tool wasn't available / push refused / hook stranded the run" entry is a harness bug, and counts as one.</li>
+      <li><b>A fresh agent can run the pipeline from the docs alone</b> — tribal knowledge in your head is friction the layer hasn't absorbed yet.</li>
+    </ul>
+  </section>
+</main>
+
+<div id="dock">
+  <div class="dk">Improved prompt — assembles from your dispositions</div>
+  <div class="row">
+    <div id="prompt"></div>
+    <div class="side">
+      <button id="copy">Copy prompt</button>
+      <div id="tally"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CARDS = [
+  {
+    id: "F1", title: "The harness has no regression protection for itself",
+    what: "Hooks have a full test suite; the nine command files that ARE the pipeline (705 lines under .claude/commands/harness-layer/) have none. The layer that gates everything is itself ungated.",
+    ev: "PR #40 “restore report sections” and #42 “restore instructions section” each put back load-bearing sections a previous harness edit silently deleted. Six pipeline redesigns (#11 #14 #18 #34 #38 #52) all shipped unverified.",
+    bites: "Every new feature runs on a pipeline that may have just regressed — this is a large share of the “each feature surfaces new issues” experience.",
+    instead: "A structural regression test pinning each command file's required sections — exactly how tests/harness-layer/hooks/test_wiring.py already pins hook registrations — plus, later, golden-task evals.",
+    short: "add a regression test pinning the required sections of every .claude/commands/harness-layer/*.md file (the test_wiring.py pattern), so harness edits can no longer silently delete load-bearing sections as PRs #40/#42 had to repair"
+  },
+  {
+    id: "F2", title: "Review findings are collected but never mined",
+    what: "20+ verdict files sit under specs/*/reviews/ with classified blocking findings. Recurring classes are plainly visible across plans — yet no pipeline step ever reads them in aggregate.",
+    ev: "“Validation commands don't assert the criterion” blocked soriza-cpo rounds 1, 5, 6 and 8. “Spec promises exceed the documented platform contract” (Stop-hook 8-block cap) blocked rounds 5–8.",
+    bites: "The same class costs full Codex rounds on every plan because each plan meets it fresh. The memory step only records tasks you memory-marked at plan time — you must predict where the lesson will be.",
+    instead: "A retrospective step in harness-review: classify every blocking finding against a persistent taxonomy file; a class's second occurrence forces a rule/check-script update before the run may end.",
+    short: "add a retrospective step to harness-review that classifies every blocking finding into a persistent cross-plan taxonomy and forces a rule or check-script update when a class recurs"
+  },
+  {
+    id: "F3", title: "Known defect classes are caught at the most expensive stage",
+    what: "check_spec_completeness.py verifies headings exist — purely structural. Every defect class you've already paid for (assertion-free ACs, platform-contract overreach) still passes drafting and dies rounds later in Codex review.",
+    ev: "The #52 fix made check scripts a convention, but nothing at plan time verifies each AC names one, or that hook-guarantee claims carry a KB citation.",
+    bites: "A defect that could die free in drafting instead costs a full review round — multiplied by every future plan.",
+    instead: "Grow the spec gate from structural to semantic: every AC must reference a checks/ script; every absolute behavioral guarantee (“blocked until complete”) must cite the KB doc that permits it.",
+    short: "extend the spec-completeness Stop hook from heading checks to semantic checks: every acceptance criterion must name a checks/ script, and absolute behavioral guarantees must cite a KB doc"
+  },
+  {
+    id: "F4", title: "Every fix adds a mechanism; nothing ever removes one",
+    what: "harness-plan.md alone is 192 lines carrying two counters (attempt A vs report N), four SHA roles, marker-comment upserts, explicit refspecs, churn guards and escalation ladders. Each mechanism is an instruction-following surface, and agents have a reliability ceiling.",
+    ev: "The kb-seed dev log records the machinery itself misfiring: Task-board tools absent from the session, a SendMessage to a nonexistent recipient, bare git push refusing from the worktree branch.",
+    bites: "Past the ceiling, each added rule CREATES errors — the pipeline trips over its own protocol, which reads as “yet another new issue.”",
+    instead: "A complexity budget: a new mechanism must retire an old one. Audit the dev logs for mechanics that misfired or never fired, and delete them.",
+    short: "run a complexity diet over the pipeline commands — audit dev logs for protocol mechanics that misfired or never fire (Task-board steps, SendMessage mid-task hand-offs), delete them, and adopt a new-mechanism-retires-an-old-one budget"
+  },
+  {
+    id: "F5", title: "The self-improvement loop is write-only",
+    what: "development-log.md holds exactly one lesson, and it is still prose: the Codex-sandbox-needs-network flag could be a default in the codex-runner agent's command contract today — encoded once, never re-learned.",
+    ev: "Lesson recorded 2026-07-24; the codex-runner command template in harness-plan.md / harness-review.md still omits -c sandbox_workspace_write.network_access=true.",
+    bites: "A prose lesson relies on a future agent reading and applying it under context pressure. An encoded lesson executes itself. The gap between the two is the whole difference between a log and a flywheel.",
+    instead: "Treat the dev log as a queue, not a destination: each entry graduates into a rule edit, check script, hook, or default flag — then gets deleted.",
+    short: "graduate existing dev-log lessons into enforcement points — starting by baking the sandbox network flag into the codex-runner command contract — and make “encode then delete the log line” the log's standing rule"
+  },
+  {
+    id: "F6", title: "The new convergence machinery has never fired",
+    what: "The #52 hardening (repeat-of CX tags, tier-up escalation, cross-provider reassignment, churn guard) was added AFTER the 9-round grind it answers — and no report yet contains a single repeat tag.",
+    ev: "grep 'repeat of' specs/*/reviews/*.md → zero matches. And the 2-round cap bounds a CYCLE, not lifetime churn: soriza-cpo legally consumed 9 rounds across needs-human cycles.",
+    bites: "You may believe the convergence problem is solved when the solution is unexercised — and lifetime churn is still unbounded.",
+    instead: "Treat the next medium plan as the trial run of #52, verify the tags actually get applied, and add a lifetime circuit breaker (e.g. >6 total rounds → mandatory redesign, never another cycle).",
+    short: "add a lifetime round circuit breaker on top of the per-cycle cap (>6 total review rounds → mandatory redesign), and explicitly verify the #52 repeat-tag machinery on its first live plan"
+  },
+  {
+    id: "F7", title: "Nothing measures whether the layer is improving",
+    what: "Rounds-to-approval, deviations per build, needs-human count, finding-class recurrence — all derivable from files already committed, none computed. “Is it getting smoother?” is answered by feel.",
+    ev: "soriza-cpo: 9 spec rounds. kb-seed: 5 spec + 2 impl rounds, 3 deviations, 1 build halt. No file in the repo contains these numbers side by side.",
+    bites: "Without a trend line you can't tell a bad week from a broken layer — so every rough plan feels like proof the whole pipeline is failing.",
+    instead: "One metrics row per plan at ship time (slug, spec rounds, impl rounds, deviations, needs-human), appended by harness-ship. A trend is visible after three plans.",
+    short: "make harness-ship append a one-line metrics row per plan (spec rounds, impl rounds, deviations, needs-human count) so rounds-to-approval becomes a visible trend instead of a feeling"
+  }
+];
+
+const TERMS = [
+  { t: "Golden set / harness evals", plain: "A fixed benchmark of tasks re-run after every harness change.", mech: "Prompts are code: an edit to harness-plan.md is a deploy, and evals are its test suite. The cheapest version is structural (required sections present); the mature version replays a small golden task through the pipeline.", pro: "“Did the harness eval suite pass after this prompt edit?” — what would have caught #40/#42 before they shipped." },
+  { t: "Defect escape rate / shift-left", plain: "Which stage catches a defect versus which stage introduced it.", mech: "Detection cost rises an order of magnitude per stage: template < checklist < lint/hook < Codex round < human. Improvement = moving each known class one stage earlier.", pro: "“Assertion-free ACs escaped drafting four times — shift that class left into the spec gate.”" },
+  { t: "Failure taxonomy", plain: "A stable, persisted classification of failure types.", mech: "You already classify at routing time (spec-defect / approach-defect / detail-defect) but discard it. Persisted with counts, it tells you WHERE to invest — the class with the highest recurrence wins.", pro: "“Class AC-NO-ASSERT: 4 occurrences across 2 plans → promoted to a plan-time check.”" },
+  { t: "Retrospective flywheel", plain: "The loop that turns lessons into enforcement, then prunes them.", mech: "A lesson has three states: observed (dev-log line) → encoded (rule/check/hook/default) → retired (log line deleted). A log that only grows is a queue backing up, not a flywheel turning.", pro: "“That lesson graduated to a hook last sprint — the log line is gone.”" },
+  { t: "Judge calibration / no-ratchet", plain: "Measuring the reviewer itself, not just the reviewed.", mech: "An uncalibrated LLM judge moves its bar between rounds (your rounds 2–8 experience). #52's no-ratchet rule is calibration step one; step two is tracking reviewer precision — which blocking findings were real.", pro: "“Blocking = no check or wrong claim; ‘stricter’ is advisory” — already your rule; now measure it." },
+  { t: "Instruction-following ceiling", plain: "The bounded number of protocol rules an agent executes reliably at once.", mech: "Past the ceiling, each added mechanism increases total error rate even if individually correct. This is why mature teams run a complexity budget: subtract before you add.", pro: "“The pipeline is past its ceiling — the dev log shows the protocol itself misfiring, so we diet before we extend.”" }
+];
+
+const state = { disp: {} };
+
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+function renderCards(){
+  document.getElementById('cards').innerHTML = CARDS.map(c => `
+    <div class="card" id="card-${c.id}" data-disp="${state.disp[c.id]||''}">
+      <h3><span class="tag">${c.id}</span>${esc(c.title)}</h3>
+      <p class="what"><span class="lbl">What it is — </span>${esc(c.what)}</p>
+      <div class="ev">${esc(c.ev)}</div>
+      <p class="bites"><span class="lbl">Why it bites — </span>${esc(c.bites)}</p>
+      <p class="instead"><span class="lbl">Instead — </span>${esc(c.instead)}</p>
+      <div class="disp">
+        <button data-d="resolve" onclick="setDisp('${c.id}','resolve')">Fix this</button>
+        <button data-d="accept" onclick="setDisp('${c.id}','accept')">Accept the risk</button>
+        <button data-d="discuss" onclick="setDisp('${c.id}','discuss')">Needs discussion</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderTerms(){
+  document.getElementById('terms').innerHTML = TERMS.map(t => `
+    <div class="term">
+      <b>${esc(t.t)}</b>
+      <div>
+        <div class="plain">${esc(t.plain)}</div>
+        <div class="mech">${esc(t.mech)}</div>
+        <div class="pro">${esc(t.pro)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function setDisp(id, d){
+  state.disp[id] = (state.disp[id] === d) ? '' : d;
+  document.getElementById('card-'+id).dataset.disp = state.disp[id];
+  updatePrompt();
+}
+
+function updatePrompt(){
+  const fix = CARDS.filter(c => state.disp[c.id] === 'resolve');
+  const accept = CARDS.filter(c => state.disp[c.id] === 'accept');
+  const discuss = CARDS.filter(c => state.disp[c.id] === 'discuss');
+  const undecided = CARDS.filter(c => !state.disp[c.id]);
+
+  let p = "Make the harness-layer pipeline (plan → build → review → ship) self-improving: every failure it produces should become a machine-checked constraint at the earliest stage that could have caught it, so no finding class ever recurs, and the layer's health should be measurable instead of felt. The discovery commands are explicitly out of scope. Ground the work in the repo's own evidence: the review verdicts under specs/*/reviews/ (soriza-cpo-department took 9 spec rounds; recurring blocking classes are assertion-free acceptance-criteria commands and promises exceeding documented platform contracts), the restore commits #40/#42 proving the command prompt files regress with zero test coverage, the one-line development-log.md, and the still-unexercised #52 convergence machinery. Before proposing anything, read harness-plan.md, harness-build.md and harness-review.md in full, plus the soriza-cpo-department review rounds.";
+
+  if (fix.length) p += "\n\nWork items, in this order:\n" + fix.map((c,i)=>`${i+1}. ${c.short}.`).join("\n");
+  if (discuss.length) p += "\n\nOpen questions to settle with me before locking scope:\n" + discuss.map(c=>`- ${c.title} — I want to talk through the approach.`).join("\n");
+  if (accept.length) p += "\n\nAccepted risks (noted, do not address):\n" + accept.map(c=>`- ${c.title}.`).join("\n");
+  if (undecided.length && (fix.length||discuss.length||accept.length)) p += "\n\nNot yet dispositioned (treat as candidate scope, cheapest-first): " + undecided.map(c=>c.id).join(", ") + ".";
+  if (!fix.length && !discuss.length && !accept.length) p += "\n\nCandidate interventions, cheapest first:\n" + CARDS.map((c,i)=>`${i+1}. ${c.short}.`).join("\n");
+
+  p += "\n\nStop for confirmation before locking which interventions form the first plan.\nWorktree: .claude/worktrees/harness-self-improvement";
+
+  document.getElementById('prompt').textContent = p;
+  document.getElementById('tally').textContent =
+    `${fix.length} fix · ${accept.length} accept · ${discuss.length} discuss · ${undecided.length} open`;
+}
+
+document.getElementById('copy').addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById('prompt').textContent).then(()=>{
+    const b = document.getElementById('copy'); b.textContent = 'Copied!';
+    setTimeout(()=>b.textContent='Copy prompt', 1200);
+  });
+});
+
+renderCards(); renderTerms(); updatePrompt();
+</script>
