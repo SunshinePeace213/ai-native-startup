@@ -1,0 +1,6 @@
+### Round 1 — Verdict: changes-requested
+
+- **AC1's validation does not verify its single-pattern or preservation requirements.** `grep -n -B1` succeeds with duplicate `ai-docs/*` lines or a non-comment predecessor, and the fnmatch script never compares the pre-existing env-file lines to their original bytes. Fix: add assertions in the AC1 validation script that there is exactly one `ai-docs/*` line, its immediate predecessor is a comment, and the remaining lines equal the documented original env-file lines (or an explicit checked-in baseline).
+- **AC6's changed-file-surface command is diagnostic, not an assertion.** `git diff --name-only origin/main...HEAD -- ':!specs'` exits zero even when it prints extra or missing paths, so it cannot prove the criterion's “exactly” requirement. Fix: replace it with an assertion that compares the command output to precisely `.worktreeinclude` and `ai-docs/sources.yaml`, failing on any difference.
+
+**Issue-comment digest:** Round 1, changes-requested — 2 blocking: AC1 does not validate the required single pattern and untouched env-file lines, and AC6 does not assert the exact tracked change surface. Next: strengthen those validation commands, then re-review.
