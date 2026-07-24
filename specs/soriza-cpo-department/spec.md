@@ -107,8 +107,9 @@ Volatile first — full record in [decisions.md](./decisions.md):
 - **Branch:** feat/43-soriza-cpo-department
 - **Worktree:** /Users/ringo/Desktop/ai-native-startup/.claude/worktrees/soriza-cpo-department
 - **Review profile:** kb-grounded
-- **PR:** epic docs PR — opened as draft after the Codex gate (`Refs #43`); child PRs are opened
-  by each child's own build run and recorded in the child specs
+- **PR:** #49 (draft `📝 docs(spec)` epic docs PR, `Refs #43` — merge lands the plan on `main`
+  after the verifying round approves); child PRs are opened by each child's own build run and
+  recorded in the child specs
 
 ## Relevant Files
 
