@@ -78,8 +78,9 @@ Volatile first — full record in [decisions.md](./decisions.md):
 2. **Registration goes through `/harness-layer:kb add <url> <group>`** — the manifest is the
    source of truth, fetching fans out to `kb-fetcher` subagents per the kb command's own
    contract, and the `design` group is passed explicitly (host-based defaulting would
-   misfile w3.org/web.dev/nngroup/fonts.google.com). Six sequential `add` runs; each syncs
-   just its new entry, and each run's result is appended verbatim to decisions.md
+   misfile w3.org/web.dev/nngroup/fonts.google.com). Six sources registered sequentially,
+   eight `add` runs in all after the two authorized substitutions; each syncs just its new
+   entry, and each run's result is appended verbatim to decisions.md
    `### Build addendum — kb run record` — the observable provenance AC2 parses.
    **Replacement contract on `FAIL`:** kb has no remove operation and a failed `add` leaves
    its provisional entry `fetched: null` in the manifest — the builder deletes that

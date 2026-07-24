@@ -44,10 +44,11 @@ never hand-authored; only `.worktreeinclude` and `ai-docs/sources.yaml` are trac
     sweep and deferring the seed.
 
 - **Q:** How are sources registered?
-  - **A:** `/harness-layer:kb add <url> design` per source — six sequential `add` runs (a
-    recorded WCAG substitution adds one replacement run after the failed provisional entry
-    is removed), the group argument always explicit; fetching fans out to `kb-fetcher`
-    subagents per the kb command's contract.
+  - **A:** `/harness-layer:kb add <url> design` per source — six sources registered
+    sequentially via `add`, eight runs in all (the two recorded substitutions — NN/g
+    homepage, fonts.google.com — each added one replacement run after its failed
+    provisional entry was removed), the group argument always explicit; fetching fans out
+    to `kb-fetcher` subagents per the kb command's contract.
   - **Why:** The manifest is the source of truth and `add` registers-then-syncs just the new
     entry. Host-based group defaulting would misfile w3.org/web.dev/nngroup/fonts.google.com
     (issue #44 body). Rules out hand-editing sources.yaml followed by a bulk sync, and rules
@@ -99,8 +100,9 @@ never hand-authored; only `.worktreeinclude` and `ai-docs/sources.yaml` are trac
 
 ### Plan-level decisions
 
-- **Complexity: simple** — a one-line include edit plus six guarded kb runs. Conditional
-  spec sections (Problem Statement / Solution Approach / Implementation Phases) are omitted
+- **Complexity: simple** — a one-line include edit plus eight guarded kb runs across six
+  sources (two authorized substitutions). Conditional spec sections (Problem Statement /
+  Solution Approach / Implementation Phases) are omitted
   per the templates, and no implementation-plan artifact page is authored (simple plans skip
   artifacts).
 - **Validation simulates the hook in-place** instead of creating a scratch worktree: a live

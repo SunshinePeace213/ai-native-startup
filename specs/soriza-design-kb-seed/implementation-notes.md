@@ -95,3 +95,21 @@
   for a dev-log lesson on the worktree-include/WorktreeCreate-hook interplay only if it bit
   during the build. It did not bite: the single `ai-docs/*` pattern worked first try under
   the hook's fnmatch semantics (AC1 simulation green, 7 files). No dev-log entry recorded.
+- **2026-07-24 · review round 1 fixes** — Codex round 1 verdict: changes-requested. Two
+  findings: (1) the four `uv run --with pyyaml python -c ...` validation commands were
+  unexecuted in the review sandbox — PyYAML could not be resolved because that sandbox has
+  no DNS/network access; not a repo defect. (2) `decisions.md` and `spec.md` misstated the
+  actual add-run and substitution history — the "How are sources registered?" bullet and the
+  complexity bullet in `decisions.md`, and Requirements & Decisions item 2 in `spec.md`, all
+  claimed "six sequential `add` runs" plus a WCAG-substitution clause that never happened.
+  Corrected all three spots to the ground truth in the build addendum: six sources
+  registered sequentially, eight `add` runs in all (the two recorded substitutions — NN/g
+  homepage, fonts.google.com — each added one replacement run after its failed provisional
+  entry was removed); the WCAG quickref never failed, so no substitution claim for it.
+  Re-ran the four PyYAML-backed validation commands from the worktree root with network
+  available; all four exited 0:
+  `AC2/AC3/AC4 ok`; `AC2/AC3 mirror integrity ok`; `AC2 provenance ok`;
+  `AC5 ok: 32 entries`. Subsequent review rounds should pass
+  `-c sandbox_workspace_write.network_access=true` to `codex exec` (documented in
+  `ai-docs/openai/codex/config-advanced.md`, main checkout) so the sandbox can resolve the
+  inline PyYAML dependency itself instead of leaving these four commands unexecuted again.
