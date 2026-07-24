@@ -1,3 +1,5 @@
 .env
 .env.local
 .env.sample
+# KB mirrors — gitignored; copied into fresh worktrees by the WorktreeCreate hook
+ai-docs/*
