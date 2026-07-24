@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan 1 — Machine-Check Substrate</title>
+<style>
+  :root {
+    --bg: #FAF8F5; --surface: #F0EDE5; --border: #D4CFC7;
+    --text: #2C2825; --accent: #B8602A; --muted: #8A837A;
+    --mono: "SF Mono", Menlo, Consolas, monospace;
+    --serif: "Iowan Old Style", Palatino, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.55 var(--sans); padding: 2.5rem 1.25rem 6rem; }
+  .wrap { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 2.25rem; }
+
+  header h1 { font-family: var(--serif); font-size: 2rem; font-weight: 600; text-wrap: balance; }
+  header .sub { color: var(--muted); margin-top: .35rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .9rem; }
+  .chip { font: 12px/1 var(--mono); letter-spacing: .02em; padding: .38rem .6rem; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); }
+  .chip.warn { border-color: var(--accent); color: var(--accent); }
+
+  .notice { border: 1px solid var(--accent); border-radius: 8px; padding: .9rem 1.1rem; background: var(--surface); font-size: .93rem; }
+  .notice strong { color: var(--accent); }
+
+  h2 { font-family: var(--serif); font-size: 1.35rem; font-weight: 600; }
+  .kicker { font: 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin-bottom: .4rem; }
+  section > p.lede { color: var(--muted); font-size: .93rem; margin-top: .3rem; max-width: 62ch; }
+
+  .card { border: 1px solid var(--border); border-radius: 10px; background: #fff; margin-top: 1.1rem; overflow: hidden; }
+  .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: .9rem 1.1rem .2rem; }
+  .card-head h3 { font-size: 1.02rem; font-weight: 600; }
+  .stamp { font: 11px/1 var(--mono); letter-spacing: .06em; padding: .3rem .5rem; border-radius: 4px; white-space: nowrap; }
+  .stamp.block { background: var(--accent); color: #fff; }
+  .stamp.warnonly { border: 1px dashed var(--accent); color: var(--accent); }
+  .stamp.neutral { border: 1px solid var(--border); color: var(--muted); }
+  .card .impact { padding: 0 1.1rem .35rem; color: var(--muted); font-size: .9rem; max-width: 68ch; }
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; padding: .7rem 1.1rem 1rem; }
+  @media (max-width: 640px) { .options { grid-template-columns: 1fr; } }
+  .opt { border: 1px solid var(--border); border-radius: 8px; padding: .7rem .8rem; cursor: pointer; background: var(--bg); font-size: .9rem; }
+  .opt .tag { font: 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); display: block; margin-bottom: .35rem; }
+  .opt.sel { border-color: var(--accent); background: var(--surface); box-shadow: inset 3px 0 0 var(--accent); }
+  .opt.sel .tag { color: var(--accent); }
+  .opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .note { display: block; width: calc(100% - 2.2rem); margin: 0 1.1rem 1rem; border: 1px solid var(--border); border-radius: 6px; padding: .5rem .6rem; font: .85rem var(--sans); background: var(--bg); color: var(--text); }
+  code, .mono { font-family: var(--mono); font-size: .86em; background: var(--surface); border-radius: 4px; padding: .08em .3em; }
+
+  .ladder { margin-top: 1.1rem; border-left: 2px solid var(--border); padding-left: 1.25rem; display: flex; flex-direction: column; gap: .85rem; }
+  .rung { position: relative; }
+  .rung::before { content: ""; position: absolute; left: -1.62rem; top: .45em; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+  .rung.par::before { background: var(--bg); border: 2px solid var(--accent); left: -1.68rem; }
+  .rung .who { font: 11px/1.6 var(--mono); color: var(--muted); }
+  .rung p { font-size: .92rem; max-width: 66ch; }
+
+  details { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); margin-top: .8rem; }
+  summary { cursor: pointer; padding: .75rem 1rem; font-weight: 600; font-size: .95rem; }
+  details > div { padding: .2rem 1.1rem 1rem; font-size: .9rem; background: #fff; border-radius: 0 0 8px 8px; }
+  details ul { padding-left: 1.2rem; display: flex; flex-direction: column; gap: .3rem; margin-top: .5rem; }
+
+  .promptbox { border: 1px solid var(--text); border-radius: 10px; background: #fff; }
+  .promptbox .bar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem 1rem; border-bottom: 1px solid var(--border); }
+  .presets { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .presets button { font: 12px var(--mono); padding: .4rem .6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer; color: var(--text); }
+  .presets button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--surface); }
+  #copy { font: 13px var(--mono); padding: .5rem .9rem; border: none; border-radius: 6px; background: var(--accent); color: #fff; cursor: pointer; }
+  #copy:focus-visible, .presets button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  #prompt { font: .84rem/1.6 var(--mono); padding: 1rem; white-space: pre-wrap; word-break: break-word; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Implementation plan · harness self-improvement epic</div>
+    <h1>Plan 1 — the machine-check substrate</h1>
+    <p class="sub">Session-scoped Stop gate · prompt-contract tests · harness CI · validation-command lint</p>
+    <div class="chips">
+      <span class="chip">Issue #54</span><span class="chip">Epic #53</span>
+      <span class="chip">chore/54-harness-self-improvement</span>
+      <span class="chip">kb-grounded</span>
+      <span class="chip warn">needs-human · codex-unavailable</span>
+    </div>
+  </header>
+
+  <div class="notice">
+    <strong>Codex review has not run yet.</strong> This session couldn't spawn the review runner, so the spec
+    is drafted but unreviewed. The default prompt below launches the review cycle as-is; toggling any
+    alternative switches it to a revision prompt instead.
+  </div>
+
+  <section>
+    <div class="kicker">Most likely to change</div>
+    <h2>Volatile decisions</h2>
+    <p class="lede">Each card shows the locked path and its one live alternative. Pick the alternative (or leave a note) and the prompt at the bottom rewrites itself.</p>
+
+    <div class="card" data-key="channel">
+      <div class="card-head"><h3>How the Stop gate finds <em>this</em> session's plan</h3><span class="stamp block">EXIT 2 GATE</span></div>
+      <p class="impact">Replaces the newest-mtime scan across every worktree — the wrong-target class that burned four soriza rounds.</p>
+      <div class="options">
+        <button class="opt sel" data-side="chosen"><span class="tag">Chosen</span>stdin JSON <code>cwd</code> → git toplevel, then a fixed single-root fallback chain (<code>cwd</code> → <code>$CLAUDE_PROJECT_DIR</code> → process root). No new state.</button>
+        <button class="opt" data-side="alt"><span class="tag">Alternative</span><code>session_id</code>-keyed marker files written at plan start — precise but introduces new state the churn guard forbids without need.</button>
+      </div>
+      <input class="note" placeholder="Optional note for the revision prompt…">
+    </div>
+
+    <div class="card" data-key="blockwarn">
+      <div class="card-head"><h3>What blocks vs what warns</h3><span class="stamp warnonly">WARN LANE</span></div>
+      <p class="impact">Ledger-locked calibration: hooks pin structure, Codex stays the judge of prose.</p>
+      <div class="options">
+        <button class="opt sel" data-side="chosen"><span class="tag">Chosen</span>Structure exits 2 (sections, stage tags, committed-check invocations, missing <code>[plan-time]</code> scripts); absolute-promise wording only warns.</button>
+        <button class="opt" data-side="alt"><span class="tag">Alternative</span>Wording heuristics also block — stricter, but machine-blocking on prose reverses the locked spec-review calibration.</button>
+      </div>
+      <input class="note" placeholder="Optional note for the revision prompt…">
+    </div>
+
+    <div class="card" data-key="pins">
+      <div class="card-head"><h3>Contract-pin strictness</h3><span class="stamp neutral">79 PINS</span></div>
+      <p class="impact">The suite pins frontmatter literals, exact <code>##</code> section sets, and parsed clauses for 9 commands + 2 review skills — the #40/#42 replays live here.</p>
+      <div class="options">
+        <button class="opt sel" data-side="chosen"><span class="tag">Chosen</span>Exact section tuples — a missing <em>or unexpected</em> heading fails; intentional changes update the pin in the same commit (wiring-test model).</button>
+        <button class="opt" data-side="alt"><span class="tag">Alternative</span>Subset pins — only required headings asserted, additions free. Less churn, but silent structural drift returns.</button>
+      </div>
+      <input class="note" placeholder="Optional note for the revision prompt…">
+    </div>
+
+    <div class="card" data-key="stages">
+      <div class="card-head"><h3>Which check scripts must exist at plan time</h3><span class="stamp warnonly">WARN LANE</span></div>
+      <p class="impact">The lint verifies Validation Commands bullets invoke committed checks; existence is stage-aware.</p>
+      <div class="options">
+        <button class="opt sel" data-side="chosen"><span class="tag">Chosen</span>Only <code>[plan-time]</code> scripts must exist (spec-review runs them now); later-stage paths warn — the build creates them.</button>
+        <button class="opt" data-side="alt"><span class="tag">Alternative</span>All referenced paths must exist at plan time — forces plans to pre-commit empty test files for work the build owns.</button>
+      </div>
+      <input class="note" placeholder="Optional note for the revision prompt…">
+    </div>
+
+    <div class="card" data-key="ci">
+      <div class="card-head"><h3>CI trigger shape</h3><span class="stamp neutral">OBSERVATIONAL</span></div>
+      <p class="impact">One workflow: checkout → astral-sh/setup-uv → <code>uv run pytest tests/harness-layer</code>. Not a required check yet (human follow-up).</p>
+      <div class="options">
+        <button class="opt sel" data-side="chosen"><span class="tag">Chosen</span><code>pull_request</code> incl. the <code>edited</code> type + five path filters + title-based <code>[skip-ci]</code> skip, so a late title edit still takes effect.</button>
+        <button class="opt" data-side="alt"><span class="tag">Alternative</span>Default trigger types only — simpler file, but <code>[skip-ci]</code> added after opening is ignored until the next push.</button>
+      </div>
+      <input class="note" placeholder="Optional note for the revision prompt…">
+    </div>
+  </section>
+
+  <section>
+    <div class="kicker">Sequence</div>
+    <h2>Build order</h2>
+    <div class="ladder">
+      <div class="rung"><span class="who">1 · builder-hook · opus/medium</span><p>Re-target the Stop gate to the invoking session; rewrite targeting tests; add the concurrency regressions (foreign root never blocks, never masks).</p></div>
+      <div class="rung"><span class="who">2 · builder-hook · opus/medium</span><p>Extend the same gate with the validation-command lint + absolute-promise warnings; block/allow/warn tests.</p></div>
+      <div class="rung par"><span class="who">3 · builder-contracts · sonnet/high — parallel</span><p>Prompt-contract suite in <code>tests/harness-layer/prompts/</code> from the spec's inventory, plus cross-consistency asserts and the #40/#42 replay tests.</p></div>
+      <div class="rung par"><span class="who">4 · builder-ci · sonnet/low — parallel</span><p><code>.github/workflows/harness-tests.yml</code>, action versions verified against official docs at build time.</p></div>
+      <div class="rung"><span class="who">5 · validator · sonnet/low</span><p>Run every validation command and the full <code>tests/harness-layer</code> suite; per-AC evidence.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="kicker">Collapsed — mechanical detail</div>
+    <h2>Reference</h2>
+    <details><summary>Load-bearing inventory (79 pins, verified at plan time)</summary><div>
+      <p><code>checks/ac5_inventory.py</code> already passes against the tree. Coverage:</p>
+      <ul>
+        <li>9 command files — frontmatter literals (model/effort/<code>disable-model-invocation</code>/tool grants/hook registration) + exact section sets</li>
+        <li>Parsed clauses — verdict-line grammar (em-dash exact), <code>CX&lt;N&gt;-&lt;i&gt;</code>, marker keys (<code>plan-links</code>, <code>codex-spec-round-N</code>, <code>report:tidy</code>, <code>report:codex-round-N</code>), report paths, push refspec, <code>--match-head-commit</code></li>
+        <li>Cross-consistency — hook <code>REQUIRED_SECTIONS</code> ⊆ template headings; command↔skill report-filename + verdict-grammar agreement</li>
+      </ul>
+    </div></details>
+    <details><summary>Edge cases the build must hold</summary><div>
+      <ul>
+        <li>Concurrent plan sessions in two worktrees — each gate sees only its own root (both directions tested)</li>
+        <li>Malformed/empty stdin, <code>cwd</code> outside git, missing <code>specs/</code> — degrade down the chain, fail open, never crash</li>
+        <li>Warn output capped at 10 lines; warnings never change the exit code</li>
+        <li>CI: fork PRs safe (no secrets); unmatched paths → no run (intended)</li>
+      </ul>
+    </div></details>
+    <details><summary>Validation commands</summary><div>
+      <ul>
+        <li><code>[plan-time]</code> <code>uv run --script specs/harness-self-improvement/checks/ac5_inventory.py</code></li>
+        <li><code>[child-build-time]</code> <code>uv run pytest tests/harness-layer/hooks/spec-completeness</code></li>
+        <li><code>[child-build-time]</code> <code>uv run pytest tests/harness-layer/prompts</code></li>
+        <li><code>[child-build-time]</code> <code>uv run --script specs/harness-self-improvement/checks/ac4_ci_workflow.py</code></li>
+      </ul>
+    </div></details>
+  </section>
+
+  <section>
+    <div class="kicker">Copy back to Claude</div>
+    <h2>Your next prompt</h2>
+    <div class="promptbox">
+      <div class="bar">
+        <div class="presets" role="group" aria-label="Ready-made prompts">
+          <button id="p-review" aria-pressed="true">run review cycle</button>
+          <button id="p-build" aria-pressed="false">skip to build</button>
+        </div>
+        <button id="copy">Copy</button>
+      </div>
+      <div id="prompt"></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const WORKTREE = "Worktree: .claude/worktrees/harness-self-improvement";
+  const LABELS = {
+    channel:  "resolve the gate's root via session_id-keyed marker files instead of the stdin cwd chain",
+    blockwarn:"make the absolute-promise wording heuristic blocking (exit 2), not warn-only",
+    pins:     "relax the contract suite to subset section pins (required headings only, additions free)",
+    stages:   "require ALL referenced validation paths to exist at plan time, not just [plan-time] scripts",
+    ci:       "use default pull_request trigger types only (drop the edited type)"
+  };
+  const state = { preset: "review", tweaks: {}, notes: {} };
+
+  document.querySelectorAll(".card").forEach(card => {
+    const key = card.dataset.key;
+    card.querySelectorAll(".opt").forEach(btn => btn.addEventListener("click", () => {
+      card.querySelectorAll(".opt").forEach(b => b.classList.remove("sel"));
+      btn.classList.add("sel");
+      state.tweaks[key] = btn.dataset.side === "alt";
+      render();
+    }));
+    card.querySelector(".note").addEventListener("input", e => {
+      state.notes[key] = e.target.value.trim(); render();
+    });
+  });
+  const presets = { "p-review": "review", "p-build": "build" };
+  Object.entries(presets).forEach(([id, val]) => {
+    document.getElementById(id).addEventListener("click", () => {
+      state.preset = val;
+      Object.keys(presets).forEach(p => document.getElementById(p).setAttribute("aria-pressed", String(presets[p] === val)));
+      render();
+    });
+  });
+
+  function render() {
+    const changes = Object.keys(LABELS).filter(k => state.tweaks[k]).map(k => LABELS[k]);
+    const notes = Object.entries(state.notes).filter(([, v]) => v).map(([k, v]) => `on the "${k}" decision: ${v}`);
+    let text;
+    if (changes.length || notes.length) {
+      text = `/harness-layer:harness-plan "Revise the harness-self-improvement Plan 1 spec (issue #54): ` +
+        [...changes, ...notes].join("; ") + `. Keep every other locked decision as drafted. ${WORKTREE}"`;
+    } else if (state.preset === "build") {
+      text = `/harness-layer:harness-build harness-self-improvement\n\n(Heads-up: the spec is still needs-human — no Codex round ran. Prefer running the review cycle first.)`;
+    } else {
+      text = `/harness-layer:harness-plan "Run the Codex spec-review cycle for the drafted Plan 1 spec at specs/harness-self-improvement/ — no content changes; on approval, remove the status:needs-human label on issue #54. ${WORKTREE}"`;
+    }
+    document.getElementById("prompt").textContent = text;
+  }
+  document.getElementById("copy").addEventListener("click", async () => {
+    await navigator.clipboard.writeText(document.getElementById("prompt").textContent);
+    const b = document.getElementById("copy"); b.textContent = "Copied!"; setTimeout(() => b.textContent = "Copy", 1200);
+  });
+  render();
+</script>
+</body>
+</html>
