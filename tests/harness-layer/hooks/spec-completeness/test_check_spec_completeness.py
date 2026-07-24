@@ -265,3 +265,198 @@ def test_cwd_outside_git_repo_uses_cwd_and_exits_when_no_specs(tmp_path, run_hoo
     assert proc.returncode == 0
     assert proc.stderr == ""
     assert "Traceback" not in proc.stderr
+
+
+# --- Validation-command lint ------------------------------------------------
+# The lint runs only AFTER the required-sections check passes (a missing
+# ## Validation Commands section is already blocked there). It parses the
+# section's command bullets -- skipping the stage-tag legend definitions and
+# intro prose -- and enforces the block/warn split from spec.md: structure
+# (stage tag, committed-check invocation, plan-time path present) blocks;
+# later-stage paths not yet created and absolute-promise wording warn only.
+
+# Header + the three stage-tag legend bullets + intro prose, mirroring the real
+# acceptance-criteria.md. The legend bullets and prose MUST be ignored by the
+# lint; only the command bullets appended after are linted.
+VALIDATION_HEADER = (
+    "## Validation Commands\n\n"
+    "Validation logic lives in committed check scripts -- this prose is not a bullet.\n\n"
+    "- `[plan-time]` — runnable against the spec folder alone, before any build.\n"
+    "- `[child-build-time]` — runnable once the build produced its changes.\n"
+    "- `[post-merge]` — runnable only after dependent work merged.\n\n"
+)
+
+
+def write_ac_validation(folder: Path, bullets: list[str]) -> None:
+    """Overwrite acceptance-criteria.md keeping the two required sections, with a
+    Validation Commands section carrying the legend, prose, and `bullets`."""
+    text = (
+        "# plan\n\n## Acceptance Criteria\n\n- **AC1** — an observable outcome\n\n"
+        + VALIDATION_HEADER
+        + "\n".join(bullets)
+        + "\n"
+    )
+    (folder / "acceptance-criteria.md").write_text(text)
+
+
+def create_check(root: Path, relpath: str) -> None:
+    """A committed check file at a root-relative path (as a bullet would name)."""
+    p = root / relpath
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text("# check\n")
+
+
+def test_lint_plan_time_present_script_passes(tmp_path, run_hook, sections):
+    """A plan-time bullet invoking a committed check that EXISTS today is the
+    compliant case: structure holds, the gate opens with no diagnostics."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    create_check(tmp_path, "specs/p/checks/ac1.py")
+    write_ac_validation(
+        folder, ["- `[plan-time]` `uv run --script specs/p/checks/ac1.py` — verifies AC1."]
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 0
+    assert proc.stderr == ""
+
+
+def test_lint_plan_time_missing_script_blocks(tmp_path, run_hook, sections):
+    """A [plan-time] check must be runnable against the spec folder alone; if its
+    script is absent the criterion cannot be verified now, so the gate blocks and
+    names the missing path -- the soriza 'validation names a check that isn't
+    committed' defect this lint exists to catch."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    write_ac_validation(
+        folder, ["- `[plan-time]` `uv run --script specs/p/checks/ac1.py` — verifies AC1."]
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 2
+    assert "[plan-time] check path does not exist" in proc.stderr
+    assert "specs/p/checks/ac1.py" in proc.stderr
+
+
+def test_lint_bullet_without_stage_tag_blocks(tmp_path, run_hook, sections):
+    """Every command bullet must carry a stage tag so reviewers know the earliest
+    point it can pass; an untagged bullet is unrunnable-by-schedule and blocks,
+    the bullet text echoed so the agent can fix the exact line."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    write_ac_validation(folder, ["- `uv run pytest tests/harness-layer` — verifies AC1."])
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 2
+    assert "no stage tag" in proc.stderr
+    assert "uv run pytest tests/harness-layer" in proc.stderr
+
+
+def test_lint_inline_program_blocks(tmp_path, run_hook, sections):
+    """A bullet inlining a program instead of a committed check (`uv run --script`
+    or `uv run pytest`) has no reproducible, reviewable artifact -- the core lint
+    case: block and name the offending bullet."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    write_ac_validation(folder, ['- `[plan-time]` `python -c "print(1)"` — verifies AC1.'])
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 2
+    assert "invokes neither" in proc.stderr
+    assert 'python -c "print(1)"' in proc.stderr
+
+
+def test_lint_pytest_invocation_to_existing_path_passes(tmp_path, run_hook, sections):
+    """`uv run pytest <existing path>` is an accepted committed-check form just
+    like `uv run --script`; pointed at a path that exists, it opens the gate
+    cleanly (pins that pytest bullets are not mistaken for inline programs)."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    (tmp_path / "tests" / "foo").mkdir(parents=True)
+    write_ac_validation(
+        folder, ["- `[child-build-time]` `uv run pytest tests/foo` — verifies AC1."]
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 0
+    assert proc.stderr == ""
+
+
+def test_lint_later_stage_missing_path_warns_without_blocking(tmp_path, run_hook, sections):
+    """A [child-build-time]/[post-merge] path may not exist yet -- the build
+    creates it -- so its absence is a WARN, never a block: exit code stays 0 so a
+    correctly-scheduled plan is not held hostage to not-yet-built artifacts."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    write_ac_validation(
+        folder, ["- `[child-build-time]` `uv run pytest tests/not-built-yet` — verifies AC1."]
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 0
+    assert "WARN:" in proc.stderr
+    assert "not present yet" in proc.stderr
+    assert "tests/not-built-yet" in proc.stderr
+
+
+def test_lint_absolute_promise_wording_warns_only(tmp_path, run_hook, sections):
+    """Absolute-promise wording in spec.md is a quality smell, not a structural
+    defect -- the ledger locks it warn-only: a WARN cites spec.md:line but the
+    exit code is unchanged (0 here, since the commands are compliant)."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    create_check(tmp_path, "specs/p/checks/ac1.py")
+    write_ac_validation(
+        folder, ["- `[plan-time]` `uv run --script specs/p/checks/ac1.py` — verifies AC1."]
+    )
+    spec = folder / "spec.md"
+    spec.write_text(spec.read_text() + "\nThis must never fail and always pass.\n")
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 0
+    assert "WARN:" in proc.stderr
+    assert "absolute-promise wording" in proc.stderr
+    assert "spec.md:" in proc.stderr
+
+
+def test_lint_warnings_capped_at_ten(tmp_path, run_hook, sections):
+    """A wordy spec must not flood stderr and drown the signal: warnings across
+    all warn rules are capped at 10 even when far more lines match."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    create_check(tmp_path, "specs/p/checks/ac1.py")
+    write_ac_validation(
+        folder, ["- `[plan-time]` `uv run --script specs/p/checks/ac1.py` — verifies AC1."]
+    )
+    spec = folder / "spec.md"
+    flood = "".join(f"\nLine {i}: this is never acceptable.\n" for i in range(15))
+    spec.write_text(spec.read_text() + flood)
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 0
+    assert proc.stderr.count("WARN:") == 10
+
+
+def test_lint_legend_and_prose_never_flagged_as_commands(tmp_path, run_hook, sections):
+    """The stage-tag legend bullets and the intro prose paragraph are not command
+    bullets; the lint must skip them, or every compliant plan (which carries the
+    legend verbatim) would be blocked for 'no committed check'."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    create_check(tmp_path, "specs/p/checks/ac1.py")
+    write_ac_validation(
+        folder, ["- `[plan-time]` `uv run --script specs/p/checks/ac1.py` — verifies AC1."]
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 0
+    assert "no stage tag" not in proc.stderr
+    assert "invokes neither" not in proc.stderr
+
+
+def test_lint_compliant_folder_passes_end_to_end(tmp_path, run_hook, sections):
+    """A folder shaped like specs/harness-self-improvement's own
+    acceptance-criteria.md -- a present plan-time script plus later-stage pytest
+    and script checks that exist -- passes the whole gate with no diagnostics:
+    proof the lint does not fire on the format it is meant to bless."""
+    folder = write_plan(tmp_path / "specs", "p", sections)
+    create_check(tmp_path, "specs/p/checks/ac5_inventory.py")
+    create_check(tmp_path, "specs/p/checks/ac4_ci_workflow.py")
+    (tmp_path / "tests" / "harness-layer" / "hooks" / "spec-completeness").mkdir(parents=True)
+    (tmp_path / "tests" / "harness-layer" / "prompts").mkdir(parents=True)
+    write_ac_validation(
+        folder,
+        [
+            "- `[plan-time]` `uv run --script specs/p/checks/ac5_inventory.py` — verifies AC5.",
+            "- `[child-build-time]` `uv run pytest tests/harness-layer/hooks/spec-completeness`"
+            " — verifies AC1 and AC2.",
+            "- `[child-build-time]` `uv run pytest tests/harness-layer/prompts` — verifies AC3.",
+            "- `[child-build-time]` `uv run --script specs/p/checks/ac4_ci_workflow.py`"
+            " — verifies AC4.",
+        ],
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 0
+    assert proc.stderr == ""
