@@ -53,6 +53,7 @@
   }
   .pill.draft { border-color: var(--accent); color: var(--accent); font-weight: 600; }
   .pill.blocker { border-color: var(--block); color: var(--block); font-weight: 600; }
+  .pill.ok { border-color: var(--ok); color: var(--ok); font-weight: 600; }
 
   .cols { display: grid; grid-template-columns: 232px 1fr; gap: 28px; align-items: start; }
   @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
@@ -198,10 +199,10 @@
     <p class="eyebrow">specs/harness-self-improvement · dev log · rendered by /harness-layer:harness-review</p>
     <h1>Dev Notes — Plan 1: machine-check substrate</h1>
     <div class="statusbar">
-      <span class="pill draft">PR #55 · draft</span>
-      <span class="pill blocker">1 open blocker · CX2-1</span>
+      <span class="pill ok">PR #55 · ready</span>
+      <span class="pill ok">0 open blockers · R3 approved</span>
       <span class="pill">issue #54 · epic #53</span>
-      <span class="pill">rounds: R1 changes-requested → fixes → R2 changes-requested</span>
+      <span class="pill">rounds: R1 changes-requested → fixes → R2 changes-requested → fix → R3 approved</span>
       <span class="pill">suite 670 passed · 2 pre-existing failures</span>
     </div>
   </header>
@@ -214,12 +215,12 @@
       </div>
       <div class="group">
         <h2>Focus</h2>
-        <label class="toggle"><input type="checkbox" id="blockersOnly"> Open blocker only</label>
+        <label class="toggle"><input type="checkbox" id="blockersOnly"> Terminal round only</label>
       </div>
       <div class="group">
         <h2>Prompt intent</h2>
         <select id="intent">
-          <option value="resolve" selected>Resolve the open blocker</option>
+          <option value="ship" selected>Ship the approved PR</option>
           <option value="handoff">Hand-off summary for a teammate</option>
         </select>
       </div>
@@ -264,10 +265,14 @@
       body: "Codex gpt-5.6-sol / xhigh, kb-grounded, full range 841e772..470047f. CX1-1: lint accepts absolute, traversing, and out-of-plan check paths. CX1-2: frontmatter pins were substring checks — commented or renamed keys stayed green. CX1-3: AC5 parser silently skipped malformed rows and unknown kinds. Advisory: GitHub Actions KB gap → PR Follow-ups." },
     { kind: "fix", title: "Round-1 fixes — CX1-1..CX1-3", sha: "d978440",
       body: "Three parallel fixers at default tiers: opus/effort-medium hardened the hook (+4 negative tests); sonnet/effort-high made entry pins line-anchored with 10 mutation tests; sonnet/effort-medium made the AC5 parser fail loud. Combined: AC4/AC5 ok, 670 passed, 2 pre-existing failures unchanged." },
-    { kind: "review", title: "Review round 2 — changes-requested (terminal)", sha: null, head: true,
+    { kind: "review", title: "Review round 2 — changes-requested (terminal)", sha: null,
       body: "Codex gpt-5.6-sol / high, delta 470047f..d978440. CX1-1..CX1-3 all confirmed fixed. CX2-1 (new, comment-accuracy): the new mutation-test docstrings in tests/harness-layer/prompts/test_skill_contracts.py claim frontmatter name: controls skill resolution — resolution is directory-keyed (ai-docs/anthropic/skills.md). Docstring rewrite only; the pins themselves are correct. Attempt budget spent → PR left draft." },
     { kind: "lesson", title: "Lesson — substring pins are not pins", sha: null,
       body: "A commented or prefixed key keeps a substring assertion green. Pin whole frontmatter entries line-anchored, ship the mutation replay as a test, and make each docstring state the real mechanism — the comment-accuracy lens blocks false rationale even when the assert is right." },
+    { kind: "fix", title: "CX2-1 fix — docstring rewrite", sha: "a19b6ac",
+      body: "Docstring-only rewrite in tests/harness-layer/prompts/test_skill_contracts.py: name: is declared metadata pinned by the inventory; resolution is directory-keyed. Five docstrings corrected (module, frontmatter_lines, pins-hold, both mutation tests); every assertion unchanged. 11 tests green, ruff clean." },
+    { kind: "review", title: "Review round 3 — approved (terminal)", sha: null, head: true,
+      body: "Codex gpt-5.6-sol / medium, delta d978440..a19b6ac, kb-grounded. CX2-1 confirmed fixed; 0 raw findings; all four validation commands PASS. PR #55 flipped ready at the approved head." },
   ];
 
   const KINDS = [
@@ -281,7 +286,7 @@
   const state = {
     kinds: new Set(KINDS.map(k => k.id)),
     blockersOnly: false,
-    intent: "resolve",
+    intent: "ship",
   };
 
   const chipsEl = document.getElementById("kindChips");
@@ -333,9 +338,9 @@
       meta.appendChild(el("span", "kind", e.kind));
       if (e.sha) meta.appendChild(el("span", "sha", e.sha));
       if (e.head) {
-        const head = el("span", "sha", "HEAD · open");
-        head.style.borderColor = "var(--accent)";
-        head.style.color = "var(--accent)";
+        const head = el("span", "sha", "HEAD · approved");
+        head.style.borderColor = "var(--ok)";
+        head.style.color = "var(--ok)";
         meta.appendChild(head);
       }
       meta.appendChild(el("span", "count", "2026-07-25"));
@@ -354,15 +359,15 @@
   }
 
   const PROMPTS = {
-    resolve: `Resolve the open review blocker on PR #55 (plan specs/harness-self-improvement/, issue #54).
+    ship: `Ship PR #55 (plan specs/harness-self-improvement/, issue #54).
 
-CX2-1 (comment-accuracy, docstrings only — the assertions are correct): the mutation-test docstrings in tests/harness-layer/prompts/test_skill_contracts.py claim frontmatter "name:" controls skill resolution. Resolution is directory-keyed (ai-docs/anthropic/skills.md); "name:" is declared metadata. Rewrite those docstrings to say the tests enforce the declared metadata / inventory contract, without the resolution claim, keeping every assertion unchanged.
+Codex approved at review round 3 (0 blocking findings; reviewed head a19b6ac). The PR is ready.
 
-Then rerun: /harness-layer:harness-review harness-self-improvement
+Run: /harness-layer:harness-ship harness-self-improvement
 Worktree: .claude/worktrees/harness-self-improvement (branch chore/54-harness-self-improvement).`,
     handoff: `Status of PR #55 (harness-self-improvement Plan 1, issue #54, epic #53):
 
-Build shipped the machine-check substrate — session-scoped Stop gate + validation-command lint, prompt-contract suite (tests/harness-layer/prompts/), CI workflow (harness-tests.yml). Codex review round 1 (kb-grounded) found 3 blockers, all fixed and confirmed in round 2: lint path hardening, line-anchored frontmatter pins with mutation replays, fail-loud AC5 parser. Round 2 left 1 open blocker — CX2-1, a docstring-accuracy rewrite in test_skill_contracts.py (no assertion changes) — so the PR is draft. Suite: 670 passed, 2 pre-existing auto-format failures disclosed in Test Evidence. Next: fix CX2-1, rerun /harness-layer:harness-review harness-self-improvement, then /harness-layer:harness-ship.`,
+Build shipped the machine-check substrate — session-scoped Stop gate + validation-command lint, prompt-contract suite (tests/harness-layer/prompts/), CI workflow (harness-tests.yml). Codex review round 1 (kb-grounded) found 3 blockers, fixed and confirmed in round 2; round 2 added CX2-1 (docstring-accuracy, no assertion changes), fixed in a19b6ac and confirmed in round 3 — approved, 0 blocking findings, PR flipped ready. Suite: 670 passed, 2 pre-existing auto-format failures disclosed in Test Evidence. Next: /harness-layer:harness-ship harness-self-improvement.`,
   };
 
   function updatePrompt() {

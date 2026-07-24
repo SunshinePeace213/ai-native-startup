@@ -68,3 +68,11 @@
   prefixed key keeps it green. Pin whole frontmatter entries line-anchored and replay the
   mutation as a test — and make each docstring state the real mechanism (Codex's
   comment-accuracy lens blocks false rationale even when the assert is right).
+- **2026-07-25 · CX2-1 fix** — review lead (new invocation, per the round-2 hand-off
+  prompt): docstring-only rewrite in `test_skill_contracts.py` — `name:` described as
+  declared metadata pinned by the inventory, resolution stated as directory-keyed; five
+  docstrings corrected (module, `frontmatter_lines`, pins-hold, both mutation tests),
+  every assertion unchanged. 11 tests green, ruff clean. Commit a19b6ac.
+- **2026-07-25 · review round 3 (terminal)** — Codex (`gpt-5.6-sol`/`medium`, delta
+  d978440..a19b6ac, kb-grounded): approved — CX2-1 confirmed fixed, 0 raw findings, all
+  four validation commands PASS. PR #55 flipped ready at the approved head.
