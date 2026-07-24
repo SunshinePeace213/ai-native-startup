@@ -1,0 +1,235 @@
+<title>Interview · harness-self-improvement</title>
+<style>
+  :root {
+    --bg: #FAF8F5; --surface: #F0EDE5; --border: #D4CFC7; --ink: #2C2825;
+    --accent: #B8602A; --muted: #8A837A;
+    --resolved: #57754C; --open: #B8602A; --pending: #8A837A;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); padding: 0 20px 80px; }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  header { padding: 40px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+  .eyebrow { font: 600 11px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  h1 { font: 400 30px/1.2 var(--serif); text-wrap: balance; }
+  h1 em { font-style: italic; color: var(--accent); }
+  .lede { color: var(--muted); margin-top: 8px; max-width: 62ch; }
+  .master { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button { font: 600 13px/1 var(--sans); cursor: pointer; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); padding: 9px 14px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #FAF8F5; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .cols { display: grid; grid-template-columns: minmax(0,1fr) 264px; gap: 28px; align-items: start; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } .ledger { position: static !important; } }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; margin-bottom: 18px; }
+  .card .qnum { font: 600 11px/1 var(--mono); color: var(--muted); letter-spacing: .08em; margin-bottom: 8px; text-transform: uppercase; }
+  .card h2 { font: 500 19px/1.3 var(--serif); margin-bottom: 6px; text-wrap: balance; }
+  .card .why { color: var(--muted); font-size: 13.5px; margin-bottom: 14px; max-width: 68ch; }
+  .card .why code, .ledger code, .chip code { font: 12px var(--mono); background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+  .chip.sel code { background: #FAF4EE; }
+  .chips { display: flex; flex-direction: column; gap: 8px; }
+  .chip { display: block; text-align: left; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font: 400 14px/1.45 var(--sans); }
+  .chip strong { font-weight: 600; }
+  .chip .desc { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .chip.sel { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: #FAF4EE; }
+  .badge { display: inline-block; font: 600 10px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: #FAF8F5; background: var(--accent); border-radius: 4px; padding: 3px 6px; margin-left: 8px; vertical-align: 2px; }
+  .free { margin-top: 12px; }
+  .free input { width: 100%; font: 13.5px var(--sans); padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--ink); }
+
+  .ledger { position: sticky; top: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; font-size: 13px; }
+  .ledger h2 { font: 500 16px/1.2 var(--serif); margin-bottom: 4px; }
+  .ledger .sub { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+  .ledger h3 { font: 600 11px/1 var(--sans); text-transform: uppercase; letter-spacing: .08em; margin: 14px 0 6px; }
+  .ledger h3.r { color: var(--resolved); } .ledger h3.o { color: var(--open); } .ledger h3.n { color: var(--pending); }
+  .ledger li { list-style: none; padding: 3px 0 3px 14px; position: relative; }
+  .ledger li::before { content: ""; position: absolute; left: 0; top: 10px; width: 6px; height: 6px; border-radius: 50%; }
+  .ledger .r li::before { background: var(--resolved); } .ledger .o li::before { background: var(--open); }
+  .ledger .n li::before { background: none; border: 1px solid var(--pending); }
+  .ledger li .src { color: var(--muted); }
+
+  .out { margin-top: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px; }
+  .out h2 { font: 500 18px/1.2 var(--serif); margin-bottom: 4px; }
+  .out .sub { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+  .out pre { font: 12.5px/1.6 var(--mono); white-space: pre-wrap; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; max-height: 340px; overflow: auto; }
+  .out .bar { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+  .copied { color: var(--resolved); font-size: 13px; font-weight: 600; opacity: 0; transition: opacity .2s; }
+  .copied.on { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .copied { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Harness Interview · Round 2 of 2 · harness-self-improvement</div>
+    <h1>Locking plans 2 and 3: the <em>learning-loop</em> mechanics</h1>
+    <p class="lede">Round 1 locked the program shape (substrate-first, epic + child issues, structure-blocks/wording-warns, learning inside the reviewed diff, fresh-start ledger). These eight lock every remaining intervention so each child plan drafts without asking anything.</p>
+    <div class="master">
+      <button class="primary" id="acceptAll">Accept all recommendations</button>
+      <span style="color:var(--muted);font-size:13px">Free-text boxes override or annotate any pick.</span>
+    </div>
+  </header>
+
+  <div class="cols">
+    <main id="cards"></main>
+    <aside class="ledger">
+      <h2>Coverage ledger</h2>
+      <div class="sub">Round 1 locked; round 2 below closes the board.</div>
+      <h3 class="r">Locked — round 1</h3>
+      <ul class="r">
+        <li>Plan 1 = #4 + #1 + #6 + #2; Plan 2 = #3 + #7 + #5; Plan 3 = #8 + #9 + #11 + #10; #12 deferred</li>
+        <li>Epic issue + one child issue per plan</li>
+        <li>Structure blocks (exit 2), wording warns</li>
+        <li>Learning payload inside the reviewed diff; gates at ready-flip AND ship</li>
+        <li>Ledger fresh start; baseline from <code>reviews/</code> counts</li>
+        <li>Success = would-have-caught tests + refreshing metrics</li>
+        <li>References: repo anchors only</li>
+      </ul>
+      <h3 class="r">Locked — codebase (plan 1)</h3>
+      <ul class="r">
+        <li>Extend <code>check_spec_completeness.py</code>, no sibling hook</li>
+        <li>Targeting via Stop-hook stdin JSON (cwd/session)</li>
+        <li>Structural asserts, not golden files</li>
+        <li>Load-bearing = frontmatter keys, required sections, clauses other components parse</li>
+        <li>CI: setup-uv, <code>tests/harness-layer</code>, honors [skip-ci]</li>
+      </ul>
+      <h3 class="o">Open — this round</h3>
+      <ul class="o">
+        <li>Ledger schema, home, maintainer</li>
+        <li>Metrics surface &amp; refresh</li>
+        <li>Legal learning-payload forms</li>
+        <li>Fix-verification agent &amp; effect</li>
+        <li>Retirement threshold &amp; approval</li>
+        <li>Fire-drill mode</li>
+        <li>Registry home &amp; promotion</li>
+        <li>Retro autonomy &amp; proof</li>
+      </ul>
+      <h3 class="n">N/A</h3>
+      <ul class="n">
+        <li>Users, perf/scale, security &amp; authz</li>
+      </ul>
+    </aside>
+  </div>
+
+  <section class="out">
+    <h2>Copy as prompt</h2>
+    <div class="sub">Paste this back into the interview session (the "Other" answer).</div>
+    <pre id="prompt"></pre>
+    <div class="bar">
+      <button class="primary" id="copy">Copy answers</button>
+      <span class="copied" id="copied">Copied!</span>
+    </div>
+  </section>
+</div>
+
+<script>
+const QUESTIONS = [
+  { id:"ledger", num:"Q1 · #3 findings ledger", title:"Ledger schema, home, and who maintains it",
+    why:"Post-#52 reports carry a parseable contract (verdict line, CX IDs, repeat tags, Prior-blockers dispositions). A committed parser makes reports the single source of truth — no hand-maintained rows to drift.",
+    opts:[
+      {k:"a", label:"Parser-regenerated JSONL", rec:true, desc:"Committed script (tools/ or checks/-style) regenerates specs/findings-ledger.jsonl from reviews/*.md — one row per blocking finding: plan, round, finding_id, class, repeat_of, summary, disposition (from the next round's Prior-blockers or the approval), constraint_ref. Run in the review terminal step; CI asserts it's current. Append-only JSONL merges cleanly."},
+      {k:"b", label:"Command-maintained table", desc:"The review command's terminal step appends markdown rows by hand — no parser, but drift is possible and nothing checks it."},
+      {k:"c", label:"Per-plan ledger files", desc:"Each plan keeps reviews/ledger.json; metrics aggregate across plans. More files, no merge contention."}
+    ]},
+  { id:"metrics", num:"Q2 · #5 health metrics", title:"Delivery surface and refresh trigger",
+    why:"Metrics: rounds-to-approval, repeat-rate, finding-class frequencies, post-approval escapes. Baseline round counts (5,6,2,6,5,10,9,7,5) come straight from reviews/ file counts.",
+    opts:[
+      {k:"a", label:"Script + committed dashboard, refreshed at ship", rec:true, desc:"A committed script computes the numbers from the ledger + reviews/; harness-ship's flow regenerates a committed harness-health page per ship, and the ship report quotes the headline line. On-demand runs work anytime."},
+      {k:"b", label:"Script only", desc:"Run on demand; no committed page, no automatic refresh."},
+      {k:"c", label:"Ship-report line only", desc:"harness-ship prints the numbers; nothing committed."}
+    ]},
+  { id:"payload", num:"Q3 · #7 learning payload", title:"What counts as a legal learning payload?",
+    why:"The gate needs an enumerable predicate: every blocking CX ID in the PR's rounds must resolve to a disposition, and non-one-off dispositions must point at a real diff path.",
+    opts:[
+      {k:"a", label:"Three forms, path-verified", rec:true, desc:"Per blocking finding, one of: (a) rule/memory edit (.claude/rules/**, AGENTS.md, development-log.md), (b) new/updated machine check (test, hook, check script) citing the finding class, (c) accepted-one-off with a stated reason. The PR's ## Self-Learning section maps finding ID → disposition → payload path; the gate script verifies IDs are covered and payload paths appear in the diff."},
+      {k:"b", label:"Rule edits only", desc:"Only rule/memory edits count — simpler predicate, but forces prose where a test would be the better encoding."},
+      {k:"c", label:"Free-form section", desc:"The section must exist and be non-empty; content is human-judged only."}
+    ]},
+  { id:"fixverify", num:"Q4 · #8 fix verification", title:"Who verifies fixes, and what does failure do?",
+    why:"Targets the 'partially resolved' chains that stretched soriza to 9 rounds: each CX fix must show evidence (diff hunk + rationale, or failing-then-passing check) before the next paid Codex round.",
+    opts:[
+      {k:"a", label:"sonnet/low verifier; failure cancels the round", rec:true, desc:"A guarded-mechanical sonnet/low agent checks each finding's evidence for completeness. Any incomplete fix → the next codex round is not spawned; the fixer redoes it at the escalated tier per the existing repeat rules. No paid round burns on a known-incomplete fix."},
+      {k:"b", label:"haiku scorer, advisory", desc:"Cheapest possible scorer; the round proceeds regardless and the report notes unverified fixes."},
+      {k:"c", label:"No extra agent", desc:"The next Codex round IS the verification — status quo, paid."}
+    ]},
+  { id:"retire", num:"Q5 · #9 mechanism retirement", title:"Evidence threshold, cadence, and who approves removals",
+    why:"Extends development-log.md's distill-then-delete cap to the whole layer. Every encoded constraint cites its finding class; a class that stops firing should eventually release its context cost.",
+    opts:[
+      {k:"a", label:"5 quiet plans; simplifier proposes, human approves", rec:true, desc:"A constraint whose class hasn't fired in the last 5 shipped plans gets flagged during the ship-time metrics refresh; harness-simplifier drafts the removal as a chore issue labeled status:needs-human. Removals never auto-ship."},
+      {k:"b", label:"10 quiet plans, manual sweep", desc:"Conservative threshold, reviewed manually when someone remembers."},
+      {k:"c", label:"Auto-remove with revert path", desc:"Flagged constraints are removed automatically in the next plan; git revert is the safety net."}
+    ]},
+  { id:"drill", num:"Q6 · #10 fire-drill", title:"Exercise the #52 machinery: real Codex or contract-only?",
+    why:"The convergence machinery (verdict lines, repeat tags, tier-up, delta scoping) has never fired. Real codex exec runs cost money and are nondeterministic; the parseable surfaces are testable for free.",
+    opts:[
+      {k:"a", label:"Hybrid: contract suite in CI + one real drill", rec:true, desc:"A repeatable pytest suite pins the parseable surfaces (verdict-line grammar, CX/repeat tags, delta ranges, ledger parser round-trip) and runs in CI. One real codex exec drill on a seeded fixture plan (with the sandbox network flag per the dev-log lesson) validates end-to-end once; re-run manually only after skill changes. Real calls never in CI."},
+      {k:"b", label:"Real calls, repeatable", desc:"A nightly/weekly real-codex drill suite — highest fidelity, paid and flaky."},
+      {k:"c", label:"Contract-only", desc:"Never spend a real call; accept that end-to-end behavior stays unproven."}
+    ]},
+  { id:"registry", num:"Q7 · #11 constraint registry", title:"Registry home, format, and the promotion path",
+    why:"Maps every finding class to the cheapest stage that catches it (template > checklist > lint > hook > review), each entry citing evidence. It must be machine-checkable without loading into session context.",
+    opts:[
+      {k:"a", label:"YAML under tests/, test-enforced", rec:true, desc:"tests/harness-layer/constraint-registry.yaml — one entry per class: stage, mechanism path, evidence (ledger rows / commits). A test asserts every entry's mechanism exists and every ledger class is registered. spec-review references it in one line and carries only classes marked stage: review. Promotion = a PR moving an entry down-stage with its new mechanism, gated by the same test."},
+      {k:"b", label:"Markdown rule file", desc:"Human-first .claude/rules/ file — readable, but loads context and nothing machine-checks it."},
+      {k:"c", label:"Embedded in the ledger", desc:"Registry columns inside findings-ledger.jsonl — one file, but conflates events with policy."}
+    ]},
+  { id:"retro", num:"Q8 · #12 retro stage (pre-locked for later)", title:"Autonomy, cadence, and how a constraint proves itself",
+    why:"Stays deferred until plan 2's metrics exist — locking its shape now so the epic states the end state.",
+    opts:[
+      {k:"a", label:"Propose-only, every ship, 2-row evidence bar", rec:true, desc:"After each ship, the retro mines the ledger + metrics and files at most one proposed-constraint chore issue (needs-human). Adoption runs the normal pipeline; a proposal needs ≥2 ledger rows of the same class, and the shipped constraint must include its would-have-caught test."},
+      {k:"b", label:"Autonomous through the pipeline", desc:"The retro drives plan → build → review itself; the human sees the PR."},
+      {k:"c", label:"Quarterly batch retro", desc:"Periodic manual retro session instead of a per-ship stage."}
+    ]}
+];
+
+const state = {}; const notes = {};
+QUESTIONS.forEach(q => state[q.id] = q.opts.find(o => o.rec)?.k ?? q.opts[0].k);
+
+function render(){
+  // Static local data + attribute-escaped notes only. security-scan: allow
+  document.getElementById('cards').innerHTML = QUESTIONS.map(q => `
+    <div class="card" id="card-${q.id}">
+      <div class="qnum">${q.num}</div>
+      <h2>${q.title}</h2>
+      <p class="why">${q.why}</p>
+      <div class="chips">${q.opts.map(o => `
+        <button class="chip ${state[q.id]===o.k?'sel':''}" data-q="${q.id}" data-k="${o.k}">
+          <strong>${o.label}</strong>${o.rec?'<span class="badge">Recommended</span>':''}
+          <span class="desc">${o.desc}</span>
+        </button>`).join('')}
+      </div>
+      <div class="free"><input type="text" placeholder="Override or annotate this answer…" data-note="${q.id}" value="${(notes[q.id]||'').replace(/"/g,'&quot;')}"></div>
+    </div>`).join('');
+  document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
+    state[b.dataset.q] = b.dataset.k; render();
+  }));
+  document.querySelectorAll('[data-note]').forEach(i => i.addEventListener('input', () => {
+    notes[i.dataset.note] = i.value; updatePrompt();
+  }));
+  updatePrompt();
+}
+
+function updatePrompt(){
+  const labels = { ledger:"1. Findings ledger", metrics:"2. Health metrics", payload:"3. Learning payload", fixverify:"4. Fix verification", retire:"5. Retirement", drill:"6. Fire-drill", registry:"7. Constraint registry", retro:"8. Retro stage" };
+  const lines = ["Interview round 2 answers for harness-self-improvement:",""];
+  for (const [id, label] of Object.entries(labels)) {
+    const q = QUESTIONS.find(q=>q.id===id); const o = q.opts.find(o=>o.k===state[id]);
+    lines.push(`${label} — ${o.label}${o.rec?' (as recommended)':''}: ${o.desc}`);
+  }
+  const noted = Object.entries(notes).filter(([,v]) => v.trim());
+  if (noted.length){ lines.push("", "Notes:"); noted.forEach(([id,v]) => lines.push(`- ${id}: ${v.trim()}`)); }
+  lines.push("", "The ledger is clear — finalize the interview.");
+  document.getElementById('prompt').textContent = lines.join("\n");
+}
+
+document.getElementById('acceptAll').addEventListener('click', () => {
+  QUESTIONS.forEach(q => { const r = q.opts.find(o=>o.rec); if (r) state[q.id] = r.k; });
+  render();
+});
+document.getElementById('copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(document.getElementById('prompt').textContent); }
+  catch { const r = document.createRange(); r.selectNode(document.getElementById('prompt')); getSelection().removeAllRanges(); getSelection().addRange(r); document.execCommand('copy'); getSelection().removeAllRanges(); }
+  const c = document.getElementById('copied'); c.classList.add('on'); setTimeout(()=>c.classList.remove('on'), 1400);
+});
+render();
+</script>
