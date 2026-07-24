@@ -1,0 +1,26 @@
+name: harness-tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    paths:
+      - ".claude/**"
+      - ".agents/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "specs/_templates/**"
+      - ".github/workflows/harness-tests.yml"
+
+jobs:
+  test:
+    if: ${{ !contains(github.event.pull_request.title, '[skip-ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+
+      - run: uv run pytest tests/harness-layer
