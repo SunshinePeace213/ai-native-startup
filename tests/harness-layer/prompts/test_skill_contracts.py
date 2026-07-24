@@ -4,10 +4,12 @@ Stop-hook's REQUIRED_SECTIONS.
 
 Both skills are driven by `codex exec` and parsed by the harness-plan /
 harness-review orchestrators that read their report files: the frontmatter
-`name:` is how Claude resolves the skill by name, the verdict-line grammar
-(including the em-dash) is what the orchestrator's verdict parser matches
-against, and the report-filename pattern is what both the skill's own
-Output-contract instructions and the orchestrator's upsert-search agree on.
+`name:` is the skill's declared metadata, pinned by the spec's contract
+inventory to match the directory (resolution itself is directory-keyed),
+the verdict-line grammar (including the em-dash) is what the orchestrator's
+verdict parser matches against, and the report-filename pattern is what both
+the skill's own Output-contract instructions and the orchestrator's
+upsert-search agree on.
 A dropped or drifted pin here breaks that parsing silently, the same class
 of defect the #40/#42 command-section regressions were.
 """
@@ -42,9 +44,9 @@ def frontmatter_lines(text: str) -> tuple[str, ...]:
     """The frontmatter block's physical lines, each right-stripped -- the
     unit a whole-entry pin is checked against. A substring check would let
     `# name: spec-review` (commented out) or `x-name: spec-review` (renamed)
-    satisfy a `name: spec-review` pin even though neither line is the live
-    key Claude resolves the skill by; matching a full stripped line closes
-    that gap."""
+    satisfy a `name: spec-review` pin even though neither line is a live
+    `name:` entry declaring the skill's metadata; matching a full stripped
+    line closes that gap."""
     return tuple(line.rstrip() for line in frontmatter(text).splitlines())
 
 
@@ -109,11 +111,12 @@ SKILL_EXPECTATIONS = {
 
 @pytest.mark.parametrize("skill", sorted(SKILL_EXPECTATIONS))
 def test_skill_contract_pins_hold(skill):
-    """Every pin traces to a real consumer: `name:` is how Claude resolves
-    the skill, and each clause is a literal the harness-plan/harness-review
-    orchestrators (or the skill's own Output-contract instructions) parse
-    out of the report file this skill writes. A silently dropped pin breaks
-    that parsing with no error at the point of loss."""
+    """Every pin traces to a real contract: `name:` is the declared metadata
+    the spec's inventory pins to the directory name (resolution itself is
+    directory-keyed), and each clause is a literal the harness-plan/
+    harness-review orchestrators (or the skill's own Output-contract
+    instructions) parse out of the report file this skill writes. A silently
+    dropped pin breaks that contract with no error at the point of loss."""
     text = (SKILLS_DIR / skill / "SKILL.md").read_text()
     assert missing_pins(text, SKILL_EXPECTATIONS[skill]) == []
 
@@ -201,9 +204,9 @@ def _frontmatter_entry_mutated(text: str, entry: str, replacement: str) -> str:
 def test_commented_frontmatter_entry_is_flagged(skill):
     """CX1-2: a commented-out `name:` (`# name: spec-review`) still contains
     the pinned text as a substring, so the substring check this suite used
-    to run would pass it silently even though Claude can no longer resolve
-    the skill by that key. Only matching a whole, exact frontmatter line
-    catches it."""
+    to run would pass it silently even though the frontmatter no longer
+    declares the `name:` metadata the inventory pins. Only matching a whole,
+    exact frontmatter line catches it."""
     entry = f"name: {skill}"
     text = (SKILLS_DIR / skill / "SKILL.md").read_text()
     mutated = _frontmatter_entry_mutated(text, entry, f"# {entry}")
@@ -213,8 +216,8 @@ def test_commented_frontmatter_entry_is_flagged(skill):
 
 @pytest.mark.parametrize("skill", sorted(SKILL_EXPECTATIONS))
 def test_prefixed_frontmatter_entry_is_flagged(skill):
-    """CX1-2: a renamed key (`old-name: spec-review`) is a dead key Claude's
-    frontmatter parser ignores, but it still contains the pinned text as a
+    """CX1-2: a renamed key (`old-name: spec-review`) no longer declares the
+    pinned `name:` metadata, but it still contains the pinned text as a
     substring -- only matching a whole, exact frontmatter line catches it."""
     entry = f"name: {skill}"
     text = (SKILLS_DIR / skill / "SKILL.md").read_text()
