@@ -82,3 +82,11 @@
   was wrong. Pin corrected to `@v7`; AC4 checker and the 59 spec-completeness + prompt
   tests re-run green. Head moves past approved a19b6ac → needs a re-approval delta round
   before ship.
+- **2026-07-25 · post-approval CI fix (cont.)** — after the setup-uv pin fix, the same CI
+  run still failed: 8 tests under `hooks/auto-format/{test_js_ts,test_markdown,test_data}.py`
+  need `node_modules` (prettier/eslint/markdownlint-cli2), but the workflow only provisioned
+  `uv`/Python — AC4 never scoped in the suite's JS-toolchain dependency. Added
+  `oven-sh/setup-bun@v2` + `bun install --frozen-lockfile` before the pytest step; verified
+  `bun install --frozen-lockfile` succeeds against the committed `bun.lock` in a clean dir.
+  AC4 checker still passes (token set unaffected). Second head move past approved a19b6ac —
+  still needs the re-approval delta round before ship.
