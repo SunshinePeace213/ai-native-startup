@@ -81,6 +81,22 @@ anthropic:
     file: anthropic/fable-finding-unknowns.md
     topic: Finding your unknowns — Fable field-guide patterns before, during, after implementation (blog)
     fetched: null
+  - url: https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models
+    file: anthropic/context-engineering-claude-5.md
+    topic: Context engineering for Claude 5 — remove constraints, progressive disclosure, auto-memory (blog)
+    fetched: null
+  - url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5
+    file: anthropic/prompting-fable-5.md
+    topic: Prompting Fable 5 — effort control, long-run autonomy, instruction following, memory
+    fetched: null
+  - url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5
+    file: anthropic/prompting-opus-5.md
+    topic: Prompting Opus 5 — behavioral shifts, response-length tuning, agentic work patterns
+    fetched: null
+  - url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5
+    file: anthropic/prompting-sonnet-5.md
+    topic: Prompting Sonnet 5 — effort tuning, tool use, code-review harness calibration
+    fetched: null
 openai:
   - url: https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide
     file: openai/codex-prompting-guide.md
@@ -114,4 +130,24 @@ openai/codex:
   - url: https://learn.chatgpt.com/docs/agent-configuration/rules
     file: openai/codex/rules.md
     topic: "Codex — rules: command restrictions and safe shell parsing for sandbox control"
+    fetched: null
+  - url: https://learn.chatgpt.com/docs/permissions
+    file: openai/codex/permissions.md
+    topic: "Codex — permission profiles: least-privilege filesystem and network boundaries (beta)"
+    fetched: null
+  - url: https://learn.chatgpt.com/docs/sandboxing
+    file: openai/codex/sandboxing.md
+    topic: "Codex — sandboxing: boundaries, platform-native enforcement, permission config"
+    fetched: null
+  - url: https://learn.chatgpt.com/docs/sandboxing/auto-review
+    file: openai/codex/sandboxing-auto-review.md
+    topic: "Codex — auto-review: reviewer agent replaces manual approval at sandbox boundaries"
+    fetched: null
+  - url: https://learn.chatgpt.com/docs/agent-approvals-security
+    file: openai/codex/agent-approvals-security.md
+    topic: "Codex — approvals & security: sandbox modes, approval policies, network access"
+    fetched: null
+  - url: https://learn.chatgpt.com/docs/cloud/internet-access
+    file: openai/codex/cloud-internet-access.md
+    topic: "Codex Cloud — internet access: enabling network, domain allowlists, risks"
     fetched: null
