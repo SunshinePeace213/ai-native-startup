@@ -1,0 +1,1019 @@
+<title>Unknowns — Cross-Model Review Rebuild</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+
+    --ok: #4A6B45;
+    --warn: #97701F;
+    --stop: #9B3B2E;
+
+    --display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --measure: 68ch;
+    --r: 3px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px 120px; }
+
+  a { color: var(--accent); }
+
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+
+  code {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 0.08em 0.34em;
+    word-break: break-word;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------- masthead ---------- */
+
+  header.masthead {
+    padding: 72px 0 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(2.3rem, 5.2vw, 3.7rem);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 14px 0 0;
+    max-width: 20ch;
+  }
+
+  .standfirst {
+    max-width: var(--measure);
+    margin: 22px 0 40px;
+    font-size: 1.09rem;
+    color: #4A443E;
+  }
+
+  .standfirst strong { color: var(--text); font-weight: 600; }
+
+  /* ---------- convergence trace (signature) ---------- */
+
+  .trace {
+    margin: 0 0 -1px;
+    padding: 34px 0 40px;
+  }
+
+  .trace-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .trace-head h2 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 1.28rem;
+    margin: 0;
+  }
+
+  .trace-note { color: var(--muted); font-size: 0.9rem; }
+
+  .ladder {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+    gap: 8px;
+    align-items: end;
+  }
+
+  .rung {
+    border: 1px solid var(--border);
+    border-bottom: 3px solid var(--stop);
+    background: var(--surface);
+    border-radius: var(--r) var(--r) 0 0;
+    padding: 12px 12px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-height: 128px;
+  }
+
+  .rung.approved { border-bottom-color: var(--ok); }
+
+  .rung-n {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  .rung-v {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--stop);
+    line-height: 1.3;
+  }
+
+  .rung.approved .rung-v { color: var(--ok); }
+
+  .rung-t { font-size: 12.5px; color: #56504A; line-height: 1.4; margin-top: auto; }
+
+  .trace-verdict {
+    margin: 18px 0 0;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--r);
+    max-width: var(--measure);
+    font-size: 0.95rem;
+  }
+
+  /* ---------- section chrome ---------- */
+
+  section { padding: 56px 0 0; border-top: 1px solid var(--border); }
+  section:first-of-type { border-top: none; }
+
+  h2.sec {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    letter-spacing: -0.01em;
+    margin: 10px 0 8px;
+  }
+
+  .sec-lede { max-width: var(--measure); color: #4A443E; margin: 0 0 30px; }
+
+  /* ---------- board ---------- */
+
+  .board-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--border);
+  }
+
+  .tally {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-right: auto;
+  }
+
+  .tally b { color: var(--text); font-weight: 600; }
+
+  .cards { display: flex; flex-direction: column; gap: 18px; }
+
+  .card {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: var(--r);
+    background: var(--surface);
+    padding: 22px 24px;
+    transition: border-left-color 0.18s ease, background 0.18s ease;
+  }
+
+  .card[data-state="resolve"] { border-left-color: var(--ok); }
+  .card[data-state="accept"] { border-left-color: var(--muted); background: #F5F2EC; }
+  .card[data-state="discuss"] { border-left-color: var(--warn); }
+
+  .card-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid #E0CBBB;
+    background: #F7EDE5;
+    border-radius: 2px;
+    padding: 2px 7px;
+  }
+
+  .card h3 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 1.32rem;
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+    margin: 0;
+    flex: 1 1 340px;
+    text-wrap: balance;
+  }
+
+  .card p { margin: 0 0 12px; max-width: var(--measure); }
+  .card p:last-of-type { margin-bottom: 16px; }
+
+  .lbl {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .evidence {
+    border-left: 2px solid var(--border);
+    padding: 2px 0 2px 14px;
+    margin: 0 0 14px;
+    max-width: var(--measure);
+  }
+
+  .evidence ul { margin: 0; padding-left: 17px; }
+  .evidence li { font-size: 0.9rem; color: #56504A; margin-bottom: 3px; }
+
+  .bite {
+    background: #F7EDE5;
+    border: 1px solid #E8D8CB;
+    border-radius: var(--r);
+    padding: 12px 15px;
+    margin: 0 0 16px;
+    max-width: var(--measure);
+    font-size: 0.94rem;
+  }
+
+  .bite b { color: var(--accent); }
+
+  /* ---------- controls ---------- */
+
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  button {
+    font-family: var(--body);
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  button:hover { background: #F3EFE7; border-color: var(--muted); }
+
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .controls button[aria-pressed="true"] {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+
+  .controls button[data-act="resolve"][aria-pressed="true"] { background: var(--ok); border-color: var(--ok); }
+  .controls button[data-act="discuss"][aria-pressed="true"] { background: var(--warn); border-color: var(--warn); }
+  .controls button[data-act="accept"][aria-pressed="true"] { background: var(--muted); border-color: var(--muted); }
+
+  textarea {
+    font-family: var(--body);
+    font-size: 13.5px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 9px 11px;
+    width: 100%;
+    max-width: var(--measure);
+    margin-top: 12px;
+    resize: vertical;
+    min-height: 46px;
+    line-height: 1.5;
+  }
+
+  textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* ---------- vocabulary ---------- */
+
+  .rungs { display: flex; flex-direction: column; gap: 0; margin-bottom: 34px; }
+
+  .term {
+    border-top: 1px solid var(--border);
+    padding: 22px 0;
+    display: grid;
+    grid-template-columns: minmax(180px, 250px) 1fr;
+    gap: 28px;
+  }
+
+  .term:last-child { border-bottom: 1px solid var(--border); }
+
+  .term-name {
+    font-family: var(--display);
+    font-size: 1.16rem;
+    line-height: 1.3;
+    margin: 0;
+    font-weight: 400;
+  }
+
+  .term-plain { font-size: 0.9rem; color: var(--muted); margin: 6px 0 0; }
+
+  .term-body p { margin: 0 0 10px; max-width: var(--measure); }
+  .term-body p:last-child { margin-bottom: 0; }
+
+  .term-body .use {
+    font-size: 0.92rem;
+    color: #56504A;
+    border-left: 2px solid #E0CBBB;
+    padding-left: 13px;
+  }
+
+  .checklist { max-width: var(--measure); margin: 0 0 34px; padding: 0; list-style: none; }
+
+  .checklist li {
+    border-bottom: 1px dashed var(--border);
+    padding: 11px 0 11px 30px;
+    position: relative;
+    font-size: 0.96rem;
+  }
+
+  .checklist li::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 18px;
+    width: 9px;
+    height: 9px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+  }
+
+  .checklist b { font-weight: 600; }
+
+  .checklist span { color: var(--muted); }
+
+  /* ---------- prompt ---------- */
+
+  .out {
+    margin-top: 46px;
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent);
+    border-radius: var(--r);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .out-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .out-head h2 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 1.2rem;
+    margin: 0;
+    margin-right: auto;
+  }
+
+  #copy {
+    background: var(--accent);
+    color: #FFF9F4;
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+
+  #copy:hover { background: #A3521F; border-color: #A3521F; }
+
+  pre {
+    margin: 0;
+    padding: 22px;
+    max-height: 460px;
+    overflow: auto;
+    font-family: var(--mono);
+    font-size: 12.4px;
+    line-height: 1.62;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #3A342F;
+  }
+
+  footer {
+    margin-top: 42px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+
+  @media (max-width: 720px) {
+    .wrap { padding: 0 18px 90px; }
+    header.masthead { padding-top: 44px; }
+    .term { grid-template-columns: 1fr; gap: 10px; }
+    .card { padding: 18px 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Discovery · unknowns pass · cross-model review rebuild</div>
+    <h1>The review loop has no fixed point</h1>
+    <p class="standfirst">
+      You asked what the standards are, and whether there are unknowns you haven't raised. There are
+      nine. The largest: <strong>the fix you proposed — comprehensive first round, focused rounds
+      after — is already what the harness does, and it is the mechanism producing the loop.</strong>
+      Everything below is read out of your own files and review history, not from general advice.
+    </p>
+
+    <div class="trace">
+      <div class="trace-head">
+        <h2>What actually happened on <span class="mono">sensitive-file-guard</span></h2>
+        <span class="trace-note">seven implementation rounds, one root cause</span>
+      </div>
+      <div class="ladder">
+        <div class="rung">
+          <span class="rung-n">ROUND 1</span>
+          <span class="rung-v">changes<br>requested</span>
+          <span class="rung-t">Scope: <b>full</b>. 4 blocking — 2 glob bypasses.</span>
+        </div>
+        <div class="rung">
+          <span class="rung-n">ROUND 2</span>
+          <span class="rung-v">changes<br>requested</span>
+          <span class="rung-t">Scope: delta. CX2-1 bypass variant.</span>
+        </div>
+        <div class="rung">
+          <span class="rung-n">ROUND 3</span>
+          <span class="rung-v">changes<br>requested</span>
+          <span class="rung-t">CX2-1 still open + new fail-open path.</span>
+        </div>
+        <div class="rung">
+          <span class="rung-n">ROUND 4</span>
+          <span class="rung-v">changes<br>requested</span>
+          <span class="rung-t">CX3-1 "only partially fixed" — trailing <code>*</code>.</span>
+        </div>
+        <div class="rung">
+          <span class="rung-n">ROUND 5</span>
+          <span class="rung-v">changes<br>requested</span>
+          <span class="rung-t">CX5-1 suffix-targeting bypass.</span>
+        </div>
+        <div class="rung">
+          <span class="rung-n">ROUND 6</span>
+          <span class="rung-v">changes<br>requested</span>
+          <span class="rung-t">Both-ends deviation, <code>*.tfstate.*</code>.</span>
+        </div>
+        <div class="rung">
+          <span class="rung-n">ROUND 7</span>
+          <span class="rung-v">changes<br>requested</span>
+          <span class="rung-t">Character-class literals under the gate.</span>
+        </div>
+      </div>
+      <p class="trace-verdict">
+        Every round says <em>all Validation Commands pass</em>. Seven rounds were not seven defects —
+        they were one unbounded defect class (glob/character-class bypass) enumerated one member at a
+        time, because rounds 2–7 are only allowed to look at the fix, never at the whole matcher.
+      </p>
+    </div>
+  </header>
+
+  <section>
+    <div class="eyebrow">Section one</div>
+    <h2 class="sec">Nine unknowns in your harness</h2>
+    <p class="sec-lede">
+      Disposition each one. <b>Fix now</b> folds it into the plan prompt as a work order;
+      <b>discuss</b> routes it to the interview; <b>accept</b> records it as a known, tolerated
+      cost. Your notes travel with the prompt.
+    </p>
+
+    <div class="board-bar">
+      <span class="tally" id="tally"></span>
+      <button type="button" id="all-fix">Fix all</button>
+      <button type="button" id="all-clear">Clear</button>
+    </div>
+
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Section two</div>
+    <h2 class="sec">The vocabulary you're missing</h2>
+    <p class="sec-lede">
+      You said you don't know the standards for review. There is a real field here with settled
+      language. These seven terms are the ones your harness is missing — each one names a mechanism
+      that would have stopped a loop you actually hit.
+    </p>
+
+    <div class="rungs">
+
+      <div class="term">
+        <div>
+          <h3 class="term-name">Severity vs. blocking</h3>
+          <p class="term-plain">How bad it is, versus whether it stops the merge.</p>
+        </div>
+        <div class="term-body">
+          <p>
+            Severity is a <em>property of the defect</em> (critical / high / medium / low). Blocking is
+            a <em>policy decision</em> about that severity. Mature review systems keep them separate so a
+            reviewer can say "this is real, it is medium, ship it and track it."
+          </p>
+          <p class="use">
+            Your two skills only emit <code>approved</code> / <code>changes-requested</code>, and define
+            advisory as "never changes the verdict." So a reviewer who finds something real has exactly
+            one lever: block. That is why Codex blocks every round.
+          </p>
+        </div>
+      </div>
+
+      <div class="term">
+        <div>
+          <h3 class="term-name">Convergence &amp; the scope ratchet</h3>
+          <p class="term-plain">Whether the loop is guaranteed to end.</p>
+        </div>
+        <div class="term-body">
+          <p>
+            A terminating review is a contraction: each round must strictly shrink the open set. The
+            classic failure is the <em>scope ratchet</em> — round N+1 raises a standard that round N did
+            not apply, so the target moves as fast as the author hits it.
+          </p>
+          <p class="use">
+            <code>per-feature-harness-restructure</code> rounds 1→4 are one continuous ratchet on
+            validator strictness: greps → self-contained greps → bounded-relationship greps →
+            single-markdown-block greps. The standard rule is: <b>a reviewer may only block on
+            findings in the round-1 scope</b>; anything new is filed, not blocked.
+          </p>
+        </div>
+      </div>
+
+      <div class="term">
+        <div>
+          <h3 class="term-name">Definition of Ready / Done</h3>
+          <p class="term-plain">The published entry and exit contract.</p>
+        </div>
+        <div class="term-body">
+          <p>
+            DoR is what a spec must contain before review may start; DoD is what makes it done.
+            Both are checklists agreed in advance, so review is a <em>conformance check</em> against a
+            fixed list rather than an open-ended hunt.
+          </p>
+          <p class="use">
+            You asked "is my standard too vague?" — the honest answer is that you have a list of
+            <em>angles to look for</em>, which is a hunting license, not a DoD. Angles have no
+            completion state; a checklist does.
+          </p>
+        </div>
+      </div>
+
+      <div class="term">
+        <div>
+          <h3 class="term-name">The code-health bar</h3>
+          <p class="term-plain">Approve when it's better, not when it's perfect.</p>
+        </div>
+        <div class="term-body">
+          <p>
+            Google's published standard: a reviewer approves once the change <em>definitely improves
+            overall code health</em>, even if it is not perfect. "There is no such thing as a perfect
+            change" is stated policy, and reviewers mark non-blocking comments as nits.
+          </p>
+          <p class="use">
+            Pair it with a named <b>tie-break owner</b>. Every real review system names who decides when
+            author and reviewer disagree — otherwise disagreement is resolved by exhaustion, which is
+            exactly what your 7-round run was.
+          </p>
+        </div>
+      </div>
+
+      <div class="term">
+        <div>
+          <h3 class="term-name">Property-based &amp; fuzz testing</h3>
+          <p class="term-plain">Machine enumeration of an unbounded input class.</p>
+        </div>
+        <div class="term-body">
+          <p>
+            When correctness spans an infinite input space — parsers, matchers, permission guards — you
+            do not review your way to confidence. You state an invariant ("no glob may select a
+            protected path") and let a generator attack it thousands of times per second.
+          </p>
+          <p class="use">
+            Rounds 2–7 were a fuzz campaign executed by hand, at conversation speed, one input per
+            round. A <code>hypothesis</code> property test would have produced the whole family in one
+            run — and stayed in the repo as a regression net.
+          </p>
+        </div>
+      </div>
+
+      <div class="term">
+        <div>
+          <h3 class="term-name">Phase containment</h3>
+          <p class="term-plain">Was it caught at the stage that should catch it?</p>
+        </div>
+        <div class="term-body">
+          <p>
+            The standard measure of whether a review gate earns its cost: of the defects a stage
+            <em>should</em> have caught, what fraction did it catch? Low containment at spec review
+            means the spec gate is theatre and the cost belongs downstream.
+          </p>
+          <p class="use">
+            Right now you cannot compute it — nothing records which build defects were foreseeable
+            from the spec. That single number tells you whether spec review deserves two rounds, one,
+            or zero.
+          </p>
+        </div>
+      </div>
+
+      <div class="term">
+        <div>
+          <h3 class="term-name">Rule budget &amp; eviction</h3>
+          <p class="term-plain">A memory layer that forgets on purpose.</p>
+        </div>
+        <div class="term-body">
+          <p>
+            Any self-improving rule store grows monotonically unless something removes rules. Mature
+            designs cap the store, attach an owner and a review date to each entry, and require a new
+            rule to cite the incident that created it — so unused rules can be evicted with evidence.
+          </p>
+          <p class="use">
+            This matters more than usual here: Anthropic's Claude-5 context-engineering guidance
+            reports removing <b>over 80% of Claude Code's system prompt</b> with no performance loss,
+            and names over-specification and repeated instructions as the failure mode. An
+            append-only rule layer optimises against the model generation you just migrated to.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="eyebrow">The bar professionals judge a review system by</div>
+    <h2 class="sec" style="font-size:1.35rem;margin-top:8px;">Six numbers, not opinions</h2>
+    <ul class="checklist">
+      <li><b>Rounds to approve</b> — median. <span>Healthy is 1–2. Yours is 3–7.</span></li>
+      <li><b>Finding precision</b> — share of blocking findings that survive scrutiny. <span>Low precision teaches authors to argue instead of fix.</span></li>
+      <li><b>Phase containment</b> — defects caught at the stage that owns them. <span>Tells you what spec review is worth.</span></li>
+      <li><b>Escaped defects</b> — what reached main anyway. <span>The only measure of whether the gate works at all.</span></li>
+      <li><b>Scope-ratchet rate</b> — blocking findings raised after round 1 that were in scope at round 1. <span>Should be near zero.</span></li>
+      <li><b>Cost per merged PR</b> — wall-clock and tokens. <span>The budget you're currently breaching without measuring.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="out">
+      <div class="out-head">
+        <h2>Improved prompt</h2>
+        <span class="tally" id="out-note"></span>
+        <button type="button" id="copy">Copy prompt</button>
+      </div>
+      <pre id="prompt"></pre>
+    </div>
+
+    <footer>
+      Discovery pass only — no spec, no issue, nothing pushed. Findings are grounded in
+      <code>specs/*/reviews/</code>, <code>.agents/skills/</code>,
+      <code>.claude/commands/harness-layer/</code>, <code>.claude/rules/</code>,
+      <code>.codex/</code>, and <code>git log</code> in this repository.
+    </footer>
+  </section>
+
+</div>
+
+<script>
+  const FINDINGS = [
+    {
+      id: "delta-scope",
+      tag: "Review · root cause",
+      title: "Delta-scoped rounds are the treadmill engine — your proposed fix is already the design",
+      what: "You asked: shouldn't round 1 be comprehensive, then later rounds focus on the issues? That is exactly what the harness already does. <code>implementation-review/SKILL.md</code> instructs delta rounds to \"read the prior report and the delta only — never re-read the full plan or KB.\"",
+      why: "For a bounded defect (a typo, a missing export) delta scope is correct and cheap. For an unbounded defect class — a glob matcher, a permission guard, a parser — it is fatal: the reviewer can only see the patch, so it can only find the next variant, never enumerate the family. Rounds 2–7 of <code>sensitive-file-guard</code> are that failure in pure form, each one re-opening the same CX-numbered bypass.",
+      evidence: [
+        "<code>.agents/skills/implementation-review/SKILL.md</code> — \"Delta rounds (Scope: delta, N&gt;1). Read the prior report and the delta only.\"",
+        "<code>specs/sensitive-file-guard/reviews/</code> — round 1 <code>Scope: full</code>; rounds 2–7 <code>Scope: delta</code>, all <code>changes-requested</code>.",
+        "Round 4 digest: \"CX3-1 is only partially fixed because a trailing <code>*</code> disables suffix-rule intersection and restores the character-class bypass.\""
+      ],
+      instead: "Make scope a function of the <em>defect class</em>, not the round number. When a finding is class-shaped (matcher, guard, parser, escaping), the fix round must re-review the whole unit and the reviewer must enumerate the class in one pass — or hand it to a property test and stop reviewing it."
+    },
+    {
+      id: "severity",
+      tag: "Review · verdict model",
+      title: "Every real finding is blocking, because there is no severity axis",
+      what: "Both review skills emit a binary verdict and define advisory as \"NEVER change the verdict.\" There is no tier between \"blocks the merge\" and \"has no effect at all.\"",
+      why: "This is the mechanism behind \"Codex keeps rejecting.\" A reviewer that finds something genuinely real has one lever. It cannot say <em>real, medium, ship it, track it</em> — so it blocks, you fix, it finds the next real-medium thing, and blocks again. The loop is not Codex being difficult; it is the only move your contract gives it.",
+      evidence: [
+        "<code>spec-review/SKILL.md</code> — \"Record all of these as non-blocking recommendations — they NEVER change the verdict.\"",
+        "<code>implementation-review/SKILL.md</code> — verdict rule is <code>approved</code> only at zero blocking findings; advisory never counts.",
+        "The Codex plugin you already installed ships a graded schema: <code>severity: critical|high|medium|low</code>, <code>confidence: 0–1</code>, verdict <code>approve|needs-attention</code> — <code>~/.claude/plugins/.../codex/1.0.6/schemas/review-output.schema.json</code>."
+      ],
+      instead: "Adopt the plugin's schema instead of your stricter custom one: severity + confidence per finding, and a policy line that says which severities block. Only <code>critical</code> and <code>high</code> gate the merge; <code>medium</code> and <code>low</code> become PR follow-ups. This is the single highest-leverage change on the board."
+    },
+    {
+      id: "validation-bar",
+      tag: "Planning · validation",
+      title: "Validation-command strictness has no sufficiency bar, so it ratchets forever",
+      what: "You identified the symptom exactly — the AC/validation-command argument that never ends. The cause is that nothing in <code>spec-review</code> defines when validation is <em>sufficient</em>. The reviewer's own criterion is \"a validation command that doesn't verify what it claims,\" which is satisfiable at any level of rigour and therefore at none.",
+      why: "Read rounds 1→4 of <code>per-feature-harness-restructure</code> in order: they are one argument, escalating. Round 1: greps don't prove the claims. Round 2: greps aren't self-contained. Round 3: greps can match across unrelated sections. Round 4: approved once every clause matched within a single markdown block. Each demand was reasonable; the sequence had no terminus.",
+      evidence: [
+        "<code>specs/per-feature-harness-restructure/reviews/codex-spec-review-round-1..4.md</code> — four rounds, one topic.",
+        "Round 3: \"the validator still permits unrelated document-wide fragments to satisfy several required clause relationships.\"",
+        "<code>spec-review/SKILL.md</code> — \"Untestable acceptance criteria\" is listed as blocking with no sufficiency definition."
+      ],
+      instead: "Moving the scripts to <code>specs/&lt;issue&gt;/testings/</code> relocates the argument without ending it — worth doing for tidiness, but it is not the fix. The fix is a sufficiency rule: <b>one executable check per acceptance criterion, and the reviewer may challenge that a check is absent or inverted, never that it could be stricter.</b> Strictness upgrades are advisory."
+    },
+    {
+      id: "cap-reset",
+      tag: "Review · control flow",
+      title: "The round cap resets every time you re-invoke the command",
+      what: "The caps look real but are scoped per invocation, while the round counter is global. <code>MAX_REVIEW_ROUNDS: 2</code> bounds new rounds \"per review cycle\"; <code>harness-review</code>'s attempt counter <code>A</code> is explicitly \"invocation-local.\" Report number <code>N</code> is the only global, and it just keeps counting.",
+      why: "So the needs-human exit — the escape hatch that should have fired at round 2 — never terminates anything. Re-running the command grants a fresh attempt budget. That is how a run with a hard cap of 2 reached round 7 with no human decision point.",
+      evidence: [
+        "<code>harness-review.md</code> — \"the attempt counter A (1–2) is invocation-local\"; \"The report number N is global.\"",
+        "<code>harness-plan.md</code> — <code>MAX_REVIEW_ROUNDS: 2</code> — \"hard cap on NEW Codex rounds per review cycle.\"",
+        "Observed: 7 impl rounds on <code>sensitive-file-guard</code>, 4 spec rounds on <code>per-feature-harness-restructure</code>."
+      ],
+      instead: "Make the budget per plan, not per invocation, and persist it in <code>## Tracking</code>. When it is spent, the outcome is a decision — ship with tracked follow-ups, hand to Codex to implement, or escalate to you — never another round."
+    },
+    {
+      id: "memory-inert",
+      tag: "Self-improvement",
+      title: "The self-improving layer already exists and has never once fired",
+      what: "You asked how to build a self-improving layer. You already built one: <code>development-log.md</code>, plus a memory step in both build and review. It holds zero lessons. Its only commit is the one that created it. One of seven shipped plans wrote an <code>implementation-notes.md</code>.",
+      why: "The capture path is prospective. <code>harness-plan</code> step 6 asks the planner to \"mark any task whose outcome must be recorded to memory,\" and the build/review memory steps record \"exactly those.\" So a lesson is only captured if someone predicted it <em>before the work started</em> — which is precisely impossible for mistakes. Every finding Codex raised across 30+ review rounds was structurally ineligible.",
+      evidence: [
+        "<code>.claude/rules/development-log.md</code> — <code>## Lessons</code> is empty; <code>git log</code> shows one commit (<code>de83271</code>, its creation).",
+        "<code>harness-plan.md</code> step 6 — \"Mark any task whose outcome must be recorded to memory — the build/review memory steps record exactly those.\"",
+        "Only <code>specs/unknowns-aware-pipeline/implementation-notes.md</code> exists, of seven plans."
+      ],
+      instead: "Invert the trigger: capture reactively from what actually happened. Every <code>changes-requested</code> round already produces a structured finding — that is your lesson feed, for free. Make the terminal review step derive candidate rules from the round reports, not from pre-marked tasks."
+    },
+    {
+      id: "codex-routing",
+      tag: "Model routing",
+      title: "Your own rule already says Codex should have built the guard — nothing enforced it",
+      what: "<code>model-selection.md</code> states that Codex implements \"adversarial or algorithmic tasks a plan explicitly stamps to <code>gpt-5.6-sol</code> (security boundaries, parsers/matchers…).\" A sensitive-file guard is a security boundary implemented as a glob matcher — the exact case.",
+      why: "Claude built it and Codex spent seven rounds attacking it. You asked how to leverage different coding agents for quality; the rule that answers it is already written and simply has no enforcement point. Nothing at plan time detects \"this task is adversarial\" and routes accordingly — it depends on the planner remembering.",
+      evidence: [
+        "<code>.claude/rules/model-selection.md</code> — \"Codex implements only adversarial or algorithmic tasks a plan explicitly stamps to <code>gpt-5.6-sol</code> (security boundaries, parsers/matchers, architectural redesigns).\"",
+        "<code>specs/sensitive-file-guard/</code> — built by Claude builders, then 7 Codex review rounds.",
+        "Same rule: \"<code>opus</code> reviews every Codex-authored change; Codex never solely gates its own code.\""
+      ],
+      instead: "Add an explicit routing question to the planning step — <em>is this surface adversarial or algorithmic?</em> — and make a yes stamp the implementing task to Codex with Opus as reviewer. The reviewer that would have found seven bypasses is better used as the author."
+    },
+    {
+      id: "model-generation",
+      tag: "Models · KB",
+      title: "The Claude-5 migration is half-done, and the guidance contradicts your rule-accumulation plan",
+      what: "Two things at once. Your roster still labels <code>opus</code> as <em>Opus 4.8</em> while this session runs Opus 5, and the KB's 27 sources contain no Opus 5, Fable 5, or Sonnet 5 prompting guide and no context-engineering post — so a <code>kb-grounded</code> review cannot verify a single model claim. Separately, the guidance itself cuts against your plan.",
+      why: "Anthropic's Claude-5 context-engineering guidance says newer models need <em>fewer</em> explicit rules, names over-specification and instructions repeated across CLAUDE.md/skills as the failure mode, and reports removing over 80% of Claude Code's system prompt with no performance loss. It also prefers rich references — tests, rubrics, real code — over more markdown prose. Your harness is roughly 1,770 lines of always-on prescriptive rules, and the self-improving layer as described appends to that forever.",
+      evidence: [
+        "<code>.claude/rules/model-selection.md</code> — \"<code>opus</code> (Opus 4.8)\"; session model is Opus 5.",
+        "<code>ai-docs/index.md</code> / <code>sources.yaml</code> — 27 sources, none covering Claude-5 prompting or context engineering.",
+        "Anthropic, <em>The new rules of context engineering for Claude 5 generation models</em> — \"newer models have better judgement and can handle these decisions well without explicit rules.\""
+      ],
+      instead: "Mirror the four model docs into the KB first so the rest is verifiable, refresh the roster, then treat the self-improving layer as a <em>budgeted</em> store — cap it, require each rule to cite its incident, and prefer a rubric or a test over a paragraph of prose."
+    },
+    {
+      id: "codex-blind",
+      tag: "Config sync",
+      title: "Codex never sees the rules you would be writing",
+      what: "You asked whether Codex should get the same per-session rules. Today it gets almost none. Claude auto-loads everything in <code>.claude/rules/</code> via <code>paths:</code> frontmatter. Codex reads root <code>AGENTS.md</code> and nothing else — <code>.codex/</code> is a 6-line <code>config.toml</code> (thread limits) plus a <code>hooks.json</code> carrying two PreToolUse Bash guards.",
+      why: "So <code>git-workflow.md</code>, <code>model-selection.md</code>, <code>task-tools.md</code>, and <code>memory-series.md</code> never reach the reviewer that is gating your work — it is reviewing against standards it cannot read, which is its own source of disagreement. And a self-improving layer that writes to <code>.claude/rules/</code> would be, by construction, invisible to half the pipeline.",
+      evidence: [
+        "<code>.codex/config.toml</code> — only <code>[agents] max_threads = 6, max_depth = 1</code>.",
+        "<code>.codex/hooks.json</code> — one PreToolUse/Bash matcher, two guard scripts.",
+        "<code>.claude/rules/memory-series.md</code> — path-scoped loading is a Claude mechanism; the rule files carry <code>paths:</code> frontmatter Codex does not consume."
+      ],
+      instead: "Decide the sync direction deliberately: either promote the shared standards into root <code>AGENTS.md</code> (which both agents read) and keep <code>.claude/rules/</code> for Claude-only mechanics, or generate a Codex-side digest as a build step. Pick one — a rule that exists in only one agent's context is worse than no rule, because the two disagree with confidence."
+    },
+    {
+      id: "codex-env",
+      tag: "Config sync · sandbox",
+      title: "Codex has no prepared environment — and the harness converts that into blocking findings",
+      what: "You asked how to give Codex a prepared environment like Claude's. Today it has none: <code>.codex/config.toml</code> configures only agent thread limits, with no permissions profile, no approval policy, and no network policy. Every <code>codex exec</code> in the harness passes the bare legacy flag <code>-s workspace-write</code>.",
+      why: "This is not cosmetic — it is a fourth loop cause. <code>workspace-write</code> blocks network by default, and <code>implementation-review</code> states that a command it cannot execute \"(sandbox or network limits)\" is recorded unexecuted and <b>BLOCKS approval</b>. So any validation command that installs a dependency or reaches the network is structurally unexecutable, and your own contract turns that environment gap into a rejected round. The reviewer is already visibly fighting the sandbox: round 1 of <code>sensitive-file-guard</code> annotates every single command with \"runner-only <code>UV_CACHE_DIR</code> redirected to <code>/tmp</code>.\"",
+      evidence: [
+        "<code>.codex/config.toml</code> — <code>[agents]</code> only; no <code>[permissions.*]</code>, no <code>approval_policy</code>, no network block.",
+        "<code>implementation-review/SKILL.md</code> — \"A command you cannot execute (sandbox or network limits) is recorded as unexecuted with the reason and BLOCKS approval.\"",
+        "Codex now configures access through <code>[permissions.&lt;name&gt;]</code> profiles that <em>replace</em> <code>sandbox_mode</code>/<code>sandbox_workspace_write</code> — the harness is written against the superseded flag.",
+        "The KB caches six <code>learn.chatgpt.com</code> Codex pages (models, config basic/advanced/sample, subagents, rules) and none of the five you linked — permissions, sandboxing, auto-review, agent approvals, cloud internet access."
+      ],
+      instead: "Build a real Codex environment, then relax the rule that punishes its absence. A named profile with <code>extends = \":workspace\"</code>, explicit <code>workspace_roots</code>, and a narrow <code>[permissions.&lt;name&gt;.network]</code> domain allowlist covering exactly the registries validation needs — the docs' \"common dependencies\" preset plus GET/HEAD/OPTIONS only, since enabling network opens prompt-injection and exfiltration paths. Set <code>approvals_reviewer = \"auto_review\"</code> with an <code>[auto_review] policy</code> block — an automated escalation reviewer is the closest Codex analogue to your Claude hook layer, and it is a reviewer swap, not a permission grant. Mirror the guard hooks in <code>.codex/hooks.json</code>. Then change the contract: a command unexecuted for a <em>sandbox</em> reason is an environment defect, not a spec defect, and must not block."
+    }
+  ];
+
+  const STATES = [
+    { key: "resolve", label: "Fix now" },
+    { key: "discuss", label: "Discuss" },
+    { key: "accept", label: "Accept" }
+  ];
+
+  const state = {};
+  FINDINGS.forEach(f => { state[f.id] = { disposition: null, note: "" }; });
+
+  const cardsEl = document.getElementById("cards");
+  const promptEl = document.getElementById("prompt");
+  const tallyEl = document.getElementById("tally");
+  const outNoteEl = document.getElementById("out-note");
+
+  function buildCards() {
+    FINDINGS.forEach(f => {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.dataset.id = f.id;
+
+      const controls = STATES.map(s =>
+        `<button type="button" data-act="${s.key}" aria-pressed="false">${s.label}</button>`
+      ).join("");
+
+      card.innerHTML = `
+        <div class="card-top">
+          <h3>${f.title}</h3>
+          <span class="tag">${f.tag}</span>
+        </div>
+        <p>${f.what}</p>
+        <p>${f.why}</p>
+        <span class="lbl">Grounded in</span>
+        <div class="evidence"><ul>${f.evidence.map(e => `<li>${e}</li>`).join("")}</ul></div>
+        <div class="bite"><b>What to do instead —</b> ${f.instead}</div>
+        <div class="controls">${controls}</div>
+        <textarea placeholder="Your note on this one (travels with the prompt)…" aria-label="Note"></textarea>
+      `;
+
+      card.querySelectorAll(".controls button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const act = btn.dataset.act;
+          state[f.id].disposition = state[f.id].disposition === act ? null : act;
+          render();
+        });
+      });
+
+      card.querySelector("textarea").addEventListener("input", e => {
+        state[f.id].note = e.target.value;
+        updatePrompt();
+      });
+
+      cardsEl.appendChild(card);
+    });
+  }
+
+  function render() {
+    FINDINGS.forEach(f => {
+      const card = cardsEl.querySelector(`[data-id="${f.id}"]`);
+      const d = state[f.id].disposition;
+      if (d) card.dataset.state = d; else card.removeAttribute("data-state");
+      card.querySelectorAll(".controls button").forEach(btn => {
+        btn.setAttribute("aria-pressed", String(btn.dataset.act === d));
+      });
+    });
+
+    const count = k => FINDINGS.filter(f => state[f.id].disposition === k).length;
+    const undecided = FINDINGS.length - count("resolve") - count("discuss") - count("accept");
+    tallyEl.innerHTML =
+      `<b>${count("resolve")}</b> to fix · <b>${count("discuss")}</b> to discuss · ` +
+      `<b>${count("accept")}</b> accepted · <b>${undecided}</b> undecided`;
+
+    updatePrompt();
+  }
+
+  const WORK_ORDER = {
+    "delta-scope": "Replace round-number scoping with defect-class scoping in `.agents/skills/implementation-review/SKILL.md`. Delta scope stays for bounded defects; when a finding is class-shaped (matcher, guard, parser, escaping), the fix round re-reviews the whole unit and the reviewer must enumerate the class in one pass.",
+    "severity": "Replace the binary verdict in both `.agents/skills/spec-review/SKILL.md` and `implementation-review/SKILL.md` with the severity + confidence schema the installed Codex plugin already ships (`schemas/review-output.schema.json`). State the blocking policy explicitly: only critical and high gate the merge; medium and low become PR follow-ups.",
+    "validation-bar": "Add a sufficiency rule for validation to `spec-review`: one executable check per acceptance criterion; the reviewer may block on a check that is absent or inverted, never on one that could be stricter. Strictness upgrades are advisory only.",
+    "cap-reset": "Move the review budget from per-invocation to per-plan and persist it in spec.md's `## Tracking`. When the budget is spent the outcome is a decision — ship with tracked follow-ups, reroute to Codex, or escalate — never another round.",
+    "memory-inert": "Rebuild memory capture as reactive rather than prospective. Drop the pre-marking requirement in `harness-plan` step 6; derive candidate rules in the terminal review step from the round reports that already exist.",
+    "codex-routing": "Add an adversarial/algorithmic routing check to planning, and enforce `model-selection.md`'s existing rule: a yes stamps the implementing task to Codex with Opus as reviewer.",
+    "model-generation": "Mirror the Claude-5 prompting docs and the context-engineering post into `ai-docs/` via `/harness-layer:kb add`, refresh the `model-selection.md` roster to the shipping models, and give the rule store a hard cap with per-rule incident citations.",
+    "codex-blind": "Decide the config-sync direction: promote shared standards into root `AGENTS.md` (read by both agents) with `.claude/rules/` reserved for Claude-only mechanics, or generate a Codex-side digest as a build step.",
+    "codex-env": "Give Codex a prepared environment in `.codex/config.toml`: a named profile with `extends = \":workspace\"`, explicit `workspace_roots`, and a narrow `[permissions.<name>.network]` domain allowlist covering only the registries validation needs (GET/HEAD/OPTIONS only). Set `approvals_reviewer = \"auto_review\"` with an `[auto_review] policy` block, and mirror the Claude guard hooks into `.codex/hooks.json`. Migrate the `codex exec -s workspace-write` call sites onto the permissions-profile model that supersedes `sandbox_mode`. Then amend `implementation-review` so a command unexecuted for a sandbox reason is an environment defect that does not block."
+  };
+
+  function updatePrompt() {
+    const pick = k => FINDINGS.filter(f => state[f.id].disposition === k);
+    const fix = pick("resolve");
+    const discuss = pick("discuss");
+    const accept = pick("accept");
+    const noted = FINDINGS.filter(f => state[f.id].note.trim());
+
+    const L = [];
+
+    L.push("Rebuild the cross-model review layer of the harness — the Codex gate used by both /harness-layer:harness-plan and /harness-layer:harness-review. Discovery is done; the diagnosis below is grounded in this repo's own review history, so treat it as established and do not re-derive it.");
+    L.push("");
+    L.push("THE PROBLEM, PRECISELY. The review loop has no fixed point. Read specs/sensitive-file-guard/reviews/ (7 implementation rounds, all changes-requested) and specs/per-feature-harness-restructure/reviews/ (4 spec rounds arguing one topic) before changing anything — they are the evidence base. Two mechanisms produce the loop: rounds after the first may only see the delta, so an unbounded defect class gets enumerated one member per round; and the verdict is binary, so a reviewer with a real medium-severity finding has no move except to block.");
+    L.push("");
+    L.push("Do NOT change the discovery passes (unknowns, brainstorm, prototypes, interview) — they work and are out of scope.");
+
+    if (fix.length) {
+      L.push("");
+      L.push("WORK ORDER — implement these, in this order:");
+      fix.forEach((f, i) => {
+        L.push("");
+        L.push(`${i + 1}. ${f.title}`);
+        L.push(`   ${WORK_ORDER[f.id]}`);
+        if (state[f.id].note.trim()) L.push(`   My direction: ${state[f.id].note.trim()}`);
+      });
+    }
+
+    if (discuss.length) {
+      L.push("");
+      L.push("DECIDE WITH ME FIRST — do not implement these until we have talked them through:");
+      discuss.forEach(f => {
+        L.push(`- ${f.title}${state[f.id].note.trim() ? ` — my note: ${state[f.id].note.trim()}` : ""}`);
+      });
+    }
+
+    if (accept.length) {
+      L.push("");
+      L.push("ACCEPTED AS-IS — known costs, leave them alone:");
+      accept.forEach(f => {
+        L.push(`- ${f.title}${state[f.id].note.trim() ? ` — ${state[f.id].note.trim()}` : ""}`);
+      });
+    }
+
+    const orphanNotes = noted.filter(f => !state[f.id].disposition);
+    if (orphanNotes.length) {
+      L.push("");
+      L.push("ADDITIONAL NOTES:");
+      orphanNotes.forEach(f => L.push(`- ${f.title}: ${state[f.id].note.trim()}`));
+    }
+
+    L.push("");
+    L.push("VOCABULARY TO BUILD AGAINST. Use these terms as the design spine, not as decoration: severity vs. blocking (a property versus a policy); convergence and the scope ratchet (a reviewer may only block on findings in scope at round 1); Definition of Ready/Done as a fixed checklist rather than a list of angles to hunt; the code-health bar (approve when the change definitely improves health, even if imperfect) with a named tie-break owner; property-based/fuzz testing as the correct instrument for matchers and guards instead of iterated review; phase containment as the measure of whether a gate earns its cost; and a rule budget with eviction for the memory layer.");
+    L.push("");
+    L.push("WALK THROUGH BEFORE CODING, and tell me what you found: .agents/skills/spec-review/SKILL.md and .agents/skills/implementation-review/SKILL.md (the two review contracts); the Codex Cross-Review section of .claude/commands/harness-layer/harness-plan.md and the Review runner section of harness-review.md (the orchestration and the counters); .claude/rules/model-selection.md and .claude/rules/development-log.md; .codex/config.toml and .codex/hooks.json (what Codex can actually see); and the installed plugin at ~/.claude/plugins/cache/openai-codex/codex/1.0.6/ — specifically schemas/review-output.schema.json, prompts/adversarial-review.md, and commands/review.md. Note that /codex:review wraps Codex's native reviewer through codex-companion.mjs rather than `codex exec` with a custom skill, and that its commands are marked disable-model-invocation — say explicitly whether you intend to build on the plugin's runtime or keep this repo's own `codex exec` path, because that choice constrains everything else.");
+    L.push("");
+    L.push("FIRST, MIRROR THE MISSING DOCS with /harness-layer:kb add, because several decisions here depend on behavior no cached doc covers: the four Claude-5 prompting guides plus the context-engineering post, and the five Codex environment pages — learn.chatgpt.com/docs/permissions, /docs/sandboxing, /docs/sandboxing/auto-review, /docs/agent-approvals-security, and /docs/cloud/internet-access. The KB currently caches six Codex pages and none of these. Ground the Codex environment work in the mirrored docs rather than in memory — the permissions-profile model is new and supersedes the sandbox_mode settings the harness still uses.");
+    L.push("");
+    L.push("SUCCESS CRITERIA. The rebuilt gate must terminate by construction: a per-plan round budget that survives re-invocation, a severity axis where only critical/high block, and a rule that no finding raised after round 1 may block if it was in scope at round 1. Re-run the reasoning against the sensitive-file-guard and per-feature-harness-restructure histories and show me how many rounds each would take under the new design — if the answer is not 1 or 2, the design is not done.");
+    L.push("");
+    L.push("STOP AND CONFIRM WITH ME before you write any file, once you have a proposed shape for the new review contract and have told me which of the plugin's pieces you are adopting.");
+    L.push("");
+    L.push("Worktree: .claude/worktrees/cross-model-review-rebuild");
+
+    promptEl.textContent = L.join("\n");
+
+    const decided = fix.length + discuss.length + accept.length;
+    outNoteEl.textContent = decided
+      ? `${decided} of ${FINDINGS.length} dispositioned`
+      : "baseline — disposition the cards above to sharpen it";
+  }
+
+  document.getElementById("all-fix").addEventListener("click", () => {
+    FINDINGS.forEach(f => { state[f.id].disposition = "resolve"; });
+    render();
+  });
+
+  document.getElementById("all-clear").addEventListener("click", () => {
+    FINDINGS.forEach(f => { state[f.id].disposition = null; });
+    render();
+  });
+
+  document.getElementById("copy").addEventListener("click", async () => {
+    const btn = document.getElementById("copy");
+    try {
+      await navigator.clipboard.writeText(promptEl.textContent);
+    } catch (err) {
+      const r = document.createRange();
+      r.selectNodeContents(promptEl);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+      return;
+    }
+    const prev = btn.textContent;
+    btn.textContent = "Copied";
+    setTimeout(() => { btn.textContent = prev; }, 1400);
+  });
+
+  buildCards();
+  render();
+</script>
