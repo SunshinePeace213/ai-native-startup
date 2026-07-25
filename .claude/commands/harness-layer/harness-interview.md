@@ -1,7 +1,7 @@
 ---
 description: Pre-plan interview pass — grills the user round by round through an interactive page until every decision needed to plan is locked, then hands back a finalized prompt and decisions ledger ready for /harness-layer:harness-plan
 argument-hint: [detailed ideas or a prior pass's improved prompt]
-model: fable
+model: opus
 effort: high
 disable-model-invocation: true
 disallowed-tools: Task, EnterPlanMode

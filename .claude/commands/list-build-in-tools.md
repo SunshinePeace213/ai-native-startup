@@ -1,6 +1,6 @@
 ---
 model: sonnet
-effort: high
+effort: medium
 disable-model-invocation: true
 ---
 # List Built-in Tools

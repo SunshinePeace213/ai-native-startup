@@ -1,7 +1,7 @@
 ---
 description: Pre-plan discovery pass — throwaway HTML prototypes to react to before planning: several wildly different design directions, or a single mock of a feature with fake data
 argument-hint: [description]
-model: fable
+model: opus
 effort: high
 disable-model-invocation: true
 disallowed-tools: Task, EnterPlanMode

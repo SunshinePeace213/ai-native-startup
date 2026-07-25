@@ -1,7 +1,8 @@
 ---
 description: Gate a /harness-layer:harness-build draft PR through Codex cross-review — apply fixes, then flip it ready or leave it draft for the human
 argument-hint: [name-or-path-of-plan]
-model: fable
+model: opus
+effort: high
 disable-model-invocation: true
 ---
 

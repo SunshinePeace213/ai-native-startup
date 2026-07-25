@@ -2,6 +2,7 @@
 description: Implement a saved plan on its worktree — build, tidy, and open a draft PR that /harness-layer:harness-review then gates
 argument-hint: [name-or-path-of-plan]
 model: fable
+effort: high
 disable-model-invocation: true
 ---
 

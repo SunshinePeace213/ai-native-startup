@@ -1,7 +1,7 @@
 ---
 description: Pre-plan discovery pass — searches the codebase and brainstorms ~10 intervention options for a rough problem, cheapest to most ambitious, so the user picks what resonates before planning
 argument-hint: [rough problem]
-model: fable
+model: opus
 effort: high
 disable-model-invocation: true
 disallowed-tools: Task, EnterPlanMode

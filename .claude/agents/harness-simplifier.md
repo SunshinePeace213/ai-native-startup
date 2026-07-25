@@ -2,7 +2,7 @@
 name: harness-simplifier
 description: Simplifies and refines recently modified harness/prompt files — the Markdown and config for Claude's hooks, prompts, skills, slash-commands, sub-agents, and rules under `.claude/` and `.agents/` — for clarity, consistency, and maintainability while preserving exact behavior. Use proactively right after harness files are written or changed, or when asked to tidy, clean up, or simplify recent harness changes.
 model: opus
-effort: medium
+effort: high
 tools: Read, Edit, Bash, Grep, Glob
 ---
 

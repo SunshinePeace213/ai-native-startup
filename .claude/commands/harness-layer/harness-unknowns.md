@@ -1,7 +1,7 @@
 ---
 description: Pre-plan discovery pass — finds your unknown unknowns in the codebase and/or teaches the domain's vocabulary, then hands back an improved prompt ready for the next pass
 argument-hint: [description]
-model: fable
+model: opus
 effort: high
 disable-model-invocation: true
 disallowed-tools: Task, EnterPlanMode
