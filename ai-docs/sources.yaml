@@ -3,112 +3,115 @@
 #   url:     source page (canonicalized to the redirect target on sync)
 #   file:    cached mirror under ai-docs/ (lives inside its group's folder)
 #   topic:   one-line subject, reused by index.md
-#   fetched: last sync date (null = never fetched)
+#   fetched: always null here — this file is the only tracked part of the KB, and a
+#            real date would conflict every time a second device syncs. Each device's
+#            own sync date lives in its mirror's `fetched:` frontmatter, which is
+#            gitignored; /kb reads staleness from there. Never write a date back.
 
 anthropic:
   - url: https://code.claude.com/docs/en/sub-agents
     file: anthropic/subagents.md
     topic: Subagents — built-in & custom, delegation, context management
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/agent-teams
     file: anthropic/agent-teams.md
     topic: Agent teams — multi-session orchestration, task coordination, inter-agent messaging
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/workflows
     file: anthropic/workflows.md
     topic: Workflows — script-based orchestration of many subagents in parallel
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/worktrees
     file: anthropic/worktrees.md
     topic: Git worktrees — isolate sessions for conflict-free parallel edits
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/mcp
     file: anthropic/mcp.md
     topic: MCP in Claude Code — server config, scopes, auth, tool usage
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/skills
     file: anthropic/skills.md
     topic: Skills — author, configure, and share to extend Claude
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/artifacts
     file: anthropic/artifacts.md
     topic: Artifacts — publish pages with versioning, team sharing, org controls
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/hooks-guide
     file: anthropic/hooks-guide.md
     topic: Hooks guide — lifecycle automation, notifications, enforcement recipes
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/scheduled-tasks
     file: anthropic/scheduled-tasks.md
     topic: Scheduled tasks — /loop recurring runs, cron expressions, scheduling options
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/goal
     file: anthropic/goal.md
     topic: Goal mode — /goal completion conditions, auto-evaluation loop
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/headless
     file: anthropic/headless.md
     topic: Headless mode — non-interactive CLI (-p) for scripting and CI/CD
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/deep-links
     file: anthropic/deep-links.md
     topic: Deep links — launch sessions from URLs with cwd and prompt params
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/large-codebases
     file: anthropic/large-codebases.md
     topic: Large codebases — monorepos, nested settings, sparse worktrees, per-directory skills
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/cli-reference
     file: anthropic/cli-reference.md
     topic: CLI reference — commands, flags, system-prompt configuration
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/tools-reference
     file: anthropic/tools-reference.md
     topic: Built-in tools reference — tools, permissions, behaviors
-    fetched: 2026-07-21
+    fetched: null
   - url: https://code.claude.com/docs/en/hooks
     file: anthropic/hooks.md
     topic: Hooks reference — events, schemas, handlers, exit codes
-    fetched: 2026-07-21
+    fetched: null
   - url: https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html
     file: anthropic/html-artifacts-workflows.md
     topic: HTML artifacts — interactive two-way pages, copy-as-prompt loops, use-case patterns
-    fetched: 2026-07-21
+    fetched: null
   - url: https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns
     file: anthropic/fable-finding-unknowns.md
     topic: Finding your unknowns — Fable field-guide patterns before, during, after implementation (blog)
-    fetched: 2026-07-21
+    fetched: null
 openai:
   - url: https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide
     file: openai/codex-prompting-guide.md
     topic: Codex prompting guide — model prompting and integration best practices (cookbook)
-    fetched: 2026-07-21
+    fetched: null
   - url: https://developers.openai.com/cookbook/examples/codex/code_modernization
     file: openai/code-modernization.md
     topic: Code modernization — five-phase legacy-upgrade patterns with Codex CLI (cookbook)
-    fetched: 2026-07-21
+    fetched: null
 openai/codex:
   - url: https://learn.chatgpt.com/docs/models
     file: openai/codex/models.md
     topic: Codex — model catalog, reasoning-effort levels, per-task selection
-    fetched: 2026-07-21
+    fetched: null
   - url: https://learn.chatgpt.com/docs/config-file/config-basic
     file: openai/codex/config-basic.md
     topic: "Codex — basic config: locations, precedence, common options, feature flags"
-    fetched: 2026-07-21
+    fetched: null
   - url: https://learn.chatgpt.com/docs/config-file/config-advanced
     file: openai/codex/config-advanced.md
     topic: "Codex — advanced config: profiles, custom providers, hooks, MCP servers, policies"
-    fetched: 2026-07-21
+    fetched: null
   - url: https://learn.chatgpt.com/docs/config-file/config-sample
     file: openai/codex/config-sample.md
     topic: "Codex — annotated sample config.toml: models, approvals, sandbox"
-    fetched: 2026-07-21
+    fetched: null
   - url: https://learn.chatgpt.com/docs/agent-configuration/subagents
     file: openai/codex/subagents.md
     topic: "Codex — subagents: parallel workflows, custom TOML agents, batch processing"
-    fetched: 2026-07-21
+    fetched: null
   - url: https://learn.chatgpt.com/docs/agent-configuration/rules
     file: openai/codex/rules.md
     topic: "Codex — rules: command restrictions and safe shell parsing for sandbox control"
-    fetched: 2026-07-21
+    fetched: null

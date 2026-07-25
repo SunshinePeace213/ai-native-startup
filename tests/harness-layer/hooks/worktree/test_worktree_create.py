@@ -199,6 +199,27 @@ def test_worktreeinclude_never_copies_tracked_files(wt_repo, run_hook):
     assert (worktree / "settings.txt").read_text() == "committed\n"
 
 
+def test_worktreeinclude_directory_pattern_needs_a_star(wt_repo, run_hook):
+    """Patterns are fnmatch, not gitignore syntax, so a whole gitignored tree
+    (the ai-docs/ knowledge base) only reaches the worktree as `dir/*` -- the
+    gitignore-looking `dir/` silently matches nothing. Pinning both halves
+    keeps a future .worktreeinclude edit from quietly emptying the KB."""
+    (wt_repo.root / ".gitignore").write_text("kb/\nold/\n")
+    for tree in ("kb", "old"):
+        (wt_repo.root / tree / "group").mkdir(parents=True)
+        (wt_repo.root / tree / "group" / "doc.md").write_text(f"{tree} mirror\n")
+    (wt_repo.root / ".worktreeinclude").write_text("kb/*\nold/\n")
+    proc = run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": "nested"}),
+        env_overrides=wt_repo.overrides,
+    )
+    worktree = wt_path(wt_repo.root, "nested")
+    assert proc.returncode == 0
+    assert (worktree / "kb" / "group" / "doc.md").read_text() == "kb mirror\n"
+    assert not (worktree / "old").exists()
+
+
 def test_absent_worktreeinclude_is_a_noop(wt_repo, run_hook):
     """No .worktreeinclude, no copy step, no complaints -- the base contract
     is unchanged."""

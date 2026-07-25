@@ -1,3 +1,8 @@
 .env
 .env.local
 .env.sample
+
+# The KB mirrors and index are gitignored, so a worktree starts without them.
+# Patterns are fnmatch, not gitignore syntax: `ai-docs/` matches nothing —
+# `*` is what crosses `/` and reaches the nested group folders.
+ai-docs/*
