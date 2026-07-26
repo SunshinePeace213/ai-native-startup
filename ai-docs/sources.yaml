@@ -147,6 +147,10 @@ openai/codex:
     file: openai/codex/agent-approvals-security.md
     topic: "Codex — approvals & security: sandbox modes, approval policies, network access"
     fetched: null
+  - url: https://learn.chatgpt.com/docs/hooks
+    file: openai/codex/hooks.md
+    topic: "Codex — hooks: lifecycle events, handler config, automation"
+    fetched: null
   - url: https://learn.chatgpt.com/docs/cloud/internet-access
     file: openai/codex/cloud-internet-access.md
     topic: "Codex Cloud — internet access: enabling network, domain allowlists, risks"
