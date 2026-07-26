@@ -1,0 +1,1022 @@
+<title>Hook Parity: Claude → Codex</title>
+<style>
+  /* Single-theme by project rule: .claude/rules/harness-layer/artifacts.md pins the
+     Warm Neutral light palette for every pipeline artifact. Declared, not inherited. */
+  :root {
+    color-scheme: light;
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+
+    --v-break: #B8602A;
+    --v-shape: #8A6D3B;
+    --v-none: #8A837A;
+    --v-ports: #5C7050;
+    --v-unknown: #7A6A8A;
+
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code, .mono { font-family: var(--mono); }
+
+  a { color: var(--accent); }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    border-bottom: 1px solid var(--border);
+    padding: 56px 32px 32px;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 20px;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(30px, 5.5vw, 52px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+
+  h1 .arrow { color: var(--accent); font-weight: 400; }
+
+  .standfirst {
+    max-width: 68ch;
+    color: #55504A;
+    margin: 18px 0 0;
+    font-size: 16px;
+  }
+
+  .standfirst strong { color: var(--text); font-weight: 600; }
+
+  /* ---------- legend ---------- */
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 22px;
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .legend li { display: flex; align-items: baseline; gap: 8px; }
+
+  .glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 2px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    flex: none;
+  }
+
+  .g-break   { background: var(--v-break); }
+  .g-shape   { background: var(--v-shape); }
+  .g-none    { background: var(--v-none); }
+  .g-ports   { background: var(--v-ports); }
+  .g-unknown { background: var(--v-unknown); }
+
+  /* ---------- shell ---------- */
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 32px 96px;
+    display: grid;
+    grid-template-columns: 218px minmax(0, 1fr);
+    gap: 48px;
+    align-items: start;
+  }
+
+  /* ---------- rail ---------- */
+
+  .rail {
+    position: sticky;
+    top: 24px;
+    padding-top: 40px;
+  }
+
+  .rail h2 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin: 0 0 12px;
+  }
+
+  .tally {
+    list-style: none;
+    margin: 0 0 32px;
+    padding: 0;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+
+  .tally li {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px dotted var(--border);
+    color: #55504A;
+  }
+
+  .tally b { font-weight: 600; color: var(--text); }
+
+  .filters { display: flex; flex-direction: column; gap: 4px; margin-bottom: 32px; }
+
+  .filters button {
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: left;
+    padding: 6px 9px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .filters button:hover { color: var(--text); background: var(--surface); }
+
+  .filters button[aria-pressed="true"] {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .rail-note {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+
+  /* ---------- section headers ---------- */
+
+  .band {
+    padding-top: 44px;
+    margin-bottom: 8px;
+  }
+
+  .band h2 {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+
+  .band p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 70ch;
+  }
+
+  /* ---------- crossing card ---------- */
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    margin-top: 20px;
+    overflow: hidden;
+  }
+
+  .card.is-hidden { display: none; }
+
+  .card-head {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-head h3 {
+    margin: 0;
+    font-size: 16.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    flex: 1;
+  }
+
+  .verdict-word {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+    padding-top: 4px;
+  }
+
+  /* the crossing — the signature element */
+
+  .crossing {
+    display: grid;
+    grid-template-columns: 1fr 3px 1fr;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .spine { background: var(--border); }
+
+  .card[data-verdict="break"]   .spine { background: var(--v-break); }
+  .card[data-verdict="shape"]   .spine { background: var(--v-shape); }
+  .card[data-verdict="none"]    .spine { background: var(--v-none); }
+  .card[data-verdict="ports"]   .spine { background: var(--v-ports); }
+  .card[data-verdict="unknown"] .spine { background: var(--v-unknown); }
+
+  .side { padding: 14px 20px 16px; }
+
+  .side h4 {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+
+  .side p { margin: 0; font-size: 14px; line-height: 1.55; }
+
+  .side.void p { color: var(--muted); }
+
+  .side code, .body code, .ladder code, .rail-note code {
+    background: rgba(184, 96, 42, 0.09);
+    color: #8B4620;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 0.9em;
+  }
+
+  .card-body { padding: 16px 20px 4px; }
+
+  .card-body dl { margin: 0; }
+
+  .card-body dt {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+
+  .card-body dd {
+    margin: 0 0 16px;
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+
+  .refs {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    padding: 0 20px 14px;
+    line-height: 1.8;
+    word-break: break-word;
+  }
+
+  /* ---------- dispositions ---------- */
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .actions button {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .actions button:hover { color: var(--text); border-color: var(--muted); }
+
+  .actions button[aria-pressed="true"] {
+    color: #fff;
+    border-color: transparent;
+  }
+
+  .actions button[data-disp="fix"][aria-pressed="true"]     { background: var(--v-break); }
+  .actions button[data-disp="accept"][aria-pressed="true"]  { background: var(--v-ports); }
+  .actions button[data-disp="discuss"][aria-pressed="true"] { background: var(--v-unknown); }
+
+  .actions .spacer { flex: 1; }
+
+  .note-toggle {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    background: none !important;
+    border-color: transparent !important;
+  }
+
+  .note-wrap { padding: 0 20px 14px; }
+  .note-wrap[hidden] { display: none; }
+
+  textarea {
+    width: 100%;
+    min-height: 60px;
+    resize: vertical;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 9px 11px;
+    line-height: 1.5;
+  }
+
+  textarea:focus, button:focus-visible, select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  /* ---------- decision card ---------- */
+
+  .options { display: grid; gap: 10px; padding: 4px 20px 16px; }
+
+  .option {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 11px;
+    align-items: start;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg);
+    cursor: pointer;
+  }
+
+  .option:has(input:checked) {
+    border-color: var(--accent);
+    background: rgba(184, 96, 42, 0.05);
+  }
+
+  .option input { margin: 4px 0 0; accent-color: var(--accent); }
+
+  .option b { display: block; font-size: 14.5px; font-weight: 600; margin-bottom: 3px; }
+
+  .option span { font-size: 13.5px; color: #55504A; line-height: 1.5; }
+
+  .option em {
+    display: block;
+    margin-top: 5px;
+    font-style: normal;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ---------- vocabulary ladder ---------- */
+
+  .ladder { margin-top: 20px; border-top: 1px solid var(--border); }
+
+  .term {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 28px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .term dt {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+
+  .term dt small {
+    display: block;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 400;
+    margin-top: 5px;
+  }
+
+  .term dd { margin: 0; font-size: 14.5px; }
+
+  .term dd .mech {
+    display: block;
+    margin-top: 7px;
+    color: #55504A;
+    font-size: 13.5px;
+  }
+
+  /* ---------- prompt ---------- */
+
+  .prompt-block {
+    margin-top: 56px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .prompt-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .prompt-head h2 {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 600;
+    flex: 1;
+  }
+
+  .prompt-head button {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 7px 16px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .prompt-head button:hover { background: #A2531F; }
+
+  pre.prompt {
+    margin: 0;
+    padding: 20px 18px;
+    background: var(--bg);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 460px;
+    overflow: auto;
+  }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; gap: 0; padding: 0 20px 72px; }
+    .rail { position: static; padding-top: 32px; }
+    .filters { flex-direction: row; flex-wrap: wrap; }
+    .crossing { grid-template-columns: 1fr; }
+    .spine { height: 3px; }
+    .term { grid-template-columns: 1fr; gap: 8px; }
+    .masthead { padding: 40px 20px 26px; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card { transition: border-color 120ms ease; }
+  }
+</style>
+
+<header class="masthead">
+  <p class="eyebrow">Unknowns pass · codebase + domain · specs/codex-hooks-sync</p>
+  <h1>Hook parity<br><span class="arrow">.claude ⟶ .codex</span></h1>
+  <p class="standfirst">
+    Sixteen hook bindings live in <code>.claude/settings.json</code>. Two of them are mirrored into
+    <code>.codex/hooks.json</code> today. The gap is not a copy job: Codex has a
+    <strong>different edit tool</strong>, <strong>no read tool on the hook path</strong>,
+    <strong>no <code>"ask"</code> decision</strong>, and a <strong>trust gate that silently
+    withholds newly-registered hooks</strong>. Each card below is one crossing — the Claude-side
+    fact on the left, what actually happens on the Codex side on the right.
+  </p>
+  <ul class="legend">
+    <li><span class="glyph g-ports">=</span> ports as written</li>
+    <li><span class="glyph g-shape">≈</span> ports, different shape</li>
+    <li><span class="glyph g-break">✕</span> breaks — and fails open</li>
+    <li><span class="glyph g-none">∅</span> no Codex counterpart</li>
+    <li><span class="glyph g-unknown">?</span> unverified</li>
+  </ul>
+</header>
+
+<div class="shell">
+  <aside class="rail">
+    <h2>Tally</h2>
+    <ul class="tally" id="tally"></ul>
+
+    <h2>Filter</h2>
+    <div class="filters" id="filters">
+      <button data-filter="all" aria-pressed="true">All findings</button>
+      <button data-filter="break" aria-pressed="false">✕ Breaks</button>
+      <button data-filter="none" aria-pressed="false">∅ No counterpart</button>
+      <button data-filter="shape" aria-pressed="false">≈ Shape change</button>
+      <button data-filter="undecided" aria-pressed="false">Undecided</button>
+    </div>
+
+    <p class="rail-note">
+      Every claim here was read out of this repo or out of
+      <code>ai-docs/openai/codex/hooks.md</code> (fetched today). Pick a disposition per card;
+      the prompt at the bottom assembles from your choices.
+    </p>
+  </aside>
+
+  <main>
+    <section class="band">
+      <h2>I · Behaviour that does not survive the crossing</h2>
+      <p>These fire today under Claude and would quietly stop protecting you under Codex.</p>
+    </section>
+
+    <div id="cards"></div>
+
+    <section class="band" id="vocab-band">
+      <h2>II · The Codex vocabulary you need to prompt this</h2>
+      <p>Six terms that carry the whole design space. Without them the plan prompt can only say “make it the same”.</p>
+    </section>
+
+    <dl class="ladder" id="ladder"></dl>
+
+    <div class="prompt-block">
+      <div class="prompt-head">
+        <h2>Improved prompt</h2>
+        <button id="copy">Copy</button>
+      </div>
+      <pre class="prompt" id="prompt"></pre>
+    </div>
+  </main>
+</div>
+
+<script>
+  const VERDICT = {
+    break:   { glyph: "✕", word: "breaks silently" },
+    shape:   { glyph: "≈", word: "changes shape" },
+    none:    { glyph: "∅", word: "no counterpart" },
+    ports:   { glyph: "=", word: "ports as written" },
+    unknown: { glyph: "?", word: "unverified" },
+  };
+
+  const CARDS = [
+    {
+      id: "ask-tier",
+      verdict: "break",
+      title: 'The destructive guard’s entire “ask the human” tier evaporates',
+      claude: 'Eleven rules in <code>destructive-guard/_common.py</code> carry severity <code>ask</code>. The hook prints <code>permissionDecision: "ask"</code> and Claude routes the command to you for per-call approval.',
+      codex: 'Codex parses <code>permissionDecision: "ask"</code> but does not support it. Per the hooks doc it <em>marks the hook run as failed, reports the error, and continues the tool call</em> — the risky command runs.',
+      bites: 'This is the worst kind of regression: the config looks synced, the hook fires, the log even shows it ran — and the command executes anyway. The <code>deny</code> tier ports fine (exit 2 works on both), so half the guard silently survives and half silently doesn’t.',
+      todo: 'Split the rule table by severity when emitting. Deny stays on <code>PreToolUse</code>. The ask tier has to move to a <code>PermissionRequest</code> hook — but note that only runs when Codex was <em>already</em> going to ask for approval, so it is not an equivalent trigger. Decide per rule: promote to deny, or accept it is Claude-only.',
+      refs: '.claude/hooks/destructive-guard/_common.py:14–16, :408+ · ai-docs/openai/codex/hooks.md:619–621',
+    },
+    {
+      id: "file-path",
+      verdict: "break",
+      title: '<code>tool_input.file_path</code> does not exist in a Codex edit payload',
+      claude: 'Six hooks read <code>tool_input.file_path</code> to know which file was just written: the four <code>auto-format/</code> formatters, <code>security-scan/post_write_scan.py</code>, and <code>sensitive-files/file_guard.py</code>.',
+      codex: 'Codex edits files through <code>apply_patch</code>, whose <code>tool_input</code> carries <code>command</code> — the patch envelope text — not <code>file_path</code>. The lookup returns <code>None</code> and every one of those hooks fails open at exit 0.',
+      bites: 'Formatting and the post-write secret scan would become no-ops on Codex while continuing to report success. Worse, one <code>apply_patch</code> can touch <em>many</em> files, whereas Claude’s <code>Write</code>/<code>Edit</code> is always one — so even after you parse the paths out, the one-file-per-invocation contract these hooks are built on no longer holds.',
+      todo: 'Teach the shared payload readers (<code>auto-format/_common.py:61</code>, <code>security-scan/_common.py:85</code>) to return a <em>list</em> of paths: <code>file_path</code> when present, otherwise the <code>*** Add|Update|Delete File:</code> targets parsed out of the patch text. Then make each caller loop. Do this before mirroring any PostToolUse binding.',
+      refs: '.claude/hooks/auto-format/_common.py:61–66 · .claude/hooks/security-scan/_common.py:85–92 · .claude/hooks/sensitive-files/file_guard.py:26,38–48 · ai-docs/openai/codex/hooks.md:558,352–359',
+    },
+    {
+      id: "read-grep",
+      verdict: "none",
+      title: 'Codex has no <code>Read</code> or <code>Grep</code> tool for a hook to intercept',
+      claude: '<code>sensitive-files/file_guard.py</code> is registered on <code>PreToolUse</code> matching <code>Read|Grep|Edit|Write|MultiEdit</code> — it denies the agent opening <code>.env</code>-shaped files by name.',
+      codex: 'Codex’s hook tool coverage is shell, <code>apply_patch</code>, MCP tools, and local function tools. There is no first-class file-read tool; Codex reads files by running <code>cat</code>/<code>sed</code>/<code>rg</code> through the shell.',
+      bites: 'On Codex the entire secret-file read barrier collapses onto <code>bash_guard.py</code> pattern-matching raw shell text — which is exactly the surface that quoting, variable expansion and here-docs defeat. The Codex docs say it plainly: <em>treat tool hooks as a useful guardrail, not a complete enforcement boundary.</em>',
+      todo: 'Accept the degradation explicitly rather than discovering it later. Either lean on Codex’s own sandbox / permission profiles for read denial (a different mechanism than hooks), or record <code>file_guard.py</code> as Claude-only in the parity matrix with the reason written down.',
+      refs: '.claude/settings.json PreToolUse[1] · .claude/hooks/sensitive-files/file_guard.py:26 · ai-docs/openai/codex/hooks.md:352–366',
+    },
+    {
+      id: "posttoolusefailure",
+      verdict: "shape",
+      title: '<code>PostToolUseFailure</code> is a Claude-only event — Codex folds it into <code>PostToolUse</code>',
+      claude: '<code>security-scan/track_bash_writes.py</code> is registered <em>twice</em> for Bash: once on <code>PostToolUse</code>, once on <code>PostToolUseFailure</code>, so a command that writes a file and then exits non-zero is still tracked.',
+      codex: 'No such event exists. Codex’s <code>PostToolUse</code> already covers it: “For Bash, it also runs after commands that exit with a non-zero status.”',
+      bites: 'A naive one-to-one copy produces a dead event name in <code>.codex/hooks.json</code>. This is the proof that the sync artifact cannot be a name-for-name map — it needs a per-binding <em>disposition</em>, including “two Claude bindings collapse into one Codex binding”.',
+      todo: 'Mirror only the <code>PostToolUse</code> binding, and make the parity record state the collapse so nobody re-adds the second one later.',
+      refs: '.claude/settings.json PostToolUseFailure · tests/harness-layer/hooks/test_wiring.py EXPECTED_BINDINGS · ai-docs/openai/codex/hooks.md:684–687',
+    },
+    {
+      id: "trust",
+      verdict: "shape",
+      title: 'Codex trust is hashed against the hooks.json entry — not against your script',
+      claude: 'No trust gate at all. Edit a hook script, edit <code>settings.json</code>, it runs on the next session.',
+      codex: 'A non-managed hook is <em>skipped</em> until a human reviews and trusts its exact definition via <code>/hooks</code>. Trust is recorded against the hook’s current hash, so a new or changed entry is marked for review and does not run.',
+      bites: 'Two opposite failures from one mechanism. Adding an entry to <code>.codex/hooks.json</code> silently does nothing until someone runs <code>/hooks</code> — so an “automatic sync” reports success and ships zero enforcement. Meanwhile editing the <code>.py</code> behind an already-trusted entry does <em>not</em> re-prompt, so a behaviour change ships unreviewed. This is the single fact that decides what the sync mechanism can promise.',
+      todo: 'Whatever mechanism you pick must end by telling the human to run <code>/hooks</code>, and the parity test should assert the entry exists — never assert that it <em>ran</em>. If this ever needs to be non-optional, that is the argument for the managed <code>requirements.toml</code> path instead.',
+      refs: 'ai-docs/openai/codex/hooks.md:65–81, 61–63',
+    },
+    {
+      id: "stop",
+      verdict: "ports",
+      title: 'The Stop sweep ports as-is — but its block reason becomes a new user prompt',
+      claude: '<code>security-scan/stop_sweep.py</code> deliberately writes nothing to stdout, puts diagnostics on stderr and exits 2. That exact contract was fought over and locked in a previous Codex review round.',
+      codex: 'Codex <code>Stop</code> <em>requires</em> JSON on stdout when exiting 0 and plain text is invalid — but exit 2 with the reason on stderr is explicitly supported. So this hook happens to be already-portable. <code>stop_hook_active</code> exists on both.',
+      bites: 'The mechanics port; the semantics shift. Codex turns the block reason into a <strong>new user prompt</strong>, not a system reminder appended to the turn. The one-shot loop guard keyed on <code>stop_hook_active</code> needs to be re-reasoned against that continuation model rather than assumed equivalent.',
+      todo: 'Mirror <code>Stop</code> and <code>SubagentStop</code> as-is, then verify the loop actually terminates under Codex by driving a real session with a planted secret. Note <code>SubagentStop</code> matches on <code>agent_type</code> in Codex, so an unmatched matcher is a silent miss.',
+      refs: '.claude/hooks/security-scan/stop_sweep.py:16–22,56–66 · specs/unknowns-aware-pipeline/reviews/codex-impl-review-round-1.md:33 · ai-docs/openai/codex/hooks.md:858–890',
+    },
+    {
+      id: "gitroot",
+      verdict: "ports",
+      title: 'The <code>$(git rev-parse --show-toplevel)</code> call is the recommended pattern, not a smell',
+      claude: 'Claude passes <code>$CLAUDE_PROJECT_DIR</code>; Codex never sets it. Every hook family’s <code>resolve_root()</code> already falls back to a script-relative path, so the env var is a convenience, not a dependency.',
+      codex: 'The Codex hooks doc explicitly recommends it: <em>“For repo-local hooks, prefer resolving from the git root instead of using a relative path… Codex may be started from a subdirectory.”</em> And <code>test_wiring.py:167</code> already asserts this exact substring.',
+      bites: 'The premise that this approach is “not ideal” sends the plan chasing the wrong problem. Two things <em>are</em> worth fixing: outside a git repo the substitution yields empty, the path becomes <code>/.claude/hooks/…</code>, and the hook fails open unnoticed; and <code>.codex/hooks.json</code> already carries two entries while only <code>bash_guard.py</code> is pinned by a test — <code>block_attribution.py</code> is unpinned drift that exists right now.',
+      todo: 'Keep the git-root form. Don’t duplicate scripts into <code>.codex/hooks/</code> — the doc’s use of that path is example convention, and <code>command</code> is arbitrary shell. Fix the real gap: pin every Codex entry, and decide what a failed root resolution should do.',
+      refs: 'tests/harness-layer/hooks/test_wiring.py:160–170 · .claude/hooks/sensitive-files/_common.py:79–90 · ai-docs/openai/codex/hooks.md:194–197',
+    },
+    {
+      id: "spec-gate",
+      verdict: "none",
+      title: 'The spec gate is command-scoped, and Codex has no per-command hooks',
+      claude: '<code>check_spec_completeness.py</code> is registered in the frontmatter of <code>.claude/commands/harness-layer/harness-plan.md</code> — deliberately, so it gates only that command instead of every session’s Stop.',
+      codex: 'Codex has no per-command hook scoping and no <code>.codex/prompts/</code> in this repo. A Codex mirror would have to be a global <code>Stop</code> hook that detects for itself whether a plan run is in flight.',
+      bites: 'It is the one hook whose Claude registration surface has no Codex analogue at all — and <code>test_wiring.py</code> already treats command-frontmatter as a first-class registration surface, so any parity matrix must model three surfaces, not two.',
+      todo: 'Almost certainly: mark Claude-only. The alternative — a global Stop hook that self-detects a plan run — buys a gate for a command Codex does not run.',
+      refs: '.claude/commands/harness-layer/harness-plan.md:12 · tests/harness-layer/hooks/test_wiring.py:123–147',
+    },
+    {
+      id: "uv-sandbox",
+      verdict: "unknown",
+      title: '<code>uv run --script</code> may need the network Codex’s sandbox denies',
+      claude: 'Every hook is a PEP 723 script launched by <code>uv run --script</code> with <code>dependencies = []</code> and <code>requires-python = ">=3.12"</code>.',
+      codex: 'Codex’s default preset is <code>sandbox_mode = "workspace-write"</code>, which restricts network access. Whether hook commands execute inside that sandbox is not stated anywhere in the fetched hooks doc.',
+      bites: 'No declared dependencies means no package fetch — but on a machine without a matching interpreter, <code>uv</code> downloads one. If hooks run sandboxed, that download fails, and because every hook fails open on plumbing trouble, the guards go quiet with no visible error.',
+      todo: 'Verify first, design second: run one trivial Codex hook that shells out to the network and read the result. If it is blocked, pre-warm the interpreter or invoke a system Python for the Codex-side entrypoints.',
+      refs: 'ai-docs/openai/codex/sandboxing.md:144–170 · .claude/hooks/*/*.py PEP 723 headers',
+    },
+  ];
+
+  const DECISION = {
+    id: "sync-mechanism",
+    title: 'Keeping the two surfaces in sync from here on',
+    lede: 'The repo already answers this once: <code>test_wiring.py</code> pins every Claude binding as a <code>Counter</code> matrix and asserts that <em>every executable hook is claimed by some registration surface</em> — plus a hand-written one-off, <code>test_codex_bash_guard_binding_is_pinned</code>, for the single Codex entry. That one-off is the seed. Pick what generalises it.',
+    options: [
+      {
+        v: "test",
+        label: "Extend test_wiring.py into a portability matrix",
+        desc: "Give every hook an explicit Codex disposition — mirrored / not-applicable / blocked-<reason> — and fail the suite when a hook has none. Adding a Claude hook without deciding its Codex fate becomes a red test.",
+        why: "deterministic · cannot be forgotten · replaces the bash_guard one-off",
+      },
+      {
+        v: "rule",
+        label: "Add the requirement to .claude/rules/harness-layer/hooks.md",
+        desc: "The catalog table gains a Codex column, and the Development section gains a “ship the Codex disposition with the hook” line alongside the existing “ship together” rule.",
+        why: "advisory · loads only on hook paths · an agent can skip it",
+      },
+      {
+        v: "hook",
+        label: "A meta-hook that regenerates .codex/hooks.json",
+        desc: "PostToolUse on .claude/settings.json rewrites the Codex mirror automatically.",
+        why: "cannot decide cards I–IV · output stays untrusted until /hooks · ships false confidence",
+      },
+      {
+        v: "both",
+        label: "Matrix test as the gate, rule as the explanation",
+        desc: "The test enforces that a disposition exists; the rule tells the next agent how to choose one and where the Codex semantics differ.",
+        why: "matches how hooks.md and test_wiring.py already divide labour",
+      },
+    ],
+  };
+
+  const TERMS = [
+    {
+      t: "apply_patch",
+      k: "Codex’s edit tool",
+      d: "The single tool Codex uses for all file writes — add, update, delete — carrying a patch envelope as <code>tool_input.command</code>.",
+      m: "Matchers may write <code>apply_patch</code>, <code>Edit</code>, or <code>Write</code>, but the payload always reports <code>tool_name: \"apply_patch\"</code>. One call can touch several files. This is the term that replaces “Write|Edit|MultiEdit” in every sentence you write about Codex.",
+    },
+    {
+      t: "PermissionRequest",
+      k: "the approval-time event",
+      d: "A Codex-only event that fires when Codex is <em>about to ask you</em> for approval, and can answer allow / deny / abstain on your behalf.",
+      m: "It does not fire for commands that need no approval — so it is not a drop-in for Claude’s <code>permissionDecision: \"ask\"</code>. Any <code>deny</code> from any matching hook wins; abstaining falls through to the normal prompt.",
+    },
+    {
+      t: "hook trust",
+      k: "review gate keyed on a hash",
+      d: "Codex refuses to run a non-managed hook until a human reviews its exact definition; the trust is recorded against that definition’s hash.",
+      m: "Say “trusted” or “needs review” rather than “installed”. <code>/hooks</code> is the CLI surface; <code>--dangerously-bypass-hook-trust</code> skips it for one invocation; <code>requirements.toml</code> declares <em>managed</em> hooks that are trusted by policy and cannot be disabled.",
+    },
+    {
+      t: "updatedInput",
+      k: "rewrite instead of block",
+      d: "A <code>PreToolUse</code> response that returns <code>permissionDecision: \"allow\"</code> together with a replacement <code>tool_input</code>, letting the call proceed in modified form.",
+      m: "Claude has no equivalent in these hooks. It is worth naming because some of the guards currently phrased as “deny and tell the agent the fix” could instead be phrased as “rewrite the command” on Codex — a genuinely different design, not just a port.",
+    },
+    {
+      t: "additionalContext",
+      k: "the non-blocking channel",
+      d: "<code>hookSpecificOutput.additionalContext</code> — text injected as developer context without stopping anything.",
+      m: "Supported on <code>SessionStart</code>, <code>SubagentStart</code>, <code>PreToolUse</code>, <code>PostToolUse</code> and <code>UserPromptSubmit</code> — but <em>not</em> on <code>Stop</code>, which is exactly why the stop sweep writes to stderr. Capped near 2,500 tokens; overflow spills to a temp file, so never emit secrets through it.",
+    },
+    {
+      t: "registration surface",
+      k: "this repo’s own term",
+      d: "Any file that can cause a hook to fire: <code>.claude/settings.json</code>, a command’s frontmatter, and now <code>.codex/hooks.json</code>.",
+      m: "<code>test_wiring.py</code> is built on this idea — “an executable hook nobody registers is dead code that still looks alive”. Adding Codex makes it three surfaces, which is the frame the whole sync decision sits inside.",
+    },
+  ];
+
+  /* ---------------- render ---------------- */
+
+  const state = {
+    disp: {},        // cardId -> "fix" | "accept" | "discuss"
+    notes: {},       // cardId -> string
+    mechanism: "",
+    filter: "all",
+  };
+
+  const cardsEl = document.getElementById("cards");
+
+  function cardHTML(c) {
+    const v = VERDICT[c.verdict];
+    return `
+      <article class="card" data-verdict="${c.verdict}" data-id="${c.id}">
+        <div class="card-head">
+          <span class="glyph g-${c.verdict}" aria-hidden="true">${v.glyph}</span>
+          <h3>${c.title}</h3>
+          <span class="verdict-word">${v.word}</span>
+        </div>
+        <div class="crossing">
+          <div class="side">
+            <h4>Claude today</h4>
+            <p>${c.claude}</p>
+          </div>
+          <div class="spine" aria-hidden="true"></div>
+          <div class="side ${c.verdict === "none" ? "void" : ""}">
+            <h4>Codex instead</h4>
+            <p>${c.codex}</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <dl>
+            <dt>Why it bites</dt>
+            <dd>${c.bites}</dd>
+            <dt>What to do instead</dt>
+            <dd>${c.todo}</dd>
+          </dl>
+        </div>
+        <p class="refs">${c.refs}</p>
+        <div class="actions">
+          <button data-disp="fix" aria-pressed="false">Fix in this plan</button>
+          <button data-disp="accept" aria-pressed="false">Accept the gap</button>
+          <button data-disp="discuss" aria-pressed="false">Needs discussion</button>
+          <span class="spacer"></span>
+          <button class="note-toggle" data-note>+ note</button>
+        </div>
+        <div class="note-wrap" hidden>
+          <textarea placeholder="Anything the plan should know about this one…"></textarea>
+        </div>
+      </article>`;
+  }
+
+  function decisionHTML(d) {
+    return `
+      <section class="band">
+        <h2>III · The mechanism question</h2>
+        <p>Cards I–II are one-time fixes. This one decides what happens to every hook you write after this plan.</p>
+      </section>
+      <article class="card" data-verdict="unknown" data-id="${d.id}" data-decision="1">
+        <div class="card-head">
+          <span class="glyph g-unknown" aria-hidden="true">?</span>
+          <h3>${d.title}</h3>
+        </div>
+        <div class="card-body"><dl><dt>Where this already stands</dt><dd>${d.lede}</dd></dl></div>
+        <div class="options">
+          ${d.options.map(o => `
+            <label class="option">
+              <input type="radio" name="mechanism" value="${o.v}">
+              <span>
+                <b>${o.label}</b>
+                <span>${o.desc}</span>
+                <em>${o.why}</em>
+              </span>
+            </label>`).join("")}
+        </div>
+        <div class="actions">
+          <span class="spacer"></span>
+          <button class="note-toggle" data-note>+ note</button>
+        </div>
+        <div class="note-wrap" hidden>
+          <textarea placeholder="Constraints on the mechanism…"></textarea>
+        </div>
+      </article>`;
+  }
+
+  cardsEl.innerHTML = CARDS.map(cardHTML).join("") + decisionHTML(DECISION);
+
+  document.getElementById("ladder").innerHTML = TERMS.map(t => `
+    <div class="term">
+      <dt>${t.t}<small>${t.k}</small></dt>
+      <dd>${t.d}<span class="mech">${t.m}</span></dd>
+    </div>`).join("");
+
+  /* ---------------- interaction ---------------- */
+
+  cardsEl.addEventListener("click", e => {
+    const card = e.target.closest(".card");
+    if (!card) return;
+    const id = card.dataset.id;
+
+    const noteBtn = e.target.closest("[data-note]");
+    if (noteBtn) {
+      const wrap = card.querySelector(".note-wrap");
+      wrap.hidden = !wrap.hidden;
+      if (!wrap.hidden) wrap.querySelector("textarea").focus();
+      return;
+    }
+
+    const dispBtn = e.target.closest("[data-disp]");
+    if (!dispBtn) return;
+    const choice = dispBtn.dataset.disp;
+    state.disp[id] = state.disp[id] === choice ? undefined : choice;
+    card.querySelectorAll("[data-disp]").forEach(b =>
+      b.setAttribute("aria-pressed", String(b.dataset.disp === state.disp[id]))
+    );
+    render();
+  });
+
+  cardsEl.addEventListener("input", e => {
+    if (e.target.matches("textarea")) {
+      state.notes[e.target.closest(".card").dataset.id] = e.target.value;
+      render();
+    }
+  });
+
+  cardsEl.addEventListener("change", e => {
+    if (e.target.name === "mechanism") {
+      state.mechanism = e.target.value;
+      render();
+    }
+  });
+
+  document.getElementById("filters").addEventListener("click", e => {
+    const btn = e.target.closest("[data-filter]");
+    if (!btn) return;
+    state.filter = btn.dataset.filter;
+    document.querySelectorAll("#filters button").forEach(b =>
+      b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter))
+    );
+    render();
+  });
+
+  /* ---------------- prompt ---------------- */
+
+  const LEAD =
+    "Sync this repo's Claude Code hooks into Codex, working in the existing worktree.\n\n" +
+    "Before writing anything: read .claude/rules/harness-layer/hooks.md (the authoritative hook catalog), " +
+    "ai-docs/openai/codex/hooks.md (fetched 2026-07-27), .claude/settings.json, .codex/hooks.json, and " +
+    "tests/harness-layer/hooks/test_wiring.py. Do not re-derive Codex hook behaviour from memory — that " +
+    "cached page is the reference.\n\n" +
+    "Ground rules the discovery pass established:\n" +
+    "- Codex hooks may point at the existing .claude/hooks/ scripts. .codex/hooks/ is an example convention in the docs, not a requirement, and duplicating the scripts creates a second thing to keep in sync.\n" +
+    "- Keep the $(git rev-parse --show-toplevel) form. It is what the Codex docs recommend and what test_wiring.py:167 already asserts. $CLAUDE_PROJECT_DIR is never set by Codex.\n" +
+    "- Worktree hooks (WorktreeCreate / WorktreeRemove) are out of scope — Codex has no such events.\n";
+
+  function label(id) {
+    const c = CARDS.find(x => x.id === id);
+    return c ? c.title.replace(/<[^>]+>/g, "") : id;
+  }
+
+  function build() {
+    const out = [LEAD];
+    const pick = k => CARDS.filter(c => state.disp[c.id] === k);
+    const fix = pick("fix"), accept = pick("accept"), discuss = pick("discuss");
+    const undecided = CARDS.filter(c => !state.disp[c.id]);
+
+    if (fix.length) {
+      out.push("\nFix these in this plan, in this order:\n");
+      fix.forEach((c, i) => {
+        out.push(`${i + 1}. ${label(c.id)}\n   ${c.todo.replace(/<[^>]+>/g, "")}\n   Files: ${c.refs}\n`);
+        if (state.notes[c.id]?.trim()) out.push(`   Note from me: ${state.notes[c.id].trim()}\n`);
+      });
+    }
+
+    if (accept.length) {
+      out.push("\nAccepted gaps — do not fix, but record each one with its reason in the parity record so nobody re-opens it:\n");
+      accept.forEach(c => {
+        out.push(`- ${label(c.id)}` + (state.notes[c.id]?.trim() ? ` — ${state.notes[c.id].trim()}` : "") + "\n");
+      });
+    }
+
+    if (discuss.length) {
+      out.push("\nStop and confirm with me before implementing these:\n");
+      discuss.forEach(c => {
+        out.push(`- ${label(c.id)}` + (state.notes[c.id]?.trim() ? ` — ${state.notes[c.id].trim()}` : "") + "\n");
+      });
+    }
+
+    if (undecided.length) {
+      out.push("\nStill undecided — raise each of these as an explicit question in the plan rather than assuming:\n");
+      undecided.forEach(c => out.push(`- ${label(c.id)}\n`));
+    }
+
+    const mech = DECISION.options.find(o => o.v === state.mechanism);
+    out.push("\nOngoing sync mechanism: ");
+    if (!mech) {
+      out.push("undecided. Present the trade-off between a wiring-test parity matrix, a rule in hooks.md, and an auto-generating meta-hook, and recommend one before building.\n");
+    } else {
+      out.push(`${mech.label}. ${mech.desc}\n`);
+      if (state.mechanism === "test" || state.mechanism === "both") {
+        out.push("Generalise the existing test_codex_bash_guard_binding_is_pinned one-off rather than adding a second one-off beside it; block_attribution.py is already registered in .codex/hooks.json with no test pinning it.\n");
+      }
+      if (state.mechanism === "hook") {
+        out.push("Before building it, prove it can work: Codex withholds a newly-registered hook until a human trusts it via /hooks, so generated config cannot promise enforcement.\n");
+      }
+    }
+    if (state.notes[DECISION.id]?.trim()) out.push(`Constraint from me: ${state.notes[DECISION.id].trim()}\n`);
+
+    out.push(
+      "\nVerification the plan must define up front:\n" +
+      "- A wiring test that fails when a Claude hook has no recorded Codex disposition.\n" +
+      "- One real Codex session per mirrored hook, driving the actual trigger — a planted secret, a blocked command, an unformatted file — because every hook in this repo fails open, so 'no error' proves nothing.\n" +
+      "- Confirmation that each mirrored entry has been trusted through /hooks; an untrusted entry is registered and silent.\n\n" +
+      "Ship the parity record, the test, and any hook changes together, per the 'ship together' rule in hooks.md.\n\n" +
+      "Worktree: .claude/worktrees/codex-hooks-sync"
+    );
+    return out.join("");
+  }
+
+  function render() {
+    document.querySelectorAll(".card").forEach(card => {
+      const id = card.dataset.id, v = card.dataset.verdict;
+      const show =
+        state.filter === "all" ||
+        (state.filter === "undecided" ? !state.disp[id] && !card.dataset.decision : v === state.filter);
+      card.classList.toggle("is-hidden", !show);
+    });
+
+    const counts = { fix: 0, accept: 0, discuss: 0 };
+    CARDS.forEach(c => { if (state.disp[c.id]) counts[state.disp[c.id]]++; });
+    document.getElementById("tally").innerHTML = `
+      <li><span>findings</span><b>${CARDS.length}</b></li>
+      <li><span>fix now</span><b>${counts.fix}</b></li>
+      <li><span>accepted</span><b>${counts.accept}</b></li>
+      <li><span>discuss</span><b>${counts.discuss}</b></li>
+      <li><span>undecided</span><b>${CARDS.length - counts.fix - counts.accept - counts.discuss}</b></li>`;
+
+    document.getElementById("prompt").textContent = build();
+  }
+
+  document.getElementById("copy").addEventListener("click", async e => {
+    try {
+      await navigator.clipboard.writeText(build());
+      const b = e.target; b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1400);
+    } catch { /* clipboard unavailable — the text is selectable below */ }
+  });
+
+  render();
+</script>
