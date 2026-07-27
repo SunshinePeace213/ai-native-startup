@@ -9,8 +9,8 @@ description: >-
   multiple pages, and never for editing sources.yaml or index.md — the caller owns
   the manifest and catalog.
 tools: Bash, WebFetch, Write
-model: haiku
-effort: medium
+model: sonnet
+effort: low
 color: cyan
 ---
 
