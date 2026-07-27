@@ -19,11 +19,12 @@
 - **Hooks**: [hooks.md](.claude/rules/harness-layer/hooks.md) is the authoritative catalog of every hook — event/matcher, contract, files, and the hook-test rules. Read it before any hook work; never re-summarize hook behavior elsewhere or re-derive it from memory.
 - **Memory**: `AGENTS.md` is the hub — topic rules live in `.claude/rules/` (domain families in folders like `harness-layer/`, path-scoped via `paths:` frontmatter; rules every session needs stay flat at the root with no `paths:`). Never persist memory in `CLAUDE.md` (it only `@`-imports this file) or a new root markdown file. Fetch/record/edit/create contract: [memory-series.md](.claude/rules/memory-series.md).
 - **Model selection**: every model/effort assignment — Claude and Codex; orchestrators, subagents, workflows, Codex tasks — follows [model-selection.md](.claude/rules/model-selection.md). It loads every session; never duplicate its guidance in templates, tasks, or commands.
+- **Orchestration**: choosing between doing the work yourself, subagents, and an agent team — plus the shared `Task*` board — follows [orchestration.md](.claude/rules/orchestration.md). It loads every session.
 - **Dev log**: cross-plan lessons live in [development-log.md](.claude/rules/development-log.md); per-plan process (phases, hand-offs, deviations, fixes, lessons) lives in that plan's `specs/<name>/implementation-notes.md`.
 
 ## Git Workflow & Pull Requests
 
-- **Standard**: Follow the commit, PR, and issue standards in [git-workflow.md](.claude/rules/git-workflow.md)
+- **Standard**: Branching, commits, and pushing follow [git-workflow.md](.claude/rules/git-workflow.md); PR templates, issue forms, labels, linking, and marker comments follow [pr-process.md](.claude/rules/harness-layer/pr-process.md).
 
 ## Project Structure
 

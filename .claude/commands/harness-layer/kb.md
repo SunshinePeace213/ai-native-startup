@@ -30,7 +30,7 @@ STALE_AFTER: `30` days
 
 ## Workflow
 
-1. Parse ARGS. For `add <url> [group]`: append a MANIFEST entry (group defaults by host — anthropic/claude hosts → `anthropic`, Codex docs (learn.chatgpt.com) → `openai/codex`, OpenAI cookbook pages → `openai`, else the site's name; group keys are path-like and double as the folder under `ai-docs/`; derive `file` from the group + page slug, draft a `topic`, `fetched: null`).
+1. Parse ARGS. For `add <url> [group]`: append a MANIFEST entry (group defaults by host — Anthropic blog posts (claude.com/blog) → `anthropic/blog`, other anthropic/claude hosts → `anthropic`, Codex docs (learn.chatgpt.com) → `openai/codex`, OpenAI cookbook pages → `openai`, else the site's name; group keys are path-like and double as the folder under `ai-docs/`; derive `file` from the group + page slug, draft a `topic`, `fetched: null`).
 2. Read MANIFEST. Work set = entries whose `file` is missing, or whose FETCHED is unreadable or more than STALE_AFTER days old; `--force` selects all; `add` selects just the new entry. Empty work set → report "all fresh" and stop.
 3. Fetch the work set: fan out `kb-fetcher` subagents per the Instructions and collect their OK/FAIL lines.
 4. Update MANIFEST for entries that returned OK: canonical `url` only. Leave `fetched: null` — the subagent already stamped today's date into the mirror's FETCHED.

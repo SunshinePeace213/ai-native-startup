@@ -1,0 +1,668 @@
+<title>Unknowns · self-managing memory &amp; KB</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --resolve: #4A6B4A;
+    --accept: #8A6D3B;
+    --discuss: #B8602A;
+    --rule: rgba(44, 40, 37, 0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-bottom: 5rem;
+  }
+  code, .mono {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  code {
+    font-size: 0.85em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.05em 0.32em;
+  }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: clamp(1.7rem, 4.4vw, 3rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+    margin: 0.9rem 0 0;
+  }
+  h1 .dim { color: var(--muted); font-weight: 400; }
+  .standfirst {
+    max-width: 60ch;
+    margin-top: 1.1rem;
+    color: #4A443E;
+  }
+
+  /* ---------- signature: the four surfaces ---------- */
+  .surfaces {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 2.5rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .surface {
+    background: var(--bg);
+    padding: 1.1rem 1.1rem 1.2rem;
+  }
+  .surface h3 {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .surface .figure {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 1.75rem;
+    letter-spacing: -0.03em;
+    margin-top: 0.5rem;
+    display: block;
+  }
+  .surface .unit { font-size: 12px; color: var(--muted); display: block; margin-top: 0.15rem; }
+  .surface .load {
+    height: 4px;
+    margin-top: 0.9rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .surface .load span { display: block; height: 100%; background: var(--accent); }
+  .surface .load.off span { background: var(--border); }
+  .surface p { font-size: 12.5px; color: var(--muted); margin-top: 0.65rem; line-height: 1.45; }
+
+  /* ---------- shell ---------- */
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  main { padding-top: 2.5rem; min-width: 0; }
+
+  .band {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 2.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  main > .band:first-child { margin-top: 0; }
+
+  /* ---------- cards ---------- */
+  .card {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    background: var(--bg);
+    padding: 1.3rem 1.4rem 1.1rem;
+    margin-bottom: 1.1rem;
+    transition: border-color 0.16s ease, background 0.16s ease;
+  }
+  .card[data-disp="resolve"] { border-left-color: var(--resolve); }
+  .card[data-disp="accept"]  { border-left-color: var(--accept); background: #FBF9F6; }
+  .card[data-disp="discuss"] { border-left-color: var(--discuss); background: rgba(184, 96, 42, 0.045); }
+  .card[hidden] { display: none; }
+
+  .card-head { display: flex; align-items: baseline; gap: 0.7rem; flex-wrap: wrap; }
+  .tag {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0.15rem 0.45rem;
+  }
+  .card h2 {
+    font-size: 1.08rem;
+    font-weight: 620;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    flex: 1 1 22ch;
+  }
+  .card dl { margin-top: 1rem; }
+  .card dt {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.85rem;
+  }
+  .card dt:first-child { margin-top: 0; }
+  .card dd { margin-top: 0.25rem; }
+  .refs {
+    margin-top: 1rem;
+    padding-top: 0.7rem;
+    border-top: 1px dashed var(--rule);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+    word-break: break-word;
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.1rem; align-items: center; }
+  .actions .spacer { flex: 1; }
+  button {
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.7rem;
+    cursor: pointer;
+    transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+  }
+  button:hover { background: var(--surface); }
+  .actions button[aria-pressed="true"] { color: #FAF8F5; border-color: transparent; }
+  .actions button[data-disp="resolve"][aria-pressed="true"] { background: var(--resolve); }
+  .actions button[data-disp="accept"][aria-pressed="true"]  { background: var(--accept); }
+  .actions button[data-disp="discuss"][aria-pressed="true"] { background: var(--discuss); }
+  .note-wrap { margin-top: 0.8rem; }
+  textarea {
+    width: 100%;
+    min-height: 4.5rem;
+    font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.6rem 0.7rem;
+    resize: vertical;
+  }
+
+  /* ---------- decision card ---------- */
+  .card.decision { border-left-color: var(--discuss); }
+  .options { margin-top: 1rem; display: grid; gap: 0.45rem; }
+  .option {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    border: 1px solid var(--border);
+    padding: 0.6rem 0.7rem;
+    cursor: pointer;
+    font-size: 13.5px;
+  }
+  .option:hover { background: var(--surface); }
+  .option input { margin-top: 0.28rem; accent-color: var(--accent); }
+  .option .rec {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-left: 0.4rem;
+  }
+
+  /* ---------- rail ---------- */
+  .rail { position: sticky; top: 1.5rem; padding-top: 2.5rem; }
+  .rail h3 {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.7rem;
+  }
+  .tally { list-style: none; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+  .tally li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 0.7rem;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tally li:last-child { border-bottom: 0; }
+  .tally b { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 600; }
+  .filters { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1.5rem; }
+  .filters button[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .prompt-block { border: 1px solid var(--border); background: var(--surface); }
+  .prompt-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .prompt-head span {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .prompt {
+    font: 12px/1.55 ui-monospace, "SF Mono", Menlo, monospace;
+    white-space: pre-wrap;
+    padding: 0.8rem 0.7rem;
+    max-height: 46vh;
+    overflow-y: auto;
+  }
+
+  footer {
+    max-width: 1180px;
+    margin: 3.5rem auto 0;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 900px) {
+    .surfaces { grid-template-columns: repeat(2, 1fr); }
+    .shell { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .rail { position: static; padding-top: 2.5rem; }
+  }
+  @media (max-width: 560px) {
+    .surfaces { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+
+<header class="masthead">
+  <p class="eyebrow">Unknowns pass · codebase gap · specs/self-managing-memory-kb</p>
+  <h1>Something already manages<br>your memory. <span class="dim">Four things do.</span></h1>
+  <p class="standfirst">
+    Before a skill or command exists for self-managing memory and the KB, here is what
+    this repo — and Claude Code itself — already does with both, measured on this
+    machine today. Disposition each finding; the block on the right rewrites your prompt
+    as you go.
+  </p>
+</header>
+
+<section class="surfaces" aria-label="Where memory lives in this repo today">
+  <div class="surface">
+    <h3>Always-loaded rules</h3>
+    <span class="figure">401</span>
+    <span class="unit">lines, every session</span>
+    <div class="load"><span style="width:100%"></span></div>
+    <p><code>task-tools</code> 208 · <code>git-workflow</code> 113 · <code>model-selection</code> 62 · <code>development-log</code> 18 — no <code>paths:</code> frontmatter, plus AGENTS.md.</p>
+  </div>
+  <div class="surface">
+    <h3>Path-scoped rules</h3>
+    <span class="figure">4</span>
+    <span class="unit">files, load on match</span>
+    <div class="load"><span style="width:34%"></span></div>
+    <p><code>memory-series</code>, <code>harness-layer/artifacts</code>, <code>harness-layer/hooks</code>, <code>python/general-practice</code>.</p>
+  </div>
+  <div class="surface">
+    <h3>Native auto memory</h3>
+    <span class="figure">off</span>
+    <span class="unit">0 notes for this repo</span>
+    <div class="load off"><span style="width:0%"></span></div>
+    <p><code>autoMemoryEnabled: false</code> in <code>~/.claude/settings.json</code>; no <code>memory/</code> directory under this project.</p>
+  </div>
+  <div class="surface">
+    <h3>KB mirrors</h3>
+    <span class="figure">41<span class="dim">/37/10</span></span>
+    <span class="unit">registered / local / cited</span>
+    <div class="load"><span style="width:24%"></span></div>
+    <p>Manifest cap is ≈40 — already over. Only 10 distinct docs are cited by any <code>specs/**/decisions.md</code>.</p>
+  </div>
+</section>
+
+<div class="shell">
+  <main>
+    <p class="band" id="band-findings">Findings · what you would have hit</p>
+    <div id="cards"></div>
+
+    <p class="band">Open decision · only you can call this</p>
+    <div id="decisions"></div>
+  </main>
+
+  <aside class="rail">
+    <h3>Dispositions</h3>
+    <ul class="tally" id="tally"></ul>
+
+    <h3>Filter</h3>
+    <div class="filters" id="filters">
+      <button data-filter="all" aria-pressed="true">All</button>
+      <button data-filter="resolve" aria-pressed="false">Resolve</button>
+      <button data-filter="accept" aria-pressed="false">Accept</button>
+      <button data-filter="discuss" aria-pressed="false">Discuss</button>
+    </div>
+
+    <div class="prompt-block">
+      <div class="prompt-head">
+        <span>Improved prompt</span>
+        <button id="copy">Copy</button>
+      </div>
+      <pre class="prompt" id="prompt"></pre>
+    </div>
+  </aside>
+</div>
+
+<footer>
+  Discovery only — nothing here is a plan. Every figure was read from this working tree
+  on 2026-07-28: <code>.claude/rules/</code>, <code>ai-docs/sources.yaml</code>,
+  <code>.gitignore</code>, <code>~/.claude/settings.json</code>, and
+  <code>git log</code>.
+</footer>
+
+<script>
+  const CARDS = [
+    {
+      id: "auto-memory",
+      tag: "platform",
+      title: "Auto memory is a shipped feature, and you have it switched off",
+      what: "Claude Code writes its own notes to <code>~/.claude/projects/&lt;repo&gt;/memory/MEMORY.md</code>, loads the first 200 lines or 25&nbsp;KB of them into every session, and toggles from <code>/memory</code>. Your global settings set <code>autoMemoryEnabled: false</code>, and this repo has no memory directory — so the feature named after your idea is dormant, not missing.",
+      why: "Two ways to lose: rebuild it in prompt files and maintain a second memory system forever, or flip it on and get notes nobody reviews. The deciding fact is reach — auto memory is not loaded into subagents (only into a fork), so every builder, reviewer, and fixer this pipeline spawns would be blind to it, while <code>.claude/rules/</code> reaches all of them.",
+      todo: "Split the two surfaces on purpose before writing anything: native auto memory for your own session-local learnings, <code>.claude/rules/</code> for anything a spawned agent must obey. Write that split into <code>memory-series.md</code> so the next session does not re-litigate it.",
+      refs: "ai-docs/anthropic/memory.md:119–129 · ~/.claude/settings.json:19 · ~/.claude/projects/-home-ringo-ai-native-startup/ (no memory/)"
+    },
+    {
+      id: "memory-step",
+      tag: "pipeline",
+      title: "The memory step already exists — what is missing is its procedure",
+      what: "<code>/harness-layer:harness-plan</code> step 6 marks every task whose outcome must be recorded; <code>harness-build</code> step 9 and <code>harness-review</code> step 7 then \"run the memory step … per <code>memory-series.md</code>\". But <code>memory-series.md</code> is 37 lines of <em>where</em> memory lives — layout, record-or-create, path globs. It says nothing about how to record: no dedupe rule, no wording rule, and no procedure for distilling <code>development-log.md</code> when it hits its ≈40-line cap.",
+      why: "A standalone command that records memory becomes a second entry point writing the same files — and the pipeline's version wins by default, because it runs unattended at the end of every build and review. You would be maintaining the path that rarely fires.",
+      todo: "Build the thing as the procedure those two steps invoke — a skill both commands name at their memory step — rather than a third path a human types. Then <code>memory-series.md</code> keeps saying where, and the new artifact says how.",
+      refs: "harness-plan.md:69 · harness-build.md:39 · harness-review.md:37 · .claude/rules/memory-series.md · .claude/rules/development-log.md"
+    },
+    {
+      id: "drift-test",
+      tag: "enforcement",
+      title: "Memory drift already happened once — a test caught it, not an agent",
+      what: "Commit <code>0cd8e4c</code> (#65, three days ago) found three memory files contradicting the KB mirrors shipped beside them: <code>task-tools.md</code> documented the wrong Agent background default, and <code>model-selection.md</code> labelled the <code>opus</code> alias \"Opus 4.8\". The remedy that shipped was <code>tests/harness-layer/test_model_drift.py</code>, which parses the roster tables and fails the build wherever an off-roster model or effort is still declared.",
+      why: "The failure you want automated away is <em>contradiction</em>, and contradiction is deterministic. A model asked to \"self-manage memory\" re-reads files and forms an opinion — expensive, non-reproducible, and silent when it is wrong. The precedent in this repo is already the other way.",
+      todo: "Split the ask along that line. Deterministic invariants — roster drift, an AGENTS.md pointer to a rule file that no longer exists, a manifest entry with no mirror, the dev-log line cap — become tests or hooks. Only judgment stays with the model: is this a new convention series, which file owns it, how is it worded.",
+      refs: "git show 0cd8e4c · tests/harness-layer/test_model_drift.py · .claude/rules/development-log.md (cap ≈40 lines, 2 entries today)"
+    },
+    {
+      id: "budget",
+      tag: "context budget",
+      title: "Roughly 400 lines load every session, and appending memory only grows it",
+      what: "Rules without <code>paths:</code> frontmatter load at session start, exactly like CLAUDE.md: <code>task-tools.md</code> (208), <code>git-workflow.md</code> (113), <code>model-selection.md</code> (62), <code>development-log.md</code> (18) — plus AGENTS.md itself. The largest of them restates full tool schemas that the tool descriptions already carry, which your own cached guidance names as the anti-pattern: use progressive disclosure, and put tool instructions in tool descriptions rather than duplicating them across context.",
+      why: "Self-management that only appends is a faster way to bloat. <code>development-log.md</code> already carries a cap and a distillation instruction, and nothing measures either — so the pruning half is exactly the half that never runs on its own.",
+      todo: "Give the new artifact a pruning half with a number attached: a target for always-loaded lines, a demotion move (add <code>paths:</code> instead of deleting), and a report that states the before/after count. Decide out loud whether <code>task-tools.md</code> keeps its schema dump.",
+      refs: "wc -l .claude/rules/*.md · ai-docs/anthropic/context-engineering-claude-5.md:40–50 · ai-docs/anthropic/memory.md:133–135"
+    },
+    {
+      id: "eviction",
+      tag: "kb manifest",
+      title: "The KB's eviction rule cannot be run by a machine as written",
+      what: "<code>/kb</code> caps the manifest at ≈40 entries and says to report entries that no <code>specs/**/decisions.md</code> cites as eviction candidates. Measured today: 41 entries registered, 37 mirrors on this device, and exactly 10 distinct docs cited across every decisions.md in the repo — five of the uncited ones being the core pages registered by #65 days ago.",
+      why: "Anything that acts on that signal proposes evicting about three-quarters of the KB, including the pages this harness is built on. And you are already one entry over the cap, so it fires on the very first run.",
+      todo: "Pick a signal that survives contact before automating anything: cited anywhere under <code>.claude/</code> and <code>specs/</code> rather than decisions.md alone, or last-read, or a pinned-core list that never evicts. Or raise the cap and keep eviction a human call — but say which, because the current rule reads automatable and is not.",
+      refs: ".claude/commands/harness-layer/kb.md:29 · ai-docs/sources.yaml (41 entries) · grep '## KB References' specs/*/decisions.md (10 distinct docs)"
+    },
+    {
+      id: "gitignore",
+      tag: "git tracking",
+      title: "Everything under ai-docs/ except sources.yaml is gitignored",
+      what: "<code>.gitignore</code> carries <code>ai-docs/*</code> with a single negation for <code>ai-docs/sources.yaml</code>. So <code>index.md</code> is regenerated and untracked, every mirror is device-local, and the manifest's <code>fetched:</code> must stay <code>null</code> because a real date conflicts the moment a second device syncs. Worktrees see mirrors at all only because <code>.worktreeinclude</code> carries <code>ai-docs/*</code> through the WorktreeCreate hook's fnmatch — a fix that needed its own PR (#58).",
+      why: "AGENTS.md tells the agent that <code>ai-docs/</code> holds \"hand-written project notes\". Write one there and git drops it silently — the note is gone on a fresh clone and never reaches your second machine. A self-managing KB that records what it learned into <code>ai-docs/</code> is writing to a scratch disk.",
+      todo: "Decide the home for agent-written notes before the first write: tracked under <code>.claude/rules/</code>, or deliberately device-local under <code>ai-docs/</code>. If anything new must be tracked under <code>ai-docs/</code>, it ships with both a <code>.gitignore</code> negation and a <code>.worktreeinclude</code> pattern, or worktrees start blind.",
+      refs: ".gitignore:356–363 · .worktreeinclude · git show c827f6c (#58) · AGENTS.md § Knowledge Base"
+    },
+    {
+      id: "instrumentation",
+      tag: "instrumentation",
+      title: "InstructionsLoaded is the instrument this needs, and no hook uses it",
+      what: "Claude Code fires an <code>InstructionsLoaded</code> hook every time a CLAUDE.md or <code>.claude/rules/*.md</code> file loads, carrying the reason — <code>session_start</code>, <code>path_glob_match</code>, <code>nested_traversal</code>, <code>include</code>, <code>compact</code>. Its exit code is ignored, so it can only observe. The repo's hook catalog lists seven families; none is on this event.",
+      why: "Without it, \"which rules actually load, and how often\" is guesswork — and that is precisely the evidence a self-managing memory needs to prune with. But a hook is not cheap here: the ship-together rule means it lands with its <code>test_wiring.py</code> binding, a <code>.codex/hooks.json</code> entry plus a <code>CODEX_DISPOSITIONS</code> verdict, and contract tests. The dev-log lesson from codex-hooks-sync also warns that Codex loads <code>.codex/</code> from the main repo root, so a worktree's own layer never runs.",
+      todo: "If you want evidence-driven pruning, scope a tiny observe-only logger as its own task with that full checklist attached. If not, say plainly that v1 prunes on judgment alone — do not leave it implied.",
+      refs: "ai-docs/anthropic/hooks.md:57, 228, 717 · .claude/rules/harness-layer/hooks.md § Catalog, § Development · .claude/rules/development-log.md"
+    }
+  ];
+
+  const DECISIONS = [
+    {
+      id: "shape",
+      tag: "shape",
+      title: "Skill, command, or hook — \"self-managing\" points away from all three defaults",
+      lede: "The pipeline lives in <code>.claude/commands/harness-layer/</code>; <code>.claude/skills/</code> holds only the meta-* authoring skills and <code>grilling</code>. Even <code>/kb</code> — the closest existing thing to what you are describing — is a command, not a skill. Meanwhile \"self-managing\" means it runs without you typing it, and the only unattended surfaces in this harness are hooks and steps inside existing commands.",
+      options: [
+        { v: "step", label: "A skill the existing memory steps invoke", rec: true, note: "one procedure, called by harness-build and harness-review at the point memory is already recorded" },
+        { v: "command", label: "A standalone /command you run when you feel the drift", note: "explicit and easy, but it only runs when you remember to run it" },
+        { v: "hook", label: "A hook that fires on its own", note: "genuinely self-managing, and the most expensive: wiring test, Codex mirror, contract tests" },
+        { v: "split", label: "Deterministic checks as tests plus a judgment skill", note: "follows the #65 precedent; two artifacts instead of one" }
+      ]
+    }
+  ];
+
+  const state = {
+    disp: Object.fromEntries(CARDS.map(c => [c.id, "resolve"])),
+    notes: {},
+    choice: "step",
+    choiceNote: "",
+    filter: "all"
+  };
+
+  const el = id => document.getElementById(id);
+
+  function cardHTML(c) {
+    return `
+      <article class="card" data-id="${c.id}" data-disp="${state.disp[c.id]}">
+        <div class="card-head">
+          <span class="tag">${c.tag}</span>
+          <h2>${c.title}</h2>
+        </div>
+        <dl>
+          <dt>What it is</dt><dd>${c.what}</dd>
+          <dt>Why it bites</dt><dd>${c.why}</dd>
+          <dt>What to do instead</dt><dd>${c.todo}</dd>
+        </dl>
+        <p class="refs">${c.refs}</p>
+        <div class="actions">
+          <button data-set="resolve" aria-pressed="${state.disp[c.id] === "resolve"}">Fold into the prompt</button>
+          <button data-set="accept" aria-pressed="${state.disp[c.id] === "accept"}">Already knew it</button>
+          <button data-set="discuss" aria-pressed="${state.disp[c.id] === "discuss"}">Needs discussion</button>
+          <span class="spacer"></span>
+          <button class="note-toggle">+ note</button>
+        </div>
+        <div class="note-wrap" hidden>
+          <textarea placeholder="Your take — carried into the prompt verbatim">${state.notes[c.id] || ""}</textarea>
+        </div>
+      </article>`;
+  }
+
+  function decisionHTML(d) {
+    return `
+      <article class="card decision" data-id="${d.id}">
+        <div class="card-head">
+          <span class="tag">${d.tag}</span>
+          <h2>${d.title}</h2>
+        </div>
+        <dl><dt>Where this already stands</dt><dd>${d.lede}</dd></dl>
+        <div class="options">
+          ${d.options.map(o => `
+            <label class="option">
+              <input type="radio" name="${d.id}" value="${o.v}" ${state.choice === o.v ? "checked" : ""}>
+              <span><strong>${o.label}</strong>${o.rec ? '<span class="rec">recommended</span>' : ""}<br><span style="color:var(--muted)">${o.note}</span></span>
+            </label>`).join("")}
+        </div>
+        <div class="note-wrap" style="margin-top:0.9rem">
+          <textarea id="choice-note" placeholder="Anything that changes this call">${state.choiceNote}</textarea>
+        </div>
+      </article>`;
+  }
+
+  function render() {
+    el("cards").innerHTML = CARDS.map(cardHTML).join("");
+    el("decisions").innerHTML = DECISIONS.map(decisionHTML).join("");
+    wire();
+    applyFilter();
+    renderTally();
+    renderPrompt();
+  }
+
+  function wire() {
+    el("cards").querySelectorAll(".card").forEach(card => {
+      const id = card.dataset.id;
+      card.querySelectorAll("[data-set]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.disp[id] = btn.dataset.set;
+          card.dataset.disp = btn.dataset.set;
+          card.querySelectorAll("[data-set]").forEach(b =>
+            b.setAttribute("aria-pressed", String(b.dataset.set === btn.dataset.set)));
+          applyFilter();
+          renderTally();
+          renderPrompt();
+        });
+      });
+      const wrap = card.querySelector(".note-wrap");
+      const area = wrap.querySelector("textarea");
+      card.querySelector(".note-toggle").addEventListener("click", () => {
+        wrap.hidden = !wrap.hidden;
+        if (!wrap.hidden) area.focus();
+      });
+      if (state.notes[id]) wrap.hidden = false;
+      area.addEventListener("input", () => {
+        state.notes[id] = area.value;
+        renderPrompt();
+      });
+    });
+
+    el("decisions").querySelectorAll('input[type="radio"]').forEach(r => {
+      r.addEventListener("change", () => { state.choice = r.value; renderPrompt(); });
+    });
+    const cn = el("choice-note");
+    cn.addEventListener("input", () => { state.choiceNote = cn.value; renderPrompt(); });
+  }
+
+  function applyFilter() {
+    el("cards").querySelectorAll(".card").forEach(card => {
+      card.hidden = state.filter !== "all" && card.dataset.disp !== state.filter;
+    });
+  }
+
+  function renderTally() {
+    const count = k => CARDS.filter(c => state.disp[c.id] === k).length;
+    el("tally").innerHTML = [
+      ["Folded into the prompt", count("resolve")],
+      ["Accepted as known", count("accept")],
+      ["Needs discussion", count("discuss")]
+    ].map(([label, n]) => `<li><span>${label}</span><b>${n}</b></li>`).join("");
+  }
+
+  const strip = html => html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
+
+  const SHAPE = {
+    step: "Build it as one procedure that the existing memory steps in /harness-layer:harness-build and /harness-layer:harness-review invoke — not a standalone command I have to remember to run.",
+    command: "Build it as a standalone slash command I run when I notice drift, and say plainly in the report that it only runs when invoked.",
+    hook: "Build it as a hook that fires on its own, and ship it with the full hook checklist: the test_wiring.py binding, the .codex/hooks.json entry and CODEX_DISPOSITIONS verdict, and contract tests.",
+    split: "Split it in two, following the #65 precedent: deterministic invariants become tests, and only the judgment calls go into a skill."
+  };
+
+  function renderPrompt() {
+    const resolved = CARDS.filter(c => state.disp[c.id] === "resolve");
+    const discuss = CARDS.filter(c => state.disp[c.id] === "discuss");
+    const accepted = CARDS.filter(c => state.disp[c.id] === "accept");
+
+    let p = "I want to give this repo a way to manage its own memory and knowledge base — the .claude/rules/ memory series and the ai-docs/ KB — instead of relying on me to notice when either has drifted. Before you design anything, walk the ground that already exists: .claude/rules/memory-series.md, .claude/rules/development-log.md, .claude/commands/harness-layer/kb.md, the memory steps in harness-plan.md, harness-build.md and harness-review.md, and ai-docs/anthropic/memory.md.\n\n";
+
+    p += SHAPE[state.choice] + "\n";
+    if (state.choiceNote.trim()) p += "On that choice: " + state.choiceNote.trim() + "\n";
+    p += "\n";
+
+    if (resolved.length) {
+      p += "Work these constraints in — each one is something I checked and want honoured, not re-discovered:\n\n";
+      resolved.forEach((c, i) => {
+        p += `${i + 1}. ${strip(c.title)}. ${strip(c.todo)}\n`;
+        if (state.notes[c.id] && state.notes[c.id].trim()) {
+          p += `   My note: ${state.notes[c.id].trim()}\n`;
+        }
+        p += "\n";
+      });
+    }
+
+    if (discuss.length) {
+      p += "Stop and settle these with me before you write anything — do not pick for me:\n\n";
+      discuss.forEach(c => {
+        p += `- ${strip(c.title)}. ${strip(c.why)}\n`;
+        if (state.notes[c.id] && state.notes[c.id].trim()) {
+          p += `  My note: ${state.notes[c.id].trim()}\n`;
+        }
+      });
+      p += "\n";
+    }
+
+    if (accepted.length) {
+      p += "Known already, no need to explain back to me: " +
+        accepted.map(c => strip(c.title).toLowerCase()).join("; ") + ".\n\n";
+      accepted.filter(c => (state.notes[c.id] || "").trim()).forEach(c => {
+        p += `On "${strip(c.title)}": ${state.notes[c.id].trim()}\n`;
+      });
+      if (accepted.some(c => (state.notes[c.id] || "").trim())) p += "\n";
+    }
+
+    p += "Scope it to what earns its keep: I would rather ship a small procedure that actually runs at the end of every build than a large one I invoke twice and forget. Show me the shape before you write the files.\n\n";
+    p += "Worktree: .claude/worktrees/self-managing-memory-kb";
+
+    el("prompt").textContent = p;
+  }
+
+  el("filters").addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    state.filter = btn.dataset.filter;
+    el("filters").querySelectorAll("button").forEach(b =>
+      b.setAttribute("aria-pressed", String(b === btn)));
+    applyFilter();
+  });
+
+  el("copy").addEventListener("click", async () => {
+    const btn = el("copy");
+    try {
+      await navigator.clipboard.writeText(el("prompt").textContent);
+    } catch {
+      const r = document.createRange();
+      r.selectNodeContents(el("prompt"));
+      const s = getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+      document.execCommand("copy");
+      s.removeAllRanges();
+    }
+    btn.textContent = "Copied";
+    setTimeout(() => { btn.textContent = "Copy"; }, 1400);
+  });
+
+  render();
+</script>

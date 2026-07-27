@@ -111,7 +111,7 @@ Every plan gets a GitHub issue and its convention branch before anything is push
 - **Tracking.** In spec.md's `## Tracking`, record Issue `#N`, Branch `<type>/<N>-<slug>`, the absolute worktree path (`git rev-parse --show-toplevel`), and `Review profile: kb-grounded|standard`.
 - **Commit.** Stage the spec folder (`git add specs/<name-of-plan>/`) plus any gap-filled KB docs (`git add ai-docs/`) and make one commit `<emoji> <type>(spec): draft plan for <name-of-plan>` with a `Refs #N` footer.
 - **Push.** `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>` lands the convention branch on GitHub (bare `git push` refuses from the local `worktree-<slug>` branch).
-- **Plan-links comment.** After the first push, upsert one issue comment keyed `<!-- plan-links -->` whose body links all four spec files as blob URLs on the convention branch — upsert per `git-workflow.md` § Idempotent Marker Comments.
+- **Plan-links comment.** After the first push, upsert one issue comment keyed `<!-- plan-links -->` whose body links all four spec files as blob URLs on the convention branch — upsert per `pr-process.md` § Idempotent Marker Comments.
 
 ## Revision Mode
 
@@ -139,7 +139,7 @@ Once the plan is pushed, a `sonnet` review runner drives Codex as a peer reviewe
    ```
 
 2. **Verdict** from the runner's return (it matched `^### Round <N> — Verdict: (approved|changes-requested)$` in the report file). The runner reports no verdict after its one retry → take the `Needs-human exit` with reason `codex-unavailable`.
-3. **Relay the digest.** Post the runner's digest paragraph verbatim as an issue comment keyed `<!-- codex-spec-round-N -->` (N = the round), upserted per `git-workflow.md` § Idempotent Marker Comments. Codex never calls `gh` — you relay.
+3. **Relay the digest.** Post the runner's digest paragraph verbatim as an issue comment keyed `<!-- codex-spec-round-N -->` (N = the round), upserted per `pr-process.md` § Idempotent Marker Comments. Codex never calls `gh` — you relay.
 4. **`changes-requested`** → commit the report on its own (`git add specs/<name-of-plan>/reviews/`, one commit with `Refs #N`), fix the blocking findings, commit the fixes on their own (`git add specs/<name-of-plan>/ ai-docs/`, one commit with `Refs #N`), then push both commits together. Rounds left in the cycle → round N+1; otherwise take the `Needs-human exit`.
 5. **`approved`** → gate passed; commit the report (`git add specs/<name-of-plan>/reviews/`, one commit with `Refs #N`) and push. Set spec.md `Status: Approved`, record any advisories, and record the outcome in spec.md's `## Codex Verification`.
 
