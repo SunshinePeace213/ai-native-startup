@@ -11,8 +11,104 @@
           },
           {
             "type": "command",
+            "command": "HARNESS_HOOK_HOST=codex uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/destructive-guard/block_destructive.py\"",
+            "statusMessage": "Checking Bash command for destructive patterns"
+          },
+          {
+            "type": "command",
             "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/sensitive-files/bash_guard.py\"",
             "statusMessage": "Checking Bash command for sensitive files"
+          }
+        ]
+      },
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/sensitive-files/file_guard.py\"",
+            "statusMessage": "Checking file edit for sensitive paths"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/auto-format/js_ts.py\"",
+            "statusMessage": "Formatting JS/TS files",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/auto-format/data.py\"",
+            "statusMessage": "Formatting data files",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/auto-format/markdown.py\"",
+            "statusMessage": "Formatting Markdown files",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/auto-format/python.py\"",
+            "statusMessage": "Formatting Python files",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/security-scan/post_write_scan.py\"",
+            "statusMessage": "Scanning written files for secrets"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/security-scan/track_bash_writes.py\"",
+            "statusMessage": "Tracking Bash-written files"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/security-scan/session_baseline.py\"",
+            "statusMessage": "Recording session baseline"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/security-scan/stop_sweep.py\"",
+            "statusMessage": "Running security sweep before stop",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --script \"$(git rev-parse --show-toplevel)/.claude/hooks/security-scan/stop_sweep.py\"",
+            "statusMessage": "Running security sweep before subagent stop",
+            "timeout": 120
           }
         ]
       }

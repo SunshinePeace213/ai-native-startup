@@ -9,22 +9,47 @@ Reads the hook payload from stdin and, only when ``tool_name == "Bash"`` and
 ``tool_input.command`` is a non-empty string, evaluates the command against the
 flat rule table in ``_common``. Deny matches win: up to three are printed to
 stderr as a ``BLOCKED / Why / Fix`` block and the hook exits 2 (deny; stderr is
-fed back to Claude). Otherwise, if any ask-tier rule matches, the highest
--priority one is emitted as a ``permissionDecision: "ask"`` JSON object on
-stdout (exit 0) so the human approves per call. Everything else -- non-Bash
-tools, empty/unreadable/malformed input, our own bugs -- exits 0 (fail-open: a
-guard must never wedge unrelated Bash calls). Exit 2 and stdout JSON are never
-mixed.
+fed back to Claude) -- identically under Claude and Codex. Otherwise, if any
+ask-tier rule matches: under Codex (``_common.hook_host() == "codex"``) the
+ask tier denies too, printing the same BLOCKED/Why/Fix shape (using each
+rule's Codex-specific fix line) and exiting 2 -- Codex has no
+``permissionDecision: "ask"`` support and would run the command anyway.
+Under any other host, the highest-priority ask match is emitted as a
+``permissionDecision: "ask"`` JSON object on stdout (exit 0) so the human
+approves per call. Everything else -- non-Bash tools, empty/unreadable/
+malformed input, our own bugs -- exits 0 (fail-open: a guard must never wedge
+unrelated Bash calls). Exit 2 and stdout JSON are never mixed.
 
 Pure inspection, stdlib only: the guard never executes, shells out, or writes.
 """
 
 import json
 import sys
+from collections.abc import Callable
 
 import _common
 
 MAX_COMMAND_BYTES = 64 * 1024  # scan only the first 64 KB of the command
+
+
+def _format_blocked(rules: list[_common.Rule], fix_of: Callable[[_common.Rule], str]) -> str:
+    """Render up to three BLOCKED/Why/Fix blocks plus a remainder line.
+
+    Shared by the deny path and the Codex ask-tier-deny path so both stderr
+    diagnostics stay byte-for-byte identical in shape; ``fix_of`` picks which
+    fix text a rule contributes (its deny-tier ``fix_hint``, or an ask rule's
+    host-neutral ``codex_fix_hint``).
+    """
+    blocks = [
+        f"[destructive-guard] BLOCKED ({rule.category}/{rule.rule_id}): {rule.message}\n"
+        f"Why: {rule.why}\n"
+        f"Fix: {fix_of(rule)}"
+        for rule in rules[:3]
+    ]
+    extra = len(rules) - 3
+    if extra > 0:
+        blocks.append(f"[destructive-guard] ... and {extra} more rule(s) matched")
+    return "\n".join(blocks)
 
 
 def main() -> int:
@@ -50,19 +75,17 @@ def main() -> int:
     deny_matches, ask_matches = _common.evaluate(command)
 
     if deny_matches:
-        blocks = [
-            f"[destructive-guard] BLOCKED ({rule.category}/{rule.rule_id}): {rule.message}\n"
-            f"Why: {rule.why}\n"
-            f"Fix: {rule.fix_hint}"
-            for rule in deny_matches[:3]
-        ]
-        extra = len(deny_matches) - 3
-        if extra > 0:
-            blocks.append(f"[destructive-guard] ... and {extra} more rule(s) matched")
-        print("\n".join(blocks), file=sys.stderr)
+        print(_format_blocked(deny_matches, lambda rule: rule.fix_hint), file=sys.stderr)
         return 2
 
     if ask_matches:
+        if _common.hook_host() == "codex":
+            print(
+                _format_blocked(ask_matches, lambda rule: rule.codex_fix_hint),
+                file=sys.stderr,
+            )
+            return 2
+
         rule = ask_matches[0]
         output = {
             "hookSpecificOutput": {

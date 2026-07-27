@@ -10,8 +10,33 @@ anything outside its base path ("File ignored because outside of base
 path") -- without the fallback, scratchpad edits would never be formatted.
 """
 
+import json
+
 # eslint-fixable (no-extra-boolean-cast) + prettier-fixable (quotes, semicolons)
 FIXABLE_TS = "const flag = 'x'\nexport default !!flag ? 1 : 2\n"
+
+
+def test_two_file_apply_patch_envelope_formats_both(
+    linter_root, run_hook, apply_patch_payload, project_env
+):
+    """AC11: a two-file apply_patch payload where both files match this
+    hook's extension must format both, not just the first."""
+    a, b = linter_root / "a.ts", linter_root / "b.ts"
+    a.write_text(FIXABLE_TS)
+    b.write_text(FIXABLE_TS)
+    payload = apply_patch_payload(f"*** Add File: {a}", f"*** Add File: {b}")
+    proc = run_hook("auto-format/js_ts.py", payload, env_overrides=project_env(linter_root))
+    assert proc.returncode == 0
+    assert "!!" not in a.read_text()
+    assert "!!" not in b.read_text()
+
+
+def test_malformed_apply_patch_envelope_fails_open(linter_root, run_hook, project_env):
+    """AC14: an unparseable apply_patch envelope must format nothing and
+    exit 0 on the Codex host, mirroring the Claude-side fail-open contract."""
+    payload = json.dumps({"tool_name": "apply_patch", "tool_input": {"command": "not a patch"}})
+    proc = run_hook("auto-format/js_ts.py", payload, env_overrides=project_env(linter_root))
+    assert proc.returncode == 0
 
 
 def test_fixable_file_is_formatted_in_place(linter_root, run_hook, edit_payload, project_env):

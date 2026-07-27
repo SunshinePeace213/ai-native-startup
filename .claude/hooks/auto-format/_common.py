@@ -9,6 +9,7 @@ that decision stays in the hooks themselves.
 
 import json
 import os
+import re
 import select
 import subprocess
 import sys
@@ -57,14 +58,60 @@ def read_payload() -> dict | None:
     return payload if isinstance(payload, dict) else None
 
 
-def read_file_path() -> str | None:
-    """``tool_input.file_path`` from the stdin payload; None unless a non-empty string."""
-    payload = read_payload()
-    if payload is None:
-        return None
+MAX_ENVELOPE_BYTES = 64 * 1024  # scan only the first 64 KB of an apply_patch envelope
+
+# A directive counts only at directive position -- column 0. Diff body lines
+# carry a '+', '-' or ' ' prefix (hunks start with '@@'), so a literal
+# "*** Add File:" inside a patch body can never inject or mask a path.
+_PATCH_DIRECTIVE = re.compile(
+    r"^\*\*\* (?:Add File|Update File|Delete File|Move to):(.*)$", re.MULTILINE
+)
+
+
+def edited_paths(payload: dict | None) -> list[str]:
+    """Every file path a payload writes, in envelope order; [] when none.
+
+    Branches on payload SHAPE, never a host flag. An ``apply_patch`` payload
+    (Codex) carries the whole patch envelope in ``tool_input.command`` and one
+    envelope can touch several files; a Write/Edit payload (Claude) carries a
+    single ``tool_input.file_path``. A rename emits both the old
+    (``Update File:``) and the new (``Move to:``) path, in that order, so a
+    caller sees the path a file is moved ONTO. Relative envelope paths resolve
+    against the payload's ``cwd``, never the process cwd. Fails open: no
+    envelope, a truncated one, an empty path, or a payload of the wrong shape
+    all yield [], never an exception.
+    """
+    if not isinstance(payload, dict):
+        return []
     tool_input = payload.get("tool_input")
-    file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
-    return file_path if isinstance(file_path, str) and file_path.strip() else None
+    if not isinstance(tool_input, dict):
+        return []
+
+    if payload.get("tool_name") != "apply_patch":
+        file_path = tool_input.get("file_path")
+        return [file_path] if isinstance(file_path, str) and file_path.strip() else []
+
+    envelope = tool_input.get("command")
+    if not isinstance(envelope, str) or not envelope.strip():
+        return []
+    encoded = envelope.encode("utf-8", errors="replace")
+    if len(encoded) > MAX_ENVELOPE_BYTES:
+        note(f"envelope exceeds {MAX_ENVELOPE_BYTES} bytes; scanning first {MAX_ENVELOPE_BYTES}")
+        # Cap on ENCODED bytes, not code points; decode back dropping any partial
+        # multibyte char left at the truncation boundary (fail-open: never raises).
+        envelope = encoded[:MAX_ENVELOPE_BYTES].decode("utf-8", errors="ignore")
+
+    cwd = payload.get("cwd")
+    base = cwd.strip() if isinstance(cwd, str) else ""
+    paths = []
+    for match in _PATCH_DIRECTIVE.finditer(envelope):
+        path = match.group(1).strip()
+        if not path:
+            continue
+        if base and not Path(path).is_absolute():
+            path = str(Path(base) / path)
+        paths.append(path)
+    return paths
 
 
 def resolve_root() -> Path:
@@ -133,22 +180,29 @@ def format_diagnostics(lines: list[str], cap: int = DIAGNOSTIC_CAP) -> str:
     return "\n".join(shown)
 
 
-def target(exts: set[str]) -> tuple[Path, Path] | None:
-    """Shared format-hook guards: ``(file, project root)``, or None to exit 0.
+def target(exts: set[str]) -> list[tuple[Path, Path]]:
+    """Shared format-hook guards applied to every edited path: a list of
+    ``(file, project root)`` pairs, empty when there is nothing to format.
 
-    None for: no/invalid stdin payload, non-matching extension, vendored
-    path, or a file deleted before the hook ran (only that case notes).
+    Reads the stdin payload and expands it with ``edited_paths()`` -- one
+    path for a Write/Edit, several for an ``apply_patch`` envelope -- then
+    applies the same per-path guards to each: extension match, vendored
+    skip, and dropping a file deleted before the hook ran (only that case
+    notes). A rename's old path drops here once the guard sees it is gone.
     """
-    file_path = read_file_path()
-    if not file_path:
-        return None
-    path = Path(file_path)
-    if path.suffix.lower() not in exts:
-        return None
+    paths = edited_paths(read_payload())
+    if not paths:
+        return []
     root = resolve_root()
-    if is_vendored(path, root):
-        return None
-    if not path.is_file():
-        note(f"{path} no longer exists; skipping")
-        return None
-    return path, root
+    pairs = []
+    for file_path in paths:
+        path = Path(file_path)
+        if path.suffix.lower() not in exts:
+            continue
+        if is_vendored(path, root):
+            continue
+        if not path.is_file():
+            note(f"{path} no longer exists; skipping")
+            continue
+        pairs.append((path, root))
+    return pairs

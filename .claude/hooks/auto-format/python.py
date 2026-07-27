@@ -40,31 +40,42 @@ def run_ruff(args: list[str], root: Path) -> tuple[int, str, str] | None:
     return res
 
 
-def main() -> int:
-    tgt = _common.target(EXTS)
-    if tgt is None:
-        return 0
-    path, root = tgt
-
+def format_one(path: Path, root: Path) -> list[str]:
+    """ruff format then ruff check --fix on one path; its diagnostic lines, if any."""
     res = run_ruff(["format", str(path)], root)
     if res is None:
         _common.note(MISSING)
-        return 0
+        return []
     # Format failures fall through: ruff check reports parse errors properly.
 
     res = run_ruff(["check", "--fix", "--output-format", "concise", str(path)], root)
     if res is None:
         _common.note(MISSING)
-        return 0
+        return []
     code, out, err = res
     if code == 0:
-        return 0
+        return []
     if code == 1:  # ruff: 1 = violations remain; anything else is abnormal
         lines = [line for line in out.splitlines() if CONCISE.match(line)]
         if lines:
-            print(_common.format_diagnostics(lines), file=sys.stderr)
-            return 2
+            return lines
     _common.note(f"ruff (via uv) exited {code}: {_common.tail(err or out)}")
+    return []
+
+
+def main() -> int:
+    pairs = _common.target(EXTS)
+    if not pairs:
+        return 0
+
+    # A failure on one path must not skip the rest: diagnostics from every
+    # path aggregate into one capped report and one exit code.
+    all_lines: list[str] = []
+    for path, root in pairs:
+        all_lines.extend(format_one(path, root))
+    if all_lines:
+        print(_common.format_diagnostics(all_lines), file=sys.stderr)
+        return 2
     return 0
 
 

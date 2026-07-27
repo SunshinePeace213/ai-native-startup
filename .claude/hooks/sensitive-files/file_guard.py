@@ -3,20 +3,24 @@
 # requires-python = ">=3.12"
 # dependencies = []
 # ///
-"""PreToolUse guard: deny Read/Grep/Edit/Write/MultiEdit calls that target a
-cataloged sensitive file. This is the file-tool surface of the sensitive-files
-catalog (access blocking -- read AND write/tamper); the sibling `security-scan/`
-family covers the other concern, scanning secret content the agent writes out.
+"""PreToolUse guard: deny Read/Grep/Edit/Write/MultiEdit (Claude) and
+apply_patch (Codex) calls that target a cataloged sensitive file. This is the
+file-tool surface of the sensitive-files catalog (access blocking -- read AND
+write/tamper); the sibling `security-scan/` family covers the other concern,
+scanning secret content the agent writes out.
 
 Reads the hook payload from stdin. For Read/Edit/Write/MultiEdit,
 `tool_input.file_path` is checked with `_common.match_path` (tilde/relative/
 symlink normalization applied inside the engine). For Grep, `tool_input.path`
 is checked the same way and `tool_input.glob` -- a selection pattern, not a
 path -- is checked with `_common.match_glob`, a conservative matcher that denies
-only globs clearly targeting a cataloged basename family. A confirmed match
-prints the three `_common.denial_lines` to stderr and exits 2; every other case
--- including tools outside this set, missing/non-string fields, and any plumbing
-failure -- exits 0 (fail-open).
+only globs clearly targeting a cataloged basename family. For apply_patch,
+EVERY path in the patch envelope is checked with `_common.match_path` --
+including a `*** Move to:` target, so a rename ONTO a cataloged path is denied
+even when the source is innocuous. A confirmed match prints the three
+`_common.denial_lines` to stderr and exits 2; every other case -- including
+tools outside this set, missing/non-string fields, an unparseable envelope, and
+any plumbing failure -- exits 0 (fail-open).
 """
 
 import sys
@@ -56,6 +60,13 @@ def main() -> int:
         rule = _common.match_glob(glob)
         if rule is not None:
             return _deny(glob, rule)
+        return 0
+
+    if tool_name == "apply_patch":
+        for path in _common.edited_paths(payload):
+            rule = _common.match_path(path)
+            if rule is not None:
+                return _deny(path, rule)
         return 0
 
     return 0

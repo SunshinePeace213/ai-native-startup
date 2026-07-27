@@ -8,6 +8,31 @@ garbage stdin, missing Prettier -- exits 0 with the file untouched.
 Payloads use tool_name Write because data files usually arrive whole.
 """
 
+import json
+
+
+def test_two_file_apply_patch_envelope_formats_both(
+    linter_root, run_hook, apply_patch_payload, project_env
+):
+    """AC11: a two-file apply_patch payload where both files match this
+    hook's extension must format both, not just the first."""
+    a, b = linter_root / "a.json", linter_root / "b.json"
+    a.write_text('{"a":1}')
+    b.write_text('{"b":2}')
+    payload = apply_patch_payload(f"*** Add File: {a}", f"*** Add File: {b}")
+    proc = run_hook("auto-format/data.py", payload, env_overrides=project_env(linter_root))
+    assert proc.returncode == 0
+    assert a.read_text() == '{ "a": 1 }\n'
+    assert b.read_text() == '{ "b": 2 }\n'
+
+
+def test_malformed_apply_patch_envelope_fails_open(linter_root, run_hook, project_env):
+    """AC14: an unparseable apply_patch envelope must format nothing and
+    exit 0 on the Codex host, mirroring the Claude-side fail-open contract."""
+    payload = json.dumps({"tool_name": "apply_patch", "tool_input": {"command": "not a patch"}})
+    proc = run_hook("auto-format/data.py", payload, env_overrides=project_env(linter_root))
+    assert proc.returncode == 0
+
 
 def test_json_is_formatted_in_place(linter_root, run_hook, edit_payload, project_env):
     """Compact JSON comes back in Prettier style with exit 0 -- the agent

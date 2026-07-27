@@ -1,14 +1,16 @@
 """Contract tests for the auto-format hooks' shared helper module.
 
 _common.py is the plumbing every format/worktree hook stands on, so its
-contract IS the fail-open policy: payload parsing must yield a file path
+contract IS the fail-open policy: payload parsing must yield the raw dict
 only for a well-formed payload and silently yield None for every broken
 input (a hook that crashed or hung on garbage stdin would wedge every
-edit); vendored matching is on the ROOT-RELATIVE path so a directory name
-outside the repo can never suppress formatting inside it; the diagnostics
-cap keeps exit-2 feedback short enough for the agent to act on; and run()
-must make a missing formatter binary distinguishable so hooks can point at
-the meta-install skill instead of raising or falsely exiting 2.
+edit); ``target()`` turns that payload into every edited path worth
+formatting, guarded per path; vendored matching is on the ROOT-RELATIVE
+path so a directory name outside the repo can never suppress formatting
+inside it; the diagnostics cap keeps exit-2 feedback short enough for the
+agent to act on; and run() must make a missing formatter binary
+distinguishable so hooks can point at the meta-install skill instead of
+raising or falsely exiting 2.
 
 The module is loaded through the shared ``load_hook_module`` fixture (as
 ``fmt``), never via sys.path -- two families' `_common` must not collide.
@@ -45,27 +47,26 @@ def stdin_from(monkeypatch, tmp_path):
         handle.close()
 
 
-# --- Payload parsing: one good shape in, None for everything broken ----------
+# --- Payload parsing: fail-open on everything broken --------------------------
 
 
-def test_good_payload_yields_file_path(stdin_from, fmt):
-    """The shape the harness actually sends (snake_case, proven in-repo by
-    block_attribution.py) must round-trip to the edited file's path."""
-    payload = json.dumps({"tool_name": "Edit", "tool_input": {"file_path": "/tmp/example.py"}})
-    stdin_from(payload)
-    assert fmt.read_file_path() == "/tmp/example.py"
+def test_read_payload_returns_raw_dict(stdin_from, fmt):
+    """The worktree hooks read their own field names (worktreeName/name), so
+    the parsed payload must be exposed raw, not only tool_input.file_path."""
+    stdin_from(json.dumps({"worktreeName": "wt-1"}))
+    assert fmt.read_payload() == {"worktreeName": "wt-1"}
 
 
 def test_empty_stdin_yields_none(stdin_from, fmt):
     """Fail-open: no payload means nothing to format, never an error."""
     stdin_from("")
-    assert fmt.read_file_path() is None
+    assert fmt.read_payload() is None
 
 
 def test_malformed_json_yields_none(stdin_from, fmt):
     """Fail-open: garbage stdin is a harness bug, not the hook's problem."""
     stdin_from("not json {")
-    assert fmt.read_file_path() is None
+    assert fmt.read_payload() is None
 
 
 def test_tty_stdin_yields_none(monkeypatch, fmt):
@@ -78,22 +79,58 @@ def test_tty_stdin_yields_none(monkeypatch, fmt):
             return True
 
     monkeypatch.setattr(sys, "stdin", TTYStdin())
-    assert fmt.read_file_path() is None
+    assert fmt.read_payload() is None
 
 
-def test_payload_without_file_path_yields_none(stdin_from, fmt):
-    """A payload with no file to format (e.g. Bash-shaped) must bow out."""
-    stdin_from(json.dumps({"tool_name": "Bash", "tool_input": {"command": "ls"}}))
-    assert fmt.read_file_path() is None
-    stdin_from(json.dumps({"tool_name": "Edit", "tool_input": {"file_path": "   "}}))
-    assert fmt.read_file_path() is None
+# --- target(): every edited path, guarded per path and paired with the root --
 
 
-def test_read_payload_returns_raw_dict(stdin_from, fmt):
-    """The worktree hooks read their own field names (worktreeName/name), so
-    the parsed payload must be exposed raw, not only tool_input.file_path."""
-    stdin_from(json.dumps({"worktreeName": "wt-1"}))
-    assert fmt.read_payload() == {"worktreeName": "wt-1"}
+def test_target_returns_empty_list_when_nothing_to_format(stdin_from, fmt):
+    """No payload means nothing to format -- an empty list, not None, so a
+    formatter can loop over the result unconditionally."""
+    stdin_from("")
+    assert fmt.target({".py"}) == []
+
+
+def test_target_pairs_every_matching_path_with_the_root(monkeypatch, stdin_from, tmp_path, fmt):
+    """A two-file apply_patch envelope must yield one pair per matching
+    path, in envelope order, each carrying the same project root -- this is
+    what lets a formatter process every edited path, not just the first."""
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    a, b = tmp_path / "a.py", tmp_path / "b.py"
+    a.write_text("x = 1\n")
+    b.write_text("y = 2\n")
+    envelope = f"*** Begin Patch\n*** Add File: {a}\n*** Add File: {b}\n*** End Patch\n"
+    stdin_from(json.dumps({"tool_name": "apply_patch", "tool_input": {"command": envelope}}))
+    assert fmt.target({".py"}) == [(a, tmp_path.resolve()), (b, tmp_path.resolve())]
+
+
+def test_target_drops_non_matching_extension_but_keeps_the_rest(
+    monkeypatch, stdin_from, tmp_path, fmt
+):
+    """Extension filtering applies PER PATH, not to the whole envelope: one
+    non-matching sibling must not suppress a matching file."""
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    py, txt = tmp_path / "a.py", tmp_path / "notes.txt"
+    py.write_text("x = 1\n")
+    txt.write_text("hello\n")
+    envelope = f"*** Begin Patch\n*** Add File: {txt}\n*** Add File: {py}\n*** End Patch\n"
+    stdin_from(json.dumps({"tool_name": "apply_patch", "tool_input": {"command": envelope}}))
+    assert fmt.target({".py"}) == [(py, tmp_path.resolve())]
+
+
+def test_target_drops_renamed_away_path_but_keeps_the_new_one(
+    monkeypatch, stdin_from, tmp_path, fmt
+):
+    """A rename's OLD path no longer exists on disk once apply_patch has run
+    -- the deleted-file guard must drop it while keeping the NEW path, which
+    is what lets a rename fall out of the ordinary loop with no special case."""
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    old, new = tmp_path / "a.py", tmp_path / "b.py"
+    new.write_text("y = 2\n")  # only the new path exists; apply_patch already moved it
+    envelope = f"*** Begin Patch\n*** Update File: {old}\n*** Move to: {new}\n*** End Patch\n"
+    stdin_from(json.dumps({"tool_name": "apply_patch", "tool_input": {"command": envelope}}))
+    assert fmt.target({".py"}) == [(new, tmp_path.resolve())]
 
 
 # --- Project-root resolution --------------------------------------------------

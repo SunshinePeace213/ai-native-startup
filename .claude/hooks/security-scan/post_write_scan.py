@@ -3,20 +3,23 @@
 # requires-python = ">=3.12"
 # dependencies = []
 # ///
-"""PostToolUse gate for Write|Edit|MultiEdit: scans the just-written file and
-records it in the session's tracked-file set.
+"""PostToolUse gate for Write|Edit|MultiEdit (Claude) and apply_patch (Codex):
+scans every just-written file and records them in the session's tracked-file
+set.
 
 Secret ("block") findings print capped ``file:line rule message``
 diagnostics to stderr and exit 2 -- any vulnerability ("warn") findings on
-the same file ride along in that same stderr report. Vulnerability findings
+the same files ride along in that same stderr report. Vulnerability findings
 alone exit 0 with a single ``hookSpecificOutput.additionalContext`` JSON
 object on stdout (the KB non-blocking channel); exit 2 and stdout JSON are
-never mixed. No findings, no payload, or no file_path exit 0 silently.
+never mixed. No findings, no payload, or no edited path exit 0 silently.
 
-Path convention: ``tool_input.file_path`` arrives already absolute from
-Claude Code and is stored/scanned as-is (matching the auto-format hooks'
-convention) -- see _common.py's "Git helpers" section for how git-derived
-paths are made to match. State updates go through ``_common.update_state``
+Path convention: ``_common.edited_paths`` yields absolute paths -- Claude's
+``tool_input.file_path`` arrives absolute, and a Codex ``apply_patch``
+envelope's paths are resolved against the payload's ``cwd``. They are
+stored/scanned as-is (matching the auto-format hooks' convention) -- see
+_common.py's "Git helpers" section for how git-derived paths are made to
+match. State updates go through ``_common.update_state``
 (load-mutate-save under a per-session lock, so parallel hook events don't
 drop each other's tracked paths): best-effort, any failure there is noted to
 stderr but never changes the exit code (fail-open).
@@ -32,9 +35,10 @@ def main() -> int:
     payload = _common.read_payload()
     if payload is None:
         return 0
-    tool_input = payload.get("tool_input")
-    file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
-    if not isinstance(file_path, str) or not file_path.strip():
+    # edited_paths does not de-dupe (one envelope may name a file twice); dedupe
+    # here so a repeated path is neither scanned nor reported twice.
+    paths = list(dict.fromkeys(_common.edited_paths(payload)))
+    if not paths:
         return 0
 
     root = _common.resolve_root()
@@ -44,7 +48,7 @@ def main() -> int:
 
         def _add_tracked(state: dict) -> dict:
             tracked = set(state.get("tracked", []))
-            tracked.add(file_path)
+            tracked.update(paths)
             state["tracked"] = sorted(tracked)
             return state
 
@@ -53,7 +57,9 @@ def main() -> int:
         except Exception as exc:  # noqa: BLE001
             _common.note(f"could not update session state: {exc}")
 
-    findings = _common.scan_file(file_path, root)
+    # scan_file fails open per path, so a missing/unreadable file (e.g. a
+    # rename's old path) never skips the paths after it.
+    findings = [f for path in paths for f in _common.scan_file(path, root)]
 
     if not findings:
         return 0
