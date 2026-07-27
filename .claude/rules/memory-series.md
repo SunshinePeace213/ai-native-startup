@@ -13,7 +13,7 @@ the hub or in `.claude/rules/` — never create a new root-level memory markdown
 ## Layout
 
 - `AGENTS.md` (root) — the hub: tooling, pipeline, and a pointer to every rule. `CLAUDE.md` only `@`-imports it — never write memory into `CLAUDE.md`.
-- `.claude/rules/` — one file per convention series. Domain families live in folders (`harness-layer/hooks.md`, `python/general-practice.md`), scoped via `paths:` frontmatter; rules every session needs stay flat at the root with no `paths:` (`model-selection.md`, `task-tools.md`, `git-workflow.md`).
+- `.claude/rules/` — one file per convention series. Domain families live in folders (`harness-layer/hooks.md`, `python/general-practice.md`), scoped via `paths:` frontmatter; rules every session needs stay flat at the root with no `paths:` (`model-selection.md`, `orchestration.md`, `git-workflow.md`).
 
 ## Record & edit
 
@@ -33,5 +33,5 @@ the hub or in `.claude/rules/` — never create a new root-level memory markdown
    | `*.md` | markdown files in the project root |
    | `src/components/*.tsx` | React components in that one directory |
 
-3. No `paths:` frontmatter → the rule loads at session start, exactly like CLAUDE.md content. Reserve that for rules every session needs (`model-selection.md`, `task-tools.md`); everything else must be path-scoped.
+3. No `paths:` frontmatter → the rule loads at session start, exactly like CLAUDE.md content. Reserve that for rules every session needs (`model-selection.md`, `orchestration.md`); everything else must be path-scoped. Keep the unscoped rules under ~250 lines total — a rule that outgrows the budget gets split, with the ship-time or domain half path-scoped.
 4. Add a pointer to the new rule from the matching `AGENTS.md` section.

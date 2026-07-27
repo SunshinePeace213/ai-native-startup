@@ -30,7 +30,7 @@ REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — passed to Cod
 2. **Guard the PR** — no PR number in `## Tracking` → STOP and tell the user to run `/harness-layer:harness-build <name>` first.
 3. **Enter the worktree** — work in the recorded worktree; if it is gone, restore it from the convention branch. Read `spec.md`, `tasks.md`, `decisions.md`, `acceptance-criteria.md`, and `implementation-notes.md`.
 4. **Set the counters** — the **attempt counter** `A` (1–2) is invocation-local and drives control flow; each invocation performs at most 2 attempts. The **report number** `N` is global: highest existing `specs/<name>/reviews/codex-impl-review-round-*.md` + 1. `N` names the report file and picks the review range — `N=1` diffs from `git merge-base origin/main HEAD`, `N>1` from the prior report's reviewed head. Never conflate the two.
-5. **Run the round** — snapshot `BASE_SHA` (per `N`) and `REVIEWED_HEAD_SHA=$(git rev-parse HEAD)`, then spawn the runner (below). Post its digest paragraph verbatim as `<!-- report:codex-round-N -->`, upserted per `git-workflow.md`.
+5. **Run the round** — snapshot `BASE_SHA` (per `N`) and `REVIEWED_HEAD_SHA=$(git rev-parse HEAD)`, then spawn the runner (below). Post its digest paragraph verbatim as `<!-- report:codex-round-N -->`, upserted per `pr-process.md`.
 6. **Branch on the verdict:**
    - **`A=1` + `changes-requested`** → commit the report, spawn fixer subagents per `model-selection.md` (a failed fix escalates a tier), make ONE fix commit, push both, and start attempt 2 (a fresh round at the next `N`).
    - **`approved` (any attempt), or `A=2` + `changes-requested`** → the terminal outcome (step 7).
