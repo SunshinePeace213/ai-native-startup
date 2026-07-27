@@ -93,18 +93,6 @@ anthropic:
     file: anthropic/model-config.md
     topic: Model config — aliases, effort levels, provider overrides, caching env vars
     fetched: null
-  - url: https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html
-    file: anthropic/html-artifacts-workflows.md
-    topic: HTML artifacts — interactive two-way pages, copy-as-prompt loops, use-case patterns
-    fetched: null
-  - url: https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns
-    file: anthropic/fable-finding-unknowns.md
-    topic: Finding your unknowns — Fable field-guide patterns before, during, after implementation (blog)
-    fetched: null
-  - url: https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models
-    file: anthropic/context-engineering-claude-5.md
-    topic: Context engineering for Claude 5 — remove constraints, progressive disclosure, auto-memory (blog)
-    fetched: null
   - url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5
     file: anthropic/prompting-fable-5.md
     topic: Prompting Fable 5 — effort control, long-run autonomy, instruction following, memory
@@ -116,6 +104,19 @@ anthropic:
   - url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5
     file: anthropic/prompting-sonnet-5.md
     topic: Prompting Sonnet 5 — effort tuning, tool use, code-review harness calibration
+    fetched: null
+anthropic/blog:
+  - url: https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html
+    file: anthropic/blog/html-artifacts-workflows.md
+    topic: HTML artifacts — interactive two-way pages, copy-as-prompt loops, use-case patterns
+    fetched: null
+  - url: https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns
+    file: anthropic/blog/fable-finding-unknowns.md
+    topic: Finding your unknowns — Fable field-guide patterns before, during, after implementation
+    fetched: null
+  - url: https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models
+    file: anthropic/blog/context-engineering-claude-5.md
+    topic: Context engineering for Claude 5 — remove constraints, progressive disclosure, auto-memory
     fetched: null
 openai:
   - url: https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide
