@@ -73,6 +73,26 @@ anthropic:
     file: anthropic/hooks.md
     topic: Hooks reference — events, schemas, handlers, exit codes
     fetched: null
+  - url: https://code.claude.com/docs/en/memory
+    file: anthropic/memory.md
+    topic: Memory — CLAUDE.md hierarchy, .claude/rules/ path scoping, auto memory
+    fetched: null
+  - url: https://code.claude.com/docs/en/commands
+    file: anthropic/commands.md
+    topic: Commands — built-in slash commands, bundled skills and workflows
+    fetched: null
+  - url: https://code.claude.com/docs/en/settings
+    file: anthropic/settings.md
+    topic: "Settings — settings.json scopes, full key reference, environment variables"
+    fetched: null
+  - url: https://code.claude.com/docs/en/permission-modes
+    file: anthropic/permission-modes.md
+    topic: Permission modes — the modes, how to switch, plan-mode auto-approval
+    fetched: null
+  - url: https://code.claude.com/docs/en/model-config
+    file: anthropic/model-config.md
+    topic: Model config — aliases, effort levels, provider overrides, caching env vars
+    fetched: null
   - url: https://claude.com/blog/using-claude-code-the-unreasonable-effectiveness-of-html
     file: anthropic/html-artifacts-workflows.md
     topic: HTML artifacts — interactive two-way pages, copy-as-prompt loops, use-case patterns

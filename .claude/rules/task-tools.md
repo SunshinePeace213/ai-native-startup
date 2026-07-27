@@ -140,12 +140,18 @@ Agent({
     "Implement the authentication endpoints described in task 1. Mark the task in_progress when you start and completed when done.",
   subagent_type: "general-purpose", // omit → defaults to general-purpose
   model: "opus", // optional alias: opus | sonnet | haiku | fable
-  run_in_background: false, // true → runs async, returns immediately (parallel work)
+  run_in_background: false, // omit → background (the default); false blocks until the result returns
   isolation: "worktree", // optional: own git worktree (use when agents edit files in parallel)
 })
 // Returns: the agent's id and, for background runs, an output file path.
 // The agent's final message comes back as the tool result.
 ```
+
+Subagents run in the **background by default** — omitting `run_in_background`
+starts one concurrently, and its result arrives as a `<task-notification>` in a
+later turn. Never report a background agent's findings before that notification
+lands; if asked meanwhile, say it is still running. Pass
+`run_in_background: false` only when the result gates your next step.
 
 Pass each owner enough context to act alone: the task ID, the plan/spec path, and
 the instruction to flip their task status. The agent's final message is the result —
@@ -177,20 +183,12 @@ unrelated work.
 
 ## Parallel execution
 
-Run several builders at once with `run_in_background: true`. Each returns
-immediately with an id and an output file path.
+Issue several `Agent` calls in one message — background is the default, so each
+returns immediately with an id and an output file path and they run concurrently.
 
 ```typescript
-Agent({
-  description: "Build API endpoints",
-  prompt: "...",
-  run_in_background: true,
-})
-Agent({
-  description: "Build frontend",
-  prompt: "...",
-  run_in_background: true,
-})
+Agent({ description: "Build API endpoints", prompt: "..." })
+Agent({ description: "Build frontend", prompt: "..." })
 // Both now run concurrently.
 ```
 
@@ -204,7 +202,7 @@ the returned output file path (for local_agent work, use the Agent result instea
 1. **Create tasks** — one `TaskCreate` per step in the plan.
 2. **Set dependencies** — `TaskUpdate` + `addBlockedBy` / `addBlocks`.
 3. **Assign owners** — `TaskUpdate` + `owner`.
-4. **Deploy agents** — `Agent` to execute each assigned task (`run_in_background: true` for parallel work).
+4. **Deploy agents** — `Agent` to execute each assigned task (background by default; pass `run_in_background: false` only when a result gates the next step).
 5. **Monitor progress** — `TaskList` plus the `<task-notification>` / output file path (not `TaskOutput`).
 6. **Resume agents** — `SendMessage` to continue an owner with context intact.
 7. **Mark complete** — `TaskUpdate` + `status: "completed"` (owners flip their own tasks; verify on the board).
