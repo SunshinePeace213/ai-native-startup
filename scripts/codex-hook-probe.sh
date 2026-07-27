@@ -90,10 +90,14 @@ mkdir -p "$PROBE_REPO/.claude" "$WORK" "$LOGS" "$WORK/junkdir"
 git init -q "$PROBE_REPO" || die "could not git-init the throwaway repo at $PROBE_REPO."
 cp -a "$ROOT/.claude/hooks" "$PROBE_REPO/.claude/hooks"
 cp -a "$ROOT/.codex" "$PROBE_REPO/.codex"
-cp -a "$ROOT/pyproject.toml" "$ROOT/uv.lock" "$PROBE_REPO/"
-# auto-format/python.py runs `uv run --no-sync ruff` from the repo root, so it
-# needs this checkout's already-synced environment.
+cp -a "$ROOT/pyproject.toml" "$ROOT/uv.lock" "$ROOT/package.json" "$ROOT/eslint.config.mjs" \
+	"$ROOT/.prettierrc.json" "$ROOT/.prettierignore" "$ROOT/.markdownlint.jsonc" "$PROBE_REPO/"
+# auto-format/python.py runs `uv run --no-sync ruff` from the repo root, and the
+# other three formatters resolve eslint/prettier/markdownlint-cli2 from
+# <root>/node_modules/.bin — both need this checkout's installed toolchains, or
+# every formatter fails open with a "not installed" note and proves nothing.
 ln -sfn "$ROOT/.venv" "$PROBE_REPO/.venv"
+ln -sfn "$ROOT/node_modules" "$PROBE_REPO/node_modules"
 
 printf 'placeholder\n' >"$WORK/junkdir/keep.txt"
 printf '# notes\n\nprobe fixture\n' >"$WORK/notes.md"
@@ -126,7 +130,10 @@ begin_case() {
 	sid="$(sed -n 's/^session id: //p' "$CUR_LOG" | head -1)"
 	[ -n "$sid" ] && SESSION_IDS+=("$sid")
 	printf 'codex exit %s, session %s\n' "$rc" "${sid:-<none>}"
-	grep -aE 'hook: |hook error|BLOCKED \(|^Blocked: |^Why: |^Fix: |aws-access-key|:[0-9]+:[0-9]+: [A-Z]+[0-9]+' \
+	# ERROR codex_core is where Codex surfaces every blocked hook's stderr, so it
+	# keeps each hook's actual diagnostic text in the pasted evidence rather than
+	# only the assertion verdicts.
+	grep -aE 'hook: |hook error|ERROR codex_core|BLOCKED \(|^Blocked: |^Why: |^Fix: ' \
 		"$CUR_LOG" | sed 's/^/  | /'
 	if [ "$rc" -eq 124 ]; then
 		printf '  MISS session timed out after %ss\n' "$CASE_TIMEOUT"
@@ -292,18 +299,59 @@ assert_shell "creds.txt written (PostToolUse fires after the write)" test -f "$W
 end_case
 
 # --- 8. auto-format/python.py — PostToolUse / apply_patch -------------------
-# The hook-launch count also covers js_ts.py, data.py and markdown.py: all four
+# The launch count is kept alongside the per-formatter cases below: all four
 # formatters plus post_write_scan.py are bound to PostToolUse/apply_patch, so
-# five launches is the proof the three non-Python formatters received the
-# envelope and self-filtered on extension rather than never running.
+# five launches proves each one received the envelope and self-filtered on
+# extension rather than never running.
 
-begin_case "auto-format" "auto-format/python.py" \
+begin_case "auto-format-python" "auto-format/python.py" \
 	"Use your apply_patch file-editing tool — not shell commands — to create a file named unformatted_probe.py in the working directory with exactly these two lines, the first being x=1 and the second being print( undefined_symbol ). Then stop."
 assert_count '^hook: PostToolUse$' 5 "all five PostToolUse/apply_patch hooks launched"
 assert_found "unformatted_probe\.py:[0-9]+:[0-9]+: F821" \
 	"ruff check reported F821 on the apply_patch path"
 assert_shell "ruff format rewrote 'x=1' to 'x = 1' on disk" \
 	grep -qx 'x = 1' "$WORK/unformatted_probe.py"
+end_case
+
+# --- 9. auto-format/js_ts.py — PostToolUse / apply_patch ---------------------
+# ESLint runs before Prettier and short-circuits on a surviving error, so an
+# unfixable lint error is this hook's exit-2 evidence. The model cannot author
+# the diagnostic itself, which is what makes it proof the hook ran.
+
+begin_case "auto-format-jsts" "auto-format/js_ts.py" \
+	"Use your apply_patch file-editing tool — not shell commands — to create a file named probe_lint.js in the working directory with exactly these two lines, byte for byte and with no corrections of any kind: line one is const unused=1 and line two is console.log( \"hi\" ). Then stop."
+assert_found 'probe_lint\.js:[0-9]+ no-unused-vars' \
+	"eslint reported no-unused-vars on the apply_patch path"
+assert_absent 'eslint/prettier not installed' "JS toolchain present (hook did not fail open)"
+end_case
+
+# --- 10. auto-format/data.py — PostToolUse / apply_patch --------------------
+# Two files in one instruction because this hook has two real outcomes: a valid
+# but unformatted file is rewritten silently (exit 0), while a parse error is
+# reported with exit 2. The SyntaxError line is the gate — only Prettier emits
+# it — and the on-disk rewrite backs it up.
+
+begin_case "auto-format-data" "auto-format/data.py" \
+	"Use your apply_patch file-editing tool — not shell commands — to create two files in the working directory, byte for byte as written here and with no corrections of any kind. File one: probe_data.json whose only line is {\"b\":1,\"c\":[2,3]} . File two: probe_broken.json whose only line is {\"a\": 1 — that file is deliberately truncated and must be left as invalid JSON. Then stop."
+assert_found 'probe_broken\.json: SyntaxError' \
+	"prettier reported a JSON parse error on the apply_patch path"
+assert_absent 'prettier not installed' "prettier present (hook did not fail open)"
+assert_shell "probe_data.json rewritten to prettier style on disk" \
+	grep -qxF '{ "b": 1, "c": [2, 3] }' "$WORK/probe_data.json"
+end_case
+
+# --- 11. auto-format/markdown.py — PostToolUse / apply_patch ----------------
+# Two top-level headings survive --fix, so MD025 is the exit-2 evidence; the
+# missing space after the first hash is fixable, so the repaired heading is the
+# on-disk side condition.
+
+begin_case "auto-format-markdown" "auto-format/markdown.py" \
+	"Use your apply_patch file-editing tool — not shell commands — to create a file named probe_doc.md in the working directory with exactly these three lines, byte for byte and with no corrections of any kind: line one is #Alpha with no space after the hash, line two is empty, line three is # Beta. Then stop."
+assert_found 'probe_doc\.md:[0-9]+ error MD025/single-title' \
+	"markdownlint reported MD025 on the apply_patch path"
+assert_absent 'markdownlint-cli2 not installed' "markdownlint present (hook did not fail open)"
+assert_shell "markdownlint --fix left a well-formed '# Alpha' heading" \
+	grep -qxF '# Alpha' "$WORK/probe_doc.md"
 end_case
 
 # --- session-state observation (reported, not gated) ------------------------
