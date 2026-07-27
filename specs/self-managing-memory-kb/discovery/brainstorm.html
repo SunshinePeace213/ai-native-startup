@@ -1,0 +1,581 @@
+<title>Intervention ladder · the memory maintenance pass</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px 96px; }
+
+  /* ---------- masthead ---------- */
+  header { padding: 56px 0 28px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    font-size: clamp(30px, 4.6vw, 50px);
+    line-height: 1.04;
+    letter-spacing: -0.028em;
+    font-weight: 760;
+    margin: 14px 0 0;
+    max-width: 20ch;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lede { margin: 18px 0 0; max-width: 66ch; color: #4A443E; }
+  .lede code { font-family: var(--mono); font-size: 0.9em; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
+
+  /* ---------- budget meter (the signature) ---------- */
+  .meter { margin: 34px 0 8px; border-top: 1px solid var(--border); padding-top: 22px; }
+  .meter-head {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px; margin-bottom: 14px;
+  }
+  .meter-label {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .readout { display: flex; align-items: baseline; gap: 10px; margin-left: auto; }
+  .readout .now {
+    font-family: var(--mono); font-size: 30px; font-weight: 700; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .readout .now.cut { color: var(--accent); }
+  .readout .from { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .readout .unit { font-size: 12px; color: var(--muted); }
+
+  .bar { display: flex; gap: 3px; height: 62px; }
+  .seg {
+    position: relative; overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 8px 9px;
+    transition: flex-grow .45s cubic-bezier(.4,0,.2,1), opacity .3s, background .3s;
+    min-width: 0;
+  }
+  .seg .fname {
+    font-family: var(--mono); font-size: 11px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; display: block;
+  }
+  .seg .fn { font-family: var(--mono); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .seg[data-cut="partial"] { background: #EBD9C9; border-color: #D9B896; }
+  .seg[data-cut="full"] { background: #EBD9C9; border-color: #D9B896; opacity: .55; }
+  .seg[data-cut="full"] .fn { text-decoration: line-through; text-decoration-color: var(--accent); }
+  .seg .kept {
+    position: absolute; right: 8px; bottom: 7px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--accent);
+  }
+  .meter-note { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+
+  /* ---------- layout ---------- */
+  .cols { display: grid; grid-template-columns: minmax(0,1fr) 372px; gap: 40px; align-items: start; margin-top: 46px; }
+
+  .rail-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 6px; }
+  h2 {
+    font-size: 13px; font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; margin: 0;
+  }
+
+  /* ---------- ladder ---------- */
+  .ladder { border-top: 1px solid var(--border); }
+  .rung {
+    display: grid; grid-template-columns: 62px minmax(0,1fr);
+    border-bottom: 1px solid var(--border);
+  }
+  .spine {
+    position: relative; padding: 26px 0 26px;
+    border-right: 1px solid var(--border);
+  }
+  .spine .n {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .spine .tick {
+    display: block; width: 26px; height: 1px; background: var(--border);
+    position: absolute; right: -1px; top: 38px;
+  }
+  .rung[data-on="true"] .spine .tick { background: var(--accent); width: 40px; height: 2px; }
+  .rung[data-on="true"] .spine .n { color: var(--accent); font-weight: 700; }
+  .rung[data-on="true"] { background: #F5F1EA; }
+
+  .body { padding: 24px 4px 26px 22px; }
+  .rung-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+  .rung h3 {
+    margin: 0; font-size: 19.5px; line-height: 1.25; letter-spacing: -0.015em;
+    font-weight: 680; flex: 1 1 320px; min-width: 0;
+  }
+  .badge {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: .07em;
+    border: 1px solid var(--border); border-radius: 2px; padding: 2px 6px; color: var(--muted);
+    background: var(--bg);
+  }
+  .badge[data-size="S"] { color: #4A7A5C; border-color: #B7CDBE; }
+  .badge[data-size="M"] { color: #8A6A1F; border-color: #D8C79A; }
+  .badge[data-size="L"] { color: #A3502A; border-color: #DCB89E; }
+  .badge[data-size="XL"] { color: #8B3A3A; border-color: #D9AFAF; }
+  .delta { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .delta[data-neg="true"] { color: var(--accent); font-weight: 700; }
+
+  .field { margin-top: 13px; }
+  .field .k {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--muted); display: block; margin-bottom: 3px;
+  }
+  .field p { margin: 0; max-width: 74ch; }
+  .impact {
+    margin-top: 14px; padding-left: 13px; border-left: 2px solid var(--accent);
+    font-size: 15px; max-width: 72ch;
+  }
+  .refs {
+    margin-top: 14px; font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+    line-height: 1.7; word-break: break-word;
+  }
+  .pick {
+    margin-top: 16px; display: inline-flex; align-items: center; gap: 9px;
+    font: inherit; font-size: 13.5px; cursor: pointer;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: 7px 14px 7px 11px; color: var(--text);
+  }
+  .pick:hover { border-color: var(--accent); }
+  .pick .box {
+    width: 15px; height: 15px; border: 1.5px solid var(--muted); border-radius: 3px;
+    display: grid; place-items: center; font-size: 11px; line-height: 1; color: transparent;
+  }
+  .rung[data-on="true"] .pick { background: var(--accent); border-color: var(--accent); color: #FFF8F2; }
+  .rung[data-on="true"] .pick .box { border-color: #FFF8F2; color: #FFF8F2; }
+  .pick:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- rail ---------- */
+  .rail { position: sticky; top: 22px; display: grid; gap: 20px; }
+  .panel { border: 1px solid var(--border); border-radius: 5px; background: var(--surface); padding: 16px 16px 18px; }
+  .count { display: flex; align-items: baseline; gap: 8px; }
+  .count .n { font-family: var(--mono); font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .count .l { font-size: 13px; color: var(--muted); }
+  .picklist { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 5px; }
+  .picklist li { font-size: 12.5px; display: flex; gap: 8px; }
+  .picklist .r { font-family: var(--mono); color: var(--accent); }
+  .empty { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+
+  fieldset { border: 0; margin: 0; padding: 0; }
+  fieldset + fieldset { margin-top: 16px; }
+  legend { font-family: var(--mono); font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); padding: 0; margin-bottom: 7px; }
+  .opt { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; font-size: 13px; cursor: pointer; }
+  .opt input { margin: 4px 0 0; accent-color: var(--accent); flex: none; }
+  .opt .sub { display: block; color: var(--muted); font-size: 12px; }
+  .rec { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: .06em; }
+
+  .prompt-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  button.copy {
+    font: inherit; font-size: 12.5px; cursor: pointer; background: var(--text); color: var(--bg);
+    border: 0; border-radius: 4px; padding: 6px 13px;
+  }
+  button.copy:hover { background: var(--accent); }
+  pre#prompt {
+    margin: 0; max-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+    font-family: var(--mono); font-size: 11px; line-height: 1.6; color: #4A443E;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 12px;
+  }
+
+  footer { margin-top: 56px; border-top: 1px solid var(--border); padding-top: 18px; font-size: 12.5px; color: var(--muted); max-width: 82ch; }
+  footer code { font-family: var(--mono); }
+
+  @media (max-width: 960px) {
+    .cols { grid-template-columns: minmax(0,1fr); }
+    .rail { position: static; }
+    .bar { height: auto; flex-wrap: wrap; }
+    .seg { flex: 1 1 120px !important; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Brainstorm pass · intervention ladder · specs/self-managing-memory-kb</div>
+    <h1>Ten places to intervene on <em>445 lines</em> of session memory.</h1>
+    <p class="lede">
+      Everything that reaches a session unprompted is five files. The knowledge base is out of
+      scope — <code>/kb</code> owns <code>ai-docs/</code>. Each rung below is a real change to
+      this tree, ordered by what it costs to build, from an afternoon to a quarter. Pick the ones
+      that resonate; the meter shows what your picks would leave behind and the rail rewrites your
+      prompt as you go.
+    </p>
+
+    <section class="meter" aria-labelledby="meter-label">
+      <div class="meter-head">
+        <span class="meter-label" id="meter-label">Always-loaded surface · measured today</span>
+        <span class="readout">
+          <span class="now" id="now">445</span>
+          <span class="unit">lines</span>
+          <span class="from" id="from">unchanged</span>
+        </span>
+      </div>
+      <div class="bar" id="bar"></div>
+      <p class="meter-note">
+        Rules with no <code>paths:</code> frontmatter load at session start, exactly like CLAUDE.md.
+        The 4 path-scoped rules, the 85 markdown files under <code>specs/</code>, and the whole KB
+        cost nothing until a session touches a matching file.
+      </p>
+    </section>
+  </header>
+
+  <div class="cols">
+    <main>
+      <div class="rail-head"><h2>The ladder — cheapest first</h2></div>
+      <div class="ladder" id="ladder"></div>
+    </main>
+
+    <aside class="rail">
+      <div class="panel">
+        <div class="count"><span class="n" id="pick-n">0</span><span class="l">rungs resonate</span></div>
+        <ul class="picklist" id="picklist"></ul>
+        <p class="empty" id="empty">Nothing picked yet — the prompt below carries the brief alone.</p>
+      </div>
+
+      <div class="panel">
+        <fieldset id="trust">
+          <legend>Authority, unattended</legend>
+          <label class="opt"><input type="radio" name="trust" value="report" checked><span>Report only <span class="rec">recommended</span><span class="sub">Measures, flags, files a queue. You apply.</span></span></label>
+          <label class="opt"><input type="radio" name="trust" value="stage"><span>Propose and stage<span class="sub">Edits on a branch, stops for your diff.</span></span></label>
+          <label class="opt"><input type="radio" name="trust" value="auto"><span>Autonomous<span class="sub">Edits and commits on its own authority.</span></span></label>
+        </fieldset>
+
+        <fieldset id="cadence">
+          <legend>Cadence</legend>
+          <label class="opt"><input type="radio" name="cadence" value="daily"><span>Daily, as asked<span class="sub">Memory changed on 14 of 37 days — ~60% of fires find nothing.</span></span></label>
+          <label class="opt"><input type="radio" name="cadence" value="weekly" checked><span>Weekly + on merge <span class="rec">recommended</span><span class="sub">Matches the rate memory actually changes.</span></span></label>
+          <label class="opt"><input type="radio" name="cadence" value="event"><span>Event-driven only<span class="sub">Fires when a PR touches AGENTS.md or .claude/rules/.</span></span></label>
+        </fieldset>
+      </div>
+
+      <div class="panel">
+        <div class="prompt-head">
+          <h2>Refined prompt</h2>
+          <button class="copy" id="copy" type="button">Copy</button>
+        </div>
+        <pre id="prompt"></pre>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    Discovery only — nothing here is a plan, and no file outside <code>specs/self-managing-memory-kb/discovery/</code>
+    was touched. Every figure was read from this working tree on 2026-07-28: <code>wc -l</code> over
+    <code>.claude/rules/</code> and <code>AGENTS.md</code>, frontmatter checks across all 8 rule files,
+    <code>ls specs/*/implementation-notes.md</code>, <code>.claude/settings.json</code>,
+    <code>tests/harness-layer/</code>, and <code>git log origin/main</code>. Two figures from pass 2
+    are corrected here: <strong>4</strong> of 8 rule files carry <code>paths:</code> (hooks.md is scoped
+    too), and <strong>2</strong> of 9 real plan folders have an <code>implementation-notes.md</code>
+    (the earlier count included <code>specs/_templates/</code>). Passes 1 and 2 live beside this file
+    as <code>unknowns.html</code> and <code>unknowns-daily.html</code>.
+  </footer>
+</div>
+
+<script>
+/* ---------------- measured always-loaded surface ---------------- */
+const FILES = [
+  { id: "task-tools",      name: "task-tools.md",      lines: 208 },
+  { id: "git-workflow",    name: "git-workflow.md",    lines: 113 },
+  { id: "model-selection", name: "model-selection.md", lines: 62  },
+  { id: "agents",          name: "AGENTS.md",          lines: 44  },
+  { id: "dev-log",         name: "development-log.md", lines: 18  },
+];
+const TOTAL = FILES.reduce((a, f) => a + f.lines, 0); // 445
+
+/* ---------------- the ladder ---------------- */
+const RUNGS = [
+  {
+    id: "report-number",
+    size: "S",
+    title: "Make the two memory steps that already run print the number",
+    cuts: {},
+    deltaNote: "measures, cuts nothing",
+    today: "harness-build step 9 and harness-review step 7 both say “run the memory step … per memory-series.md”, and both end with a fixed Report block. Neither knows how big memory is.",
+    move: "Add one line to memory-series.md and one row to each Report block: the always-loaded line count before and after that run's memory edits, computed by wc -l over the unscoped rule files plus AGENTS.md.",
+    impact: "Every build and review states what it added to the session budget, so growth becomes visible the day it happens instead of at an audit.",
+    refs: "harness-build.md:39,56 · harness-review.md:37,67 · memory-series.md · no new artifact, no runner",
+  },
+  {
+    id: "hygiene-test",
+    size: "S",
+    title: "A deterministic hygiene test beside test_model_drift.py",
+    cuts: {},
+    deltaNote: "freezes the number",
+    today: "#65 fixed memory drift with tests/harness-layer/test_model_drift.py — 221 lines that parse the roster tables and fail the build on any off-roster model. It is the only thing in this repo that enforces a memory rule.",
+    move: "tests/harness-layer/test_memory_budget.py, same shape: assert the always-loaded total stays at or below a pinned ceiling, every AGENTS.md link resolves to a file that exists, development-log.md stays under its ≈40-line cap, and every rule under .claude/rules/ is either path-scoped or named in an explicit ALWAYS_LOADED allowlist.",
+    impact: "Growth and dead pointers fail a test instead of waiting for a model to notice, and the ceiling only moves when a human edits the constant.",
+    refs: "tests/harness-layer/test_model_drift.py (221 lines, the precedent) · pyproject.toml [tool.pytest.ini_options] · uv run pytest",
+  },
+  {
+    id: "split-task-tools",
+    size: "S",
+    title: "Split task-tools.md — the file that is 47% of the budget",
+    cuts: { "task-tools": 180 },
+    deltaNote: "−180 lines",
+    today: "208 lines, unscoped, loaded into every session including ones that never spawn an agent. Most of it restates the full Task* and Agent tool schemas — every field, every default — which the tool descriptions already carry verbatim.",
+    move: "Keep a ~28-line always-loaded core: the team-lead protocol, when to delegate, work tasks in ID order, TaskGet before TaskUpdate. Move the schema dump into a path-scoped companion or a skill the orchestrator reads on demand.",
+    impact: "The single biggest line item drops by roughly 180 lines without removing a rule any agent obeys — the duplicated half was never the instruction.",
+    refs: ".claude/rules/task-tools.md (208 lines, no paths:) · memory-series.md:36 · ai-docs/anthropic/context-engineering-claude-5.md:40–50",
+  },
+  {
+    id: "capture-gate",
+    size: "S",
+    title: "Gate the leak that is actually leaking — plans closing with no notes",
+    cuts: {},
+    deltaNote: "capture side, not budget",
+    today: "2 of 9 real plan folders have an implementation-notes.md; development-log.md holds 2 lines, both from codex-hooks-sync on 2026-07-27, against a ≈40-line cap. The distillation instruction has never fired because nothing has accumulated.",
+    move: "Reuse the check_spec_completeness.py pattern — a 119-line command-scoped Stop hook already blocks harness-plan from ending on an incomplete spec folder. Register a sibling on harness-review that refuses to end when the plan folder has no implementation-notes.md and the run recorded no dev-log line.",
+    impact: "The half of memory that is failing gets a gate; a pruner built before this one would inherit an empty problem.",
+    refs: ".claude/hooks/check_spec_completeness.py (119 lines, Stop, command-scoped) · hooks.md § Catalog · specs/*/implementation-notes.md → 2 of 9",
+  },
+  {
+    id: "report-command",
+    size: "M",
+    title: "/harness-layer:harness-memory — a read-and-report pass modeled on /kb",
+    cuts: {},
+    deltaNote: "reads only",
+    today: "kb.md is the closest existing sibling: a command with a manifest, a staleness rule, a cap, and a report that never auto-deletes. Nothing equivalent exists for memory.",
+    move: "One command that reads AGENTS.md and .claude/rules/ and reports: before/after budget, cap overruns, AGENTS.md pointers with no file, blocks duplicated across rules, plans closed with no notes, and demotion candidates — each paired with the glob that would have caught it. It writes nothing.",
+    impact: "One command answers “is memory still small, current, and relevant” in a page, and writing nothing keeps it clear of the issue-first, Closes #N law entirely.",
+    refs: ".claude/commands/harness-layer/kb.md (§ Instructions, § Cap, § Report) · memory-series.md · development-log.md",
+  },
+  {
+    id: "observer-hook",
+    size: "M",
+    title: "The InstructionsLoaded observer — make “unused” measurable",
+    cuts: {},
+    deltaNote: "produces evidence",
+    today: "Claude Code fires InstructionsLoaded on every CLAUDE.md and .claude/rules/*.md load, carrying the reason — session_start, path_glob_match, nested_traversal, include, compact. Its exit code is ignored, so it can only observe. This repo registers 7 hook families across 8 events; none is on that one.",
+    move: "One observe-only hook appending a JSONL line per load to a gitignored local log, shipped with the full checklist the hooks rule demands: the test_wiring.py binding, the catalog row, contract tests, and a Codex disposition (not-applicable — Codex has no such event).",
+    impact: "After a few weeks, “this rule loads and is never used” becomes a count instead of a model's opinion, which is the only honest basis for pruning.",
+    refs: "ai-docs/anthropic/memory.md:133 · .claude/rules/harness-layer/hooks.md § Catalog, § Development · .claude/settings.json · tests/harness-layer/hooks/test_wiring.py",
+  },
+  {
+    id: "applier",
+    size: "M",
+    title: "The applier, split off along the permission seam",
+    cuts: {},
+    deltaNote: "applies the queue",
+    today: "As of v2.1.196 a scheduled fire only runs skills Claude may invoke on its own — while this repo's own standard tells any side-effecting artifact to set disable-model-invocation: true, exactly as harness-build, harness-review and harness-ship all do.",
+    move: "Two artifacts, not one. The report pass stays self-invocable and read-only so a schedule can fire it. A separate disable-model-invocation: true command takes the queue, stages the edits on a branch under one long-lived maintenance issue, and batches them into a weekly PR — never a push to main.",
+    impact: "The schedule can fire something real without ever handing a model the pen on the files that tell it what to obey.",
+    refs: ".claude/skills/meta-skills/SKILL.md:52–53 · ai-docs/anthropic/scheduled-tasks.md:45–49 · git-workflow.md § Branching, § Pull Request Requirements",
+  },
+  {
+    id: "runner",
+    size: "M",
+    title: "Name the runner, and revise the cadence to the rate memory changes",
+    cuts: {},
+    deltaNote: "scheduling only",
+    today: "/loop and CronCreate are session-scoped: they fire only between turns, skip missed fires, and delete themselves after seven days. There is no .github/workflows/ in this repo — only issue and PR templates. AGENTS.md and .claude/rules/ changed on 14 distinct days across the 37 days since the first commit.",
+    move: "A Cloud Routine — durable, no machine required, no permission prompts, 1-hour minimum interval, and a fresh clone is enough now that the KB is out of scope and all memory is tracked. Fire it weekly with an off-jitter minute, plus on merges that touch memory, rather than daily into a repo that is unchanged on ~60% of days.",
+    impact: "The pass actually keeps running past day seven, and its report means something every time it lands instead of six no-ops a week.",
+    refs: "ai-docs/anthropic/scheduled-tasks.md:13,19–29,172–189 · git log origin/main -- AGENTS.md .claude/rules/ → 14 of 37 days · ls .github/ → templates only",
+  },
+  {
+    id: "enforce-then-demote",
+    size: "L",
+    title: "Enforce before you demote — make obedience testable, then scope the rule",
+    cuts: { "git-workflow": 113 },
+    deltaNote: "−113 lines, once enforced",
+    today: "4 of 8 rule files carry paths:. git-workflow.md is 113 unscoped lines loaded into every session, and demoting it naively means a session ships without the commit format until it opens a git file — which is exactly too late. Only its attribution clause is enforced today, by block_attribution.py.",
+    move: "Adopt one law: a rule may only be demoted behind paths: once its load-bearing clauses are enforced deterministically — a hook or a test that fails. For git-workflow.md that means extending the PreToolUse Bash guard to the commit subject format, the Refs #N footer, and the explicit push refspec, then scoping the file to git-touching work.",
+    impact: "Pruning stops being a judgment call that silently changes behavior and becomes a trade: give up a paragraph of prose, gain a check that fails.",
+    refs: ".claude/hooks/block_attribution.py (PreToolUse Bash, mirrored to Codex) · git-workflow.md (113 lines, no paths:) · hooks.md § Development — ship together",
+  },
+  {
+    id: "compiled-memory",
+    size: "XL",
+    title: "Compile the always-loaded surface, and put a CI ratchet behind it",
+    cuts: { "model-selection": 40, "agents": 14 },
+    deltaNote: "−54 lines, and a hard ceiling",
+    today: "ai-docs/index.md is already generated from a manifest by /kb, and nobody hand-edits it. Memory is the opposite: every rule is hand-maintained prose, and the only thing standing between it and unbounded growth is an instruction inside the files themselves. There is no CI at all.",
+    move: "Treat the rules as source and the always-loaded surface as a build output: full prose lives in the rule files, a generator emits the compact session-start form under a declared line budget, and .github/workflows/ runs the hygiene suite on every PR touching AGENTS.md or .claude/rules/. Pruning becomes regeneration, and the budget becomes a compile-time constraint no run can exceed.",
+    impact: "Memory can grow as documentation without growing as context — and the ceiling is enforced by the merge gate rather than by whoever remembers to look.",
+    refs: "kb.md:5 (generated INDEX) · pyproject.toml · .github/ (no workflows/ today) · test_memory_budget.py from rung 2 as the CI payload",
+  },
+];
+
+/* ---------------- state ---------------- */
+const state = { picks: new Set(), trust: "report", cadence: "weekly" };
+
+/* ---------------- meter ---------------- */
+const bar = document.getElementById("bar");
+bar.innerHTML = FILES.map(f => `
+  <div class="seg" data-file="${f.id}" style="flex-grow:${f.lines}">
+    <span class="fn" data-fn="${f.id}">${f.lines}</span>
+    <span class="fname">${f.name}</span>
+    <span class="kept" data-kept="${f.id}" hidden></span>
+  </div>`).join("");
+
+function cutFor(fileId) {
+  let c = 0;
+  RUNGS.forEach(r => { if (state.picks.has(r.id) && r.cuts[fileId]) c += r.cuts[fileId]; });
+  return c;
+}
+
+function renderMeter() {
+  let total = 0;
+  FILES.forEach(f => {
+    const cut = Math.min(cutFor(f.id), f.lines);
+    const left = f.lines - cut;
+    total += left;
+    const seg = bar.querySelector(`[data-file="${f.id}"]`);
+    const kept = seg.querySelector(`[data-kept="${f.id}"]`);
+    seg.querySelector(`[data-fn="${f.id}"]`).textContent = cut ? left : f.lines;
+    seg.dataset.cut = cut === 0 ? "none" : (left === 0 ? "full" : "partial");
+    seg.style.flexGrow = String(Math.max(left, 26));
+    kept.hidden = !cut;
+    kept.textContent = cut ? `−${cut}` : "";
+  });
+  const now = document.getElementById("now");
+  now.textContent = total;
+  now.classList.toggle("cut", total !== TOTAL);
+  document.getElementById("from").textContent =
+    total === TOTAL ? "unchanged" : `from ${TOTAL} · −${TOTAL - total}`;
+}
+
+/* ---------------- ladder ---------------- */
+document.getElementById("ladder").innerHTML = RUNGS.map((r, i) => `
+  <article class="rung" data-id="${r.id}" data-on="false">
+    <div class="spine"><span class="n">${String(i + 1).padStart(2, "0")}</span><span class="tick"></span></div>
+    <div class="body">
+      <div class="rung-top">
+        <h3>${r.title}</h3>
+        <span class="badge" data-size="${r.size}">${r.size}</span>
+        <span class="delta" data-neg="${!!Object.keys(r.cuts).length}">${r.deltaNote}</span>
+      </div>
+      <div class="field"><span class="k">What exists today</span><p>${r.today}</p></div>
+      <div class="field"><span class="k">The move</span><p>${r.move}</p></div>
+      <p class="impact">${r.impact}</p>
+      <p class="refs">${r.refs}</p>
+      <button class="pick" type="button" data-pick="${r.id}" aria-pressed="false">
+        <span class="box" aria-hidden="true">✓</span> This resonates
+      </button>
+    </div>
+  </article>`).join("");
+
+/* ---------------- rail ---------------- */
+function renderRail() {
+  const picked = RUNGS.map((r, i) => ({ r, i })).filter(({ r }) => state.picks.has(r.id));
+  document.getElementById("pick-n").textContent = picked.length;
+  document.getElementById("empty").hidden = picked.length > 0;
+  document.getElementById("picklist").innerHTML = picked.map(({ r, i }) =>
+    `<li><span class="r">${String(i + 1).padStart(2, "0")}</span><span>${r.title}</span></li>`).join("");
+}
+
+/* ---------------- prompt ---------------- */
+const TRUST = {
+  report: "Report only: the pass measures, flags, and files a queue — I apply the edits myself. It writes nothing to the repo.",
+  stage:  "Propose and stage: the pass makes its edits on a branch and stops for my diff. Nothing merges without me.",
+  auto:   "Autonomous: the pass edits and commits memory on its own authority — design the behavioral checks that make that safe before anything else.",
+};
+const CADENCE = {
+  daily:  "Keep the daily cadence I originally asked for, and say plainly in the design what a run reports on the ~60% of days when nothing changed.",
+  weekly: "Revise the cadence: run weekly on an off-jitter minute, plus on any merge that touches AGENTS.md or .claude/rules/. Memory changed on 14 of the 37 days since the first commit, so a daily fire is a no-op most mornings.",
+  event:  "Drop the calendar entirely: fire only when a merge touches AGENTS.md or .claude/rules/, so every run has something to look at.",
+};
+
+const BASE =
+"Design a scheduled maintenance pass for this repo's memory — AGENTS.md and .claude/rules/ — that keeps what loads " +
+"into each session small, current, and relevant, and prunes what has gone stale. Knowledge-base syncing is out of scope: " +
+"/kb already owns ai-docs/, so do not design anything that fetches, mirrors, or evicts KB sources.\n\n" +
+"Ground truth measured on this tree on 2026-07-28, already verified — do not re-derive it:\n" +
+"- The always-loaded surface is 445 lines / ~26KB: task-tools.md 208, git-workflow.md 113, model-selection.md 62, " +
+"AGENTS.md 44, development-log.md 18. Nothing else reaches a session unprompted — 4 of 8 rule files are path-scoped, " +
+"and the 85 markdown files under specs/ never load. Every run must report this count before and after.\n" +
+"- The capture half is what is failing, not the pruning half: development-log.md holds 2 entries, both from one plan on " +
+"2026-07-27, against a ≈40-line cap, and only 2 of 9 real plan folders have an implementation-notes.md. The pass must " +
+"report plans that closed without notes or a dev-log line alongside anything over a cap, and say which half is failing.\n" +
+"- Nothing records which rules actually load. The InstructionsLoaded hook fires on every rule load with a reason and is " +
+"observe-only; none of this repo's 7 hook families uses it. Either land that observer first, or restrict the pass to " +
+"deterministic invariants and leave judgment calls as a report — following #65, where memory drift was fixed with a " +
+"221-line test rather than an agent.\n" +
+"- Demotion beats deletion: every memory file is git-tracked, so the risk is silently changing what agents obey with no " +
+"failing test, not losing text. Pair every proposed demotion with the glob that would have caught it.\n" +
+"- /loop and CronCreate are session-scoped and self-delete after seven days, so they cannot be the runner. A Cloud Routine " +
+"fits — all memory is tracked, so its fresh clone sees everything; there is no .github/workflows/ in this repo today.\n" +
+"- A scheduled fire only runs skills Claude may self-invoke, while this repo's standard (meta-skills/SKILL.md:52–53) " +
+"tells side-effecting artifacts to set disable-model-invocation: true. git-workflow.md's issue-first, Closes #N law has " +
+"no exemption for automation.\n";
+
+function buildPrompt() {
+  let p = BASE + "\n" + TRUST[state.trust] + "\n" + CADENCE[state.cadence] + "\n";
+  const picked = RUNGS.map((r, i) => ({ r, i })).filter(({ r }) => state.picks.has(r.id));
+
+  if (picked.length) {
+    p += "\nBuild the design around these interventions — they are the ones that resonated, in build order:\n\n";
+    picked.forEach(({ r, i }, k) => {
+      p += `${k + 1}. [${r.size}] ${r.title}\n   ${r.move}\n   Anchors: ${r.refs}\n\n`;
+    });
+    const cut = TOTAL - Number(document.getElementById("now").textContent);
+    if (cut > 0) p += `Taken together these rungs bring the always-loaded surface from ${TOTAL} lines to ${TOTAL - cut}. Verify that number rather than trusting it.\n\n`;
+    const sizes = new Set(picked.map(({ r }) => r.size));
+    if (sizes.has("L") || sizes.has("XL")) {
+      p += "The larger rungs here are a direction, not a first increment — say explicitly what ships first and what waits.\n\n";
+    }
+  } else {
+    p += "\nNo intervention picked yet — lay out the options against the ground truth above before recommending one.\n\n";
+  }
+
+  p += "Deliver a design, not an implementation: the runner, the cadence, the artifact shape (skill, command, or hook), " +
+       "what it reads, what evidence it acts on, what it is allowed to change, and what it reports. Flag anything you " +
+       "could not verify against the files above.\n\n" +
+       "Worktree: .claude/worktrees/self-managing-memory-kb";
+  return p;
+}
+
+function render() {
+  renderMeter();
+  renderRail();
+  document.getElementById("prompt").textContent = buildPrompt();
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener("click", e => {
+  const btn = e.target.closest("[data-pick]");
+  if (!btn) return;
+  const id = btn.dataset.pick;
+  state.picks.has(id) ? state.picks.delete(id) : state.picks.add(id);
+  const on = state.picks.has(id);
+  btn.closest(".rung").dataset.on = String(on);
+  btn.setAttribute("aria-pressed", String(on));
+  render();
+});
+
+document.getElementById("trust").addEventListener("change", e => { state.trust = e.target.value; render(); });
+document.getElementById("cadence").addEventListener("change", e => { state.cadence = e.target.value; render(); });
+
+document.getElementById("copy").addEventListener("click", async () => {
+  const btn = document.getElementById("copy");
+  const text = document.getElementById("prompt").textContent;
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const r = document.createRange();
+    r.selectNodeContents(document.getElementById("prompt"));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    document.execCommand("copy"); s.removeAllRanges();
+  }
+  btn.textContent = "Copied";
+  setTimeout(() => { btn.textContent = "Copy"; }, 1400);
+});
+
+render();
+</script>
