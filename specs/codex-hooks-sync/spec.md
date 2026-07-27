@@ -158,7 +158,15 @@ Ordered most-volatile first. The full record is in [decisions.md](./decisions.md
 - **Branch:** `feat/62-codex-hooks-sync`
 - **Worktree:** `/home/ringo/ai-native-startup/.claude/worktrees/codex-hooks-sync`
 - **Review profile:** kb-grounded
-- **PR:** <filled by /harness-layer:harness-build>
+- **PR:** #63 (draft) — <https://github.com/SunshinePeace213/ai-native-startup/pull/63>
+- **Hand-off SHA:** `ba06291` — last implementation push; review derives its own range
+- **Stages:** Implementation ✓ · Tidy ✓ (10 auto-fixes, suite 772 → 772) · Codex R1 waived per the
+  plan's invoking prompt
+- **For the human:** the build closed two validator findings rather than shipping them — the AC19
+  formatter gap and a wrong ask-tier fact in `hooks.md`'s catalog. Two internal inconsistencies in
+  `acceptance-criteria.md` (AC3's `startswith`, AC4's "five entries") were adjudicated toward the
+  operative text; see `implementation-notes.md`. A human must still run `/hooks` once to trust the
+  Codex layer for real sessions, and note that a worktree's `.codex/` is never the layer Codex loads.
 
 ## Relevant Files
 
