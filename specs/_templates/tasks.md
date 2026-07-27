@@ -49,7 +49,7 @@
 - **Depends On:** <Task ID(s), or "none">
 - **Assigned To:** <team member name>
 - **Agent Type:** <subagent type, or `general-purpose`>
-- **Model / Effort:** <`opus` complex / `sonnet` otherwise; `low`|`medium`|`high`|`xhigh`>
+- **Model / Effort:** <model + effort stamped per `.claude/rules/model-selection.md`>
 - **Parallel:** <true if it can run alongside others, false if sequential>
 - **Satisfies:** <acceptance criteria id(s) from acceptance-criteria.md, e.g. AC1, AC2>
 - <specific action>
@@ -61,7 +61,7 @@
 - **Depends On:** <previous Task ID>
 - **Assigned To:** <team member name>
 - **Agent Type:** <subagent type, or `general-purpose`>
-- **Model / Effort:** <`opus` complex / `sonnet` otherwise; `low`|`medium`|`high`|`xhigh`>
+- **Model / Effort:** <model + effort stamped per `.claude/rules/model-selection.md`>
 - **Parallel:** <true/false>
 - **Satisfies:** <acceptance criteria id(s)>
 - <specific action>
@@ -72,7 +72,7 @@
 - **Depends On:** <all previous Task IDs>
 - **Assigned To:** <validator team member>
 - **Agent Type:** <validator agent, or `general-purpose`>
-- **Model / Effort:** <`opus` complex / `sonnet` otherwise; `low`|`medium`|`high`|`xhigh`>
+- **Model / Effort:** <model + effort stamped per `.claude/rules/model-selection.md`>
 - **Parallel:** false
 - Run every command in acceptance-criteria.md → `## Validation Commands`.
 - Verify each acceptance criterion is met.

@@ -13,7 +13,7 @@ what we actually pay (Codex limits are generous), not list price.
 | Model | Invoke via | Intelligence | Taste | Speed | Cost | Choose for |
 | --- | --- | --- | --- | --- | --- | --- |
 | `fable` (Fable 5) | Agent/Workflow `model` | 10 | 9 | 3 | 4 | Highest-judgment work — specs, build orchestration, consolidating review findings. Orchestrator only — never deploy as a subagent |
-| `opus` (Opus 4.8) | Agent/Workflow `model` | 9 | 8 | 5 | 5 | Complex implementation; behavior-preserving refinement; reviews every Codex-authored change |
+| `opus` (Opus 5) | Agent/Workflow `model` | 9 | 8 | 5 | 5 | Complex implementation; behavior-preserving refinement; reviews every Codex-authored change |
 | `sonnet` (Sonnet 5) | Agent/Workflow `model` | 7 | 7 | 7 | 7 | Default workhorse — standard implementation, review fixes, guarded mechanical flows |
 | `haiku` (Haiku 4.5) | Agent/Workflow `model` | 4 | 3 | 9 | 10 | Utility micro-tasks only — eligibility, summaries, scoring |
 | `gpt-5.6-sol` | `codex exec -m` | 9 | 8 | 4 | 9 | Complex, open-ended, high-value Codex work needing depth and polish — default Codex pick when unsure |
