@@ -2,11 +2,43 @@
 # session in this repo, plus limits for the /harness-layer:harness-build review subagents
 # defined in .codex/agents/*.toml.
 
-sandbox_mode = "workspace-write"
+personality = "pragmatic"
+
 approval_policy = "on-request"
+web_search = "live"
+sandbox_mode = "workspace-write"
 
 [features]
+apps = true
+multi_agent = true
+personality = true
+shell_snapshot = true
+unified_exec = true
+guardian_approval = true
+prevent_idle_sleep = true
+goals = true
 hooks = true
+
+[sandbox_workspace_write]
+network_access = true
+
+[tui]
+status_line = [
+    "model-with-reasoning", 
+    "context-remaining", 
+    "current-dir", 
+    "model-name", 
+    "git-branch", 
+    "context-used", 
+    "context-window-size", 
+    "used-tokens", 
+    "total-output-tokens", 
+    "five-hour-limit", 
+    "weekly-limit"
+]
+
+[tui.model_availability_nux]
+"gpt-5.6-sol" = 2
 
 [agents]
 # These are the Codex defaults, pinned here explicitly because they already fit
