@@ -20,6 +20,7 @@ boundaries and are never anchored to string start, so wrapper prefixes
 """
 
 import json
+import os
 import re
 import select
 import sys
@@ -68,6 +69,17 @@ def read_payload() -> dict | None:
     except ValueError:
         return None  # malformed payload is an expected fail-open case
     return payload if isinstance(payload, dict) else None
+
+
+def hook_host() -> str:
+    """Which harness is running this hook: ``"claude"`` (default) or ``"codex"``.
+
+    Set by the registration surface -- ``.codex/hooks.json`` exports
+    ``HARNESS_HOOK_HOST=codex``; Claude Code sets nothing, so unset means
+    ``"claude"``. Callers branch on ``== "codex"``, so any other value leaves
+    Claude's behaviour in place.
+    """
+    return os.environ.get("HARNESS_HOOK_HOST", "claude").strip().lower()
 
 
 # --- Rule dataclass ------------------------------------------------------------
