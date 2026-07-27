@@ -79,4 +79,4 @@ These patterns extend the inventory — when work matches a shape, propose the p
 | Multi-source report (research, status, incident) | Tabbed explainer with navigation |
 | Reviewing a document or spec | Inline suggestions with approve/reject/comment |
 
-Full pattern source mirrored at `ai-docs/anthropic/html-artifacts-workflows.md`.
+Full pattern source mirrored at `ai-docs/anthropic/blog/html-artifacts-workflows.md`.
