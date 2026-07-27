@@ -44,7 +44,7 @@ def main() -> int:
     pairs = _common.target(EXTS)
     if not pairs:
         return 0
-    root = pairs[0][1]
+    _, root = pairs[0]  # target() pairs every path with the same project root
     prettier = root / "node_modules" / ".bin" / "prettier"
     if not prettier.is_file():
         _common.note("prettier not installed; skipping (run the meta-install skill)")

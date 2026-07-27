@@ -921,11 +921,12 @@ def test_fail_open_matrix_under_codex(run_hook, payload):
     assert res.stdout == ""
 
 
-def test_ask_tier_codex_fix_hint_matches_deny_shape_in_process(common):
-    """A sample rule's rendered Codex BLOCKED block must carry its
-    codex_fix_hint text (not its Claude-side fix_hint) on the Fix: line --
-    this pins the field the entrypoint actually reads, independent of the
-    subprocess round-trip the tests above exercise."""
+def test_ask_rule_codex_fix_hint_differs_from_the_claude_one_in_process(common):
+    """A sample ask rule must carry its own Codex fix text, distinct from the
+    Claude-side fix_hint: reusing the Claude wording would put "approve only
+    if ..." on the Fix: line the MODEL reads, an instruction nothing in a Codex
+    session can act on. Checked in-process on the field the Codex deny path
+    reads, independent of the subprocess round-trip the tests above exercise."""
     rule = next(r for r in common.RULES if r.rule_id == "git-force-push")
     assert rule.codex_fix_hint
     assert rule.codex_fix_hint != rule.fix_hint

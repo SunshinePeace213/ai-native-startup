@@ -15,7 +15,6 @@ any other failure still fails.
 import os
 import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 from test_wiring import HOOKS_ROOT, REPO_ROOT, entrypoints
@@ -45,7 +44,7 @@ def test_entrypoint_runs_offline(script: str):
         text=True,
         timeout=45,  # under pytest-timeout's ceiling, so the test still reports
         env=os.environ | {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull},
-        cwd=Path(REPO_ROOT),
+        cwd=REPO_ROOT,
     )
     if result.returncode and any(m in result.stderr for m in COLD_CACHE_MARKERS):
         pytest.skip(f"uv cache is cold for {script}: {result.stderr.strip()}")

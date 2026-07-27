@@ -78,7 +78,7 @@ def main() -> int:
     pairs = _common.target(EXTS)
     if not pairs:
         return 0
-    root = pairs[0][1]
+    _, root = pairs[0]  # target() pairs every path with the same project root
     eslint = root / "node_modules" / ".bin" / "eslint"
     prettier = root / "node_modules" / ".bin" / "prettier"
     if not eslint.is_file() or not prettier.is_file():

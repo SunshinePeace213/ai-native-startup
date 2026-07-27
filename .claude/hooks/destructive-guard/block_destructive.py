@@ -25,13 +25,14 @@ Pure inspection, stdlib only: the guard never executes, shells out, or writes.
 
 import json
 import sys
+from collections.abc import Callable
 
 import _common
 
 MAX_COMMAND_BYTES = 64 * 1024  # scan only the first 64 KB of the command
 
 
-def _format_blocked(rules: list, fix_of) -> str:
+def _format_blocked(rules: list[_common.Rule], fix_of: Callable[[_common.Rule], str]) -> str:
     """Render up to three BLOCKED/Why/Fix blocks plus a remainder line.
 
     Shared by the deny path and the Codex ask-tier-deny path so both stderr

@@ -11,8 +11,8 @@ their proper rule file and delete their entries.
 
 ## Lessons
 
-- 2026-07-27 · codex-hooks-sync · Codex resolves the project `.codex/` layer to the main repository
-  root, so a worktree's own `.codex/` never runs — drive Codex probes from a scratch repo, and treat
-  an untrusted project path as having no hook layer at all.
+- 2026-07-27 · codex-hooks-sync · Codex loads `.codex/` from the main repo root, so a worktree's own
+  layer never runs — probe Codex from a scratch repo, and treat an untrusted project path as having
+  no hook layer.
 - 2026-07-27 · codex-hooks-sync · A fail-open hook can only be proven by a positively observed block;
   a green suite pins registration, never execution.

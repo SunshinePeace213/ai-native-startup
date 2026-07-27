@@ -3,6 +3,7 @@ paths:
   - ".claude/hooks/**/*"
   - "tests/harness-layer/hooks/**/*"
   - ".claude/settings.json"
+  - ".codex/hooks.json"
 ---
 
 # Harness Hooks
@@ -13,15 +14,16 @@ rules. One row per hook — for full behavior, read the hook's source.
 ## Catalog
 
 Hooks live under `.claude/hooks/` at the path in the first column; multi-script
-families share a `_common.py` engine.
+families share a `_common.py` engine. The Codex column says whether the family is
+mirrored into `.codex/hooks.json`.
 
 | Hook | Event / matcher | What it does | Codex |
 | --- | --- | --- | --- |
 | `block_attribution.py` | PreToolUse `Bash` | Denies git/gh commands carrying Claude attribution text | mirrored |
-| `destructive-guard/` | PreToolUse `Bash` | Denies destructive commands; risky ones print `"ask"` JSON on Claude, deny outright on Codex | mirrored (ask tier denies) |
+| `destructive-guard/` | PreToolUse `Bash` | Denies destructive commands; risky ones print `"ask"` JSON so the human approves per call | mirrored (ask tier denies) |
 | `auto-format/` | PostToolUse `Write\|Edit\|MultiEdit` | Four extension-scoped formatters (`js_ts`, `data`, `markdown`, `python`) format the edited file in place; unfixable lint → exit-2 diagnostics | mirrored |
 | `security-scan/` | PostToolUse(+Failure) `Write\|Edit\|MultiEdit`/`Bash`, SessionStart, Stop/SubagentStop | Tracks agent-touched files, scans them for secrets (blocking) and vuln patterns (warn-only); a `security-scan: allow` comment suppresses a line | mirrored |
-| `sensitive-files/` | PreToolUse `Read\|Grep\|Edit\|Write\|MultiEdit` + `Bash` | Denies agent access to secret-bearing files by name/path; `bash_guard.py` is also registered in `.codex/hooks.json` | mirrored (write surface only) |
+| `sensitive-files/` | PreToolUse `Read\|Grep\|Edit\|Write\|MultiEdit` + `Bash` | Denies agent access to secret-bearing files by name/path | mirrored (write surface only) |
 | `check_spec_completeness.py` | Stop (command-scoped) | Blocks `/harness-layer:harness-plan` from ending on an incomplete `specs/` folder | not-applicable |
 | `worktree/` | WorktreeCreate / WorktreeRemove | Creates dep-installed worktrees (`bun install` + `uv sync`); removes worktree + branch | not-applicable |
 

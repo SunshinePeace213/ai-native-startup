@@ -45,7 +45,7 @@ def main() -> int:
     pairs = _common.target(EXTS)
     if not pairs:
         return 0
-    root = pairs[0][1]
+    _, root = pairs[0]  # target() pairs every path with the same project root
     mdl = root / "node_modules" / ".bin" / "markdownlint-cli2"
     if not mdl.is_file():
         _common.note("markdownlint-cli2 not installed; skipping (run the meta-install skill)")

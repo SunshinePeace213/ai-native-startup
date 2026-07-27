@@ -1,5 +1,5 @@
-# Project-local Codex config for the /harness-layer:harness-build multi-layer review pipeline.
-# The implementation-review orchestrator spawns the 6 read-only review subagents
+# Project-local Codex config: sandbox, approval policy, and hook layer for every Codex
+# session in this repo, plus limits for the /harness-layer:harness-build review subagents
 # defined in .codex/agents/*.toml.
 
 sandbox_mode = "workspace-write"
