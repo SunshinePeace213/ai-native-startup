@@ -1,4 +1,4 @@
-<title>Unknowns · the daily run</title>
+<title>Unknowns · the daily memory pass</title>
 <style>
   :root {
     --bg: #FAF8F5;
@@ -56,99 +56,121 @@
   h1 .dim { color: var(--muted); font-weight: 400; }
   .standfirst { max-width: 62ch; margin-top: 1.1rem; color: #4A443E; }
 
-  /* ---------- signature: the cadence ruler ---------- */
-  .ruler-wrap {
+  /* ---------- signature: the session-load bar ---------- */
+  .load-wrap {
     max-width: 1180px;
     margin: 0 auto;
-    padding: 2.6rem 1.5rem 2.2rem;
+    padding: 2.6rem 1.5rem 2.4rem;
     border-bottom: 1px solid var(--border);
   }
-  .ruler-title {
+  .load-head { display: flex; align-items: baseline; gap: 1.4rem; flex-wrap: wrap; }
+  .load-title {
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 11px;
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 2.2rem;
   }
-  .ruler {
+  .load-read {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+  .load-read b { color: var(--text); font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .load-read .cut { color: var(--resolve); }
+  .bar {
+    display: flex;
+    height: 62px;
+    margin-top: 1.5rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .seg {
+    border: 0;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    padding: 0;
+    cursor: pointer;
     position: relative;
-    height: 1px;
-    background: var(--border);
-    margin: 0 0 0.5rem;
+    transition: background 0.18s ease, flex-grow 0.28s ease, opacity 0.18s ease;
+    text-align: left;
+    overflow: hidden;
+    min-width: 0;
   }
-  .tick { position: absolute; top: 0; transform: translateX(-50%); }
-  .tick .stem { width: 1px; height: 11px; background: var(--border); margin: 0 auto; }
-  .tick .lab {
+  .seg:last-child { border-right: 0; }
+  .seg .sl {
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 11px;
-    color: var(--muted);
+    display: block;
+    padding: 0.5rem 0.6rem 0;
     white-space: nowrap;
-    margin-top: 0.4rem;
-    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .tick .val { display: block; color: var(--text); }
-  .tick.now .stem { height: 30px; width: 2px; background: var(--accent); margin-top: -30px; }
-  .tick.now .lab { color: var(--accent); }
-  .tick.now .val { color: var(--accent); font-weight: 600; }
-  .tick.flip .lab { transform: translateY(-4.3rem); }
-  .ruler-scale {
+  .seg .sn {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 1.05rem;
+    font-weight: 600;
+    display: block;
+    padding: 0.1rem 0.6rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .seg:hover:not([data-locked]) { background: #E7E2D7; }
+  .seg[data-demoted="true"] { background: repeating-linear-gradient(135deg, #EDEAE2, #EDEAE2 5px, #E3DED4 5px, #E3DED4 10px); color: var(--muted); }
+  .seg[data-locked] { cursor: default; background: var(--bg); }
+  .seg .tick {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0.4rem;
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--resolve);
+  }
+  .load-legend {
     display: flex;
     justify-content: space-between;
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    font-size: 10.5px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.85rem;
+    font-size: 12.5px;
     color: var(--muted);
-    margin-top: 4.6rem;
-    padding-top: 0.6rem;
-    border-top: 1px dashed var(--rule);
   }
-  .ruler-note { max-width: 68ch; margin-top: 1.1rem; font-size: 13px; color: var(--muted); }
+  .load-legend p { max-width: 74ch; }
+  .load-legend .hint { font-family: ui-monospace, monospace; font-size: 11px; white-space: nowrap; }
 
-  /* ---------- runner lanes ---------- */
-  .lanes {
+  /* ---------- scheduler strip ---------- */
+  .strip {
     max-width: 1180px;
     margin: 0 auto;
-    padding: 2rem 1.5rem 2.4rem;
+    padding: 1.8rem 1.5rem 2.2rem;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1px;
     background: var(--border);
     border-bottom: 1px solid var(--border);
   }
-  .lane { background: var(--bg); padding: 1.15rem 1.15rem 1.3rem; }
-  .lane h3 {
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    font-size: 12.5px;
-    letter-spacing: 0.06em;
-    font-weight: 620;
-  }
-  .lane .verdict {
+  .cell { background: var(--bg); padding: 1rem 1.1rem 1.15rem; }
+  .cell h3 { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; font-weight: 620; }
+  .cell .verdict {
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    margin-top: 0.55rem;
+    margin-top: 0.5rem;
     display: inline-block;
     padding: 0.15rem 0.45rem;
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--muted);
   }
-  .lane[data-ok="no"] .verdict { color: var(--accent); border-color: var(--accent); background: rgba(184, 96, 42, 0.07); }
-  .lane[data-ok="yes"] .verdict { color: var(--resolve); border-color: var(--resolve); background: rgba(74, 107, 74, 0.07); }
-  .lane dl { margin-top: 0.9rem; font-size: 12.5px; }
-  .lane dt {
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    font-size: 10.5px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-top: 0.6rem;
-  }
-  .lane dt:first-child { margin-top: 0; }
-  .lane dd { margin-top: 0.1rem; line-height: 1.45; }
+  .cell[data-ok="no"] .verdict { color: var(--accent); border-color: var(--accent); background: rgba(184, 96, 42, 0.07); }
+  .cell[data-ok="yes"] .verdict { color: var(--resolve); border-color: var(--resolve); background: rgba(74, 107, 74, 0.07); }
+  .cell p { font-size: 12.5px; color: var(--muted); margin-top: 0.7rem; line-height: 1.45; }
 
   /* ---------- shell ---------- */
   .shell {
@@ -268,7 +290,7 @@
   }
   .tally { display: flex; gap: 0.9rem; margin-top: 0.7rem; }
   .tally div { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; color: var(--muted); }
-  .tally b { display: block; font-size: 1.35rem; color: var(--text); font-weight: 600; }
+  .tally b { display: block; font-size: 1.35rem; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
   .filters { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.8rem; }
   .filters button { font-size: 11.5px; padding: 0.25rem 0.55rem; background: var(--bg); }
   .filters button[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
@@ -298,70 +320,63 @@
   @media (max-width: 900px) {
     .shell { grid-template-columns: minmax(0, 1fr); }
     aside { position: static; padding-top: 0; }
-    .lanes { grid-template-columns: 1fr; }
-    .ruler-wrap { overflow-x: auto; }
+    .strip { grid-template-columns: 1fr; }
+    .bar { height: auto; flex-direction: column; }
+    .seg { border-right: 0; border-bottom: 1px solid var(--border); min-height: 46px; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } html { scroll-behavior: auto; } }
 </style>
 
 <header class="masthead">
-  <div class="eyebrow">Unknowns pass · pass 2 · daily automation · specs/self-managing-memory-kb</div>
-  <h1>Once per day <span class="dim">is a cadence<br>nothing here runs on.</span></h1>
+  <div class="eyebrow">Unknowns pass · pass 2 · memory only · specs/self-managing-memory-kb</div>
+  <h1>The thing you want to prune <span class="dim">is 445 lines long,<br>and one file is half of it.</span></h1>
   <p class="standfirst">
-    Pass&nbsp;1 mapped what already manages memory and the KB. This pass takes the new half of the
-    ask — <em>run it once per day, unattended, and delete what has gone stale</em> — and measures it
-    against the three schedulers Claude Code actually ships, the clocks your own files keep, and the
-    guard that will be standing in the pruner's way. Disposition each finding; the block on the right
-    rewrites your prompt as you go.
+    Pass&nbsp;1 mapped the four surfaces that already manage memory here. This pass takes the ask as
+    you scoped it — <em>keep session memory optimized, cut what has gone stale, run it once a day</em>
+    — with the knowledge base left to <code>/kb</code>. Measured on this tree today, the surface that
+    actually reaches a session is smaller than it feels, and the half that is missing is not the
+    pruning half. Disposition each finding; the block on the right rewrites your prompt as you go.
   </p>
 </header>
 
-<section class="ruler-wrap" aria-label="Cadence ruler">
-  <div class="ruler-title">Every clock already running in this repo, against the one you asked for</div>
-  <div class="ruler" id="ruler"></div>
-  <div class="ruler-scale"><span>1 hour</span><span>logarithmic</span><span>30 days</span></div>
-  <p class="ruler-note">
-    The proposed tick sits to the left of every signal it is meant to service. <code>/kb</code> holds
-    <code>STALE_AFTER = 30</code> days and this device's newest mirrors are 1–7 days old, so a daily
-    sync answers "all fresh" on roughly 29 days out of 30. Memory files changed on 14 of the repo's
-    37 days of life — a ~2.6-day average gap. What actually grows daily is <code>specs/</code>:
-    10 plan folders, 85 markdown files, 1.1&nbsp;MB in five weeks, and nothing prunes it.
-  </p>
+<section class="load-wrap" aria-label="Session load budget">
+  <div class="load-head">
+    <span class="load-title">What loads at session start · click a file to demote it behind <code>paths:</code></span>
+    <span class="load-read"><b id="load-n">445</b> lines<span id="load-cut" class="cut"></span></span>
+  </div>
+  <div class="bar" id="bar"></div>
+  <div class="load-legend">
+    <p id="legend-note">
+      Rules with no <code>paths:</code> frontmatter load at session start, exactly like CLAUDE.md.
+      Everything else — the 3 path-scoped rules, all 85 markdown files under <code>specs/</code>, and
+      the whole knowledge base — costs nothing until a session touches a matching file. So the budget
+      you can optimize is this bar, and the cheapest lever is demotion, not deletion.
+    </p>
+    <span class="hint">AGENTS.md is the hub — it cannot be demoted.</span>
+  </div>
 </section>
 
-<section class="lanes" aria-label="Scheduler comparison">
-  <div class="lane" data-ok="no">
-    <h3>Cloud Routines</h3>
-    <span class="verdict">Cannot see the KB</span>
-    <dl>
-      <dt>Runs on</dt><dd>Anthropic infrastructure, machine off, min interval 1 hour</dd>
-      <dt>Local files</dt><dd>No — fresh clone</dd>
-      <dt>What that means here</dt><dd><code>.gitignore:362</code> hides <code>ai-docs/*</code>, so the clone carries <code>sources.yaml</code> and 0 of 38 mirrors</dd>
-    </dl>
-  </div>
-  <div class="lane" data-ok="yes">
-    <h3>Desktop scheduled task</h3>
-    <span class="verdict">Only durable local option</span>
-    <dl>
-      <dt>Runs on</dt><dd>Your machine, no open session, min interval 1 minute</dd>
-      <dt>Local files</dt><dd>Yes</dd>
-      <dt>What that means here</dt><dd>Requires the machine on and the desktop app — untested against this WSL2 checkout</dd>
-    </dl>
-  </div>
-  <div class="lane" data-ok="no">
+<section class="strip" aria-label="Scheduler options">
+  <div class="cell" data-ok="no">
     <h3><code>/loop</code> · CronCreate</h3>
     <span class="verdict">Dies with the session</span>
-    <dl>
-      <dt>Runs on</dt><dd>Your machine, inside an open REPL, fires only between turns</dd>
-      <dt>Local files</dt><dd>Yes</dd>
-      <dt>What that means here</dt><dd>Session-scoped, no catch-up for missed fires, recurring tasks self-delete after 7 days</dd>
-    </dl>
+    <p>Session-scoped, fires only between turns, no catch-up for missed fires, and recurring tasks delete themselves after 7 days.</p>
+  </div>
+  <div class="cell" data-ok="yes">
+    <h3>Desktop scheduled task</h3>
+    <span class="verdict">Durable · local files</span>
+    <p>Runs on your machine without an open session, 1-minute minimum. Needs the machine on, and is untested against this WSL2 checkout.</p>
+  </div>
+  <div class="cell" data-ok="yes">
+    <h3>Cloud Routine</h3>
+    <span class="verdict">Durable · tracked files only</span>
+    <p>Fresh clone, no local files, 1-hour minimum. Fine for memory — <code>.claude/rules/</code> and <code>AGENTS.md</code> are tracked — and it runs with no permission prompts.</p>
   </div>
 </section>
 
 <div class="shell">
   <main>
-    <div class="band">Findings · what a daily job runs into</div>
+    <div class="band">Findings · what a daily memory pass runs into</div>
     <div id="cards"></div>
     <div class="band">Open decision · only you can call this</div>
     <div id="decision"></div>
@@ -396,105 +411,131 @@
 </div>
 
 <footer>
-  Discovery only — nothing here is a plan. Every figure was read from this working tree on
-  2026-07-28: <code>ai-docs/anthropic/scheduled-tasks.md</code>, <code>.gitignore</code>,
-  <code>.claude/settings.json</code>, <code>.claude/hooks/destructive-guard/</code>,
-  <code>.claude/commands/harness-layer/kb.md</code>, and <code>git log</code>. Pass 1 lives beside
-  this file as <code>unknowns.html</code>.
+  Discovery only — nothing here is a plan. Knowledge-base syncing is out of scope: <code>/kb</code>
+  owns it. Every figure was read from this working tree on 2026-07-28: <code>wc -l</code> over
+  <code>.claude/rules/</code> and <code>AGENTS.md</code>, <code>ai-docs/anthropic/scheduled-tasks.md</code>,
+  <code>ai-docs/anthropic/memory.md</code>, <code>.claude/settings.json</code>, <code>tests/</code>,
+  and <code>git log</code>. Pass 1 lives beside this file as <code>unknowns.html</code>.
 </footer>
 
 <script>
-  /* ---------- cadence ruler ---------- */
-  const HOURS = { min: 1, max: 720 };
-  const pos = h => (Math.log(h) - Math.log(HOURS.min)) / (Math.log(HOURS.max) - Math.log(HOURS.min)) * 100;
-  const TICKS = [
-    { h: 1,   lab: "Cloud routine",  val: "minimum 1h" },
-    { h: 24,  lab: "Your daily job", val: "24h", now: true },
-    { h: 62,  lab: "Memory churn",   val: "~2.6d avg gap", flip: true },
-    { h: 168, lab: "/loop expiry",   val: "7d" },
-    { h: 720, lab: "KB staleness",   val: "30d", flip: true },
+  /* ---------- session-load bar ---------- */
+  const FILES = [
+    { id: "task-tools",      name: "task-tools.md",      lines: 208 },
+    { id: "git-workflow",    name: "git-workflow.md",    lines: 113 },
+    { id: "model-selection", name: "model-selection.md", lines: 62 },
+    { id: "agents",          name: "AGENTS.md",          lines: 44, locked: true },
+    { id: "development-log", name: "development-log.md", lines: 18 },
   ];
-  document.getElementById("ruler").innerHTML = TICKS.map(t => `
-    <div class="tick${t.now ? " now" : ""}${t.flip ? " flip" : ""}" style="left:${pos(t.h)}%">
-      <div class="stem"></div>
-      <div class="lab">${t.lab}<span class="val">${t.val}</span></div>
-    </div>`).join("");
+  const TOTAL = FILES.reduce((a, f) => a + f.lines, 0);
+  const demoted = new Set();
+
+  const bar = document.getElementById("bar");
+  bar.innerHTML = FILES.map(f => `
+    <button class="seg" data-file="${f.id}" data-demoted="false"${f.locked ? " data-locked=\"1\" disabled" : ""}
+            style="flex-grow:${f.lines}" aria-pressed="false"
+            title="${f.name} — ${f.lines} lines${f.locked ? " (hub, cannot be demoted)" : ""}">
+      <span class="sl">${f.name}</span><span class="sn">${f.lines}</span>
+    </button>`).join("");
+
+  bar.addEventListener("click", e => {
+    const seg = e.target.closest(".seg");
+    if (!seg || seg.hasAttribute("data-locked")) return;
+    const id = seg.dataset.file;
+    demoted.has(id) ? demoted.delete(id) : demoted.add(id);
+    renderBar();
+    render();
+  });
+
+  function renderBar() {
+    let cut = 0;
+    FILES.forEach(f => {
+      const seg = bar.querySelector(`[data-file="${f.id}"]`);
+      const off = demoted.has(f.id);
+      if (off) cut += f.lines;
+      seg.dataset.demoted = String(off);
+      seg.setAttribute("aria-pressed", String(off));
+      seg.style.flexGrow = String(off ? Math.max(f.lines * 0.28, 26) : f.lines);
+      let tick = seg.querySelector(".tick");
+      if (off && !tick) {
+        tick = document.createElement("span");
+        tick.className = "tick";
+        tick.textContent = "paths:";
+        seg.appendChild(tick);
+      } else if (!off && tick) {
+        tick.remove();
+      }
+    });
+    document.getElementById("load-n").textContent = TOTAL - cut;
+    document.getElementById("load-cut").textContent = cut ? `  −${cut} demoted` : "";
+  }
 
   /* ---------- findings ---------- */
   const CARDS = [
     {
-      id: "session-scoped",
-      tag: "scheduler",
-      title: "The scheduler you already have cannot run daily — it is session-scoped and expires in seven days",
-      what: "<code>/loop</code> and the <code>CronCreate</code> tool are the in-session scheduler. Tasks live in the current conversation, fire only while the REPL is idle between turns, never catch up on fires missed while Claude was busy, and recurring tasks delete themselves seven days after creation. Starting a fresh conversation clears them. The docs name three durable alternatives instead: Cloud Routines, Desktop scheduled tasks, and GitHub Actions — and this repo has no <code>.github/workflows/</code> at all, only issue and PR templates.",
-      why: "\"Run once per day\" written as <code>/loop 1d</code> is a task that silently stops after the seventh fire, and stops sooner every time you close the terminal. You would not find out from an error — you would find out from memory that quietly stopped being pruned.",
-      todo: "Choose the runner before designing the job, because the runner decides what the job can even touch. Name it in the spec as a hard constraint, not a deployment detail.",
-      refs: "ai-docs/anthropic/scheduled-tasks.md:13, 172–189, 212–224 · CronCreate tool schema (session-only, 7-day expiry) · ls .github/ → ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE only"
+      id: "budget",
+      tag: "the target",
+      title: "The whole optimizable surface is 445 lines, and one file is 47% of it",
+      what: "Rules with no <code>paths:</code> frontmatter load at session start like CLAUDE.md: <code>task-tools.md</code> 208, <code>git-workflow.md</code> 113, <code>model-selection.md</code> 62, <code>development-log.md</code> 18, plus <code>AGENTS.md</code> 44 — 445 lines, about 26&nbsp;KB. Nothing else reaches a session unprompted: the 3 path-scoped rules load only on a matching file, and the 85 markdown files and 1.1&nbsp;MB under <code>specs/</code> never load at all. The largest file, <code>task-tools.md</code>, restates the full <code>Task*</code> and <code>Agent</code> tool schemas that the tool descriptions already carry — the duplication your own cached guidance names as the anti-pattern.",
+      why: "\"Agents generate a lot, so memory keeps growing\" is true of the repo but not of the context: <code>specs/</code> is where the volume is, and it costs zero tokens per session. Aim a daily pruner at bulk and it will spend its time on files that were never loaded, while the one file worth half the budget goes untouched because nothing in it is technically wrong.",
+      todo: "Give the pass a number, not an instinct: a target for always-loaded lines, measured before and after, reported every run. Then handle the biggest line item on purpose — decide whether <code>task-tools.md</code> keeps its schema dump — rather than leaving it to a generic staleness sweep.",
+      refs: "wc -l .claude/rules/*.md AGENTS.md → 445 lines / 26,555 bytes · memory-series.md:36 (no paths: = loads at session start) · ai-docs/anthropic/context-engineering-claude-5.md:40–50 · du -sh specs/ → 1.1M, 85 .md, never loaded"
     },
     {
-      id: "cloud-blind",
-      tag: "kb reach",
-      title: "The one scheduler that needs no machine is the one that cannot see your KB",
-      what: "Cloud Routines run on Anthropic infrastructure with no access to local files — the task gets a fresh clone. <code>.gitignore:362</code> carries <code>ai-docs/*</code> with a single negation for <code>sources.yaml</code>, so that clone contains the 41-entry manifest and none of the 38 mirrors, and no <code>index.md</code>. <code>/kb</code> builds its work set from \"entries whose <code>file</code> is missing\", which in a fresh clone is every entry.",
-      why: "A nightly cloud routine that touches the KB would fan out 41 <code>kb-fetcher</code> subagents on every single run, rebuild the whole cache, and then commit nothing, because git ignores everything it just wrote. Full cost, zero durable output, every night.",
-      todo: "Split the job by what each half needs to read. Anything that reasons over mirror content or mirror freshness has to run locally. A cloud routine can still own the tracked half — <code>sources.yaml</code>, <code>.claude/rules/</code>, <code>AGENTS.md</code>, <code>specs/</code> — but say so explicitly rather than letting the runner discover it.",
-      refs: "ai-docs/anthropic/scheduled-tasks.md:19–29 · .gitignore:362 (git check-ignore confirms index.md and every mirror) · kb.md:34 · 38 mirrors on this device, 41 manifest entries"
+      id: "capture-gap",
+      tag: "premise",
+      title: "Nothing has accumulated yet — the recording half has fired roughly once",
+      what: "<code>development-log.md</code> carries a ≈40-line cap and an explicit \"at the cap, distill and delete\" instruction. It currently holds 2 entries, both written on 2026-07-27, both from the same plan (<code>codex-hooks-sync</code>), at 18 lines total. Of 10 plan folders under <code>specs/</code>, 3 have an <code>implementation-notes.md</code>. The memory steps that should be writing these run at the end of <code>harness-build</code> and <code>harness-review</code> on every plan.",
+      why: "The distillation logic you want to automate has never had anything to distil, and five weeks of real work produced two lessons. Build a daily pruner and it inherits an empty problem while the actual leak — plans finishing without recording what they taught — keeps running.",
+      todo: "Point the pass at both halves and let it say which one is failing: report plans that closed with no <code>implementation-notes.md</code> and no dev-log line, alongside anything over a cap. If capture is the real gap, the fix is in the build and review memory steps, not in a new cleanup job.",
+      refs: ".claude/rules/development-log.md (18 lines, 2 entries, cap ≈40) · ls specs/*/implementation-notes.md → 3 of 10 · harness-build.md:39 · harness-review.md:37"
     },
     {
-      id: "cadence-mismatch",
-      tag: "cadence",
-      title: "Daily is faster than any clock the inputs actually keep",
-      what: "<code>/kb</code> refetches at <code>STALE_AFTER = 30</code> days; the mirrors on this device are stamped 2026-07-21 (27 of them), 2026-07-26 (9), and 2026-07-27 (1). Memory files — <code>.claude/rules/</code> plus <code>AGENTS.md</code> — were touched on 14 distinct days across the repo's 37-day life. Meanwhile <code>specs/</code> has reached 10 plan folders, 85 markdown files and 1.1&nbsp;MB in five weeks, and no rule, command, or hook prunes it.",
-      why: "A daily run over a 30-day staleness window is 29 no-op sessions a month, each one still paying a full model session to conclude \"nothing to do\" — and each one still free to hallucinate work to justify itself. The pressure you described, agents generating faster than anyone cleans up, is real, but it is landing in <code>specs/</code>, not in the KB.",
-      todo: "Either re-aim the daily pass at what actually accumulates (spec folders, dev-log entries, always-loaded rule lines) and leave KB freshness on its own 30-day clock, or drop to weekly. State the target and the cadence together, and give the job an explicit no-op exit that costs one cheap turn.",
-      refs: "kb.md:19 (STALE_AFTER 30) · fetched: frontmatter across ai-docs/**/*.md · git log --date=short -- .claude/rules AGENTS.md (14 days of 37) · du -sh specs/ → 1.1M, 85 .md, 10 folders"
+      id: "no-signal",
+      tag: "evidence",
+      title: "\"Unused\" is unmeasurable here — nothing records what actually loads",
+      what: "There is no telemetry on rule loading. Claude Code fires an <code>InstructionsLoaded</code> hook every time a CLAUDE.md or <code>.claude/rules/*.md</code> file loads, carrying the reason — <code>session_start</code>, <code>path_glob_match</code>, <code>nested_traversal</code>, <code>include</code>, <code>compact</code> — and its exit code is ignored, so it can only observe. This repo registers 7 hook families across 8 events; none is on that event.",
+      why: "Without a load record, a daily pass deciding what is \"unused\" is a model re-reading files and forming an opinion — non-reproducible, and silent when it is wrong. This repo has already been down that road the other way: commit <code>0cd8e4c</code> (#65) found three memory files contradicting the docs beside them, and the remedy that shipped was a 221-line deterministic test, not an agent.",
+      todo: "Decide what evidence the pass is allowed to act on before designing it. Either land the observer hook first and let the pass run on real load counts, or restrict it to deterministic invariants — dead pointers, cap overruns, duplicated blocks, off-roster models — and leave judgment calls as a report for you.",
+      refs: "ai-docs/anthropic/memory.md:133–135 (InstructionsLoaded) · .claude/rules/harness-layer/hooks.md § Catalog (7 families, no InstructionsLoaded) · git show 0cd8e4c · tests/harness-layer/test_model_drift.py (221 lines)"
     },
     {
-      id: "guard-collision",
-      tag: "landmine",
-      title: "Your own destructive guard stands between the pruner and every delete",
-      what: "<code>destructive-guard/block_destructive.py</code> inspects every Bash command as text. <code>rm-recursive-force</code> is a <em>deny</em> rule: exit 2, no override. Other rules — <code>chmod-777-recursive</code>, <code>pipe-to-shell</code>, <code>profile-write</code> — sit in an ask tier that emits <code>permissionDecision: \"ask\"</code> and waits for a human. This pass triggered the deny rule live, on a read-only <code>grep</code> whose search <em>pattern</em> merely contained the characters <code>-rf</code>.",
-      why: "Two failures, both silent in an unattended run. A pruner that shells out to delete gets exit 2 and reports failure at 3am to nobody. A pruner that trips the ask tier stalls waiting for an approval that will never come — cloud routines run with no permission prompts at all, so the behavior there is unspecified from where you stand today.",
-      todo: "Make the pruner delete through the file tools and <code>mv &lt;target&gt; ~/.Trash/</code> — the AGENTS.md policy, and <code>~/.Trash</code> exists on this box — never through <code>rm</code>. Then decide deliberately what happens when a guard fires unattended: the job should treat any exit-2 as a stop-and-report, not a step to route around.",
-      refs: "block_destructive.py:77–101 · destructive-guard/_common.py:239 rm-recursive-force (deny), :424 chmod-777-recursive (ask), :478 pipe-to-shell (ask) · AGENTS.md § Tooling (mv to ~/.Trash) · observed live in this session"
+      id: "demote",
+      tag: "the lever",
+      title: "Demotion beats deletion, and the risk is behavioral, not data loss",
+      what: "Every memory file is tracked in git, so a wrong prune is one <code>git checkout</code> away — nothing is unrecoverable. And <code>paths:</code> frontmatter offers a move deletion does not: a rule keeps all its content but stops loading at session start, firing only when a session touches a matching file. <code>memory-series.md</code>, <code>hooks.md</code> and <code>general-practice.md</code> already work this way; <code>git-workflow.md</code> and <code>task-tools.md</code> do not, and load into sessions that never touch git or spawn an agent.",
+      why: "The danger of an automated pruner here is not losing text — it is silently changing what agents obey, mid-flight, with no test that fails. Demote <code>git-workflow.md</code> and every future session ships without the commit format until it opens a git file, which is exactly when it is too late.",
+      todo: "Make demotion the pass's default proposal and deletion the exception, and define \"every session needs this\" concretely — a rule stays unscoped only if an agent must obey it before touching any file. Pair each proposed demotion with the glob that would have caught it.",
+      refs: ".claude/rules/memory-series.md:26–37 · frontmatter check: 3 of 8 rule files carry paths: · git-workflow.md, task-tools.md, model-selection.md, development-log.md unscoped"
     },
     {
-      id: "asymmetric-delete",
-      tag: "reversibility",
-      title: "Deleting a rule is free; deleting anything under ai-docs/ is permanent",
-      what: "<code>.claude/rules/</code>, <code>AGENTS.md</code> and <code>specs/</code> are tracked, so a bad prune is one <code>git checkout</code> away. Everything under <code>ai-docs/</code> except <code>sources.yaml</code> is untracked: the 38 mirrors, the generated <code>index.md</code>, and any hand-written project note — which AGENTS.md explicitly invites you to put there. A mirror is at least refetchable from its manifest URL. A project note is not; it exists on this device only.",
-      why: "One cleanup rule applied uniformly across both surfaces is safe in one half and unrecoverable in the other. And the asymmetry is invisible from inside the job — the files sit in the same tree and read the same way.",
-      todo: "Give the job two deletion tiers keyed on tracked-ness: tracked files may be pruned outright, untracked ones only move to <code>~/.Trash/</code> and only when the manifest can regenerate them. Anything untracked and unregenerable — a project note — is never auto-deleted, only reported.",
-      refs: "git check-ignore -v ai-docs/index.md → .gitignore:362 · 38 untracked mirrors, 1 tracked manifest · AGENTS.md § Knowledge Base (\"plus hand-written project notes\")"
+      id: "scheduler",
+      tag: "runner",
+      title: "The scheduler you already have cannot run daily — it expires in seven days",
+      what: "<code>/loop</code> and the <code>CronCreate</code> tool are session-scoped: tasks live in the current conversation, fire only while the REPL is idle between turns, never catch up on fires missed while Claude was busy, and recurring tasks delete themselves seven days after creation. The durable options are a Cloud Routine, a Desktop scheduled task, or a GitHub Actions schedule — and this repo has no <code>.github/workflows/</code> at all, only issue and PR templates.",
+      why: "\"Once per day\" written as <code>/loop 1d</code> stops silently after the seventh fire, and sooner every time you close the terminal. You would not learn it from an error; you would learn it from memory that quietly stopped being tended. Note the scope change: with the KB out, memory lives entirely in tracked files, so a Cloud Routine's fresh clone is no longer a handicap — it sees everything this pass needs.",
+      todo: "Name the runner in the spec as a hard constraint. Cloud Routine is now the natural fit — durable, no machine required, runs with no permission prompts — with the 1-hour minimum interval well below a daily cadence.",
+      refs: "ai-docs/anthropic/scheduled-tasks.md:13, 19–29, 172–189, 212–224 · CronCreate tool schema (session-only, 7-day expiry) · ls .github/ → ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE only"
     },
     {
-      id: "invocability",
-      tag: "authoring",
-      title: "Your own authoring standard would make this artifact unschedulable",
-      what: "As of v2.1.196 a scheduled fire only runs skills Claude is allowed to invoke on its own; anything marked <code>disable-model-invocation: true</code> arrives as plain text and does nothing. This repo's own skill standard says the opposite for exactly this shape of artifact: <code>meta-skills/SKILL.md:53</code> and <code>references/frontmatter.md:30</code> both instruct that side-effecting artifacts — the ones that write, commit, or send — set that flag so only a human can fire them.",
-      why: "Follow the house rule and the daily task fires into the void; ignore it and you have a self-invocable artifact that edits memory files and can be triggered by any model turn, which is the case the rule exists to prevent.",
-      todo: "Resolve it in the artifact's shape rather than by exception. A schedulable, self-invocable pass that only reads and reports, paired with a human-only artifact that applies the changes, satisfies both. If instead one artifact does both, amend the standard on purpose and say why.",
-      refs: "ai-docs/anthropic/scheduled-tasks.md:45–49 · .claude/skills/meta-skills/SKILL.md:53 · .claude/skills/meta-skills/references/frontmatter.md:30 · references/anti-patterns.md:92"
-    },
-    {
-      id: "git-law",
-      tag: "git workflow",
-      title: "An unattended job that commits collides with the repo's issue-first law",
-      what: "<code>git-workflow.md</code> requires an issue before a branch, a remote branch named <code>&lt;type&gt;/&lt;N&gt;-&lt;slug&gt;</code> pushed with an explicit refspec, and a PR body carrying <code>Closes #N</code> as the only artifact that closes an issue. Nothing in the repo exempts an automated commit. Meanwhile the memory files this job would edit are already written at the end of every build and review, by the memory steps in <code>harness-build</code> and <code>harness-review</code>.",
-      why: "Left unstated, a daily job either commits straight to <code>main</code> against the rule, or opens an issue and a PR every night for a prune that is usually empty — and both compete with the per-change memory step that already runs and already has an issue.",
-      todo: "Decide the daily job's output form before its logic: a report-only pass that writes nothing and hands you a queue is the cheapest thing that respects the existing workflow. If it must write, define its git contract explicitly — one long-lived maintenance issue, batched into a weekly PR, never a push to main.",
-      refs: ".claude/rules/git-workflow.md § Branching, § Pull Request Requirements, § Worktree Rule · harness-build.md:39 · harness-review.md:37 · .claude/rules/memory-series.md"
+      id: "shape",
+      tag: "artifact + git",
+      title: "A schedulable artifact and a side-effecting one are opposites in this repo",
+      what: "As of v2.1.196 a scheduled fire only runs skills Claude may invoke on its own; anything marked <code>disable-model-invocation: true</code> arrives as plain text and does nothing. This repo's own standard says the opposite for this exact shape: <code>meta-skills/SKILL.md:53</code> instructs side-effecting artifacts to set that flag. Downstream, <code>git-workflow.md</code> requires an issue before a branch, a <code>&lt;type&gt;/&lt;N&gt;-&lt;slug&gt;</code> remote branch, and a PR carrying <code>Closes #N</code>, with no exemption for automation.",
+      why: "Follow the house rule and the daily task fires into the void. Ignore it and you have a self-invocable artifact that rewrites memory files and can be triggered by any model turn — the case the rule exists to prevent. And a job that commits nightly either pushes to <code>main</code> against the workflow, or opens an issue and a PR for a prune that is usually empty.",
+      todo: "Split the artifact along the same seam as the permission: a schedulable, self-invocable pass that only reads and reports, plus a human-fired artifact that applies the edits. Report-only writes nothing, so the git law never comes up. If it must write, define the contract explicitly — one long-lived maintenance issue, batched into a weekly PR, never a push to main.",
+      refs: "ai-docs/anthropic/scheduled-tasks.md:45–49 · .claude/skills/meta-skills/SKILL.md:53 · references/frontmatter.md:30 · .claude/rules/git-workflow.md § Branching, § Pull Request Requirements"
     }
   ];
 
   const DECISION = {
     id: "trust",
     tag: "needs discussion",
-    title: "How much is the daily pass allowed to do while you are not watching?",
-    what: "Three positions, and the whole design follows from which one you take. <strong>Report-only</strong>: the pass measures and files a queue, you apply. <strong>Propose-and-stage</strong>: it makes the edits on a branch and stops, you review a diff. <strong>Autonomous</strong>: it edits, commits, and prunes on its own authority.",
-    why: "Every finding above resolves differently per position. Report-only sidesteps the git law, the guard collision, and the reversibility split in one move, and can run in the cloud. Autonomous needs all three solved, needs a local runner, and needs a rollback story the KB's untracked half cannot currently provide.",
-    todo: "Pick one and say it in the prompt. If you are unsure, report-only first is the reversible choice — you can watch a month of its queues and see whether the pruning it proposes was ever right before granting it the pen.",
-    refs: "Depends on: session-scoped · cloud-blind · guard-collision · asymmetric-delete · git-law"
+    title: "How much is the daily pass allowed to change while you are not watching?",
+    what: "Three positions, and the whole design follows from which one you take. <strong>Report-only</strong>: it measures the load budget, flags cap overruns and demotion candidates, files a queue, and you apply. <strong>Propose-and-stage</strong>: it makes the edits on a branch and stops for your diff. <strong>Autonomous</strong>: it edits and commits on its own authority.",
+    why: "Every finding above resolves differently per position. Report-only sidesteps the git law and the invocability conflict in one move, runs fine as a Cloud Routine, and needs no evidence it does not have. Autonomous needs the load telemetry, a behavioral check that can fail, and a git contract — none of which exist yet.",
+    todo: "Pick one and say it in the prompt. If you are unsure, report-only first is the reversible choice: watch a month of its queues and see whether the pruning it proposes was ever right before handing it the pen.",
+    refs: "Depends on: budget · no-signal · demote · scheduler · shape"
   };
 
   /* ---------- state ---------- */
@@ -562,29 +603,29 @@
 
   /* ---------- prompt assembly ---------- */
   const FOLD = {
-    "session-scoped": "Name the runner first and treat it as a hard constraint: /loop and CronCreate are session-scoped and expire after seven days, so they cannot be the daily trigger. Choose between a Cloud Routine, a Desktop scheduled task, and a GitHub Actions schedule — the repo has no .github/workflows/ today, so that third option means standing up CI from nothing.",
-    "cloud-blind": "Split the job by what each half can read. A Cloud Routine gets a fresh clone, and .gitignore:362 hides every ai-docs/ mirror and index.md, so a cloud run sees the 41-entry sources.yaml and zero of the 38 mirrors — and /kb would refetch all 41 every night into files git discards. Anything reasoning over mirror content or freshness must run locally; the cloud half is limited to tracked files (sources.yaml, .claude/rules/, AGENTS.md, specs/).",
-    "cadence-mismatch": "Re-check the cadence against the real clocks before committing to daily: /kb's STALE_AFTER is 30 days and this device's mirrors are 1–7 days old, and memory files changed on only 14 of the repo's 37 days. What actually grows daily is specs/ — 10 plan folders, 85 markdown files, 1.1MB in five weeks, pruned by nothing. Either aim the daily pass at spec folders, dev-log entries and always-loaded rule lines and leave KB freshness on its 30-day clock, or drop to weekly. Give it a cheap explicit no-op exit.",
-    "guard-collision": "Route every deletion through the file tools and `mv <target> ~/.Trash/`, never `rm`: destructive-guard/_common.py:239 denies rm -r+f outright with exit 2, and its ask-tier rules emit permissionDecision:\"ask\", which nothing answers in an unattended run. Specify that any hook exit-2 stops the run and reports, rather than being routed around.",
-    "asymmetric-delete": "Give deletion two tiers keyed on git tracked-ness. Tracked files (.claude/rules/, AGENTS.md, specs/) are recoverable and may be pruned outright. Untracked files under ai-docs/ — 38 mirrors and index.md — only move to ~/.Trash/ and only when sources.yaml can regenerate them. Anything untracked and unregenerable, such as a hand-written project note, is reported and never auto-deleted.",
-    "invocability": "Settle invocability as part of the artifact's shape. A scheduled fire only runs skills Claude may self-invoke, while this repo's own standard (meta-skills/SKILL.md:53) tells side-effecting artifacts to set disable-model-invocation: true. Prefer splitting it: a schedulable read-and-report pass, plus a human-only artifact that applies the changes. If one artifact must do both, amend the standard deliberately and record why.",
-    "git-law": "Define the git contract before the logic. git-workflow.md requires issue-first, a <type>/<N>-<slug> remote branch, and a PR carrying Closes #N — with no exemption for automation, and the memory step in harness-build/harness-review already writes these files per change. Report-only writes nothing and respects all of it; if the job must write, use one long-lived maintenance issue batched into a weekly PR, and never push to main.",
+    "budget": "Give the pass a measured target instead of an instinct. The whole always-loaded surface is 445 lines / ~26KB: task-tools.md 208, git-workflow.md 113, model-selection.md 62, AGENTS.md 44, development-log.md 18. Nothing else reaches a session unprompted — the 3 path-scoped rules load only on a matching file, and the 85 markdown files under specs/ never load. Every run must report the always-loaded line count before and after. Handle the biggest line item deliberately: decide whether task-tools.md keeps restating the Task*/Agent tool schemas that the tool descriptions already carry.",
+    "capture-gap": "Check the premise before building a pruner. development-log.md holds 2 entries, both from one plan on 2026-07-27, against a ≈40-line cap — the distillation instruction has never fired. Only 3 of 10 plan folders have an implementation-notes.md. So the leak is capture, not accumulation. Have the pass report plans that closed without notes or a dev-log line alongside anything over a cap, and say plainly which half is failing.",
+    "no-signal": "Decide what evidence the pass may act on. Nothing currently records which rules load: the InstructionsLoaded hook fires on every rule load with a reason and is observe-only, and none of this repo's 7 hook families uses it. Either land that observer hook first so the pass runs on real load counts, or restrict it to deterministic invariants — dead AGENTS.md pointers, cap overruns, duplicated blocks, off-roster models — and leave judgment calls as a report. Follow the precedent from #65, where memory drift was fixed with a 221-line test rather than an agent.",
+    "demote": "Make demotion the default proposal and deletion the exception. Every memory file is git-tracked, so nothing is unrecoverable — the real risk is silently changing what agents obey with no test that fails. Adding paths: frontmatter keeps a rule's content but stops it loading at session start; 3 of 8 rule files already work that way, while git-workflow.md and task-tools.md load into sessions that never touch git or spawn an agent. Define \"every session needs this\" concretely, and pair each proposed demotion with the glob that would have caught it.",
+    "scheduler": "Name the runner as a hard constraint. /loop and CronCreate are session-scoped, fire only between turns, skip missed fires, and self-delete after seven days, so they cannot be the daily trigger. The durable options are a Cloud Routine, a Desktop scheduled task, or GitHub Actions — and there is no .github/workflows/ in this repo today. With the KB out of scope, all memory lives in tracked files, so a Cloud Routine's fresh clone sees everything the pass needs; its 1-hour minimum is well under a daily cadence.",
+    "shape": "Split the artifact along the permission seam. A scheduled fire only runs skills Claude may self-invoke, while this repo's standard (meta-skills/SKILL.md:53) tells side-effecting artifacts to set disable-model-invocation: true. Build a schedulable read-and-report pass plus a human-fired artifact that applies the edits. Report-only also sidesteps git-workflow.md's issue-first, Closes #N law, which has no exemption for automation; if the pass must write, use one long-lived maintenance issue batched into a weekly PR and never push to main.",
     "trust": "Decide up front how much authority the pass has unattended — report-only, propose-and-stage on a branch, or autonomous — because every constraint above resolves differently per position."
   };
 
   const BASE =
-    "Design a scheduled maintenance pass for this repo that keeps the ai-docs/ knowledge base and the " +
-    "memory files (.claude/rules/, AGENTS.md) in sync with reality and prunes what has gone stale, so " +
-    "that what loads into each session stays small and current instead of accumulating outdated tokens. " +
-    "It should run on a fixed schedule — I asked for once per day; confirm or revise that cadence with " +
-    "the evidence below.";
+    "Design a scheduled maintenance pass for this repo's memory — AGENTS.md and .claude/rules/ — that " +
+    "keeps what loads into each session small, current, and relevant, and prunes what has gone stale. " +
+    "Knowledge-base syncing is out of scope: /kb already owns ai-docs/, so do not design anything that " +
+    "fetches, mirrors, or evicts KB sources. I asked for once per day; confirm or revise that cadence " +
+    "with the evidence below.";
 
   const PRE =
     "Before designing anything, walk through what already exists and report what you find: " +
-    "specs/self-managing-memory-kb/discovery/unknowns.html (pass 1, on the four surfaces that already " +
-    "manage memory here), ai-docs/anthropic/scheduled-tasks.md (the three scheduling options and their " +
-    "limits), .claude/commands/harness-layer/kb.md, .claude/rules/memory-series.md, " +
-    ".claude/rules/git-workflow.md, and .claude/hooks/destructive-guard/_common.py.";
+    "specs/self-managing-memory-kb/discovery/unknowns.html (pass 1, the four surfaces that already " +
+    "manage memory here) and unknowns-daily.html (pass 2, memory only), .claude/rules/memory-series.md, " +
+    ".claude/rules/development-log.md, .claude/rules/git-workflow.md, the memory steps in " +
+    ".claude/commands/harness-layer/harness-build.md and harness-review.md, " +
+    "ai-docs/anthropic/memory.md, and ai-docs/anthropic/scheduled-tasks.md.";
 
   function render() {
     document.querySelectorAll(".card").forEach(card => {
@@ -617,6 +658,14 @@
       });
     }
 
+    if (demoted.size) {
+      const names = FILES.filter(f => demoted.has(f.id)).map(f => f.name);
+      const cut = FILES.filter(f => demoted.has(f.id)).reduce((a, f) => a + f.lines, 0);
+      out.push("", `I want ${names.join(" and ")} demoted behind paths: frontmatter — that takes ` +
+        `session start from ${TOTAL} lines to ${TOTAL - cut}. Propose the globs, and tell me what an ` +
+        `agent would stop seeing before it opens a matching file.`);
+    }
+
     if (discuss.length) {
       out.push("", "Stop and confirm with me before designing past these — do not assume an answer:");
       discuss.forEach(i => {
@@ -627,12 +676,13 @@
     }
 
     out.push("", "Deliver a design, not an implementation: the runner, the cadence, the artifact shape " +
-      "(skill, command, or hook), what it reads, what it is allowed to delete and how, and what it " +
-      "reports. Flag anything you could not verify against the files above.",
+      "(skill, command, or hook), what it reads, what evidence it acts on, what it is allowed to change, " +
+      "and what it reports. Flag anything you could not verify against the files above.",
       "", "Worktree: .claude/worktrees/self-managing-memory-kb");
 
     document.getElementById("prompt").textContent = out.join("\n");
   }
 
+  renderBar();
   render();
 </script>
