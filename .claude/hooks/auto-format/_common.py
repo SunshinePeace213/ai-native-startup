@@ -58,16 +58,6 @@ def read_payload() -> dict | None:
     return payload if isinstance(payload, dict) else None
 
 
-def read_file_path() -> str | None:
-    """``tool_input.file_path`` from the stdin payload; None unless a non-empty string."""
-    payload = read_payload()
-    if payload is None:
-        return None
-    tool_input = payload.get("tool_input")
-    file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
-    return file_path if isinstance(file_path, str) and file_path.strip() else None
-
-
 MAX_ENVELOPE_BYTES = 64 * 1024  # scan only the first 64 KB of an apply_patch envelope
 
 # A directive counts only at directive position -- column 0. Diff body lines
@@ -190,22 +180,29 @@ def format_diagnostics(lines: list[str], cap: int = DIAGNOSTIC_CAP) -> str:
     return "\n".join(shown)
 
 
-def target(exts: set[str]) -> tuple[Path, Path] | None:
-    """Shared format-hook guards: ``(file, project root)``, or None to exit 0.
+def target(exts: set[str]) -> list[tuple[Path, Path]]:
+    """Shared format-hook guards applied to every edited path: a list of
+    ``(file, project root)`` pairs, empty when there is nothing to format.
 
-    None for: no/invalid stdin payload, non-matching extension, vendored
-    path, or a file deleted before the hook ran (only that case notes).
+    Reads the stdin payload and expands it with ``edited_paths()`` -- one
+    path for a Write/Edit, several for an ``apply_patch`` envelope -- then
+    applies the same per-path guards to each: extension match, vendored
+    skip, and dropping a file deleted before the hook ran (only that case
+    notes). A rename's old path drops here once the guard sees it is gone.
     """
-    file_path = read_file_path()
-    if not file_path:
-        return None
-    path = Path(file_path)
-    if path.suffix.lower() not in exts:
-        return None
+    paths = edited_paths(read_payload())
+    if not paths:
+        return []
     root = resolve_root()
-    if is_vendored(path, root):
-        return None
-    if not path.is_file():
-        note(f"{path} no longer exists; skipping")
-        return None
-    return path, root
+    pairs = []
+    for file_path in paths:
+        path = Path(file_path)
+        if path.suffix.lower() not in exts:
+            continue
+        if is_vendored(path, root):
+            continue
+        if not path.is_file():
+            note(f"{path} no longer exists; skipping")
+            continue
+        pairs.append((path, root))
+    return pairs

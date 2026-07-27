@@ -2,6 +2,12 @@
 # The implementation-review orchestrator spawns the 6 read-only review subagents
 # defined in .codex/agents/*.toml.
 
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[features]
+hooks = true
+
 [agents]
 # These are the Codex defaults, pinned here explicitly because they already fit
 # this design exactly: 6 review subagents, no nested spawning.

@@ -1,5 +1,6 @@
 """Auto-format feature fixtures: the linter_root sandbox and project_env overlay."""
 
+import json
 import shutil
 from pathlib import Path
 
@@ -12,6 +13,22 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 def project_env():
     """Env overlay pointing a format hook at a given project root."""
     return lambda root: {"CLAUDE_PROJECT_DIR": str(root)}
+
+
+@pytest.fixture
+def apply_patch_payload():
+    """The apply_patch payload shape Codex sends: one envelope, N directives.
+
+    Directives reference files already written to disk -- by the time
+    PostToolUse fires, apply_patch has already applied the edit -- so
+    fixtures write the files themselves rather than encoding diff bodies.
+    """
+
+    def _payload(*directives: str) -> str:
+        envelope = "\n".join(("*** Begin Patch", *directives, "*** End Patch")) + "\n"
+        return json.dumps({"tool_name": "apply_patch", "tool_input": {"command": envelope}})
+
+    return _payload
 
 
 @pytest.fixture

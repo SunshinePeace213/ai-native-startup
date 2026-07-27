@@ -20,6 +20,7 @@ test touches disk or shared state, each command is its own subprocess.
 """
 
 import json
+import re
 
 import pytest
 
@@ -805,3 +806,149 @@ def test_mv_devnull_tail_redos_regression_in_process(common):
     assert isinstance(deny_matches, list)
     assert isinstance(ask_matches, list)
     assert all(rule.rule_id != "mv-protected-root" for rule in deny_matches)
+
+
+# --- Codex host: the ask tier denies instead of asking (AC6-AC9) --------------
+#
+# ASK_CASES already names one firing command per ask rule_id (plus extra
+# alternations); every distinct rule_id in it is exercised on both host
+# branches so a rule that regresses under Codex can never ship silently next
+# to a Claude-side fixture that still passes.
+
+_ASK_RULE_CASES = list({case[1]: case for case in ASK_CASES}.values())
+
+
+@pytest.fixture
+def guard_codex(run_hook):
+    """Run block_destructive.py with HARNESS_HOOK_HOST=codex set."""
+
+    def _run(command: str):
+        return run_hook(
+            "destructive-guard/block_destructive.py",
+            bash_payload(command),
+            env_overrides={"HARNESS_HOOK_HOST": "codex"},
+        )
+
+    return _run
+
+
+def assert_denied_codex(res, category: str, rule_id: str) -> None:
+    assert res.returncode == 2
+    assert f"BLOCKED ({category}/{rule_id})" in res.stderr
+    assert "Why:" in res.stderr
+    assert "Fix:" in res.stderr
+    assert res.stdout == ""  # exit 2 never carries stdout JSON, under either host
+
+
+@pytest.mark.parametrize(
+    "rule_id,category,command",
+    [case[1:] for case in _ASK_RULE_CASES],
+    ids=[case[0] for case in _ASK_RULE_CASES],
+)
+def test_ask_tier_denies_under_codex(guard_codex, rule_id, category, command):
+    """Codex parses `permissionDecision: "ask"` but does not support it -- it
+    reports a hook failure and RUNS THE COMMAND ANYWAY (decisions.md Finding
+    5), so under HARNESS_HOOK_HOST=codex every ask-tier rule must instead
+    cancel outright with the same BLOCKED/Why/Fix shape the deny tier uses, or
+    the nine "sometimes intended" destructive families execute unchecked on
+    every Codex-run agent turn."""
+    assert_denied_codex(guard_codex(command), category, rule_id)
+
+
+@pytest.mark.parametrize(
+    "rule_id,category,command",
+    [case[1:] for case in _ASK_RULE_CASES],
+    ids=[case[0] for case in _ASK_RULE_CASES],
+)
+def test_ask_tier_still_asks_under_claude_default(guard, rule_id, category, command):
+    """With HARNESS_HOOK_HOST unset (the Claude default), every ask-tier rule
+    must still route to the human via the existing `permissionDecision: "ask"`
+    JSON -- pinning this here (not just relying on test_ask_matrix, which never
+    sets the env var) proves the Codex branch in block_destructive.py is an
+    ADDITION, not a behavior change, for the host every existing Claude session
+    actually runs under."""
+    assert_asked(guard(command), category)
+
+
+@pytest.mark.parametrize(
+    "host",
+    ["", "claude", "not-codex"],
+    ids=["unset", "claude", "unrecognized-value"],
+)
+def test_ask_tier_json_path_untouched_on_non_codex_hosts(run_hook, host):
+    """AC7: only a value hook_host() resolves to "codex" flips the ask tier to
+    deny -- an empty/unset var, the literal "claude", or any other
+    unrecognized value must fall through to the untouched
+    permissionDecision: "ask" JSON path, so a typo'd or missing env var can
+    never silently deny a command a human was supposed to approve."""
+    env = {} if host == "" else {"HARNESS_HOOK_HOST": host}
+    res = run_hook(
+        "destructive-guard/block_destructive.py",
+        bash_payload("git push --force"),
+        env_overrides=env,
+        unset_env=("HARNESS_HOOK_HOST",) if host == "" else (),
+    )
+    assert_asked(res, "Git Security")
+
+
+def test_deny_tier_identical_on_both_hosts(guard, guard_codex):
+    """AC8: the host flag changes nothing for deny-tier rules -- the exact same
+    BLOCKED/Why/Fix text must appear whether HARNESS_HOOK_HOST is unset or
+    "codex", proving the Codex branch added in block_destructive.py touches
+    only the ask-tier decision and never the deny path."""
+    claude_res = guard("rm -rf /tmp/x")
+    codex_res = guard_codex("rm -rf /tmp/x")
+    assert claude_res.returncode == codex_res.returncode == 2
+    assert claude_res.stderr == codex_res.stderr
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [case[1] for case in FAIL_OPEN_CASES],
+    ids=[case[0] for case in FAIL_OPEN_CASES],
+)
+def test_fail_open_matrix_under_codex(run_hook, payload):
+    """AC14: the fail-open contract holds under Codex too -- empty stdin,
+    malformed JSON, a non-dict payload, and a missing tool_input must all still
+    exit 0 with no stdout when HARNESS_HOOK_HOST=codex, so the new host branch
+    cannot turn a plumbing hiccup into a spurious deny."""
+    res = run_hook(
+        "destructive-guard/block_destructive.py",
+        payload,
+        env_overrides={"HARNESS_HOOK_HOST": "codex"},
+    )
+    assert res.returncode == 0
+    assert res.stdout == ""
+
+
+def test_ask_tier_codex_fix_hint_matches_deny_shape_in_process(common):
+    """A sample rule's rendered Codex BLOCKED block must carry its
+    codex_fix_hint text (not its Claude-side fix_hint) on the Fix: line --
+    this pins the field the entrypoint actually reads, independent of the
+    subprocess round-trip the tests above exercise."""
+    rule = next(r for r in common.RULES if r.rule_id == "git-force-push")
+    assert rule.codex_fix_hint
+    assert rule.codex_fix_hint != rule.fix_hint
+
+
+def test_every_ask_rule_has_a_codex_fix_hint(common):
+    """Every ask-tier rule must define codex_fix_hint -- a rule missing one
+    would crash the Codex deny path (an AttributeError/None Fix: line) the
+    first time that exact rule fires under Codex, which fail-open cannot save
+    it from since evaluate() already ran successfully."""
+    for rule in common.RULES:
+        if rule.severity == "ask":
+            assert rule.codex_fix_hint
+
+
+def test_ask_rule_codex_fix_hints_are_host_neutral(common):
+    """AC9: an ask rule's Codex fix line must never mention the `!` prefix or
+    tell the reader to "approve" anything -- under Codex the exit-2 stderr is
+    read by the MODEL, not a human with a shell, so either phrase would emit
+    an instruction nothing in that session can act on (decisions.md Finding 4)."""
+    pattern = re.compile(r"!\s*prefix|approve", re.IGNORECASE)
+    for rule in common.RULES:
+        if rule.severity == "ask":
+            assert not pattern.search(rule.codex_fix_hint), (
+                f"{rule.rule_id}: codex_fix_hint is not host-neutral: {rule.codex_fix_hint!r}"
+            )

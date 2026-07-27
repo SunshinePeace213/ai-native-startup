@@ -9,10 +9,64 @@ a capped diagnostic list; a root with no Python toolchain at all is
 infrastructure and must fail open, never masquerade as lint errors.
 """
 
+import json
 import os
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
+
+
+def test_two_file_apply_patch_envelope_formats_both(
+    tmp_path, run_hook, apply_patch_payload, project_env
+):
+    """AC11: a two-file apply_patch payload where both files match this
+    hook's extension must format both, not just the first."""
+    a, b = tmp_path / "a.py", tmp_path / "b.py"
+    a.write_text("import os\nx = 'a'\n")
+    b.write_text("import sys\ny = 'b'\n")
+    payload = apply_patch_payload(f"*** Add File: {a}", f"*** Add File: {b}")
+    proc = run_hook("auto-format/python.py", payload, env_overrides=project_env(REPO_ROOT))
+    assert proc.returncode == 0
+    assert "import os" not in a.read_text()
+    assert "import sys" not in b.read_text()
+
+
+def test_failure_on_one_path_does_not_skip_the_rest(
+    tmp_path, run_hook, apply_patch_payload, project_env
+):
+    """AC11: an unfixable violation in one envelope file must not stop a
+    sibling file in the same envelope from being formatted -- the whole
+    point of looping over every edited path instead of just the first."""
+    bad, good = tmp_path / "bad.py", tmp_path / "good.py"
+    bad.write_text("print(undefined_name)\n")
+    good.write_text("import os\nx = 'a'\n")
+    payload = apply_patch_payload(f"*** Add File: {bad}", f"*** Add File: {good}")
+    proc = run_hook("auto-format/python.py", payload, env_overrides=project_env(REPO_ROOT))
+    assert proc.returncode == 2
+    assert "F821" in proc.stderr
+    assert "import os" not in good.read_text()  # good.py still formatted despite bad.py's failure
+
+
+def test_rename_formats_the_new_path_not_the_old(
+    tmp_path, run_hook, apply_patch_payload, project_env
+):
+    """A rename's old path no longer exists on disk once apply_patch has
+    run, so the deleted-file guard drops it and the new path -- the one
+    that exists -- is the one formatted, with no rename-specific code."""
+    old, new = tmp_path / "old.py", tmp_path / "new.py"
+    new.write_text("import os\nx = 'a'\n")  # only the new path exists post-rename
+    payload = apply_patch_payload(f"*** Update File: {old}", f"*** Move to: {new}")
+    proc = run_hook("auto-format/python.py", payload, env_overrides=project_env(REPO_ROOT))
+    assert proc.returncode == 0
+    assert "import os" not in new.read_text()
+
+
+def test_malformed_apply_patch_envelope_fails_open(tmp_path, run_hook, project_env):
+    """AC14: an unparseable apply_patch envelope must format nothing and
+    exit 0 on the Codex host, mirroring the Claude-side fail-open contract."""
+    payload = json.dumps({"tool_name": "apply_patch", "tool_input": {"command": "not a patch"}})
+    proc = run_hook("auto-format/python.py", payload, env_overrides=project_env(REPO_ROOT))
+    assert proc.returncode == 0
 
 
 def test_fixable_file_is_formatted_and_autofixed(tmp_path, run_hook, edit_payload, project_env):

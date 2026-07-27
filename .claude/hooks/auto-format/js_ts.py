@@ -49,38 +49,50 @@ def diagnostics(stdout: str) -> list[str]:
         return [line for line in stdout.splitlines() if line.strip()]
 
 
+def format_one(path: Path, root: Path, eslint: Path, prettier: Path) -> list[str]:
+    """ESLint --fix then Prettier --write on one path; its diagnostic lines, if any."""
+    cmd, cwd = eslint_cmd(eslint, path, root)
+    res = _common.run(cmd, cwd=cwd)
+    if res is None or res[0] < 0:
+        _common.note(f"could not run eslint: {res[2].strip() if res else 'binary vanished'}")
+        return []
+    code, out, err = res
+    if code == 1:  # eslint: 1 = lint errors remain after --fix
+        lines = diagnostics(out)
+        if lines:
+            return lines
+        _common.note(f"eslint exited 1 without diagnostics: {_common.tail(err)}")
+        return []
+    if code != 0:  # 2 = config or other fatal problem: infrastructure
+        _common.note(f"eslint exited {code}: {_common.tail(err or out)}")
+        return []
+
+    res = _common.run([str(prettier), "--write", str(path)], cwd=root)
+    if res is None or res[0] != 0:
+        detail = _common.tail(res[2] or res[1]) if res else "binary vanished"
+        _common.note(f"prettier failed after eslint passed: {detail}")
+    return []
+
+
 def main() -> int:
-    tgt = _common.target(EXTS)
-    if tgt is None:
+    pairs = _common.target(EXTS)
+    if not pairs:
         return 0
-    path, root = tgt
+    root = pairs[0][1]
     eslint = root / "node_modules" / ".bin" / "eslint"
     prettier = root / "node_modules" / ".bin" / "prettier"
     if not eslint.is_file() or not prettier.is_file():
         _common.note("eslint/prettier not installed; skipping (run the meta-install skill)")
         return 0
 
-    cmd, cwd = eslint_cmd(eslint, path, root)
-    res = _common.run(cmd, cwd=cwd)
-    if res is None or res[0] < 0:
-        _common.note(f"could not run eslint: {res[2].strip() if res else 'binary vanished'}")
-        return 0
-    code, out, err = res
-    if code == 1:  # eslint: 1 = lint errors remain after --fix
-        lines = diagnostics(out)
-        if lines:
-            print(_common.format_diagnostics(lines), file=sys.stderr)
-            return 2
-        _common.note(f"eslint exited 1 without diagnostics: {_common.tail(err)}")
-        return 0
-    if code != 0:  # 2 = config or other fatal problem: infrastructure
-        _common.note(f"eslint exited {code}: {_common.tail(err or out)}")
-        return 0
-
-    res = _common.run([str(prettier), "--write", str(path)], cwd=root)
-    if res is None or res[0] != 0:
-        detail = _common.tail(res[2] or res[1]) if res else "binary vanished"
-        _common.note(f"prettier failed after eslint passed: {detail}")
+    # A failure on one path must not skip the rest: diagnostics from every
+    # path aggregate into one capped report and one exit code.
+    all_lines: list[str] = []
+    for path, path_root in pairs:
+        all_lines.extend(format_one(path, path_root, eslint, prettier))
+    if all_lines:
+        print(_common.format_diagnostics(all_lines), file=sys.stderr)
+        return 2
     return 0
 
 

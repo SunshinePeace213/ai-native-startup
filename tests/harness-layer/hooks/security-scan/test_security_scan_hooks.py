@@ -69,6 +69,21 @@ def write_payload(session_id: str, file_path: Path | str) -> str:
     )
 
 
+def envelope(*lines: str) -> str:
+    """An apply_patch envelope as Codex sends it: one string, directives at column 0."""
+    return "\n".join(("*** Begin Patch", *lines, "*** End Patch")) + "\n"
+
+
+def patch_payload(session_id: str, command: object) -> str:
+    return json.dumps(
+        {
+            "session_id": session_id,
+            "tool_name": "apply_patch",
+            "tool_input": {"command": command},
+        }
+    )
+
+
 def bash_payload(session_id: str, command: str = "true") -> str:
     return json.dumps(
         {"session_id": session_id, "tool_name": "Bash", "tool_input": {"command": command}}
@@ -204,6 +219,64 @@ def test_post_write_tracks_before_scan_survives_formatter_race(project, run_scan
     res = run_scan("stop_sweep.py", stop_payload("race1"), project)
     assert res.returncode == 2
     assert f"{target}:1 aws-access-key" in res.stderr
+
+
+# --- apply_patch (Codex) write surface (AC12, AC14) ----------------------------
+
+
+def test_post_write_apply_patch_scans_and_tracks_every_path(project, run_scan):
+    """One Codex apply_patch call writes several files, and the secret can sit in
+    any of them. A gate keyed on the first path would let a credential written
+    beside a clean file land unblocked, and would leave it out of the tracked set
+    the Stop sweep re-scans -- the exact hole `edited_paths` exists to close."""
+    clean = project / "clean.py"
+    clean.write_text("value = 1\n")
+    dirty = project / "creds.py"
+    dirty.write_text(secret_line())
+    stdin_text = patch_payload(
+        "p1",
+        envelope(f"*** Add File: {clean}", "+value = 1", f"*** Add File: {dirty}"),
+    )
+    res = run_scan("post_write_scan.py", stdin_text, project)
+    assert res.returncode == 2
+    assert f"{dirty}:1 aws-access-key" in res.stderr
+    assert res.stdout == ""  # exit 2 never carries stdout JSON
+    tracked = read_state(project, "p1")["tracked"]
+    assert str(clean) in tracked
+    assert str(dirty) in tracked
+
+
+def test_post_write_apply_patch_rename_scans_past_the_vanished_old_path(project, run_scan):
+    """A rename emits `Update File: <old>` (already gone by the time the hook
+    runs) before `Move to: <new>`. If an unreadable path aborted the loop,
+    renaming a file would become the way to slip its secret past the gate."""
+    old = project / "notes.py"  # never exists: the move already happened
+    new = project / "moved.py"
+    new.write_text(secret_line())
+    stdin_text = patch_payload("p2", envelope(f"*** Update File: {old}", f"*** Move to: {new}"))
+    res = run_scan("post_write_scan.py", stdin_text, project)
+    assert res.returncode == 2
+    assert f"{new}:1 aws-access-key" in res.stderr
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["no-directives", "empty-command", "non-string-command", "missing-tool-input", "non-dict"],
+)
+def test_post_write_apply_patch_fail_open(project, run_scan, case):
+    """A Codex payload the parser cannot read must exit 0, not 1 or 2: a
+    grammar change in a future Codex release would otherwise wedge every edit
+    in the session instead of quietly degrading to no scan."""
+    stdin_text = {
+        "no-directives": patch_payload("f1", "not a patch envelope at all\n"),
+        "empty-command": patch_payload("f2", "   "),
+        "non-string-command": patch_payload("f3", 42),
+        "missing-tool-input": json.dumps({"session_id": "f4", "tool_name": "apply_patch"}),
+        "non-dict": '"just a string"',
+    }[case]
+    res = run_scan("post_write_scan.py", stdin_text, project)
+    assert res.returncode == 0
+    assert res.stdout == ""
 
 
 # --- Session tracking: baseline exclusion + round-2 cases (AC4) ----------------

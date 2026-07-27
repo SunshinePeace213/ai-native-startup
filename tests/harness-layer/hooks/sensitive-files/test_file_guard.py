@@ -34,6 +34,15 @@ def file_payload(tool_name: str, file_path) -> str:
     return json.dumps({"tool_name": tool_name, "tool_input": {"file_path": str(file_path)}})
 
 
+def envelope(*lines: str) -> str:
+    """An apply_patch envelope as Codex sends it: one string, directives at column 0."""
+    return "\n".join(("*** Begin Patch", *lines, "*** End Patch")) + "\n"
+
+
+def patch_payload(command) -> str:
+    return json.dumps({"tool_name": "apply_patch", "tool_input": {"command": command}})
+
+
 def grep_payload(*, path=None, glob=None) -> str:
     tool_input = {}
     if path is not None:
@@ -179,6 +188,83 @@ def test_allowlist_template_passes(run_hook, name):
 def test_ordinary_file_passes(run_hook):
     """Over-blocking ordinary project files would make the guard unusable."""
     res = run_hook(SCRIPT, file_payload("Read", "/proj/src/app.py"))
+    assert_allowed(res)
+
+
+# --- apply_patch (Codex) write surface (AC13, AC14) -----------------------------
+
+
+def test_apply_patch_denies_rename_onto_a_cataloged_path(run_hook):
+    """THE security case behind parsing `*** Move to:` (decisions.md Finding 3).
+    A rename emits `Update File: <old>` + `Move to: <new>`, and only the TARGET
+    is the file that ends up written. A guard checking the source alone would let
+    an agent overwrite the user's real `.env` by renaming an innocuous scratch
+    file onto it -- a deny on the source path never fires, because the source is
+    innocuous by construction."""
+    res = run_hook(
+        SCRIPT,
+        patch_payload(envelope("*** Update File: /proj/notes.md", "*** Move to: /proj/.env")),
+    )
+    assert_denied(res, "/proj/.env", "Environment files")
+
+
+@pytest.mark.parametrize(
+    "directive,path,label",
+    [
+        ("*** Add File:", "/proj/.npmrc", "Package-manager credentials"),
+        ("*** Update File:", "/home/u/.ssh/id_rsa", "SSH & auth keys"),
+        ("*** Delete File:", "/proj/secrets.yml", "Framework & app secrets"),
+    ],
+)
+def test_apply_patch_denies_every_directive_form(run_hook, directive, path, label):
+    """Codex writes through one tool with four directives; a guard covering only
+    some of them leaves the rest as an open write/tamper path to the same
+    cataloged file that Write and Edit are already denied."""
+    res = run_hook(SCRIPT, patch_payload(envelope(f"{directive} {path}")))
+    assert_denied(res, path, label)
+
+
+def test_apply_patch_denies_a_cataloged_path_beside_clean_ones(run_hook):
+    """One envelope can touch several files, so checking only the first path
+    would let a secret-bearing target ride along behind a clean one."""
+    res = run_hook(
+        SCRIPT,
+        patch_payload(
+            envelope(
+                "*** Add File: /proj/src/app.py",
+                "+value = 1",
+                "*** Add File: /proj/deploy/id_ed25519",
+            )
+        ),
+    )
+    assert_denied(res, "/proj/deploy/id_ed25519", "SSH & auth keys")
+
+
+def test_apply_patch_ordinary_paths_pass(run_hook):
+    """Over-blocking the whole Codex write surface would make the guard
+    unusable -- an envelope touching only ordinary files must run."""
+    res = run_hook(
+        SCRIPT,
+        patch_payload(envelope("*** Add File: /proj/src/app.py", "*** Delete File: /proj/old.py")),
+    )
+    assert_allowed(res)
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["no-directives", "empty-command", "non-string-command", "missing-tool-input"],
+)
+def test_apply_patch_unparseable_envelope_fails_open(run_hook, case):
+    """An envelope the parser cannot read denies nothing: if a future Codex
+    grammar change made every envelope unparseable, a fail-CLOSED guard would
+    wedge every edit in the session instead of quietly degrading."""
+    stdin_text = {
+        "no-directives": patch_payload("not a patch envelope at all\n"),
+        "empty-command": patch_payload("   "),
+        "non-string-command": patch_payload(42),
+        "missing-tool-input": json.dumps({"tool_name": "apply_patch"}),
+    }[case]
+    res = run_hook(SCRIPT, stdin_text)
     assert_allowed(res)
 
 

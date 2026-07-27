@@ -92,7 +92,12 @@ class Rule:
     ``severity`` is "deny" (cancel + exit 2) or "ask" (route to the human).
     ``message`` names what tripped (shown in both the BLOCKED header and the
     ask reason); ``why`` is the one-line danger explanation on the Why: line;
-    ``fix_hint`` is the safe alternative on the Fix: line.
+    ``fix_hint`` is the safe alternative on the Fix: line. ``codex_fix_hint``
+    is set only on ask-tier rules: under Codex (``hook_host() == "codex"``)
+    the ask tier denies instead of asking, and the stderr Fix: line is read by
+    the model, which cannot approve anything -- it must not mention the ``!``
+    prefix or say "approve"; "Ask the user to run this themselves." is the
+    house wording.
     """
 
     rule_id: str
@@ -102,6 +107,7 @@ class Rule:
     message: str
     why: str
     fix_hint: str
+    codex_fix_hint: str | None = None
 
 
 # --- Protected roots & critical files (constants) ------------------------------
@@ -424,6 +430,11 @@ RULES: list[Rule] = [
         "security mistake rather than the intent.",
         "Use the least-privilege mode the task needs (e.g. 755 for dirs, 644 "
         "for files); approve only if world-writable is truly intended.",
+        codex_fix_hint=(
+            "Use the least-privilege mode the task needs (e.g. 755 for dirs, "
+            "644 for files). Ask the user to run this themselves if "
+            "world-writable is truly needed."
+        ),
     ),
     # --- System File Overwriting ---
     Rule(
@@ -478,6 +489,10 @@ RULES: list[Rule] = [
         "executing remote content unread runs whatever the server sends -- a "
         "compromised or wrong URL runs arbitrary code with your privileges.",
         "Download to a file, read it, then run it; approve only if you trust the source.",
+        codex_fix_hint=(
+            "Download to a file and read it before running. Ask the user to "
+            "run this themselves if the piped install is truly needed."
+        ),
     ),
     Rule(
         "obfuscated-exec",
@@ -509,6 +524,10 @@ RULES: list[Rule] = [
         "profile writes persist across every future shell, so a bad line can "
         "sabotage or hijack later sessions.",
         "Set what you need for this call inline; approve only if a persistent change is intended.",
+        codex_fix_hint=(
+            "Set what you need for this call inline instead. Ask the user to "
+            "run this themselves if a persistent profile change is truly needed."
+        ),
     ),
     Rule(
         "ld-preload",
@@ -519,6 +538,10 @@ RULES: list[Rule] = [
         "LD_PRELOAD forces a .so into the process, letting it override libc "
         "functions -- a classic code-injection / rootkit vector.",
         "Run the command without LD_PRELOAD; approve only if the preload is deliberate.",
+        codex_fix_hint=(
+            "Run the command without LD_PRELOAD. Ask the user to run this "
+            "themselves if the preload is truly needed."
+        ),
     ),
     # --- Cron & Scheduled Tasks ---
     Rule(
@@ -666,6 +689,10 @@ RULES: list[Rule] = [
         "a force push overwrites remote history and can discard teammates' "
         "commits that aren't in your local branch.",
         "Prefer a normal push; approve only if rewriting the remote branch is intended.",
+        codex_fix_hint=(
+            "Push normally instead. Ask the user to run this themselves if "
+            "rewriting the remote branch is truly needed."
+        ),
     ),
     Rule(
         "git-hard-reset",
@@ -676,6 +703,10 @@ RULES: list[Rule] = [
         "--hard throws away all uncommitted changes in the working tree and "
         "index with no recovery.",
         "Stash or commit first; approve only if discarding local changes is intended.",
+        codex_fix_hint=(
+            "Stash or commit first. Ask the user to run this themselves if "
+            "discarding local changes is truly needed."
+        ),
     ),
     Rule(
         "git-clean-force",
@@ -694,6 +725,10 @@ RULES: list[Rule] = [
         "git clean -f permanently removes untracked files; with -x it also "
         "removes ignored files like build output and local config.",
         "Preview with `git clean -n` first; approve only if the deletion is intended.",
+        codex_fix_hint=(
+            "Preview with `git clean -n` first. Ask the user to run this "
+            "themselves if the deletion is truly needed."
+        ),
     ),
     Rule(
         "git-history-rewrite",
@@ -704,6 +739,9 @@ RULES: list[Rule] = [
         "rewriting history changes every commit id and can corrupt or diverge "
         "the repo for everyone who has pulled it.",
         "approve only if a full history rewrite is intended.",
+        codex_fix_hint=(
+            "Ask the user to run this themselves if a full history rewrite is truly needed."
+        ),
     ),
     Rule(
         "git-remote-delete",
@@ -715,6 +753,9 @@ RULES: list[Rule] = [
         "git push deleting a remote branch",
         "pushing a delete (--delete or :branch) removes the branch on the remote for everyone.",
         "approve only if deleting the remote branch is intended.",
+        codex_fix_hint=(
+            "Ask the user to run this themselves if deleting the remote branch is truly needed."
+        ),
     ),
     # --- User & Account Manipulation ---
     Rule(

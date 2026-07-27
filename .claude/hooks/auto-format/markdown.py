@@ -14,6 +14,7 @@ markdownlint exit notes to stderr and exits 0 (fail-open).
 
 import re
 import sys
+from pathlib import Path
 
 import _common
 
@@ -21,31 +22,43 @@ EXTS = {".md", ".markdown"}
 FINDING = re.compile(r"^.+:\d+")  # e.g. "docs/x.md:3 error MD001/heading-increment ..."
 
 
+def format_one(path: Path, root: Path, mdl: Path) -> list[str]:
+    """markdownlint-cli2 --fix on one path; its diagnostic lines, if any."""
+    res = _common.run([str(mdl), "--fix", str(path)], cwd=root)
+    if res is None or res[0] < 0:
+        _common.note(f"could not run markdownlint: {res[2].strip() if res else 'binary vanished'}")
+        return []
+    code, out, err = res
+    if code == 0:
+        return []
+    if code == 1:  # markdownlint-cli2: 1 = findings remain after --fix
+        lines = [line for line in err.splitlines() if FINDING.match(line)]
+        if lines:
+            return lines
+        _common.note(f"markdownlint exited 1 without findings: {_common.tail(err or out)}")
+        return []
+    _common.note(f"markdownlint-cli2 exited {code}: {_common.tail(err or out)}")
+    return []
+
+
 def main() -> int:
-    tgt = _common.target(EXTS)
-    if tgt is None:
+    pairs = _common.target(EXTS)
+    if not pairs:
         return 0
-    path, root = tgt
+    root = pairs[0][1]
     mdl = root / "node_modules" / ".bin" / "markdownlint-cli2"
     if not mdl.is_file():
         _common.note("markdownlint-cli2 not installed; skipping (run the meta-install skill)")
         return 0
 
-    res = _common.run([str(mdl), "--fix", str(path)], cwd=root)
-    if res is None or res[0] < 0:
-        _common.note(f"could not run markdownlint: {res[2].strip() if res else 'binary vanished'}")
-        return 0
-    code, out, err = res
-    if code == 0:
-        return 0
-    if code == 1:  # markdownlint-cli2: 1 = findings remain after --fix
-        lines = [line for line in err.splitlines() if FINDING.match(line)]
-        if lines:
-            print(_common.format_diagnostics(lines), file=sys.stderr)
-            return 2
-        _common.note(f"markdownlint exited 1 without findings: {_common.tail(err or out)}")
-        return 0
-    _common.note(f"markdownlint-cli2 exited {code}: {_common.tail(err or out)}")
+    # A failure on one path must not skip the rest: diagnostics from every
+    # path aggregate into one capped report and one exit code.
+    all_lines: list[str] = []
+    for path, path_root in pairs:
+        all_lines.extend(format_one(path, path_root, mdl))
+    if all_lines:
+        print(_common.format_diagnostics(all_lines), file=sys.stderr)
+        return 2
     return 0
 
 
