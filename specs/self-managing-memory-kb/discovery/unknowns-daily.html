@@ -1,0 +1,638 @@
+<title>Unknowns · the daily run</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --resolve: #4A6B4A;
+    --accept: #8A6D3B;
+    --discuss: #B8602A;
+    --rule: rgba(44, 40, 37, 0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-bottom: 5rem;
+  }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  code {
+    font-size: 0.85em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.05em 0.32em;
+  }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: clamp(1.7rem, 4.4vw, 3rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+    margin: 0.9rem 0 0;
+  }
+  h1 .dim { color: var(--muted); font-weight: 400; }
+  .standfirst { max-width: 62ch; margin-top: 1.1rem; color: #4A443E; }
+
+  /* ---------- signature: the cadence ruler ---------- */
+  .ruler-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 2.6rem 1.5rem 2.2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .ruler-title {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2.2rem;
+  }
+  .ruler {
+    position: relative;
+    height: 1px;
+    background: var(--border);
+    margin: 0 0 0.5rem;
+  }
+  .tick { position: absolute; top: 0; transform: translateX(-50%); }
+  .tick .stem { width: 1px; height: 11px; background: var(--border); margin: 0 auto; }
+  .tick .lab {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    margin-top: 0.4rem;
+    text-align: center;
+  }
+  .tick .val { display: block; color: var(--text); }
+  .tick.now .stem { height: 30px; width: 2px; background: var(--accent); margin-top: -30px; }
+  .tick.now .lab { color: var(--accent); }
+  .tick.now .val { color: var(--accent); font-weight: 600; }
+  .tick.flip .lab { transform: translateY(-4.3rem); }
+  .ruler-scale {
+    display: flex;
+    justify-content: space-between;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4.6rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--rule);
+  }
+  .ruler-note { max-width: 68ch; margin-top: 1.1rem; font-size: 13px; color: var(--muted); }
+
+  /* ---------- runner lanes ---------- */
+  .lanes {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 2.4rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .lane { background: var(--bg); padding: 1.15rem 1.15rem 1.3rem; }
+  .lane h3 {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.06em;
+    font-weight: 620;
+  }
+  .lane .verdict {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 0.55rem;
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+  }
+  .lane[data-ok="no"] .verdict { color: var(--accent); border-color: var(--accent); background: rgba(184, 96, 42, 0.07); }
+  .lane[data-ok="yes"] .verdict { color: var(--resolve); border-color: var(--resolve); background: rgba(74, 107, 74, 0.07); }
+  .lane dl { margin-top: 0.9rem; font-size: 12.5px; }
+  .lane dt {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.6rem;
+  }
+  .lane dt:first-child { margin-top: 0; }
+  .lane dd { margin-top: 0.1rem; line-height: 1.45; }
+
+  /* ---------- shell ---------- */
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  main { padding-top: 2.5rem; min-width: 0; }
+  .band {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 2.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  main > .band:first-child { margin-top: 0; }
+
+  /* ---------- cards ---------- */
+  .card {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    background: var(--bg);
+    padding: 1.3rem 1.4rem 1.1rem;
+    margin-bottom: 1.1rem;
+    transition: border-color 0.16s ease, background 0.16s ease;
+  }
+  .card[data-disp="resolve"] { border-left-color: var(--resolve); }
+  .card[data-disp="accept"]  { border-left-color: var(--accept); background: #FBF9F6; }
+  .card[data-disp="discuss"] { border-left-color: var(--discuss); background: rgba(184, 96, 42, 0.045); }
+  .card[hidden] { display: none; }
+  .card-head { display: flex; align-items: baseline; gap: 0.7rem; flex-wrap: wrap; }
+  .tag {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0.15rem 0.45rem;
+  }
+  .card h2 {
+    font-size: 1.08rem;
+    font-weight: 620;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    flex: 1 1 22ch;
+  }
+  .card dl { margin-top: 1rem; }
+  .card dt {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.85rem;
+  }
+  .card dt:first-child { margin-top: 0; }
+  .card dd { margin-top: 0.25rem; }
+  .refs {
+    margin-top: 1rem;
+    padding-top: 0.7rem;
+    border-top: 1px dashed var(--rule);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+    word-break: break-word;
+  }
+  .actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.1rem; align-items: center; }
+  .actions .spacer { flex: 1; }
+  button {
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.7rem;
+    cursor: pointer;
+    transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+  }
+  button:hover { background: var(--surface); }
+  .actions button[aria-pressed="true"] { color: #FAF8F5; border-color: transparent; }
+  .actions button[data-disp="resolve"][aria-pressed="true"] { background: var(--resolve); }
+  .actions button[data-disp="accept"][aria-pressed="true"]  { background: var(--accept); }
+  .actions button[data-disp="discuss"][aria-pressed="true"] { background: var(--discuss); }
+  .note-wrap { margin-top: 0.8rem; }
+  textarea {
+    width: 100%;
+    min-height: 4.5rem;
+    font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.6rem 0.7rem;
+    resize: vertical;
+  }
+  .note-wrap[hidden] { display: none; }
+
+  /* ---------- sidebar ---------- */
+  aside { position: sticky; top: 1.5rem; padding-top: 2.5rem; }
+  .panel { border: 1px solid var(--border); background: var(--surface); padding: 1rem 1.1rem 1.1rem; }
+  .panel + .panel { margin-top: 1rem; }
+  .panel h4 {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .tally { display: flex; gap: 0.9rem; margin-top: 0.7rem; }
+  .tally div { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; color: var(--muted); }
+  .tally b { display: block; font-size: 1.35rem; color: var(--text); font-weight: 600; }
+  .filters { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.8rem; }
+  .filters button { font-size: 11.5px; padding: 0.25rem 0.55rem; background: var(--bg); }
+  .filters button[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+  #prompt {
+    margin-top: 0.7rem;
+    max-height: 340px;
+    overflow: auto;
+    font: 12px/1.55 ui-monospace, "SF Mono", Menlo, monospace;
+    white-space: pre-wrap;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 0.7rem 0.75rem;
+  }
+  .copy-row { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.7rem; }
+  .copy-row .ok { font-size: 11.5px; color: var(--resolve); opacity: 0; transition: opacity 0.18s ease; }
+  .copy-row .ok.show { opacity: 1; }
+
+  footer {
+    max-width: 1180px;
+    margin: 3rem auto 0;
+    padding: 1.4rem 1.5rem 0;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    aside { position: static; padding-top: 0; }
+    .lanes { grid-template-columns: 1fr; }
+    .ruler-wrap { overflow-x: auto; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } html { scroll-behavior: auto; } }
+</style>
+
+<header class="masthead">
+  <div class="eyebrow">Unknowns pass · pass 2 · daily automation · specs/self-managing-memory-kb</div>
+  <h1>Once per day <span class="dim">is a cadence<br>nothing here runs on.</span></h1>
+  <p class="standfirst">
+    Pass&nbsp;1 mapped what already manages memory and the KB. This pass takes the new half of the
+    ask — <em>run it once per day, unattended, and delete what has gone stale</em> — and measures it
+    against the three schedulers Claude Code actually ships, the clocks your own files keep, and the
+    guard that will be standing in the pruner's way. Disposition each finding; the block on the right
+    rewrites your prompt as you go.
+  </p>
+</header>
+
+<section class="ruler-wrap" aria-label="Cadence ruler">
+  <div class="ruler-title">Every clock already running in this repo, against the one you asked for</div>
+  <div class="ruler" id="ruler"></div>
+  <div class="ruler-scale"><span>1 hour</span><span>logarithmic</span><span>30 days</span></div>
+  <p class="ruler-note">
+    The proposed tick sits to the left of every signal it is meant to service. <code>/kb</code> holds
+    <code>STALE_AFTER = 30</code> days and this device's newest mirrors are 1–7 days old, so a daily
+    sync answers "all fresh" on roughly 29 days out of 30. Memory files changed on 14 of the repo's
+    37 days of life — a ~2.6-day average gap. What actually grows daily is <code>specs/</code>:
+    10 plan folders, 85 markdown files, 1.1&nbsp;MB in five weeks, and nothing prunes it.
+  </p>
+</section>
+
+<section class="lanes" aria-label="Scheduler comparison">
+  <div class="lane" data-ok="no">
+    <h3>Cloud Routines</h3>
+    <span class="verdict">Cannot see the KB</span>
+    <dl>
+      <dt>Runs on</dt><dd>Anthropic infrastructure, machine off, min interval 1 hour</dd>
+      <dt>Local files</dt><dd>No — fresh clone</dd>
+      <dt>What that means here</dt><dd><code>.gitignore:362</code> hides <code>ai-docs/*</code>, so the clone carries <code>sources.yaml</code> and 0 of 38 mirrors</dd>
+    </dl>
+  </div>
+  <div class="lane" data-ok="yes">
+    <h3>Desktop scheduled task</h3>
+    <span class="verdict">Only durable local option</span>
+    <dl>
+      <dt>Runs on</dt><dd>Your machine, no open session, min interval 1 minute</dd>
+      <dt>Local files</dt><dd>Yes</dd>
+      <dt>What that means here</dt><dd>Requires the machine on and the desktop app — untested against this WSL2 checkout</dd>
+    </dl>
+  </div>
+  <div class="lane" data-ok="no">
+    <h3><code>/loop</code> · CronCreate</h3>
+    <span class="verdict">Dies with the session</span>
+    <dl>
+      <dt>Runs on</dt><dd>Your machine, inside an open REPL, fires only between turns</dd>
+      <dt>Local files</dt><dd>Yes</dd>
+      <dt>What that means here</dt><dd>Session-scoped, no catch-up for missed fires, recurring tasks self-delete after 7 days</dd>
+    </dl>
+  </div>
+</section>
+
+<div class="shell">
+  <main>
+    <div class="band">Findings · what a daily job runs into</div>
+    <div id="cards"></div>
+    <div class="band">Open decision · only you can call this</div>
+    <div id="decision"></div>
+  </main>
+
+  <aside>
+    <div class="panel">
+      <h4>Dispositions</h4>
+      <div class="tally">
+        <div><b id="t-resolve">0</b>fold in</div>
+        <div><b id="t-accept">0</b>known</div>
+        <div><b id="t-discuss">0</b>discuss</div>
+        <div><b id="t-open">0</b>untouched</div>
+      </div>
+      <h4 style="margin-top:1.1rem">Filter</h4>
+      <div class="filters" id="filters">
+        <button data-f="all" aria-pressed="true">All</button>
+        <button data-f="resolve" aria-pressed="false">Fold in</button>
+        <button data-f="accept" aria-pressed="false">Known</button>
+        <button data-f="discuss" aria-pressed="false">Discuss</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h4>Improved prompt</h4>
+      <div id="prompt"></div>
+      <div class="copy-row">
+        <button id="copy">Copy</button>
+        <span class="ok" id="ok">Copied</span>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<footer>
+  Discovery only — nothing here is a plan. Every figure was read from this working tree on
+  2026-07-28: <code>ai-docs/anthropic/scheduled-tasks.md</code>, <code>.gitignore</code>,
+  <code>.claude/settings.json</code>, <code>.claude/hooks/destructive-guard/</code>,
+  <code>.claude/commands/harness-layer/kb.md</code>, and <code>git log</code>. Pass 1 lives beside
+  this file as <code>unknowns.html</code>.
+</footer>
+
+<script>
+  /* ---------- cadence ruler ---------- */
+  const HOURS = { min: 1, max: 720 };
+  const pos = h => (Math.log(h) - Math.log(HOURS.min)) / (Math.log(HOURS.max) - Math.log(HOURS.min)) * 100;
+  const TICKS = [
+    { h: 1,   lab: "Cloud routine",  val: "minimum 1h" },
+    { h: 24,  lab: "Your daily job", val: "24h", now: true },
+    { h: 62,  lab: "Memory churn",   val: "~2.6d avg gap", flip: true },
+    { h: 168, lab: "/loop expiry",   val: "7d" },
+    { h: 720, lab: "KB staleness",   val: "30d", flip: true },
+  ];
+  document.getElementById("ruler").innerHTML = TICKS.map(t => `
+    <div class="tick${t.now ? " now" : ""}${t.flip ? " flip" : ""}" style="left:${pos(t.h)}%">
+      <div class="stem"></div>
+      <div class="lab">${t.lab}<span class="val">${t.val}</span></div>
+    </div>`).join("");
+
+  /* ---------- findings ---------- */
+  const CARDS = [
+    {
+      id: "session-scoped",
+      tag: "scheduler",
+      title: "The scheduler you already have cannot run daily — it is session-scoped and expires in seven days",
+      what: "<code>/loop</code> and the <code>CronCreate</code> tool are the in-session scheduler. Tasks live in the current conversation, fire only while the REPL is idle between turns, never catch up on fires missed while Claude was busy, and recurring tasks delete themselves seven days after creation. Starting a fresh conversation clears them. The docs name three durable alternatives instead: Cloud Routines, Desktop scheduled tasks, and GitHub Actions — and this repo has no <code>.github/workflows/</code> at all, only issue and PR templates.",
+      why: "\"Run once per day\" written as <code>/loop 1d</code> is a task that silently stops after the seventh fire, and stops sooner every time you close the terminal. You would not find out from an error — you would find out from memory that quietly stopped being pruned.",
+      todo: "Choose the runner before designing the job, because the runner decides what the job can even touch. Name it in the spec as a hard constraint, not a deployment detail.",
+      refs: "ai-docs/anthropic/scheduled-tasks.md:13, 172–189, 212–224 · CronCreate tool schema (session-only, 7-day expiry) · ls .github/ → ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE only"
+    },
+    {
+      id: "cloud-blind",
+      tag: "kb reach",
+      title: "The one scheduler that needs no machine is the one that cannot see your KB",
+      what: "Cloud Routines run on Anthropic infrastructure with no access to local files — the task gets a fresh clone. <code>.gitignore:362</code> carries <code>ai-docs/*</code> with a single negation for <code>sources.yaml</code>, so that clone contains the 41-entry manifest and none of the 38 mirrors, and no <code>index.md</code>. <code>/kb</code> builds its work set from \"entries whose <code>file</code> is missing\", which in a fresh clone is every entry.",
+      why: "A nightly cloud routine that touches the KB would fan out 41 <code>kb-fetcher</code> subagents on every single run, rebuild the whole cache, and then commit nothing, because git ignores everything it just wrote. Full cost, zero durable output, every night.",
+      todo: "Split the job by what each half needs to read. Anything that reasons over mirror content or mirror freshness has to run locally. A cloud routine can still own the tracked half — <code>sources.yaml</code>, <code>.claude/rules/</code>, <code>AGENTS.md</code>, <code>specs/</code> — but say so explicitly rather than letting the runner discover it.",
+      refs: "ai-docs/anthropic/scheduled-tasks.md:19–29 · .gitignore:362 (git check-ignore confirms index.md and every mirror) · kb.md:34 · 38 mirrors on this device, 41 manifest entries"
+    },
+    {
+      id: "cadence-mismatch",
+      tag: "cadence",
+      title: "Daily is faster than any clock the inputs actually keep",
+      what: "<code>/kb</code> refetches at <code>STALE_AFTER = 30</code> days; the mirrors on this device are stamped 2026-07-21 (27 of them), 2026-07-26 (9), and 2026-07-27 (1). Memory files — <code>.claude/rules/</code> plus <code>AGENTS.md</code> — were touched on 14 distinct days across the repo's 37-day life. Meanwhile <code>specs/</code> has reached 10 plan folders, 85 markdown files and 1.1&nbsp;MB in five weeks, and no rule, command, or hook prunes it.",
+      why: "A daily run over a 30-day staleness window is 29 no-op sessions a month, each one still paying a full model session to conclude \"nothing to do\" — and each one still free to hallucinate work to justify itself. The pressure you described, agents generating faster than anyone cleans up, is real, but it is landing in <code>specs/</code>, not in the KB.",
+      todo: "Either re-aim the daily pass at what actually accumulates (spec folders, dev-log entries, always-loaded rule lines) and leave KB freshness on its own 30-day clock, or drop to weekly. State the target and the cadence together, and give the job an explicit no-op exit that costs one cheap turn.",
+      refs: "kb.md:19 (STALE_AFTER 30) · fetched: frontmatter across ai-docs/**/*.md · git log --date=short -- .claude/rules AGENTS.md (14 days of 37) · du -sh specs/ → 1.1M, 85 .md, 10 folders"
+    },
+    {
+      id: "guard-collision",
+      tag: "landmine",
+      title: "Your own destructive guard stands between the pruner and every delete",
+      what: "<code>destructive-guard/block_destructive.py</code> inspects every Bash command as text. <code>rm-recursive-force</code> is a <em>deny</em> rule: exit 2, no override. Other rules — <code>chmod-777-recursive</code>, <code>pipe-to-shell</code>, <code>profile-write</code> — sit in an ask tier that emits <code>permissionDecision: \"ask\"</code> and waits for a human. This pass triggered the deny rule live, on a read-only <code>grep</code> whose search <em>pattern</em> merely contained the characters <code>-rf</code>.",
+      why: "Two failures, both silent in an unattended run. A pruner that shells out to delete gets exit 2 and reports failure at 3am to nobody. A pruner that trips the ask tier stalls waiting for an approval that will never come — cloud routines run with no permission prompts at all, so the behavior there is unspecified from where you stand today.",
+      todo: "Make the pruner delete through the file tools and <code>mv &lt;target&gt; ~/.Trash/</code> — the AGENTS.md policy, and <code>~/.Trash</code> exists on this box — never through <code>rm</code>. Then decide deliberately what happens when a guard fires unattended: the job should treat any exit-2 as a stop-and-report, not a step to route around.",
+      refs: "block_destructive.py:77–101 · destructive-guard/_common.py:239 rm-recursive-force (deny), :424 chmod-777-recursive (ask), :478 pipe-to-shell (ask) · AGENTS.md § Tooling (mv to ~/.Trash) · observed live in this session"
+    },
+    {
+      id: "asymmetric-delete",
+      tag: "reversibility",
+      title: "Deleting a rule is free; deleting anything under ai-docs/ is permanent",
+      what: "<code>.claude/rules/</code>, <code>AGENTS.md</code> and <code>specs/</code> are tracked, so a bad prune is one <code>git checkout</code> away. Everything under <code>ai-docs/</code> except <code>sources.yaml</code> is untracked: the 38 mirrors, the generated <code>index.md</code>, and any hand-written project note — which AGENTS.md explicitly invites you to put there. A mirror is at least refetchable from its manifest URL. A project note is not; it exists on this device only.",
+      why: "One cleanup rule applied uniformly across both surfaces is safe in one half and unrecoverable in the other. And the asymmetry is invisible from inside the job — the files sit in the same tree and read the same way.",
+      todo: "Give the job two deletion tiers keyed on tracked-ness: tracked files may be pruned outright, untracked ones only move to <code>~/.Trash/</code> and only when the manifest can regenerate them. Anything untracked and unregenerable — a project note — is never auto-deleted, only reported.",
+      refs: "git check-ignore -v ai-docs/index.md → .gitignore:362 · 38 untracked mirrors, 1 tracked manifest · AGENTS.md § Knowledge Base (\"plus hand-written project notes\")"
+    },
+    {
+      id: "invocability",
+      tag: "authoring",
+      title: "Your own authoring standard would make this artifact unschedulable",
+      what: "As of v2.1.196 a scheduled fire only runs skills Claude is allowed to invoke on its own; anything marked <code>disable-model-invocation: true</code> arrives as plain text and does nothing. This repo's own skill standard says the opposite for exactly this shape of artifact: <code>meta-skills/SKILL.md:53</code> and <code>references/frontmatter.md:30</code> both instruct that side-effecting artifacts — the ones that write, commit, or send — set that flag so only a human can fire them.",
+      why: "Follow the house rule and the daily task fires into the void; ignore it and you have a self-invocable artifact that edits memory files and can be triggered by any model turn, which is the case the rule exists to prevent.",
+      todo: "Resolve it in the artifact's shape rather than by exception. A schedulable, self-invocable pass that only reads and reports, paired with a human-only artifact that applies the changes, satisfies both. If instead one artifact does both, amend the standard on purpose and say why.",
+      refs: "ai-docs/anthropic/scheduled-tasks.md:45–49 · .claude/skills/meta-skills/SKILL.md:53 · .claude/skills/meta-skills/references/frontmatter.md:30 · references/anti-patterns.md:92"
+    },
+    {
+      id: "git-law",
+      tag: "git workflow",
+      title: "An unattended job that commits collides with the repo's issue-first law",
+      what: "<code>git-workflow.md</code> requires an issue before a branch, a remote branch named <code>&lt;type&gt;/&lt;N&gt;-&lt;slug&gt;</code> pushed with an explicit refspec, and a PR body carrying <code>Closes #N</code> as the only artifact that closes an issue. Nothing in the repo exempts an automated commit. Meanwhile the memory files this job would edit are already written at the end of every build and review, by the memory steps in <code>harness-build</code> and <code>harness-review</code>.",
+      why: "Left unstated, a daily job either commits straight to <code>main</code> against the rule, or opens an issue and a PR every night for a prune that is usually empty — and both compete with the per-change memory step that already runs and already has an issue.",
+      todo: "Decide the daily job's output form before its logic: a report-only pass that writes nothing and hands you a queue is the cheapest thing that respects the existing workflow. If it must write, define its git contract explicitly — one long-lived maintenance issue, batched into a weekly PR, never a push to main.",
+      refs: ".claude/rules/git-workflow.md § Branching, § Pull Request Requirements, § Worktree Rule · harness-build.md:39 · harness-review.md:37 · .claude/rules/memory-series.md"
+    }
+  ];
+
+  const DECISION = {
+    id: "trust",
+    tag: "needs discussion",
+    title: "How much is the daily pass allowed to do while you are not watching?",
+    what: "Three positions, and the whole design follows from which one you take. <strong>Report-only</strong>: the pass measures and files a queue, you apply. <strong>Propose-and-stage</strong>: it makes the edits on a branch and stops, you review a diff. <strong>Autonomous</strong>: it edits, commits, and prunes on its own authority.",
+    why: "Every finding above resolves differently per position. Report-only sidesteps the git law, the guard collision, and the reversibility split in one move, and can run in the cloud. Autonomous needs all three solved, needs a local runner, and needs a rollback story the KB's untracked half cannot currently provide.",
+    todo: "Pick one and say it in the prompt. If you are unsure, report-only first is the reversible choice — you can watch a month of its queues and see whether the pruning it proposes was ever right before granting it the pen.",
+    refs: "Depends on: session-scoped · cloud-blind · guard-collision · asymmetric-delete · git-law"
+  };
+
+  /* ---------- state ---------- */
+  const state = { disp: {}, notes: {}, filter: "all" };
+
+  const cardHTML = c => `
+    <article class="card" id="card-${c.id}" data-id="${c.id}">
+      <div class="card-head"><span class="tag">${c.tag}</span><h2>${c.title}</h2></div>
+      <dl>
+        <dt>What it is</dt><dd>${c.what}</dd>
+        <dt>Why it bites</dt><dd>${c.why}</dd>
+        <dt>What to do instead</dt><dd>${c.todo}</dd>
+      </dl>
+      <div class="refs">${c.refs}</div>
+      <div class="actions">
+        <button data-disp="resolve" aria-pressed="false">Fold into the prompt</button>
+        <button data-disp="accept" aria-pressed="false">Already knew it</button>
+        <button data-disp="discuss" aria-pressed="false">Needs discussion</button>
+        <span class="spacer"></span>
+        <button data-note="1">+ note</button>
+      </div>
+      <div class="note-wrap" hidden><textarea placeholder="Your take — folded into the prompt verbatim."></textarea></div>
+    </article>`;
+
+  document.getElementById("cards").innerHTML = CARDS.map(cardHTML).join("");
+  document.getElementById("decision").innerHTML = cardHTML(DECISION);
+  state.disp[DECISION.id] = "discuss";
+
+  document.addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const card = btn.closest(".card");
+
+    if (card && btn.dataset.disp) {
+      const id = card.dataset.id;
+      state.disp[id] = state.disp[id] === btn.dataset.disp ? null : btn.dataset.disp;
+      render();
+      return;
+    }
+    if (card && btn.dataset.note) {
+      const wrap = card.querySelector(".note-wrap");
+      wrap.hidden = !wrap.hidden;
+      if (!wrap.hidden) wrap.querySelector("textarea").focus();
+      return;
+    }
+    if (btn.parentElement && btn.parentElement.id === "filters") {
+      state.filter = btn.dataset.f;
+      render();
+    }
+  });
+
+  document.addEventListener("input", e => {
+    if (e.target.tagName !== "TEXTAREA") return;
+    const card = e.target.closest(".card");
+    state.notes[card.dataset.id] = e.target.value.trim();
+    render();
+  });
+
+  document.getElementById("copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(document.getElementById("prompt").textContent); } catch (_) {}
+    const ok = document.getElementById("ok");
+    ok.classList.add("show");
+    setTimeout(() => ok.classList.remove("show"), 1400);
+  });
+
+  /* ---------- prompt assembly ---------- */
+  const FOLD = {
+    "session-scoped": "Name the runner first and treat it as a hard constraint: /loop and CronCreate are session-scoped and expire after seven days, so they cannot be the daily trigger. Choose between a Cloud Routine, a Desktop scheduled task, and a GitHub Actions schedule — the repo has no .github/workflows/ today, so that third option means standing up CI from nothing.",
+    "cloud-blind": "Split the job by what each half can read. A Cloud Routine gets a fresh clone, and .gitignore:362 hides every ai-docs/ mirror and index.md, so a cloud run sees the 41-entry sources.yaml and zero of the 38 mirrors — and /kb would refetch all 41 every night into files git discards. Anything reasoning over mirror content or freshness must run locally; the cloud half is limited to tracked files (sources.yaml, .claude/rules/, AGENTS.md, specs/).",
+    "cadence-mismatch": "Re-check the cadence against the real clocks before committing to daily: /kb's STALE_AFTER is 30 days and this device's mirrors are 1–7 days old, and memory files changed on only 14 of the repo's 37 days. What actually grows daily is specs/ — 10 plan folders, 85 markdown files, 1.1MB in five weeks, pruned by nothing. Either aim the daily pass at spec folders, dev-log entries and always-loaded rule lines and leave KB freshness on its 30-day clock, or drop to weekly. Give it a cheap explicit no-op exit.",
+    "guard-collision": "Route every deletion through the file tools and `mv <target> ~/.Trash/`, never `rm`: destructive-guard/_common.py:239 denies rm -r+f outright with exit 2, and its ask-tier rules emit permissionDecision:\"ask\", which nothing answers in an unattended run. Specify that any hook exit-2 stops the run and reports, rather than being routed around.",
+    "asymmetric-delete": "Give deletion two tiers keyed on git tracked-ness. Tracked files (.claude/rules/, AGENTS.md, specs/) are recoverable and may be pruned outright. Untracked files under ai-docs/ — 38 mirrors and index.md — only move to ~/.Trash/ and only when sources.yaml can regenerate them. Anything untracked and unregenerable, such as a hand-written project note, is reported and never auto-deleted.",
+    "invocability": "Settle invocability as part of the artifact's shape. A scheduled fire only runs skills Claude may self-invoke, while this repo's own standard (meta-skills/SKILL.md:53) tells side-effecting artifacts to set disable-model-invocation: true. Prefer splitting it: a schedulable read-and-report pass, plus a human-only artifact that applies the changes. If one artifact must do both, amend the standard deliberately and record why.",
+    "git-law": "Define the git contract before the logic. git-workflow.md requires issue-first, a <type>/<N>-<slug> remote branch, and a PR carrying Closes #N — with no exemption for automation, and the memory step in harness-build/harness-review already writes these files per change. Report-only writes nothing and respects all of it; if the job must write, use one long-lived maintenance issue batched into a weekly PR, and never push to main.",
+    "trust": "Decide up front how much authority the pass has unattended — report-only, propose-and-stage on a branch, or autonomous — because every constraint above resolves differently per position."
+  };
+
+  const BASE =
+    "Design a scheduled maintenance pass for this repo that keeps the ai-docs/ knowledge base and the " +
+    "memory files (.claude/rules/, AGENTS.md) in sync with reality and prunes what has gone stale, so " +
+    "that what loads into each session stays small and current instead of accumulating outdated tokens. " +
+    "It should run on a fixed schedule — I asked for once per day; confirm or revise that cadence with " +
+    "the evidence below.";
+
+  const PRE =
+    "Before designing anything, walk through what already exists and report what you find: " +
+    "specs/self-managing-memory-kb/discovery/unknowns.html (pass 1, on the four surfaces that already " +
+    "manage memory here), ai-docs/anthropic/scheduled-tasks.md (the three scheduling options and their " +
+    "limits), .claude/commands/harness-layer/kb.md, .claude/rules/memory-series.md, " +
+    ".claude/rules/git-workflow.md, and .claude/hooks/destructive-guard/_common.py.";
+
+  function render() {
+    document.querySelectorAll(".card").forEach(card => {
+      const id = card.dataset.id;
+      const d = state.disp[id] || "";
+      card.dataset.disp = d;
+      card.querySelectorAll("[data-disp]").forEach(b =>
+        b.setAttribute("aria-pressed", String(b.dataset.disp === d)));
+      card.hidden = state.filter !== "all" && d !== state.filter;
+    });
+
+    const ids = [...CARDS.map(c => c.id), DECISION.id];
+    const count = k => ids.filter(i => state.disp[i] === k).length;
+    document.getElementById("t-resolve").textContent = count("resolve");
+    document.getElementById("t-accept").textContent = count("accept");
+    document.getElementById("t-discuss").textContent = count("discuss");
+    document.getElementById("t-open").textContent = ids.filter(i => !state.disp[i]).length;
+
+    // Untouched cards default to folded in — the page is useful before you click anything.
+    const folded = ids.filter(i => state.disp[i] === "resolve" || !state.disp[i]);
+    const discuss = ids.filter(i => state.disp[i] === "discuss");
+
+    const out = [BASE, "", PRE];
+
+    if (folded.length) {
+      out.push("", "Then work through these, in order:");
+      folded.forEach((i, n) => {
+        const note = state.notes[i] ? ` My take: ${state.notes[i]}` : "";
+        out.push("", `${n + 1}. ${FOLD[i]}${note}`);
+      });
+    }
+
+    if (discuss.length) {
+      out.push("", "Stop and confirm with me before designing past these — do not assume an answer:");
+      discuss.forEach(i => {
+        const c = [...CARDS, DECISION].find(x => x.id === i);
+        const note = state.notes[i] ? ` My take: ${state.notes[i]}` : "";
+        out.push(`  - ${c.title.replace(/<[^>]+>/g, "")}${note}`);
+      });
+    }
+
+    out.push("", "Deliver a design, not an implementation: the runner, the cadence, the artifact shape " +
+      "(skill, command, or hook), what it reads, what it is allowed to delete and how, and what it " +
+      "reports. Flag anything you could not verify against the files above.",
+      "", "Worktree: .claude/worktrees/self-managing-memory-kb");
+
+    document.getElementById("prompt").textContent = out.join("\n");
+  }
+
+  render();
+</script>
