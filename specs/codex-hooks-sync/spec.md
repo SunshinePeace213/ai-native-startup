@@ -236,6 +236,8 @@ Ordered most-volatile first. The full record is in [decisions.md](./decisions.md
 
 ## Notes
 
+- Implementation-plan page: [artifacts/implementation-plan.html](./artifacts/implementation-plan.html)
+  — published at <https://claude.ai/code/artifact/b72ce38d-2e1c-4412-8bd0-7accbb43aa25>
 - No new dependencies. Every hook entrypoint declares `dependencies = []` (verified across all 15).
 - The Codex CLI on this machine is `codex-cli 0.145.0`; `uv` is `0.11.21`.
 - Per the invoking prompt, the Codex cross-review gate is **skipped** for this plan at the user's

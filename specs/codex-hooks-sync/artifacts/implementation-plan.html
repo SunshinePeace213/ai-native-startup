@@ -1,0 +1,824 @@
+<title>codex-hooks-sync — implementation plan</title>
+
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+
+    --ok: #4A7C59;
+    --na: #9A948B;
+    --warn: #A8792B;
+
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --gap: 1.5rem;
+    --radius: 3px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1020px;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+
+  .prose { max-width: 68ch; }
+
+  h1, h2, h3 { text-wrap: balance; margin: 0; font-weight: 650; letter-spacing: -0.02em; }
+  h1 { font-size: clamp(2rem, 5vw, 2.9rem); line-height: 1.08; }
+  h2 { font-size: 1.35rem; line-height: 1.2; }
+  h3 { font-size: 1.02rem; letter-spacing: -0.01em; }
+  p { margin: 0; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  code, .mono { font-family: var(--mono); font-size: 0.85em; }
+  code { background: var(--surface); padding: 0.1em 0.35em; border-radius: 2px; }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- masthead ---------- */
+
+  .masthead { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.75rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .meta b { color: var(--text); font-weight: 550; }
+
+  .counts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .count { background: var(--bg); padding: 1rem 1.15rem; display: flex; flex-direction: column; gap: 0.15rem; }
+  .count .n {
+    font-family: var(--mono);
+    font-size: 1.9rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+  }
+  .count .lbl { font-size: 0.76rem; color: var(--muted); line-height: 1.35; }
+
+  /* ---------- section scaffolding ---------- */
+
+  section { display: flex; flex-direction: column; gap: var(--gap); }
+  .shead { display: flex; flex-direction: column; gap: 0.4rem; }
+
+  /* ---------- verified findings ---------- */
+
+  .findings { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+  .finding {
+    background: var(--bg);
+    padding: 1.15rem 1.35rem;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.35rem 1rem;
+    align-items: baseline;
+  }
+  .finding .tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--ok);
+    padding: 0.2em 0.5em;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .finding .tag.fix { background: var(--warn); }
+  .finding h3 { grid-column: 2; }
+  .finding p { grid-column: 2; font-size: 0.93rem; color: #4A443E; }
+  .finding .ev {
+    grid-column: 2;
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    background: var(--surface);
+    border-left: 2px solid var(--border);
+    padding: 0.55rem 0.75rem;
+    margin-top: 0.3rem;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    color: #4A443E;
+  }
+
+  /* ---------- decision cards ---------- */
+
+  .decks { display: flex; flex-direction: column; gap: 1rem; }
+
+  .deck {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    padding: 1.25rem 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .deck.flipped { border-color: var(--accent); background: #FCF6F1; }
+
+  .deck-top { display: flex; gap: 1rem; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+  .vol {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .path { display: flex; flex-direction: column; gap: 0.3rem; }
+  .path .plabel {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .path p { font-size: 0.93rem; }
+  .deck .why { font-size: 0.88rem; color: #55504A; }
+
+  .alt { display: none; padding-top: 0.85rem; border-top: 1px dashed var(--border); }
+  .deck.flipped .alt { display: flex; flex-direction: column; gap: 0.3rem; }
+  .deck.flipped .chosen { opacity: 0.42; }
+  .deck.flipped .chosen p { text-decoration: line-through; text-decoration-color: var(--muted); }
+
+  .flip {
+    align-self: flex-start;
+    font: inherit;
+    font-size: 0.82rem;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .flip:hover { background: var(--surface); border-color: var(--muted); }
+  .deck.flipped .flip { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ---------- parity ledger ---------- */
+
+  .ledger-scroll { overflow-x: auto; border: 1px solid var(--border); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+  thead th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 0.7rem 0.9rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.na { color: var(--na); }
+  tbody tr.na .hook { text-decoration: line-through; text-decoration-thickness: 1px; }
+  .hook { font-family: var(--mono); font-size: 0.82rem; white-space: nowrap; }
+  .ev-cell { font-family: var(--mono); font-size: 0.78rem; white-space: nowrap; }
+
+  .disp {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.18em 0.5em;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .disp.m { background: rgba(74, 124, 89, 0.14); color: #37603F; }
+  .disp.n { background: rgba(154, 148, 139, 0.18); color: #6E6961; }
+
+  .legend { font-size: 0.83rem; color: var(--muted); }
+
+  /* ---------- phases ---------- */
+
+  .phases { display: flex; flex-direction: column; gap: 1.5rem; }
+  .phase { display: flex; flex-direction: column; gap: 0.75rem; }
+  .phase-hd { display: flex; align-items: baseline; gap: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.45rem; }
+  .phase-hd .pn {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--bg);
+    background: var(--text);
+    padding: 0.15em 0.45em;
+    border-radius: 2px;
+  }
+  .phase-note { font-size: 0.86rem; color: var(--muted); }
+
+  .tasks { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+  .task { background: var(--bg); padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  .task .tid { font-family: var(--mono); font-size: 0.78rem; color: var(--accent); }
+  .task p { font-size: 0.86rem; color: #55504A; }
+  .task .stamp {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 0.35rem;
+  }
+
+  /* ---------- collapsed mechanical ---------- */
+
+  details {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0.9rem 1.15rem;
+    border-radius: var(--radius);
+  }
+  summary { cursor: pointer; font-weight: 550; font-size: 0.95rem; }
+  summary::marker { color: var(--accent); }
+  details > div { padding-top: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem; }
+  details ul { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.35rem; }
+
+  /* ---------- concerns ---------- */
+
+  .concerns { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.6rem; }
+  .concern {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    border: 1px solid var(--border);
+    padding: 0.7rem 0.85rem;
+    font-size: 0.87rem;
+    cursor: pointer;
+    background: var(--bg);
+    border-radius: var(--radius);
+  }
+  .concern:hover { background: var(--surface); }
+  .concern input { margin: 0.25rem 0 0; accent-color: var(--accent); flex-shrink: 0; }
+  .concern.on { border-color: var(--accent); background: #FCF6F1; }
+
+  /* ---------- prompt ---------- */
+
+  .promptbox { display: flex; flex-direction: column; gap: 0.75rem; }
+  .promptbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  pre#prompt {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.1rem 1.25rem;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    border-radius: var(--radius);
+    color: #3A352F;
+  }
+  .copy {
+    font: inherit;
+    font-size: 0.85rem;
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid var(--accent);
+    padding: 0.5rem 1.1rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+  .copy:hover { background: #A5551F; }
+  .copy.done { background: var(--ok); border-color: var(--ok); }
+
+  footer { font-size: 0.82rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 1.25rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Implementation plan · issue #62 · feat/62-codex-hooks-sync</p>
+    <h1>One set of hook scripts, two hosts</h1>
+    <p class="prose" style="font-size:1.08rem;color:#4A443E">
+      Codex runs in this repo with almost none of the guardrails Claude has — two of fifteen hook
+      entrypoints are registered. This plan points <code>.codex/hooks.json</code> at the existing
+      <code>.claude/hooks/</code> scripts, adapts the two behaviours that genuinely differ across
+      hosts, and makes the parity impossible to lose again.
+    </p>
+    <div class="meta">
+      <span><b>Type</b> feat</span>
+      <span><b>Complexity</b> medium</span>
+      <span><b>Profile</b> kb-grounded</span>
+      <span><b>Codex review</b> waived</span>
+      <span><b>New deps</b> none</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="counts">
+      <div class="count"><span class="n">15</span><span class="lbl">hook entrypoints under <code>.claude/hooks/</code></span></div>
+      <div class="count"><span class="n">12</span><span class="lbl">mirrored to Codex</span></div>
+      <div class="count"><span class="n">3</span><span class="lbl">not-applicable, explicitly</span></div>
+      <div class="count"><span class="n">13</span><span class="lbl">Codex bindings written</span></div>
+      <div class="count"><span class="n">0</span><span class="lbl">scripts duplicated</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead">
+      <p class="eyebrow">Verified during planning, not assumed</p>
+      <h2>Four things a live Codex session settled</h2>
+      <p class="prose" style="color:#55504A">
+        The discovery ledger carried these as open assumptions. Rather than inherit them, planning ran
+        throwaway sessions against <code>codex-cli 0.145.0</code>. Two findings changed the plan.
+      </p>
+    </div>
+
+    <div class="findings">
+      <div class="finding">
+        <span class="tag">Resolved</span>
+        <h3>Hook subprocesses run outside the sandbox</h3>
+        <p>
+          The ledger's largest risk was that hooks run sandboxed, blocking <code>uv</code> from its
+          cache under <code>~/.cache/uv</code> and silently failing every hook open. They don't. With
+          the sandbox confirmed active, the agent's own <code>$HOME</code> write was blocked while a
+          hook's succeeded in the same session. <strong>No <code>writable_roots</code> change is
+          needed</strong>, and that planned work is dropped.
+        </p>
+        <div class="ev">sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+agent  → touch $HOME/.probe_agent_write   AGENTWRITE_BLOCKED
+hook   → touch $HOME/.cache/uv/...        can_write_uv_cache=yes
+hook   → uv run --script                  python 3.13.13, offline OK</div>
+      </div>
+
+      <div class="finding">
+        <span class="tag fix">Changed the plan</span>
+        <h3>The patch envelope has a fourth directive: <code>*** Move to:</code></h3>
+        <p>
+          The ledger listed Add, Update, and Delete. A rename emits <code>*** Update File: &lt;old&gt;</code>
+          followed by <code>*** Move to: &lt;new&gt;</code>. A formatter keyed on the old path would
+          format a file that no longer exists — and, the security-relevant case,
+          <code>file_guard.py</code> would let an agent rename a file <em>onto</em> a protected path
+          unchallenged. Both paths get checked.
+        </p>
+        <div class="ev">*** Begin Patch
+*** Update File: /abs/oldname.txt
+*** Move to: /abs/newname.txt
+*** End Patch</div>
+      </div>
+
+      <div class="finding">
+        <span class="tag fix">Changed the plan</span>
+        <h3>The nine ask rules never carried the <code>!</code>-prefix line</h3>
+        <p>
+          The ledger said the ask tier could exit 2 reusing its existing "run it via the <code>!</code>
+          prefix" fix line. It has no such line — all nine hints end in "approve only if X is
+          intended", and that wording belongs to the deny tier. Under Codex the stderr is read by the
+          model, which cannot approve anything, so each ask rule gains a host-neutral line instead.
+        </p>
+      </div>
+
+      <div class="finding">
+        <span class="tag">Confirmed</span>
+        <h3>"Ask" really does run the command anyway</h3>
+        <p>
+          The premise behind the whole ask&nbsp;→&nbsp;deny decision, observed directly: a hook
+          returning <code>permissionDecision: "ask"</code> is marked failed and the command executes.
+          Exit 2 blocks cleanly and hands its <code>Fix:</code> line to the model verbatim.
+        </p>
+        <div class="ev">hook: PreToolUse Failed    → echo ASKME-marker ran, printed ASKME-marker
+hook: PreToolUse Blocked   → echo DENYME-marker never ran</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead">
+      <p class="eyebrow">Most likely to change first</p>
+      <h2>Volatile decisions</h2>
+      <p class="prose" style="color:#55504A">
+        Each shows the chosen path and the live alternative. Flip any you disagree with — the revision
+        prompt at the bottom assembles itself from what you flip.
+      </p>
+    </div>
+
+    <div class="decks" id="decks">
+
+      <article class="deck" data-key="shape">
+        <div class="deck-top">
+          <h3><code>edited_paths()</code> branches on payload shape, not a host flag</h3>
+          <span class="vol">Volatility: high</span>
+        </div>
+        <div class="path chosen">
+          <span class="plabel">Chosen</span>
+          <p><code>tool_name == "apply_patch"</code> parses the envelope; a string <code>file_path</code>
+          returns a one-item list. The host flag stays, but only the destructive guard reads it.</p>
+        </div>
+        <p class="why">The payload already discriminates. A flag would be a second source of truth that
+        can disagree with the payload in hand — and a flag typo would route a Codex payload down the
+        Claude branch, returning nothing and silently skipping the scan.</p>
+        <div class="path alt">
+          <span class="plabel">Alternative</span>
+          <p>Gate on <code>HARNESS_HOOK_HOST</code> everywhere, exactly as the ledger framed it — one
+          uniform mechanism for both behaviour changes.</p>
+        </div>
+        <button class="flip" type="button">Use the alternative instead</button>
+      </article>
+
+      <article class="deck" data-key="copies">
+        <div class="deck-top">
+          <h3>Three copies of the parser, pinned identical by one test</h3>
+          <span class="vol">Volatility: high</span>
+        </div>
+        <div class="path chosen">
+          <span class="plabel">Chosen</span>
+          <p>The helper lands in all three family <code>_common.py</code> modules. A single parametrized
+          test runs the same envelope corpus through all three, so they cannot drift.</p>
+        </div>
+        <p class="why">The families already duplicate <code>note()</code>, <code>read_payload()</code>,
+        and <code>resolve_root()</code> — this is the established convention. A shared module could only
+        be imported via <code>sys.path</code> manipulation, which the hooks rule forbids.</p>
+        <div class="path alt">
+          <span class="plabel">Alternative</span>
+          <p>One shared <code>.claude/hooks/_hostlib.py</code>, imported with an explicit
+          <code>sys.path</code> insert in each family's <code>_common.py</code>.</p>
+        </div>
+        <button class="flip" type="button">Use the alternative instead</button>
+      </article>
+
+      <article class="deck" data-key="fixline">
+        <div class="deck-top">
+          <h3>Codex ask-tier denials get a newly written fix line</h3>
+          <span class="vol">Volatility: medium</span>
+        </div>
+        <div class="path chosen">
+          <span class="plabel">Chosen</span>
+          <p>Each of the nine ask rules gains a host-neutral second line: <em>"Ask the user to run this
+          themselves."</em> No mention of any host-specific affordance.</p>
+        </div>
+        <p class="why">Telling a Codex agent to "approve" is an instruction it cannot follow, and the
+        <code>!</code> prefix is a Claude Code affordance with no verified Codex equivalent.</p>
+        <div class="path alt">
+          <span class="plabel">Alternative</span>
+          <p>Reuse the deny tier's existing <code>"…via the ! prefix"</code> wording verbatim on both
+          hosts, accepting that it may name something Codex does not have.</p>
+        </div>
+        <button class="flip" type="button">Use the alternative instead</button>
+      </article>
+
+      <article class="deck" data-key="timeouts">
+        <div class="deck-top">
+          <h3>Explicit timeouts on five entries only</h3>
+          <span class="vol">Volatility: low</span>
+        </div>
+        <div class="path chosen">
+          <span class="plabel">Chosen</span>
+          <p>60&nbsp;s on each of the four formatters, 120&nbsp;s on <code>stop_sweep</code>. Every other
+          entry keeps the Codex default.</p>
+        </div>
+        <p class="why">Codex defaults an omitted timeout to 600&nbsp;s — ten minutes of a wedged
+        formatter. Only hooks that shell out to real formatters or sweep real files can hang; pure
+        command-inspection guards are bounded by construction.</p>
+        <div class="path alt">
+          <span class="plabel">Alternative</span>
+          <p>An explicit timeout on all thirteen entries, guessing a bound for the inspection-only
+          guards too.</p>
+        </div>
+        <button class="flip" type="button">Use the alternative instead</button>
+      </article>
+
+      <article class="deck" data-key="evidence">
+        <div class="deck-top">
+          <h3>Acceptance evidence is a hand-run probe, not a green suite</h3>
+          <span class="vol">Volatility: low</span>
+        </div>
+        <div class="path chosen">
+          <span class="plabel">Chosen</span>
+          <p><code>scripts/codex-hook-probe.sh</code> drives one real Codex session per mirrored hook and
+          asserts the block happened. Run by hand; output pasted into
+          <code>implementation-notes.md</code>.</p>
+        </div>
+        <p class="why">Every hook fails open, so a session with no error is indistinguishable from one
+        where the hook never ran. The pytest matrix proves an entry <em>exists</em>, never that it
+        <em>fired</em>.</p>
+        <div class="path alt">
+          <span class="plabel">Alternative</span>
+          <p>A pytest integration suite driving Codex directly — accepting that it needs auth, exceeds
+          the 45&nbsp;s subprocess ceiling, and goes red on any machine without the CLI.</p>
+        </div>
+        <button class="flip" type="button">Use the alternative instead</button>
+      </article>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="shead">
+      <p class="eyebrow">The signature artifact this plan produces</p>
+      <h2>Host parity ledger</h2>
+      <p class="prose" style="color:#55504A">
+        Every entrypoint carries an explicit disposition in <code>CODEX_DISPOSITIONS</code>. The three
+        struck rows are the point: absence is <em>declared</em>, so a hook added later with no
+        disposition turns the suite red instead of quietly being Claude-only.
+      </p>
+    </div>
+
+    <div class="ledger-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Hook entrypoint</th>
+            <th>Claude event / matcher</th>
+            <th>Codex event / matcher</th>
+            <th>Disposition</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="hook">block_attribution.py</td><td class="ev-cell">PreToolUse · Bash</td><td class="ev-cell">PreToolUse · Bash</td><td><span class="disp m">mirrored</span></td></tr>
+          <tr><td class="hook">destructive-guard/block_destructive.py</td><td class="ev-cell">PreToolUse · Bash</td><td class="ev-cell">PreToolUse · Bash <b>+ host flag</b></td><td><span class="disp m">mirrored</span></td></tr>
+          <tr><td class="hook">sensitive-files/bash_guard.py</td><td class="ev-cell">PreToolUse · Bash</td><td class="ev-cell">PreToolUse · Bash</td><td><span class="disp m">mirrored</span></td></tr>
+          <tr><td class="hook">sensitive-files/file_guard.py</td><td class="ev-cell">PreToolUse · Read|Grep|Edit|Write|MultiEdit</td><td class="ev-cell">PreToolUse · apply_patch</td><td><span class="disp m">mirrored</span></td></tr>
+          <tr><td class="hook">auto-format/js_ts.py</td><td class="ev-cell">PostToolUse · Write|Edit|MultiEdit</td><td class="ev-cell">PostToolUse · apply_patch</td><td><span class="disp m">mirrored</span></td></tr>
+          <tr><td class="hook">auto-format/data.py</td><td class="ev-cell">PostToolUse · Write|Edit|MultiEdit</td><td class="ev-cell">PostToolUse · apply_patch</td><td><span class="disp m">mirrored</span></td></tr>
+          <tr><td class="hook">auto-format/markdown.py</td><td class="ev-cell">PostToolUse · Write|Edit|MultiEdit</td><td class="ev-cell">PostToolUse · apply_patch</td><td><span class="disp m">mirrored</span></td></tr>
+          <tr><td class="hook">auto-format/python.py</td><td class="ev-cell">PostToolUse · Write|Edit|MultiEdit</td><td class="ev-cell">PostToolUse · apply_patch</td><td><span class="disp m">mirrored</span></td></tr>
+          <tr><td class="hook">security-scan/post_write_scan.py</td><td class="ev-cell">PostToolUse · Write|Edit|MultiEdit</td><td class="ev-cell">PostToolUse · apply_patch</td><td><span class="disp m">mirrored</span></td></tr>
+          <tr><td class="hook">security-scan/track_bash_writes.py</td><td class="ev-cell">PostToolUse + PostToolUseFailure · Bash</td><td class="ev-cell">PostToolUse · Bash <b>(folded)</b></td><td><span class="disp m">mirrored</span></td></tr>
+          <tr><td class="hook">security-scan/session_baseline.py</td><td class="ev-cell">SessionStart</td><td class="ev-cell">SessionStart</td><td><span class="disp m">mirrored</span></td></tr>
+          <tr><td class="hook">security-scan/stop_sweep.py</td><td class="ev-cell">Stop + SubagentStop</td><td class="ev-cell">Stop + SubagentStop</td><td><span class="disp m">mirrored</span></td></tr>
+          <tr class="na"><td class="hook">check_spec_completeness.py</td><td class="ev-cell">Stop (command-scoped)</td><td class="ev-cell">— no per-command hooks</td><td><span class="disp n">not-applicable</span></td></tr>
+          <tr class="na"><td class="hook">worktree/worktree_create.py</td><td class="ev-cell">WorktreeCreate</td><td class="ev-cell">— no such event</td><td><span class="disp n">not-applicable</span></td></tr>
+          <tr class="na"><td class="hook">worktree/worktree_remove.py</td><td class="ev-cell">WorktreeRemove</td><td class="ev-cell">— no such event</td><td><span class="disp n">not-applicable</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="legend">
+      16 Claude bindings become 13 Codex bindings: the two worktree hooks drop out, and
+      <code>PostToolUseFailure</code> folds into <code>PostToolUse</code> because Codex has no such
+      event and its <code>PostToolUse</code> already fires for Bash commands that exit non-zero.
+    </p>
+  </section>
+
+  <section>
+    <div class="shead">
+      <p class="eyebrow">Build order — the sequence is load-bearing</p>
+      <h2>Nine tasks, three phases</h2>
+    </div>
+
+    <div class="phases">
+
+      <div class="phase">
+        <div class="phase-hd">
+          <span class="pn">Phase 1</span>
+          <h3>Foundation</h3>
+        </div>
+        <p class="phase-note">A hard barrier. Nothing in Phase 2 can be written correctly before the
+        parser's contract is fixed.</p>
+        <div class="tasks">
+          <div class="task">
+            <span class="tid">edited-paths</span>
+            <p>The shared path primitive in three <code>_common.py</code> modules, plus
+            <code>hook_host()</code>, plus the parametrized corpus test.</p>
+            <span class="stamp"><span>opus</span><span>high</span><span>AC10</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-hd">
+          <span class="pn">Phase 2</span>
+          <h3>Core implementation</h3>
+        </div>
+        <p class="phase-note">Four tasks over disjoint files — they parallelize cleanly once Phase 1 is
+        green.</p>
+        <div class="tasks">
+          <div class="task">
+            <span class="tid">ask-tier-deny</span>
+            <p>Nine ask rules exit 2 under the host flag, with a new host-neutral fix line. Claude's ask
+            tier untouched.</p>
+            <span class="stamp"><span>sonnet</span><span>medium</span><span>AC6–AC9</span></span>
+          </div>
+          <div class="task">
+            <span class="tid">formatters-multipath</span>
+            <p><code>target()</code> returns a list; all four formatters loop, aggregating diagnostics
+            across paths.</p>
+            <span class="stamp"><span>sonnet</span><span>low</span><span>AC11</span></span>
+          </div>
+          <div class="task">
+            <span class="tid">scan-guard-multipath</span>
+            <p>The scanner tracks every path; <code>file_guard</code> gains the patch surface and checks
+            <code>Move to:</code> targets.</p>
+            <span class="stamp"><span>opus</span><span>medium</span><span>AC12–AC13</span></span>
+          </div>
+          <div class="task">
+            <span class="tid">codex-registration</span>
+            <p>All 13 bindings written, plus the Auto preset in <code>config.toml</code>.</p>
+            <span class="stamp"><span>sonnet</span><span>low</span><span>AC1, AC4, AC16</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-hd">
+          <span class="pn">Phase 3</span>
+          <h3>Integration &amp; evidence</h3>
+        </div>
+        <p class="phase-note">The machinery that makes parity permanent, then the run that actually
+        proves it.</p>
+        <div class="tasks">
+          <div class="task">
+            <span class="tid">parity-matrix</span>
+            <p>Dispositions, the generalised pin replacing the one-off, and the offline proof.</p>
+            <span class="stamp"><span>opus</span><span>high</span><span>AC2, AC3, AC5, AC17</span></span>
+          </div>
+          <div class="task">
+            <span class="tid">hooks-md-codex-column</span>
+            <p>Catalog column, cross-check test, and the ship-together rule extended to name the Codex
+            surface.</p>
+            <span class="stamp"><span>sonnet</span><span>medium</span><span>AC18</span></span>
+          </div>
+          <div class="task">
+            <span class="tid">codex-probe</span>
+            <p>One live session per mirrored hook, asserting the block happened. The real acceptance
+            evidence.</p>
+            <span class="stamp"><span>opus</span><span>high</span><span>AC19–AC20</span></span>
+          </div>
+          <div class="task">
+            <span class="tid">validate-all</span>
+            <p>Every validation command; confirms no pre-existing test assertion changed.</p>
+            <span class="stamp"><span>opus</span><span>high</span><span>all</span></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <details>
+      <summary>Mechanical detail — settled, listed for completeness</summary>
+      <div>
+        <ul>
+          <li>Every Codex command uses <code>uv run --script "$(git rev-parse --show-toplevel)/.claude/hooks/…"</code>
+          and carries a <code>statusMessage</code>.</li>
+          <li>A failed <code>git rev-parse</code> yields an empty substitution, uv errors, and Codex
+          reports a hook failure and continues. Fail-open by contract, stated so it isn't
+          re-litigated.</li>
+          <li><code>resolve_root()</code> gains no <code>cwd</code> tier: Codex never sets
+          <code>$CLAUDE_PROJECT_DIR</code>, so it falls through to
+          <code>Path(__file__).parents[3]</code>, which is correct.</li>
+          <li><code>Stop</code> ignores matchers entirely; <code>SubagentStop</code> matches on
+          <code>agent_type</code>. Both are registered with none, which matches all.</li>
+          <li>The probe script lives at <code>scripts/codex-hook-probe.sh</code>, deliberately outside
+          <code>.claude/hooks/</code> — anything with a shebang under that tree needs a registration or
+          the wiring test fails.</li>
+          <li>No new dependencies; all 15 entrypoints already declare <code>dependencies = []</code>.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <div class="shead">
+      <p class="eyebrow">Anything else to change?</p>
+      <h2>Flag a concern</h2>
+    </div>
+    <div class="concerns" id="concerns">
+      <label class="concern"><input type="checkbox" data-c="scope"><span>Scope is too large — split the parity matrix into its own plan</span></label>
+      <label class="concern"><input type="checkbox" data-c="denytier"><span>Denying the nine ask rules under Codex is too aggressive</span></label>
+      <label class="concern"><input type="checkbox" data-c="readsurface"><span>Reconsider covering reads under Codex, not just writes</span></label>
+      <label class="concern"><input type="checkbox" data-c="permreq"><span>Add a <code>PermissionRequest</code> hook in this plan after all</span></label>
+      <label class="concern"><input type="checkbox" data-c="review"><span>Run the Codex spec review before building</span></label>
+      <label class="concern"><input type="checkbox" data-c="probeci"><span>The probe should run in CI, not by hand</span></label>
+    </div>
+  </section>
+
+  <section class="promptbox">
+    <div class="promptbar">
+      <div class="shead">
+        <p class="eyebrow">Copy back to Claude to revise the plan</p>
+        <h2>Revision prompt</h2>
+      </div>
+      <button class="copy" id="copybtn" type="button">Copy prompt</button>
+    </div>
+    <pre id="prompt"></pre>
+  </section>
+
+  <footer>
+    Plan files: <code>specs/codex-hooks-sync/</code> — spec.md, tasks.md, decisions.md,
+    acceptance-criteria.md. Discovery pages under <code>discovery/</code>.
+    Build with <code>/harness-layer:harness-build codex-hooks-sync</code>.
+  </footer>
+
+</div>
+
+<script>
+  const ALTS = {
+    shape: "Gate edited_paths() on the HARNESS_HOOK_HOST flag everywhere instead of branching on payload shape, so both behaviour changes use one uniform mechanism.",
+    copies: "Put edited_paths() in a single shared .claude/hooks/_hostlib.py and import it with an explicit sys.path insert in each family's _common.py, instead of keeping three copies pinned by a parametrized test.",
+    fixline: "Reuse the deny tier's existing \"…via the ! prefix\" wording for the Codex ask-tier denials instead of writing a new host-neutral fix line.",
+    timeouts: "Put an explicit timeout on all thirteen Codex entries rather than only on the four formatters and stop_sweep.",
+    evidence: "Drive the Codex probes from a pytest integration suite instead of a hand-run script, accepting the auth requirement and the subprocess ceiling."
+  };
+
+  const CONCERNS = {
+    scope: "The scope feels too large — consider splitting the portability matrix and the hooks.md catalog work into a separate follow-up plan.",
+    denytier: "Denying all nine ask-tier rules under Codex may be too aggressive — reconsider which families genuinely need to block.",
+    readsurface: "Reconsider covering the read surface under Codex rather than only writes, even though Codex has no Read or Grep tool.",
+    permreq: "Add a PermissionRequest hook to this plan rather than deferring it to a follow-up.",
+    review: "Run the Codex spec review on this plan before building, despite it being waived.",
+    probeci: "Find a way to run the hook probes in CI rather than by hand."
+  };
+
+  const state = { flipped: new Set(), concerns: new Set() };
+
+  document.querySelectorAll(".deck").forEach(function (deck) {
+    deck.querySelector(".flip").addEventListener("click", function () {
+      const key = deck.dataset.key;
+      const on = deck.classList.toggle("flipped");
+      this.textContent = on ? "Keep the chosen path" : "Use the alternative instead";
+      if (on) { state.flipped.add(key); } else { state.flipped.delete(key); }
+      render();
+    });
+  });
+
+  document.querySelectorAll("#concerns input").forEach(function (box) {
+    box.addEventListener("change", function () {
+      const key = this.dataset.c;
+      this.closest(".concern").classList.toggle("on", this.checked);
+      if (this.checked) { state.concerns.add(key); } else { state.concerns.delete(key); }
+      render();
+    });
+  });
+
+  function render() {
+    const lines = [];
+    const changes = [];
+
+    state.flipped.forEach(function (k) { changes.push(ALTS[k]); });
+    state.concerns.forEach(function (k) { changes.push(CONCERNS[k]); });
+
+    if (changes.length === 0) {
+      lines.push("The codex-hooks-sync plan looks right as drafted — no changes. Go ahead and build it:");
+      lines.push("");
+      lines.push("/harness-layer:harness-build codex-hooks-sync");
+    } else {
+      lines.push("Revise the codex-hooks-sync plan (issue #62, worktree .claude/worktrees/codex-hooks-sync).");
+      lines.push("Keep every other decision as drafted — these are the only changes:");
+      lines.push("");
+      changes.forEach(function (c, i) { lines.push((i + 1) + ". " + c); });
+      lines.push("");
+      lines.push("Update spec.md, tasks.md, decisions.md, and acceptance-criteria.md to match, log what changed and why in decisions.md, and republish the implementation plan page.");
+    }
+
+    document.getElementById("prompt").textContent = lines.join("\n");
+  }
+
+  document.getElementById("copybtn").addEventListener("click", function () {
+    const btn = this;
+    navigator.clipboard.writeText(document.getElementById("prompt").textContent).then(function () {
+      btn.textContent = "Copied";
+      btn.classList.add("done");
+      setTimeout(function () { btn.textContent = "Copy prompt"; btn.classList.remove("done"); }, 1600);
+    });
+  });
+
+  render();
+</script>
