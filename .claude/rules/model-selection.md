@@ -65,8 +65,7 @@ must run unattended end to end, or whose job is verification, never goes below `
 
 - Claude models: pass the alias (`fable`, `opus`, `sonnet`, `haiku`) via the
   Agent/Workflow `model` parameter. Never hardcode a dated id like `claude-opus-4-8`.
-- Codex models: run `codex exec` directly through this repo's skills and agents
-  (`.agents/skills/`, `.codex/agents/*.toml`), passing model and effort explicitly per
+- Codex models: run `codex exec` directly, passing model and effort explicitly per
   task — never rely on the `config.toml` default.
 - Codex inside a Workflow (the `model` parameter only takes Claude aliases): spawn a
   thin `sonnet`/`low` wrapper agent whose prompt writes a self-contained codex prompt,

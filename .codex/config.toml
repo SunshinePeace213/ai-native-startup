@@ -1,6 +1,5 @@
 # Project-local Codex config: sandbox, approval policy, and hook layer for every Codex
-# session in this repo, plus limits for the /harness-layer:harness-build review subagents
-# defined in .codex/agents/*.toml.
+# session in this repo.
 
 personality = "pragmatic"
 
@@ -10,7 +9,6 @@ sandbox_mode = "workspace-write"
 
 [features]
 apps = true
-multi_agent = true
 personality = true
 shell_snapshot = true
 unified_exec = true
@@ -39,9 +37,3 @@ status_line = [
 
 [tui.model_availability_nux]
 "gpt-5.6-sol" = 2
-
-[agents]
-# These are the Codex defaults, pinned here explicitly because they already fit
-# this design exactly: 6 review subagents, no nested spawning.
-max_threads = 6
-max_depth = 1
