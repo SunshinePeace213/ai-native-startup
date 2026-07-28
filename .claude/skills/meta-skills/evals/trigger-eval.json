@@ -1,0 +1,82 @@
+[
+  {
+    "query": "our deploy runbook is 12 steps and everyone gets step 7 wrong. i want claude to just do it the same way every time instead of me pasting the steps in",
+    "should_trigger": true
+  },
+  {
+    "query": "i want claude to reach for our accessibility checklist on its own when someone touches a component, without me having to ask for it every single time",
+    "should_trigger": true
+  },
+  {
+    "query": "that release-notes process you just walked me through — i want to be able to rerun it next sprint by typing one thing",
+    "should_trigger": true
+  },
+  {
+    "query": "can you make me a slash command that stages everything and commits with a conventional commit message. it should only run when i ask for it, never on its own",
+    "should_trigger": true
+  },
+  {
+    "query": "i have a skill that fires way too eagerly — i asked about git log yesterday and it loaded anyway. how do i make it stay out of the way unless it's actually relevant",
+    "should_trigger": true
+  },
+  {
+    "query": "how would i tell whether a skill i wrote is actually helping? i want numbers comparing it against just not having it, not vibes",
+    "should_trigger": true
+  },
+  {
+    "query": "i've got a SKILL.md written back on opus 4.8 that's full of 'double-check your work' and 'be thorough'. does that still make sense on the current models",
+    "should_trigger": true
+  },
+  {
+    "query": "whats the right way to bundle up a skill directory so i can hand the whole thing to someone on another team",
+    "should_trigger": true
+  },
+  {
+    "query": "help me rewrite this description so it triggers more reliably: 'A helpful skill for PostgreSQL migrations.'",
+    "should_trigger": true
+  },
+  {
+    "query": "i keep telling claude the same three things about how we write tests in this repo. where should that live so i stop repeating myself",
+    "should_trigger": true
+  },
+  {
+    "query": "create a subagent that audits our dependency tree for CVEs and reports back just the exploitable ones",
+    "should_trigger": false
+  },
+  {
+    "query": "i want a code-reviewer agent that catches null checks in payments code. write the agent definition for me",
+    "should_trigger": false
+  },
+  {
+    "query": "add a PreToolUse hook that blocks destructive shell commands before they execute",
+    "should_trigger": false
+  },
+  {
+    "query": "what skills do i have installed right now, and which ones came from plugins",
+    "should_trigger": false
+  },
+  {
+    "query": "write me a python script that pulls every table out of a directory of PDFs into one csv. theres about 200 files to get through",
+    "should_trigger": false
+  },
+  {
+    "query": "add a rule so that every handler in src/api validates its input with zod",
+    "should_trigger": false
+  },
+  {
+    "query": "set up a cron that runs the test suite every morning at 7 and messages me if it goes red",
+    "should_trigger": false
+  },
+  {
+    "query": "our CLAUDE.md is 400 lines now and claude clearly ignores half of it. can you cut it down to what actually matters",
+    "should_trigger": false
+  },
+  {
+    "query": "review the diff on this branch and tell me what would break in production",
+    "should_trigger": false
+  },
+  {
+    "query": "set up an MCP server for our internal metrics API so claude can query it",
+    "should_trigger": false
+  }
+]

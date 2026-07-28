@@ -14,12 +14,12 @@ Defines the evals for a skill. Located at `evals/evals.json` within the skill di
   "evals": [
     {
       "id": 1,
+      "name": "fills-every-required-field",
       "prompt": "User's example prompt",
-      "expected_output": "Description of expected result",
       "files": ["evals/files/sample1.pdf"],
-      "expectations": [
-        "The output includes X",
-        "The skill used script Y"
+      "assertions": [
+        {"id": "a1", "text": "output.pdf exists", "check": "test -f output.pdf"},
+        {"id": "a2", "text": "Every required field is populated"}
       ]
     }
   ]
@@ -29,11 +29,15 @@ Defines the evals for a skill. Located at `evals/evals.json` within the skill di
 **Fields:**
 
 - `skill_name`: Name matching the skill's frontmatter
-- `evals[].id`: Unique integer identifier
+- `evals[].id`: Unique integer identifier — names the `eval-<id>/` run directory
+- `evals[].name`: Human-readable label, recorded in `eval_metadata.json`
 - `evals[].prompt`: The task to execute
-- `evals[].expected_output`: Human-readable description of success
-- `evals[].files`: Optional list of input file paths (relative to skill root)
-- `evals[].expectations`: List of verifiable statements
+- `evals[].files`: Optional input files, relative to the skill root, copied into
+  each run's working directory
+- `evals[].assertions[].id`: Stable key the grader reports verdicts against
+- `evals[].assertions[].text`: The statement being checked
+- `evals[].assertions[].check`: Optional shell command run in the run's output
+  directory; exit 0 passes. Assertions without one go to the judge
 
 ---
 
@@ -87,7 +91,11 @@ Tracks version progression in Improve mode. Located at workspace root.
 
 ## grading.json
 
-Output from the grader agent. Located at `<run-dir>/grading.json`.
+Located at `<run-dir>/grading.json`. `scripts/run_behavior_eval.py` writes the
+`expectations`, `summary`, and `timing` keys itself — `expectations[].text`,
+`.passed`, and `.evidence` are the exact names the aggregator and the viewer
+read. The remaining keys below appear only when a grader subagent produces the
+file instead.
 
 ```json
 {
@@ -295,7 +303,9 @@ Output from Benchmark mode. Located at `benchmarks/<timestamp>/benchmark.json`.
   - `skill_name`: Name of the skill
   - `timestamp`: When the benchmark was run
   - `evals_run`: List of eval names or IDs
-  - `runs_per_configuration`: Number of runs per config (e.g. 3)
+  - `runs_per_configuration`: Repeats per config, counted from the runs actually
+    found. At 1 the reported stddev carries no run-to-run information and any
+    delta is noise
 - `runs[]`: Individual run results
   - `eval_id`: Numeric eval identifier
   - `eval_name`: Human-readable eval name (used as section header in the viewer)

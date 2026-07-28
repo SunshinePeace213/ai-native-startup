@@ -9,8 +9,10 @@ import argparse
 import json
 import os
 import select
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -32,6 +34,18 @@ def find_project_root() -> Path:
     return current
 
 
+def isolated_project_root() -> str:
+    """A bare project root outside this repo, for planting trigger probes.
+
+    Probing inside a project where the skill is already installed measures
+    nothing: the real skill carries the same description and an actual body, so
+    Claude consults it instead of the probe and every query scores as a miss.
+    """
+    root = Path(tempfile.mkdtemp(prefix="trigger-probe-"))
+    (root / ".claude").mkdir()
+    return str(root)
+
+
 def run_single_query(
     query: str,
     skill_name: str,
@@ -50,8 +64,15 @@ def run_single_query(
     """
     unique_id = uuid.uuid4().hex[:8]
     clean_name = f"{skill_name}-skill-{unique_id}"
-    project_commands_dir = Path(project_root) / ".claude" / "commands"
+
+    # Each run gets its own project root. Sharing one means N concurrent workers
+    # plant N near-identical probes side by side; Claude picks whichever it
+    # likes and each worker only recognizes its own hash, so the measured
+    # trigger rate collapses toward 1/N regardless of the description.
+    probe_root = Path(tempfile.mkdtemp(prefix="trigger-probe-"))
+    project_commands_dir = probe_root / ".claude" / "commands"
     command_file = project_commands_dir / f"{clean_name}.md"
+    project_root = str(probe_root)
 
     try:
         project_commands_dir.mkdir(parents=True, exist_ok=True)
@@ -69,8 +90,10 @@ def run_single_query(
 
         cmd = [
             "claude",
-            "-p", query,
-            "--output-format", "stream-json",
+            "-p",
+            query,
+            "--output-format",
+            "stream-json",
             "--verbose",
             "--include-partial-messages",
         ]
@@ -91,6 +114,7 @@ def run_single_query(
         )
 
         triggered = False
+        exited = False
         start_time = time.time()
         buffer = ""
         # Track state for stream event detection
@@ -100,6 +124,7 @@ def run_single_query(
         try:
             while time.time() - start_time < timeout:
                 if process.poll() is not None:
+                    exited = True
                     remaining = process.stdout.read()
                     if remaining:
                         buffer += remaining.decode("utf-8", errors="replace")
@@ -133,12 +158,15 @@ def run_single_query(
                         if se_type == "content_block_start":
                             cb = se.get("content_block", {})
                             if cb.get("type") == "tool_use":
+                                # Claude routinely does groundwork (Bash, Glob)
+                                # before consulting a skill. Keep watching until
+                                # the turn ends rather than scoring the first
+                                # unrelated tool call as "did not trigger".
                                 tool_name = cb.get("name", "")
-                                if tool_name in ("Skill", "Read"):
-                                    pending_tool_name = tool_name
-                                    accumulated_json = ""
-                                else:
-                                    return False
+                                pending_tool_name = (
+                                    tool_name if tool_name in ("Skill", "Read") else None
+                                )
+                                accumulated_json = ""
 
                         elif se_type == "content_block_delta" and pending_tool_name:
                             delta = se.get("delta", {})
@@ -147,11 +175,15 @@ def run_single_query(
                                 if clean_name in accumulated_json:
                                     return True
 
-                        elif se_type in ("content_block_stop", "message_stop"):
-                            if pending_tool_name:
-                                return clean_name in accumulated_json
-                            if se_type == "message_stop":
-                                return False
+                        elif se_type == "content_block_stop":
+                            if pending_tool_name and clean_name in accumulated_json:
+                                return True
+                            pending_tool_name = None
+                            accumulated_json = ""
+
+                        elif se_type == "message_stop":
+                            if pending_tool_name and clean_name in accumulated_json:
+                                return True
 
                     # Fallback: full assistant message
                     elif event.get("type") == "assistant":
@@ -161,11 +193,14 @@ def run_single_query(
                                 continue
                             tool_name = content_item.get("name", "")
                             tool_input = content_item.get("input", {})
-                            if tool_name == "Skill" and clean_name in tool_input.get("skill", ""):
-                                triggered = True
-                            elif tool_name == "Read" and clean_name in tool_input.get("file_path", ""):
-                                triggered = True
-                            return triggered
+                            fired_skill = tool_name == "Skill" and clean_name in tool_input.get(
+                                "skill", ""
+                            )
+                            read_skill = tool_name == "Read" and clean_name in tool_input.get(
+                                "file_path", ""
+                            )
+                            if fired_skill or read_skill:
+                                return True
 
                     elif event.get("type") == "result":
                         return triggered
@@ -175,10 +210,11 @@ def run_single_query(
                 process.kill()
                 process.wait()
 
-        return triggered
+        # A run that never finished tells us nothing about triggering. Report it
+        # as unknown so it can be excluded rather than counted as a miss.
+        return triggered if exited else None
     finally:
-        if command_file.exists():
-            command_file.unlink()
+        shutil.rmtree(probe_root, ignore_errors=True)
 
 
 def run_eval(
@@ -222,27 +258,50 @@ def run_eval(
                 query_triggers[query].append(future.result())
             except Exception as e:
                 print(f"Warning: query failed: {e}", file=sys.stderr)
-                query_triggers[query].append(False)
+                query_triggers[query].append(None)
 
     for query, triggers in query_triggers.items():
         item = query_items[query]
-        trigger_rate = sum(triggers) / len(triggers)
+        # None means the run never completed. Scoring it as "did not trigger"
+        # turns harness flakiness into a description failure, so drop it.
+        scored = [t for t in triggers if t is not None]
+        errors = len(triggers) - len(scored)
         should_trigger = item["should_trigger"]
+
+        if not scored:
+            results.append(
+                {
+                    "query": query,
+                    "should_trigger": should_trigger,
+                    "trigger_rate": None,
+                    "triggers": 0,
+                    "runs": 0,
+                    "errors": errors,
+                    "pass": None,
+                }
+            )
+            continue
+
+        trigger_rate = sum(scored) / len(scored)
         if should_trigger:
             did_pass = trigger_rate >= trigger_threshold
         else:
             did_pass = trigger_rate < trigger_threshold
-        results.append({
-            "query": query,
-            "should_trigger": should_trigger,
-            "trigger_rate": trigger_rate,
-            "triggers": sum(triggers),
-            "runs": len(triggers),
-            "pass": did_pass,
-        })
+        results.append(
+            {
+                "query": query,
+                "should_trigger": should_trigger,
+                "trigger_rate": trigger_rate,
+                "triggers": sum(scored),
+                "runs": len(scored),
+                "errors": errors,
+                "pass": did_pass,
+            }
+        )
 
-    passed = sum(1 for r in results if r["pass"])
-    total = len(results)
+    measured = [r for r in results if r["pass"] is not None]
+    passed = sum(1 for r in measured if r["pass"])
+    total = len(measured)
 
     return {
         "skill_name": skill_name,
@@ -252,6 +311,7 @@ def run_eval(
             "total": total,
             "passed": passed,
             "failed": total - passed,
+            "unmeasured": len(results) - total,
         },
     }
 
@@ -264,8 +324,14 @@ def main():
     parser.add_argument("--num-workers", type=int, default=10, help="Number of parallel workers")
     parser.add_argument("--timeout", type=int, default=30, help="Timeout per query in seconds")
     parser.add_argument("--runs-per-query", type=int, default=3, help="Number of runs per query")
-    parser.add_argument("--trigger-threshold", type=float, default=0.5, help="Trigger rate threshold")
-    parser.add_argument("--model", default=None, help="Model to use for claude -p (default: user's configured model)")
+    parser.add_argument(
+        "--trigger-threshold", type=float, default=0.5, help="Trigger rate threshold"
+    )
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="Model to use for claude -p (default: user's configured model)",
+    )
     parser.add_argument("--verbose", action="store_true", help="Print progress to stderr")
     args = parser.parse_args()
 
@@ -301,7 +367,10 @@ def main():
         for r in output["results"]:
             status = "PASS" if r["pass"] else "FAIL"
             rate_str = f"{r['triggers']}/{r['runs']}"
-            print(f"  [{status}] rate={rate_str} expected={r['should_trigger']}: {r['query'][:70]}", file=sys.stderr)
+            print(
+                f"  [{status}] rate={rate_str} expected={r['should_trigger']}: {r['query'][:70]}",
+                file=sys.stderr,
+            )
 
     print(json.dumps(output, indent=2))
 

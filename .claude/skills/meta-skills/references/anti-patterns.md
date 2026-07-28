@@ -1,4 +1,4 @@
-# Anti-Patterns & Pre-Ship Checklist
+# Anti-Patterns
 
 Scan every draft for these before shipping. If the user explicitly wants one,
 explain the cost once and comply only if they confirm.
@@ -18,10 +18,11 @@ change the output if deleted.
 - **Re-teaching tools.** "Use the Edit tool to change files" is noise. Name a
   tool only when the choice is load-bearing.
 - **Prompting theatrics.** Fake incentives ("I'll tip $100"), competitive
-  framing, inflated personas ("10,000+ PRs reviewed"), vague stakes, "think
-  step by step" / "think harder", forced progress-update cadences, and
+  framing, inflated personas ("10,000+ PRs reviewed"), vague stakes, and
   all-caps MUST/NEVER without a reason — current models read these literally;
   they add tokens, not behavior. State the constraint and its *why* instead.
+  The model-era cuts (self-verification, depth-by-prose, forced cadence,
+  reasoning echo) live in `model-tuning.md`.
 - **Unspecified output shape.** "Provide a thorough analysis" is unanchored.
   When shape matters, give length, structure, or a schema; to reduce
   verbosity, one positive example of the right concision beats "don't
@@ -38,7 +39,7 @@ change the output if deleted.
 ## BAD → GOOD descriptions
 
 | BAD | GOOD |
-|---|---|
+| --- | --- |
 | `A helpful skill for PostgreSQL migrations.` | `Drafts safe, reversible PostgreSQL migrations following the project's conventions. Use when the user adds/drops a column, changes a constraint, backfills data, or mentions "migration" or "alter table" — even without naming a migration.` |
 | `I help you make plans for your projects.` | `Creates a concise engineering implementation plan from the user's requirements and saves it to the specs directory. Use when the user asks to "plan", "spec out", or "write an implementation plan".` |
 | `The build command. Builds things.` | `Implements an existing plan file in the codebase. Use when the user says "build the plan", "implement this spec", or passes a path to a plan to execute.` |
@@ -73,24 +74,13 @@ competing → sharpen both so their trigger sets don't overlap.
   sentences each. Skip it for brand-new skills; add the first entry the first
   time something breaks.
 
-## Pre-ship checklist
+## Format details worth a second look
 
-Any failure → fix, then reread the whole draft fresh.
+Beyond the checklist in `SKILL.md`:
 
-- [ ] Decision gate applied — this is the right artifact (command / skill /
-      subagent) in the right location, and no same-name duplicate exists
-- [ ] `description` is a trigger document: third person, front-loaded, real
-      user phrasings, within caps, no angle brackets
-- [ ] `when_to_use` is non-redundant (gate/routing) or omitted
-- [ ] Skills: directory name is lowercase-hyphen and `name` matches it;
-      commands: `argument-hint` present when args are taken, Variables
-      ordered dynamic-first
-- [ ] Body under 500 lines; nothing states what Claude already does; goal +
-      constraints rather than a script (unless order is load-bearing)
-- [ ] References one level deep; files over ~300 lines have a ToC; bundled
-      paths via `${CLAUDE_SKILL_DIR}`; forward slashes; MCP tools qualified
-- [ ] Side-effecting artifacts set `disable-model-invocation: true`;
-      `allowed-tools` covers any injection blocks; `model` is an alias
-- [ ] Tooling in examples matches AGENTS.md (uv, bun)
-- [ ] `scripts/validate.py` passes; for distribution, `quick_validate` passes
-      on the strict packaging surface
+- `when_to_use` is non-redundant (a gate or a sibling route) or omitted.
+- Commands: `argument-hint` present when args are taken, Variables ordered
+  dynamic-first.
+- Files over ~300 lines carry a table of contents.
+- `allowed-tools` covers any injection block the body relies on.
+- Tooling in examples matches AGENTS.md (`uv`, `bun`).

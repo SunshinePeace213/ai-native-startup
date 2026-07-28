@@ -1,0 +1,31 @@
+{
+  "skill_name": "meta-skills",
+  "evals": [
+    {
+      "id": 0,
+      "name": "modernizes-a-legacy-skill",
+      "prompt": "The file legacy-SKILL.md in this directory is a skill we wrote for an older model generation. Modernize it for the current one. Save the rewritten skill as SKILL.md in this directory.",
+      "files": ["evals/files/legacy-SKILL.md"],
+      "assertions": [
+        {"id": "a1", "text": "A rewritten SKILL.md exists", "check": "test -f SKILL.md"},
+        {"id": "a2", "text": "The rewrite passes the body lint", "check": "uv run --with pyyaml python \"$SKILL_DIR/scripts/validate.py\" SKILL.md"},
+        {"id": "a3", "text": "The self-verification and depth-by-prose instructions are gone", "check": "! grep -qiE 'double.?check|be thorough|take your time|re-?verify|think step by step' SKILL.md"},
+        {"id": "a4", "text": "The reasoning-echo instruction is gone", "check": "! grep -qiE 'explain your reasoning|show your (work|thinking)' SKILL.md"},
+        {"id": "a5", "text": "The description names concrete contexts or phrasings that should route to the skill, rather than a bare summary like 'Writes PR descriptions.'"},
+        {"id": "a6", "text": "The rewrite still covers the original job of producing a PR description from a diff"}
+      ]
+    },
+    {
+      "id": 1,
+      "name": "captures-a-workflow-as-a-skill",
+      "prompt": "Every time someone on our team adds a database migration I have to remind them to check it drops no column without a backfill step, and to confirm it has a matching rollback. I am tired of repeating myself. Turn this into something Claude does on its own. Save whatever files you create in this directory.",
+      "assertions": [
+        {"id": "b1", "text": "A SKILL.md was produced", "check": "find . -name 'SKILL.md' | head -1 | grep -q ."},
+        {"id": "b2", "text": "It passes the body lint", "check": "uv run --with pyyaml python \"$SKILL_DIR/scripts/validate.py\" \"$(find . -name 'SKILL.md' | head -1)\""},
+        {"id": "b3", "text": "The description names migration vocabulary a user would actually type", "check": "grep -qiE 'migration|schema|alter table' \"$(find . -name 'SKILL.md' | head -1)\""},
+        {"id": "b4", "text": "The body encodes both rules from the request: no column drop without a backfill, and a matching rollback"},
+        {"id": "b5", "text": "The body states goals and constraints rather than reciting a rigid numbered script for work whose order is not load-bearing"}
+      ]
+    }
+  ]
+}

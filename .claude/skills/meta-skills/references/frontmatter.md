@@ -19,7 +19,7 @@ between `---` markers at the top of the file. Every field is optional;
 ## Field-by-field
 
 | Field | Type / values | Controls | Set it when |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `name` | lowercase-hyphen string, ≤ 64 chars | Display label. The `/command` name comes from the directory (skills) or filename (flat commands), not from this field. | Skills: set it to match the directory (packaging requires it). Flat commands: omit. |
 | `description` | plain text, third person | Whether Claude auto-loads it, and discovery in the `/` menu. If omitted, only manual `/name` invocation works. | Always, unless the artifact is purely manual. See "Writing the description" below. |
 | `when_to_use` | plain text | Extra routing context appended to `description` in the listing. | Only for a non-redundant gate or sibling-routing boundary ("Not for X — use /other"). Omit if it would echo `description`. |
@@ -29,8 +29,8 @@ between `---` markers at the top of the file. Every field is optional;
 | `disallowed-tools` | same syntax | **Removes** tools from the pool while active; clears on the next user message. | The artifact must never call a tool (e.g. `Task, EnterPlanMode` on an autonomous planner). |
 | `disable-model-invocation` | boolean, default `false` | `true` → only the user can invoke it; Claude can't auto-run it and its description leaves the listing. | Side-effecting artifacts (`/commit`, `/deploy`, `/send-*`) — the user controls the timing. |
 | `user-invocable` | boolean, default `true` | `false` → hidden from the `/` menu; only Claude invokes it. | Background knowledge that isn't a meaningful user action. |
-| `model` | alias (`opus`, `sonnet`, `haiku`, `fable`) or `inherit` | Model while the artifact runs; reverts on the next user prompt. Aliases only, per AGENTS.md. | The work needs a specific tier; otherwise inherit the session. |
-| `effort` | `low` \| `medium` \| `high` \| `xhigh` \| `max` | Reasoning depth + tool-use propensity while active; overrides session effort. | Optional — leave it unset unless the user asks for it or quality demonstrably needs a specific level. |
+| `model` | alias (`opus`, `sonnet`, `haiku`, `fable`) or `inherit` | Model while the artifact runs; reverts on the next user prompt. Aliases only, never a dated id. | The work has a floor the session may not meet — anything user-facing needs taste ≥ 7. Otherwise inherit. See `model-tuning.md`. |
+| `effort` | `low` \| `medium` \| `high` \| `xhigh` \| `max` | Reasoning depth + tool-use propensity while active; overrides session effort. | Quality demonstrably depends on it — never to save tokens. Unattended or verification-shaped work stays at `medium` or above. |
 | `context` | `fork` | Runs the body in an isolated subagent context with no conversation history. | Self-contained heavy work (research, large sweeps). Pointless for guideline-only bodies. |
 | `agent` | `Explore`, `Plan`, `general-purpose`, or a custom agent name | Which subagent config executes a forked run. | Only with `context: fork` — e.g. `agent: Explore` for read-only research. |
 | `shell` | `bash` (default) \| `powershell` | Shell for `` !`cmd` `` injection blocks. | Windows/PowerShell injection needs. |
@@ -53,7 +53,7 @@ distribution.
 What you type after `/` comes from location:
 
 | Layout | `/name` comes from |
-|---|---|
+| --- | --- |
 | `.claude/skills/<dir>/SKILL.md` | the directory name |
 | `.claude/commands/<file>.md` | the filename without extension |
 | plugin `skills/<dir>/SKILL.md` | dir name, namespaced `plugin:name` |
@@ -66,7 +66,7 @@ A same-name skill silently beats a flat command — never keep both.
 Expanded in the body before Claude sees it:
 
 | Token | Expands to |
-|---|---|
+| --- | --- |
 | `$ARGUMENTS` | all args as typed, one string |
 | `$ARGUMENTS[N]` | one arg by 0-based index |
 | `$1`, `$2` … | positional args — house convention: `$1` is the first argument, matching the team's existing commands |
@@ -89,7 +89,9 @@ human summary.
   the skill or file type.
 - **Be slightly pushy** — Claude undertriggers skills. "Use whenever the user
   mentions migrations, schema changes, or 'alter table', even without asking
-  for a migration by name."
+  for a migration by name." Pushiness cuts both ways once several artifacts
+  compete for the same vocabulary, so settle it with a trigger eval rather than
+  by guessing — see `evaluation.md`.
 - **Add a boundary** that routes adjacent work to a sibling ("Not for X — use
   /other"), in `when_to_use` if `description` is at budget.
 - For side-effecting artifacts, don't try to phrase the description so Claude
