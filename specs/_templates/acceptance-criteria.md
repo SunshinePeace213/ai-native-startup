@@ -14,9 +14,11 @@ must be checkable by a human or a command — no "feels fast", no "works well".>
 
 ## Validation Commands
 
-Run these to prove the criteria above. Map each command to the criteria it verifies.
+One executable script per criterion under [checks/](./checks/) proves it. Each script is
+self-contained, runs from the repo root (`uv run` for Python, `bun` for JS/TS, bash otherwise),
+and exits 0 on pass — no long inline scripts here, only invocations.
 
-<precise, copy-pasteable commands. Use `uv run …` for Python and `bun …` for JS/TS.>
-
-- `<command>` — verifies <AC#>. <what a pass looks like>
-- `<command>` — verifies <AC#>.
+| Command | Verifies | Pass looks like |
+| --- | --- | --- |
+| `<bash specs/<name>/checks/ac1-<slug>.sh>` | AC1 | <observable pass condition> |
+| `<uv run specs/<name>/checks/ac2-<slug>.py>` | AC2 | <…> |

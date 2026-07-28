@@ -73,5 +73,6 @@ completion notification instead. Fetch full schemas with `ToolSearch` when neede
 
 - **Team**: `/harness-layer:harness-build`'s implement stage — file-disjoint tasks
   with stamped owners and dependencies.
-- **Subagents**: plan's `claude-code-guide` and `kb-fetcher` helpers, `/kb`
-  fan-out, the tidy simplifiers, and review's Codex runner and fixers.
+- **Subagents**: plan's `claude-code-guide` and `kb-fetcher` helpers and its
+  `opus` page author, `/kb` fan-out, the tidy simplifiers, and review's Codex
+  runner and fixers.

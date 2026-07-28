@@ -15,7 +15,7 @@
 
 - **Instructions, not rationale**: State what to do, not why. No "chose A over B", no decision logs, no design history — that's context bloat the agent never acts on.
 - **No stray cross-refs**: Don't reference other commands or skills unless the file actually needs them to run. Mentions "for context" just add noise.
-- **Keep it short**: Write harness/prompt files (skills, agents, commands, and rules under `.claude/` and `.agents/`) in fluent, KISS prose. Every line loads into context — say it once, briefly, then stop. When in doubt, cut.
+- **Keep it short**: Write harness/prompt files (skills, agents, commands, and rules under `.claude/`) in fluent, KISS prose. Every line loads into context — say it once, briefly, then stop. When in doubt, cut.
 - **Hooks**: [hooks.md](.claude/rules/harness-layer/hooks.md) is the authoritative catalog of every hook — event/matcher, contract, files, and the hook-test rules. Read it before any hook work; never re-summarize hook behavior elsewhere or re-derive it from memory.
 - **Memory**: `AGENTS.md` is the hub — topic rules live in `.claude/rules/` (domain families in folders like `harness-layer/`, path-scoped via `paths:` frontmatter; rules every session needs stay flat at the root with no `paths:`). Never persist memory in `CLAUDE.md` (it only `@`-imports this file) or a new root markdown file. Fetch/record/edit/create contract: [memory-series.md](.claude/rules/memory-series.md).
 - **Model selection**: every model/effort assignment — Claude and Codex; orchestrators, subagents, workflows, Codex tasks — follows [model-selection.md](.claude/rules/model-selection.md). It loads every session; never duplicate its guidance in templates, tasks, or commands.
@@ -28,7 +28,6 @@
 
 ## Project Structure
 
-- `.agents/` -- Codex Skills Configuration
 - `.claude/rules/` — path-scoped project rules
 - `ai-docs/` — cached official docs KB managed by `/kb` (catalog: `ai-docs/index.md`), plus hand-written project notes
 - `specs/` — planning files (per-plan folders; pre-plan discovery pages live in each plan's `discovery/`)
