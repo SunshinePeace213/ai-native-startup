@@ -104,6 +104,6 @@ Always ends the run — on `approved`, cap reached, a dispute, or `codex-unavail
 
 Before reporting, close the loop on the gate itself: a confirmed finding that exposed
 a missing or unclear standard → amend `.claude/rules/harness-layer/spec-standards.md`
-in the same commit series; a generalizable process lesson → one line in
-`.claude/rules/development-log.md` per the memory-series contract. Skip both when
+in the same commit series; a generalizable process lesson → route it to its
+rule-file home per the memory-series contract. Skip both when
 nothing generalizes — most runs add nothing.

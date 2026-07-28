@@ -59,3 +59,8 @@ Tests live in `tests/harness-layer/hooks/<feature>/`, mirroring
 - Subprocess timeout is 45s under pytest's global 60s; raise neither — mark a
   known-slow test `@pytest.mark.timeout(120)`.
 - Every test docstring states WHY the behavior matters, not just what it does.
+- Probe Codex hook behavior from a scratch repo: Codex loads `.codex/` from the
+  main repo root, so a worktree's own layer never runs, and an untrusted project
+  path has no hook layer at all.
+- A fail-open hook is only proven by a positively observed block — a green suite
+  pins registration, never execution.

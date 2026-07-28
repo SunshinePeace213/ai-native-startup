@@ -20,6 +20,7 @@ the hub or in `.claude/rules/` — never create a new root-level memory markdown
 - A new preference or convention in an existing series → edit that series' rule file.
 - Cross-cutting or repo-wide → the matching `AGENTS.md` section.
 - A genuinely new convention series → create a new rule file (below) and reference it from `AGENTS.md`. One-off notes don't get a file.
+- A build or review lesson routes immediately to where it loads when relevant: file-scoped → the matching path-scoped rule; pipeline-process → the command or rule it corrects; plan-local → that plan's `implementation-notes.md`. No flat lesson log.
 
 ## Create a new rule file
 

@@ -20,7 +20,7 @@
 - **Memory**: `AGENTS.md` is the hub — topic rules live in `.claude/rules/` (domain families in folders like `harness-layer/`, path-scoped via `paths:` frontmatter; rules every session needs stay flat at the root with no `paths:`). Never persist memory in `CLAUDE.md` (it only `@`-imports this file) or a new root markdown file. Fetch/record/edit/create contract: [memory-series.md](.claude/rules/memory-series.md).
 - **Model selection**: every model/effort assignment — Claude and Codex; orchestrators, subagents, workflows, Codex tasks — follows [model-selection.md](.claude/rules/model-selection.md). It loads every session; never duplicate its guidance in templates, tasks, or commands.
 - **Orchestration**: choosing between doing the work yourself, subagents, and an agent team — plus the shared `Task*` board — follows [orchestration.md](.claude/rules/orchestration.md). It loads every session.
-- **Dev log**: cross-plan lessons live in [development-log.md](.claude/rules/development-log.md); per-plan process (phases, hand-offs, deviations, fixes, lessons) lives in that plan's `specs/<name>/implementation-notes.md`.
+- **Lessons**: the build/review memory steps route each lesson to its home per [memory-series.md](.claude/rules/memory-series.md) — file-scoped → the matching rule, pipeline-process → the file it corrects; per-plan process (phases, hand-offs, deviations, fixes) lives in that plan's `specs/<name>/implementation-notes.md`.
 
 ## Git Workflow & Pull Requests
 
