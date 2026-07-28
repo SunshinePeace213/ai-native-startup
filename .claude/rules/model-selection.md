@@ -12,7 +12,7 @@ what we actually pay (Codex limits are generous), not list price.
 
 | Model | Invoke via | Intelligence | Taste | Speed | Cost | Choose for |
 | --- | --- | --- | --- | --- | --- | --- |
-| `fable` (Fable 5) | Agent/Workflow `model` | 10 | 9 | 3 | 4 | Highest-judgment work — specs, build orchestration, consolidating review findings. Orchestrator only — never deploy as a subagent |
+| `fable` (Fable 5) | Agent/Workflow `model` | 10 | 9 | 3 | 4 | Highest-judgment work — deep specs, and long-horizon autonomous runs `opus` cannot finish at any effort. Orchestrator only — never deploy as a subagent |
 | `opus` (Opus 5) | Agent/Workflow `model` | 9 | 8 | 5 | 5 | Complex implementation; behavior-preserving refinement; reviews every Codex-authored change |
 | `sonnet` (Sonnet 5) | Agent/Workflow `model` | 7 | 7 | 7 | 7 | Default workhorse — standard implementation, review fixes, guarded mechanical flows |
 | `haiku` (Haiku 4.5) | Agent/Workflow `model` | 4 | 3 | 9 | 10 | Utility micro-tasks only — eligibility, summaries, scoring |
@@ -22,14 +22,20 @@ what we actually pay (Codex limits are generous), not list price.
 
 ## Effort
 
-Pick the lowest effort that clears the bar; escalate for planning-heavy or multi-source work.
+`high` is every model's default. Start there: step down for routine, precisely-specified
+work, and up for demanding agentic or capability-sensitive work. Never stamp below the
+default just to save tokens.
+
+Effort is not just thinking time — it also sets how many files the model reads, how much
+it verifies, and how far it pushes a multi-step task before checking back in. A step that
+must run unattended end to end, or whose job is verification, never goes below `medium`.
 
 | Effort | Claude | Codex | Choose for |
 | --- | --- | --- | --- |
-| `low` | ✓ | ✓ | Mechanical or hard-guarded steps; quick well-scoped tasks |
-| `medium` | ✓ | ✓ | Standard scoped edits; behavior-preserving refinement |
-| `high` | ✓ | ✓ | Complex logic; consolidating multiple sources of judgment |
-| `xhigh` | ✓ | ✓ (verify per model) | Cross-cutting or harness-core design; deep specs |
+| `low` | ✓ | ✓ | Mechanical, hard-guarded steps that may pause for the user |
+| `medium` | ✓ | ✓ | Standard scoped edits; precisely-specified unattended flows |
+| `high` | ✓ | ✓ | **Default.** Complex logic; verification-shaped work; consolidating judgment |
+| `xhigh` | ✓ | ✓ (verify per model) | Cross-cutting or harness-core design; deep specs; long agentic runs |
 | `max` | ✓ | ✓ | Hardest single problems — depth over speed; rare |
 | `ultra` | — | ✓ | Work divisible into meaningful parallel parts (Codex runs subagents); rare |
 
@@ -41,6 +47,11 @@ Pick the lowest effort that clears the bar; escalate for planning-heavy or multi
 - Cost is a tie-breaker only; when axes conflict for anything that ships,
   intelligence > taste > cost. When torn between two tiers, take the higher. This
   overrides the global per-task/per-session token budgets in this repo.
+- Pick the axis by the failure. Check the prompt, context, and scoping first — a task
+  that shouldn't need escalation is usually starved upstream. Then: it didn't *know*
+  enough (subtle bug, unfamiliar domain, confidently wrong however much context it got)
+  → raise the model; it didn't *try* hard enough (skipped a file, skipped the tests,
+  bailed mid-task, checked back in early) → raise the effort.
 - One agent, one purpose. A fix that failed a review round escalates a tier (model or
   effort) — never retry the same tier twice. A repeat root-cause failure reassigns the
   task across providers.
