@@ -7,7 +7,7 @@ A Codex agent is a skill launched as its own Codex process — a `SKILL.md` unde
 frontmatter surface: the frontmatter is just `name` + a rich `description`, and
 the **body carries the whole contract** (role, inputs, process, output). Codex
 picks up repo conventions from `AGENTS.md` at runtime. Full worked example:
-`examples/codex-subagent.md`.
+`../examples/codex-subagent.md`.
 
 ```markdown
 ---
@@ -28,8 +28,8 @@ Role line. Then the sections the job needs: `## Inputs`, `## Process`,
   independent reviewer; a cross-check from a different model; work you launch
   with `codex exec`). This repo already ships `spec-review` and
   `implementation-review` this way.
-- **Claude subagent** (`references/claude-agents.md`) — Claude should
-  auto-delegate to it in-session, and it needs the tool/effort/memory surface.
+- **Claude subagent** (`routing.md`) — Claude should auto-delegate to it
+  in-session, and it needs the tool/effort/memory surface.
 
 ## How it differs from a Claude subagent
 

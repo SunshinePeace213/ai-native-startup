@@ -12,14 +12,17 @@ the body is supplied as the `prompt` field).
    inherits **every** tool the main conversation has, including connected MCP
    tools. `disallowedTools: Write, Edit` = "everything except Write/Edit";
    `tools: Read, Grep` = "only those two." A tool named in both is removed.
-2. **Five tools never work in a subagent, regardless of `tools`:**
-   `AskUserQuestion`, `EnterPlanMode`, `ScheduleWakeup`, `WaitForMcpServers`, and
-   `ExitPlanMode` (except when `permissionMode: plan`). Don't design an agent
-   that asks the user mid-run.
-3. **Three fields are silently ignored for plugin-loaded subagents:** `hooks`,
+2. **If no entry in `tools` resolves, the agent won't launch.** A misspelling or
+   a subagent-unavailable name in an otherwise short list fails the whole agent
+   with an error naming the entries.
+3. **Six tools never work in a subagent, regardless of `tools`:**
+   `AskUserQuestion`, `EnterPlanMode`, `ScheduleWakeup`, `WaitForMcpServers`,
+   `EndConversation`, and `ExitPlanMode` (except when `permissionMode: plan`).
+   Don't design an agent that asks the user mid-run.
+4. **Three fields are silently ignored for plugin-loaded subagents:** `hooks`,
    `mcpServers`, `permissionMode`. Move the agent to `.claude/agents/` if it
    needs them.
-4. **`name` must be unique across the whole agents tree** (project + user +
+5. **`name` must be unique across the whole agents tree** (project + user +
    plugins). A duplicate is silently discarded or loses on priority.
 
 ## Field-by-field
@@ -27,11 +30,11 @@ the body is supplied as the `prompt` field).
 | Field | Req | Type / constraints | Set it when |
 | --- | --- | --- | --- |
 | `name` | **Yes** | Lowercase letters + hyphens. Unique tree-wide; filename need not match. | Always. Descriptive of the job (`test-runner`, `db-reader`). |
-| `description` | **Yes** | Plain text, third person. The trigger document. | Always. Name the phrasings/contexts that route here; add "use proactively" for auto-delegation. See below. |
+| `description` | **Yes** | Plain text, third person. The trigger document. | Always. Name the phrasings and contexts that route here; add "use proactively" for auto-delegation. See below. |
 | `tools` | No | Comma-separated allowlist; MCP patterns and `Agent(...)` allowed. Omitting inherits ALL. | You want least privilege — list only what the job needs. Don't list `Skill` to preload skills; use `skills`. |
 | `disallowedTools` | No | Same syntax; applied before `tools`. | You want "everything except a few" (e.g. `Write, Edit`), or to strip one MCP server. |
-| `model` | No (default `inherit`) | `opus`\|`sonnet`\|`haiku`\|`fable`\|full id\|`inherit`. | The job wants a different tier than the session. Use an alias, not a dated id. |
-| `effort` | No (inherits session) | `low`\|`medium`\|`high`\|`xhigh`\|`max`. | **Omit by default** (the shipped team agents do). Set only when the job needs more/less reasoning than the session default, or the user asks — `high`/`xhigh` for hard coding/agentic work. |
+| `model` | No (default `inherit`) | `opus`\|`sonnet`\|`haiku`\|`fable`\|full id\|`inherit`. | Always stamp it, from [model-selection.md](../../../rules/model-selection.md). Use an alias, never a dated id. |
+| `effort` | No (inherits session) | `low`\|`medium`\|`high`\|`xhigh`\|`max`. | Always stamp it, from [model-selection.md](../../../rules/model-selection.md). It is the only depth control — prose is not. |
 | `permissionMode` | No | `default`\|`acceptEdits`\|`auto`\|`dontAsk`\|`bypassPermissions`\|`plan`\|`manual` (alias for `default`). Ignored for plugin agents. | A non-default stance is needed (`plan` for a read-only planner; `acceptEdits` for an autonomous editor). A stricter parent mode wins. |
 | `maxTurns` | No | Positive integer. | You want a hard ceiling on a loop-prone agent. |
 | `skills` | No | YAML list of skill names. | The agent needs domain knowledge up front — preloads the **full content** at startup. Can't preload a `disable-model-invocation: true` skill. |
@@ -60,16 +63,37 @@ MCP patterns (valid in both fields): `mcp__<server>` / `mcp__<server>__*` (whole
 server), `mcp__<server>__<tool>` (one tool), `mcp__*` (in `disallowedTools` only,
 removes all MCP). Use qualified names — a bare `tool` may not resolve.
 
-## model / memory / permissionMode notes
+## model / effort / memory / permissionMode notes
 
+- **model and effort** come from
+  [model-selection.md](../../../rules/model-selection.md) — the roster, the
+  defaults, and the know-vs-try escalation heuristic all live there. Stamp both;
+  don't re-derive the guidance here.
 - **model resolution order:** `CLAUDE_CODE_SUBAGENT_MODEL` env → per-invocation
   `model` param → definition `model` → session model. Aliases track the current
   default; pin a full id only for reproducibility.
+- **thinking** is inherited from the session and has no per-agent field.
 - **memory scopes:** `user` (`~/.claude/agent-memory/<name>/`, all projects),
   `project` (`.claude/agent-memory/<name>/`, checked in — the default), `local`
   (`.claude/agent-memory-local/<name>/`, not checked in).
 - **permissionMode:** a stricter **parent** mode wins — under a parent running
   `bypassPermissions`/`acceptEdits`/`auto`, the subagent's own mode is ignored.
+
+## When the definition is reused as a teammate
+
+Spawning an agent-team teammate from a subagent type reuses this same file, but
+not all of it applies. The teammate honors `tools` and `model`, and the body is
+**appended** to the teammate's system prompt rather than replacing it. Three
+differences bite:
+
+- `skills` and `mcpServers` are **not applied** — a teammate loads skills and MCP
+  servers from project and user settings instead.
+- `background: true` **errors** for an in-process teammate; its subagents run in
+  the foreground.
+- `SendMessage` and the task tools stay available even when `tools` excludes them.
+
+Don't make an agent depend on a preloaded skill if it's also meant to run as a
+teammate — restate what it needs in the body, or keep it subagent-only.
 
 ## Writing the `description` (the field that decides delegation)
 
