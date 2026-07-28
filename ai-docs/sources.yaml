@@ -118,6 +118,10 @@ anthropic/blog:
     file: anthropic/blog/context-engineering-claude-5.md
     topic: Context engineering for Claude 5 — remove constraints, progressive disclosure, auto-memory
     fetched: null
+  - url: https://claude.com/blog/claude-model-and-effort-level-in-claude-code
+    file: anthropic/blog/model-and-effort-level.md
+    topic: Model and effort level in Claude Code — picking a model, tuning effort per task
+    fetched: null
 openai:
   - url: https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide
     file: openai/codex-prompting-guide.md
