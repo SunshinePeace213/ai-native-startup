@@ -4,7 +4,7 @@ argument-hint: [description]
 model: opus
 effort: high
 disable-model-invocation: true
-disallowed-tools: Task, EnterPlanMode
+disallowed-tools: Agent, EnterPlanMode
 ---
 
 # Harness Unknowns
@@ -22,7 +22,7 @@ ARTIFACT_RULES: `.claude/rules/harness-layer/artifacts.md` — craft, palette, a
 - **DISCOVERY ONLY** — no spec files, no issues, no pushes; write only under `DISCOVERY_DIR`. The improved prompt travels by copy-paste.
 - If no `DESCRIPTION` is provided, stop and ask the user for one.
 - Worktree: when `DESCRIPTION` carries a `Worktree:` line, `EnterWorktree(path: ...)` into it; otherwise derive a kebab-case `<slug>` and `EnterWorktree(name: "<slug>")`. Never write outside the worktree.
-- Classify the gap (see `Modes`) and run the matching pass; when both fire, one page carries both sections.
+- Classify the gap (see `Modes`) from what `DESCRIPTION` says about the user's starting point — what they have worked with in this code, what they know of the domain; ask once when it says neither. When both fire, one page carries both sections.
 - Ground every finding in what you actually read — real files, real conventions, real history. A finding that could be written without opening the codebase is filler; cut it.
 - Do not interview the user or lock decisions; this pass only surfaces and explains.
 - Commit the pass locally — `📝 docs(discovery): unknowns pass for <slug>`, no issue footer (no issue exists yet). Never push; the plan's first push carries the discovery commits.
@@ -37,7 +37,7 @@ ARTIFACT_RULES: `.claude/rules/harness-layer/artifacts.md` — craft, palette, a
 ## Workflow
 
 1. Parse `DESCRIPTION`; classify the gap (codebase | domain | both); enter the worktree (see Instructions).
-2. Scan — read the modules the task touches plus their immediate callers, and check `git log` on those paths for reverted or abandoned attempts; for a domain gap, draw on domain knowledge and any relevant KB docs. Collect ~4–7 codebase findings (each: what it is / why it bites / what to do instead) and/or the domain's mental model, a ~6-term vocabulary ladder, and its quality bar.
+2. Scan — read the modules the task touches plus their immediate callers, and check `git log` on those paths for reverted or abandoned attempts; for a domain gap, draw on domain knowledge and any relevant KB docs. Collect every codebase finding the scan turns up (each: what it is / why it bites / what to do instead) — ~4–7 is the usual page shape, not a ceiling — and/or the domain's mental model, a ~6-term vocabulary ladder, and its quality bar.
 3. Author the page per `ARTIFACT_RULES` into `DISCOVERY_DIR` — codebase gap → **Unknowns board** (one card per finding with resolve / accept / needs-discussion controls); domain gap → **Vocabulary explainer** (mental-model steps, vocabulary ladder, quality checklist, payoff prompts); both → both sections. The copy-as-prompt block assembles the improved prompt live from the user's dispositions and selections.
 4. Publish the page best-effort via the Artifact tool; on failure note "publish skipped" and continue with the local file.
 5. Commit the pass (see Instructions).

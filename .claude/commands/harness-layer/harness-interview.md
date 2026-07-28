@@ -4,7 +4,7 @@ argument-hint: [detailed ideas or a prior pass's improved prompt]
 model: opus
 effort: high
 disable-model-invocation: true
-disallowed-tools: Task, EnterPlanMode
+disallowed-tools: Agent, EnterPlanMode
 ---
 
 # Harness Interview
@@ -26,6 +26,7 @@ ARTIFACT_RULES: `.claude/rules/harness-layer/artifacts.md` — craft, palette, a
 - **References early.** Always ask: "Is there existing code — a library, a vendor folder, prior art — that already does what you want? Point me at the path instead of describing it." Record any answer as a decision naming the path and what to take from it; the plan authors the Reference map from it.
 - **One round at a time, biggest blast radius first.** Each round carries the open questions whose wording doesn't depend on unanswered ones, ordered by how much the answer would change the architecture.
 - **Adaptive depth.** Match complexity — a light pass for chores, a deep pass for complex features. Don't interrogate trivial tasks.
+- **Bounded rounds.** A round that resolves nothing new — the user defers, repeats, or stops engaging — ends the interview: record what's left as assumptions or open questions and go to sign-off.
 - Commit the pass locally — `📝 docs(discovery): interview pass for <slug>`, no issue footer (no issue exists yet). Never push; the plan's first push carries the discovery commits.
 
 ## Coverage Ledger
@@ -42,7 +43,7 @@ Track each decision dimension as resolved, open, or N/A, and keep interviewing u
 
 ## Output
 
-- `DISCOVERY_DIR/decisions-draft.md` — the ledger in the decisions template's sections (Summary, Resolved Decisions with Q/A/Why, Assumptions, Open Questions / Out of Scope) so the plan transcribes it verbatim.
+- `DISCOVERY_DIR/decisions-draft.md` — the ledger in the decisions template's sections (Summary, Resolved Decisions with Q/A/Why, Assumptions, Open Questions / Out of Scope) so the plan transcribes it verbatim. One entry per decision, no filler sections.
 - The finalized prompt — standalone: the task with every locked decision folded in, the ledger path, and the chain line `Worktree: .claude/worktrees/<slug>` at the end.
 
 ## Report

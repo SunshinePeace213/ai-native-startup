@@ -4,7 +4,7 @@ argument-hint: [rough problem]
 model: opus
 effort: high
 disable-model-invocation: true
-disallowed-tools: Task, EnterPlanMode
+disallowed-tools: Agent, EnterPlanMode
 ---
 
 # Harness Brainstorm

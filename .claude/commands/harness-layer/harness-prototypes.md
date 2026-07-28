@@ -1,10 +1,10 @@
 ---
-description: Pre-plan discovery pass — throwaway HTML prototypes to react to before planning: several wildly different design directions, or a single mock of a feature with fake data
+description: Pre-plan discovery pass — throwaway HTML prototypes to react to before planning, either several wildly different design directions or a single mock of a feature with fake data
 argument-hint: [description]
 model: opus
 effort: high
 disable-model-invocation: true
-disallowed-tools: Task, EnterPlanMode
+disallowed-tools: Agent, EnterPlanMode
 ---
 
 # Harness Prototypes
@@ -44,7 +44,7 @@ ARTIFACT_RULES: `.claude/rules/harness-layer/artifacts.md` — craft, palette, a
 
 ## Improved Prompt
 
-The deliverable. It must stand alone without the page: the task, the chosen direction described in words (layout, hierarchy, tone, components), the prototype's `DISCOVERY_DIR` path as the visual reference for the plan, and what still needs deciding. When `DESCRIPTION` is a prior pass's improved prompt, carry its constraints forward — enrich them with the chosen direction, never drop them. Always end it with the chain line `Worktree: .claude/worktrees/<slug>` so the next pass continues in place.
+The deliverable. It must stand alone without the page: the task, the chosen direction described in words (layout, hierarchy, tone, components), the prototype's `DISCOVERY_DIR` path as the visual reference for the plan, and what still needs deciding. Only what the prototype settled — no generic design advice, no restating the brief. When `DESCRIPTION` is a prior pass's improved prompt, carry its constraints forward — enrich them with the chosen direction, never drop them. Always end it with the chain line `Worktree: .claude/worktrees/<slug>` so the next pass continues in place.
 
 ## Report
 
