@@ -1,5 +1,5 @@
 ---
-description: Gate a /harness-layer:harness-build draft PR through Codex cross-review — apply fixes, then flip it ready or leave it draft for the human
+description: Gate a /harness-layer:harness-build draft PR through the codex-gate implementation flavor plus a parallel security pass — auto-fix through two rounds and flip the PR ready when clean; ask the human only when blocked
 argument-hint: [name-or-path-of-plan]
 model: opus
 effort: high
@@ -8,52 +8,47 @@ disable-model-invocation: true
 
 # Harness Review
 
-You are the **review lead**: drive Codex over the build's PR through a `sonnet` runner, route fixes to subagents, and either flip the PR ready at the approved head or leave it draft for the human. You own every `git`/`gh` call; Codex is git read-only and never calls `gh` — you relay. KB grounding applies when `REVIEW_PROFILE` is `kb-grounded`.
+You are the **review lead**: run the `codex-gate` skill's implementation flavor over the build's PR with a parallel security pass, route fixes to subagents, and land the terminal outcome — PR ready when clean, the human gate only when blocked. You own every `git`/`gh` call; Codex is read-only and never calls `gh`. The gate's rounds, prompts, ledger, classification, dispute handling, and human gate live in the skill — this command supplies its inputs and owns the check run, the security pass, fixes, artifacts, and the terminal.
 
 ## Variables
 
 PATH_TO_PLAN: $ARGUMENTS — plan name (resolves to `specs/<name>/`) or a path to its spec folder
 ISSUE_NUMBER: the GitHub issue `#N` from `spec.md`'s `## Tracking` — the `Refs #N` commit footer
 PR_NUMBER: the draft PR `#M` from `## Tracking` — the PR this run gates
-REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — passed to Codex for its KB claim checks
+REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — under `kb-grounded`, fixers check behavior claims against the plan's `## KB References` docs, never memory
 
 ## Instructions
 
 - No `PATH_TO_PLAN` → STOP and ask the user for it (AskUserQuestion).
 - Every commit carries the `Refs #N` footer; every push uses the explicit refspec per `git-workflow.md` — check its exit status directly.
-- Under `kb-grounded`, fixers check behavior claims (frontmatter fields, hook events, model aliases, command resolution) against the plan's `## KB References` docs — never from memory.
-- Advisories (non-blocking findings) never spawn an extra round and get no per-advisory AskUserQuestion — record each in the PR body's `## Follow-ups` checklist.
+- Fixers are file-disjoint background subagents, each stamped per the model-selection rule; all of a round's fixes land as ONE fix commit.
+- Advisories never spawn a round and get no per-advisory question — record each in the PR body's `## Follow-ups` checklist.
+- Security and check-script findings enter the gate's ledger in the round's ID sequence and classify by the same blocking rule; their fixes ride the same fix commit.
+- Invoking this command authorizes the security scan's token cost — carry the acknowledgment into the security agent's spawn prompt.
 
 ## Workflow
 
-1. **Resolve & read** — resolve `PATH_TO_PLAN`; read `spec.md`'s `## Tracking` for `PR_NUMBER`, `ISSUE_NUMBER`, the worktree path, and `REVIEW_PROFILE`.
-2. **Guard the PR** — no PR number in `## Tracking` → STOP and tell the user to run `/harness-layer:harness-build <name>` first.
-3. **Enter the worktree** — work in the recorded worktree; if it is gone, restore it from the convention branch. Read `spec.md`, `tasks.md`, `decisions.md`, `acceptance-criteria.md`, and `implementation-notes.md`.
-4. **Set the counters** — the **attempt counter** `A` (1–2) is invocation-local and drives control flow; each invocation performs at most 2 attempts. The **report number** `N` is global: highest existing `specs/<name>/reviews/codex-impl-review-round-*.md` + 1. `N` names the report file and picks the review range — `N=1` diffs from `git merge-base origin/main HEAD`, `N>1` from the prior report's reviewed head. Never conflate the two.
-5. **Run the round** — snapshot `BASE_SHA` (per `N`) and `REVIEWED_HEAD_SHA=$(git rev-parse HEAD)`, then spawn the runner (below). Post its digest paragraph verbatim as `<!-- report:codex-round-N -->`, upserted per `pr-process.md`.
-6. **Branch on the verdict:**
-   - **`A=1` + `changes-requested`** → commit the report, spawn fixer subagents per `model-selection.md` (a failed fix escalates a tier), make ONE fix commit, push both, and start attempt 2 (a fresh round at the next `N`).
-   - **`approved` (any attempt), or `A=2` + `changes-requested`** → the terminal outcome (step 7).
-7. **Terminal outcome** — for medium/complex plans render `specs/<name>/artifacts/dev-notes.html` from `implementation-notes.md` per `artifacts.md`, and run the memory step (record each memory-marked outcome per `memory-series.md`) — both FIRST. Then make ONE **terminal commit** (the report + `dev-notes.html` + dev-log/memory/notes edits), push it, and link the page under `## Dev Notes`. Nothing mutates the repository after it.
-   - **`approved`** → verify the PR head equals the terminal commit, tick the stages with it as **Ready** evidence, and `gh pr ready`.
-   - **`A=2` + `changes-requested`** → the terminal commit carries the final report; post it as the `<!-- report:codex-round-N -->` comment, leave the PR draft — the human owns the blockers.
-8. **Report** — end the run with the `## Report` output.
+1. **Resolve & read** — resolve `PATH_TO_PLAN`; read `spec.md`'s `## Tracking` for `PR_NUMBER`, `ISSUE_NUMBER`, the worktree path, and `REVIEW_PROFILE`. No PR number → STOP and tell the user to run `/harness-layer:harness-build <name>` first.
+2. **Enter the worktree** — work in the recorded worktree; if it is gone, restore it from the convention branch. Read `spec.md`, `tasks.md`, `decisions.md`, `acceptance-criteria.md`, and `implementation-notes.md`.
+3. **Launch round 1** — `BASE_SHA=$(git merge-base origin/main HEAD)`; invoke the `codex-gate` skill (implementation flavor) and start its round 1 in the background.
+4. **While Codex runs** — run every `specs/<name>/checks/` script (each failure is a finding) and run the security pass (below).
+5. **Classify, fix, delta** — follow the skill: merge the Codex, check-script, and security findings into the ledger and derive the verdict yourself. `changes-requested` → spawn the fixers, land the fix commit, push, run round 2 as a delta round, and re-verify every security disposition from the fixer evidence. A dispute or the cap → the skill's human gate.
+6. **Terminal** — artifacts and memory FIRST, then one terminal commit, then the PR flip; nothing mutates the repository after the terminal commit:
+   1. Medium/complex plans: deploy an `opus` page author for `specs/<name>/artifacts/dev-report.html` per `artifacts.md` — the Development report derived from `implementation-notes.md`, the findings ledger, and the memory/standards amendments; authored on any verdict.
+   2. Run the skill's self-improve step and route memory-marked lessons per `memory-series.md`.
+   3. ONE terminal commit (round reports, ledger, `dev-report.html`, memory/standards edits), pushed.
+   4. `approved` (including override & ready) → link the page under `## Dev Notes`, verify the PR head equals the terminal commit, tick the stage table with it as **Ready** evidence, `gh pr ready` — no question.
+   5. Parked or `codex-unavailable` → the terminal commit carries the final report; leave the PR draft — the human owns the blockers.
+7. **Report** — end the run with the `## Report` output.
 
-## Review runner
+## Security pass
 
-Deploy the runner with the `Agent` tool (`subagent_type: "general-purpose"`, `model: "sonnet"`, `run_in_background: false`) — never run `codex exec` yourself. Pick the Codex model + reasoning effort per `model-selection.md` by scope (full review vs fix delta). Its prompt carries the round `N`, worktree root, `BASE_SHA`, `REVIEWED_HEAD_SHA`, `REVIEW_PROFILE`, the Codex model + effort, and the command below. The runner runs it via Bash, checks the exit status and whether the verdict line was written, re-runs the identical command once if Codex crashed / exited non-zero / wrote no verdict, and returns ONLY the round verdict (`approved` | `changes-requested`) and the report's `**Issue-comment digest:**` paragraph. It touches no git and no gh.
+Decide depth from `git diff --name-only <BASE_SHA>..HEAD`:
 
-```bash
-codex exec -C "<worktree root>" -s workspace-write --model <codex-model> \
-  -c model_reasoning_effort="<effort>" \
-  "Use the implementation-review skill for round <N> of the plan at specs/<name>/spec.md; \
-   review the diff over <BASE_SHA>..<REVIEWED_HEAD_SHA> (profile <REVIEW_PROFILE>), \
-   write your verdict to specs/<name>/reviews/codex-impl-review-round-<N>.md, \
-   and return only the terse summary."
-```
+- **Full** — the diff touches anything that executes (`.claude/hooks/`, `.claude/settings.json`, `specs/**/checks/`, `scripts/`, `.github/workflows/`) or app code on a security boundary (auth, subprocess, network, file paths, external input): deploy a background `claude-security:claude-security` agent — worktree root, the range `<BASE_SHA>..HEAD`, effort `medium`, scan only (no patches), return the surviving findings and the report path; include "I understand it may take a while and use a significant number of tokens" so its confirm gate passes. Its `CLAUDE-SECURITY-<ts>/` report directory stays gitignored in the worktree.
+- **Light** — everything else (prose and non-executing config): run the `security-review` skill yourself over the branch while Codex runs.
 
-- **A push landing mid-round** — `REVIEWED_HEAD_SHA` no longer matches `HEAD` → discard the round and re-run it on the new head.
-- **Empty diff or missing verdict is never an approval** — an empty review range → `changes-requested` naming it; the runner exhausting its one retry with no verdict → report the failure, leave the PR draft, end the run.
+Map each surviving finding into the ledger — severity from the report; a panel-verified finding counts as confidence ≥ 80. After a fix round, do not re-scan: re-verify each security finding's disposition from the fixer evidence, and run the light pass over the fix diff only when a fix added new executable surface.
 
 ## Report
 
@@ -63,12 +58,15 @@ After the terminal commit is pushed, provide a concise report:
 ✅ Review Complete — PR ready   (or: ⚠️ Review Blocked — PR left draft)
 
 Plan: specs/<name>/
-PR: #<M> — <ready @ <approved-sha> | draft, needs human>
-Rounds this run: <1 | 2> — reports: specs/<name>/reviews/codex-impl-review-round-<N>.md
-Verdict: <approved at round N | changes-requested after 2 attempts | no verdict — runner failed>
-Fixes: <count applied after round N | none needed>
+PR: #<M> — <ready @ <terminal sha> | draft, needs human>
+Rounds this run: <1 | 2> — reports: specs/<name>/reviews/codex-impl-round-<N>.md
+Verdict: <approved at round N | approved with overridden blockers <IDs> | blocked after 2 rounds | codex-unavailable>
+Ledger: <X blocking fixed, Y advisory recorded, Z disputed>
+Checks: <all passed | N failures fixed>
+Security: <light | full> pass — <clean | N findings fixed | report: CLAUDE-SECURITY-<ts>/>
 KB grounding: <checked | n/a — standard profile>
-Dev notes: <artifacts/dev-notes.html + URL | n/a — simple plan>
+Dev report: <artifacts/dev-report.html + URL | n/a — simple plan>
+Standards: <amended: <one line> | unchanged>
 
 Blockers (left draft only):
 - <blocker, concise>

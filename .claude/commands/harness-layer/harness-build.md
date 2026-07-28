@@ -22,6 +22,7 @@ REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — gates the KB-
 - No `PATH_TO_PLAN` → STOP and ask the user for it (AskUserQuestion).
 - Every commit carries the `Refs #N` footer; every push uses the explicit refspec per `git-workflow.md` — check its exit status directly.
 - Under `kb-grounded`, check behavior claims (frontmatter fields, hook events, model aliases, command resolution) against the plan's `## KB References` docs — never from memory. Under `standard`, skip the KB checks.
+- **Build to the bar.** `impl-standards.md` (auto-loaded on `specs/**`) is the same checklist the review gate judges the diff against — before opening the PR, self-check the full diff against every standard and fix gaps, so review rounds fix the exceptional, not the expected.
 - Every builder spawn prompt carries the full task, its model/effort stamp, its acceptance criteria, and this scope guard: "Don't add features, refactor, or introduce abstractions beyond what the task requires. Do the simplest thing that works well."
 - Each builder hands off in its final message: task ID, status, changed files, exact verification commands + observed results, deviations from the plan ("none" allowed), and notes/blockers. Builders post no PR comments of their own.
 - Append every phase, hand-off, and deviation entry to `implementation-notes.md` the moment it lands, inside the same checkpoint commit. The PR body and build brief are derived from the notes — never reconstructed.

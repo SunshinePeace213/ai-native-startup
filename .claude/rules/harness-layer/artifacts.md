@@ -64,8 +64,7 @@ dark-theme default).
 | Plan / spec reader | **Implementation plan** | Spec content ordered by likelihood-of-tweaking — volatile decisions first, each with its chosen path and a toggled alternative; build order next; mechanical work collapsed last; copy-as-prompt offers ready-made tweak prompts that trigger a plan revision |
 | Plan / reference port | **Reference map** | Side-by-side reference↔target code pairs with linked hover notes, a preserved/changed/dropped behavior table, and an edge-case table; copy-as-prompt returns "semantics confirmed" or per-row corrections |
 | Build / pitch | **Build brief** | Outcome-first pitch derived from implementation-notes.md, authored by `/harness-layer:harness-build` after tidy — a try-it block (the exact command or prompt exercising the change, with before/after output), an unknowns→resolution and acceptance-criteria→evidence closure ledger, and the notes timeline collapsed last; copy-as-prompt returns a paste-ready buy-in summary; linked from the PR's `## Dev Notes` |
-| Build + review / dev log | **Dev notes** | The implementation-notes.md log as a chronological timeline — phases, hand-offs, deviations, fixes, lessons — rendered by /harness-layer:harness-review on any verdict; linked from the PR |
-| Review / completion | **Findings page** | Diff excerpts with margin annotations, findings color-coded by severity; linked from the PR's Review Reports section |
+| Review / completion | **Development report** | The plan's closing summary, rendered by /harness-layer:harness-review on any verdict — what shipped with the acceptance-criteria→evidence closure table, the review journey as severity-coded finding cards (observed / fixed / advisory / disputed, security included), and what was learned (routed lessons + standards amendments); linked from the PR's ## Dev Notes |
 
 ## Beyond the inventory
 
