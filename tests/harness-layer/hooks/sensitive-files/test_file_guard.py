@@ -428,9 +428,7 @@ def test_grep_signaled_both_ends_targeting_denies(run_hook, glob):
     assert glob in res.stderr
 
 
-@pytest.mark.parametrize(
-    "glob", ["prod.t[f]s[t]a[t]e.backup*", "terraform.tf[s]tate.backup*"]
-)
+@pytest.mark.parametrize("glob", ["prod.t[f]s[t]a[t]e.backup*", "terraform.tf[s]tate.backup*"])
 def test_grep_singleton_class_both_ends_targeters_deny(run_hook, glob):
     """CX7-1: singleton classes are exact literals, not obfuscation, so their
     signal must reach the real guard and deny the targeted state glob with exit 2."""
