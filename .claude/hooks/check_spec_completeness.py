@@ -6,38 +6,36 @@
 """Stop hook for /harness-layer:harness-plan: block the run from ending until
 the per-plan spec folder is complete.
 
-Two checks only: (1) all four files exist, (2) each file has its required
-'##' sections. Exit 2 => deny stop; stderr is fed back to Claude so it
-completes the gaps. The gated folder is the newest-modified plan folder
-across the main specs/ and any worktree's specs/ (/harness-layer:harness-plan
-drafts in a worktree), excluding underscore-prefixed dirs (_templates) and
-discovery-only chain folders (a discovery/ subdir with no spec files yet).
+Three checks: (1) all four files exist, (2) each file has its required '##'
+sections, (3) each required section carries real content — not empty, and
+not a leftover '<placeholder>' from specs/_templates/. Exit 2 => deny stop;
+stderr is fed back to Claude so it completes the gaps. The gated folder is
+the newest-modified plan folder across the main specs/ and any worktree's
+specs/ (/harness-layer:harness-plan drafts in a worktree), excluding
+underscore-prefixed dirs (_templates) and discovery-only chain folders (a
+discovery/ subdir with no spec files yet).
 """
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 REQUIRED_SECTIONS: dict[str, tuple[str, ...]] = {
     "spec.md": (
+        "Tracking",
         "Task Description",
         "Objective",
         "Non-Goals",
         "Requirements & Decisions",
-        "Tracking",
         "Relevant Files",
         "Edge Cases",
-        "Red Flags",
+        "Risk & Rollback",
+        "Guardrails",
         "Codex Verification",
-        "References",
-        "Self Validation",
     ),
-    "tasks.md": (
-        "Team Orchestration",
-        "Team Members",
-        "Step by Step Tasks",
-    ),
+    "tasks.md": ("Step by Step Tasks",),
     "acceptance-criteria.md": (
         "Acceptance Criteria",
         "Validation Commands",
@@ -49,6 +47,41 @@ REQUIRED_SECTIONS: dict[str, tuple[str, ...]] = {
         "Open Questions / Out of Scope",
     ),
 }
+
+
+COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+# A template slot: an angle-bracket span opening on a word character and holding a
+# space, e.g. `<one or two sentences …>`. Paths (`<type>/<N>-<slug>`) and autolinks
+# have no inner space, so filled content survives.
+PLACEHOLDER_RE = re.compile(r"<[A-Za-z#][^<>]*\s[^<>]*>")
+
+
+def section_body(text: str, section: str) -> str | None:
+    """The lines under '## <section>', up to the next '#'/'## ' heading.
+
+    Returns None when the heading is absent. HTML comments are stripped first, so
+    the template's guidance never counts as content; fenced code is tracked so a
+    '## ' inside a block does not end the section early.
+    """
+    heading = f"## {section}"
+    body: list[str] = []
+    capturing = False
+    fenced = False
+    for line in COMMENT_RE.sub("", text).splitlines():
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+        elif not fenced and line.startswith("#"):
+            if line.rstrip() == heading:
+                capturing = True
+                continue
+            if capturing and not line.startswith("###"):
+                break
+            if capturing:
+                body.append(line)
+            continue
+        if capturing:
+            body.append(line)
+    return "\n".join(body) if capturing else None
 
 
 def resolve_root() -> Path:
@@ -97,18 +130,24 @@ def main() -> int:
             missing.append(f"  - MISSING FILE: {name}")
             continue
         text = path.read_text(errors="replace")
-        missing += [
-            f"  - {name}: missing section '## {section}'"
-            for section in sections
-            if f"## {section}" not in text
-        ]
+        for section in sections:
+            body = section_body(text, section)
+            if body is None:
+                missing.append(f"  - {name}: missing section '## {section}'")
+            elif not body.strip():
+                missing.append(f"  - {name}: section '## {section}' is empty")
+            elif (leftover := PLACEHOLDER_RE.search(body)) is not None:
+                missing.append(
+                    f"  - {name}: section '## {section}' still holds the template "
+                    f"placeholder {leftover.group()}"
+                )
 
     if missing:
         print(f"Stop blocked: spec folder '{folder}' is incomplete:", file=sys.stderr)
         print("\n" + "\n".join(missing), file=sys.stderr)
         print(
-            "\nComplete the missing files/sections (compare against specs/_templates/), "
-            "then stop again.",
+            "\nWrite the missing files/sections and replace every placeholder with real "
+            "content (compare against specs/_templates/), then stop again.",
             file=sys.stderr,
         )
         return 2

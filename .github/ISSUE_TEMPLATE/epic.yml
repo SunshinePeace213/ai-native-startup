@@ -38,14 +38,6 @@ body:
         - [ ] #
         - [ ] #
   - type: textarea
-    id: lifecycle
-    attributes:
-      label: Lifecycle
-      description: Move the ▲ marker as the work advances.
-      value: |
-        `Plan ▸ Spec-review ▸ Approved ▸ Build ▸ Ship ▸ Done`
-        ▲ current phase: **Plan**
-  - type: textarea
     id: plan-links
     attributes:
       label: Links to plan files

@@ -21,11 +21,6 @@
 - [ ] #
 - [ ] #
 
-## Lifecycle
-
-`Plan ▸ Spec-review ▸ Approved ▸ Build ▸ Ship ▸ Done`
-▲ current phase: **Plan**
-
 ## Links to plan files
 
 <!-- Markdown links to spec.md / tasks.md / decisions.md / acceptance-criteria.md. -->

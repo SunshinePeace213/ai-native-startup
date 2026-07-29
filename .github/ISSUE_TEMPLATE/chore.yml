@@ -1,5 +1,5 @@
 name: Chore / maintenance
-description: Refactor, perf, style, test, build, or CI work with no user-facing feature change
+description: Refactor, perf, style, test, build, CI, or docs work with no user-facing feature change
 title: "🔧 chore: "
 labels: [chore]
 assignees: [SunshinePeace213]
@@ -43,6 +43,7 @@ body:
         - label: test — add or fix tests
         - label: build — build system, dependencies, packaging
         - label: ci — CI configuration and scripts
+        - label: docs — documentation only
   - type: textarea
     id: risk-impact
     attributes:

@@ -32,18 +32,28 @@ COLD_CACHE_MARKERS = (
 
 @pytest.mark.timeout(120)
 @pytest.mark.parametrize("script", sorted(entrypoints()))
-def test_entrypoint_runs_offline(script: str):
+def test_entrypoint_runs_offline(script: str, tmp_path):
     """Booting with empty stdin exercises the whole cold path -- interpreter
     resolution, dependency install, import, fail-open -- without depending on
     the hook's payload semantics. Exit 0 is the fail-open contract; a nonzero
-    exit here means the hook is unusable in a network-less session."""
+    exit here means the hook is unusable in a network-less session.
+
+    The project dir points at an empty tmp_path: a hook that inspects the repo
+    rather than stdin (check_spec_completeness) would otherwise report on the
+    live specs/ tree, turning this cold-boot check into a spec-content check
+    that goes red whenever a plan is mid-draft."""
     result = subprocess.run(
         [UV, "run", "--offline", "--script", str(HOOKS_ROOT / script)],
         input="",
         capture_output=True,
         text=True,
         timeout=45,  # under pytest-timeout's ceiling, so the test still reports
-        env=os.environ | {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull},
+        env=os.environ
+        | {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_SYSTEM": os.devnull,
+            "CLAUDE_PROJECT_DIR": str(tmp_path),
+        },
         cwd=REPO_ROOT,
     )
     if result.returncode and any(m in result.stderr for m in COLD_CACHE_MARKERS):

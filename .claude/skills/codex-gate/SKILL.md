@@ -67,7 +67,7 @@ Spec head:
 You are the cross-model reviewer of an implementation plan (round <N>).
 Read .claude/rules/harness-layer/spec-standards.md — the bar this plan must clear.
 Read all four files under specs/<name>/ (spec.md, decisions.md, tasks.md,
-acceptance-criteria.md), the scripts under specs/<name>/checks/, and — when
+acceptance-criteria.md), any scripts under specs/<name>/checks/, and — when
 decisions.md has a ## KB References section — each ai-docs/ file it lists.
 ```
 

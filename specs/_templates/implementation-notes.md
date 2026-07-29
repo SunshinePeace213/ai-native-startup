@@ -12,6 +12,9 @@
 
 ## Log
 
-<append-only; one entry per phase, hand-off, deviation, fix, or lesson — never edit or delete a prior entry. "No entries yet" is a valid starting body.>
+<!-- Append-only; one entry per phase, hand-off, deviation, fix, or lesson — never edit or
+     delete a prior entry. "No entries yet" is a valid starting body. -->
 
-- **<date> · <phase|event>** — <what happened; deviations state plan-said-X / did-Y / why>
+- **<date> · <phase|event>** — <what happened; a deviation states plan-said-X / did-Y / why>
+- **<date> · hand-off `<task-id>`** — <files changed>
+  - `<command run>` → <observed result, quoted from the output — not "passed">

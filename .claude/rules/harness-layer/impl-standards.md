@@ -13,8 +13,10 @@ round 1 — fix gaps here, before review, not after.
 1. **Plan fidelity** — the diff implements the plan's tasks exactly: every task's
    change present, nothing beyond the locked decisions, non-goals untouched. An
    undocumented divergence from the plan is a defect.
-2. **Acceptance evidence** — every `specs/<name>/checks/` script passes from the
-   repo root. A criterion with no passing check is a promise, not evidence.
+2. **Acceptance evidence** — every command in acceptance-criteria.md
+   `## Validation Commands` passes from the repo root, and each `manual:` check has
+   its output recorded in `implementation-notes.md`. A criterion with no passing
+   check is a promise, not evidence.
 3. **Verification honesty** — every hand-off entry in `implementation-notes.md`
    records the exact commands run and their observed results. A claim with no
    recorded evidence fails.

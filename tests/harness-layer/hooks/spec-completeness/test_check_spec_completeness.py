@@ -120,12 +120,62 @@ def test_missing_section_blocks_naming_file_and_heading(tmp_path, run_hook, sect
     """A gutted section is named as file + '## heading' -- the exact repair."""
     folder = write_plan(tmp_path / "specs", "my-plan", sections)
     spec = folder / "spec.md"
-    spec.write_text(spec.read_text().replace("## Red Flags", "## Renamed"))
+    spec.write_text(spec.read_text().replace("## Objective", "## Renamed"))
     proc = gate(run_hook, tmp_path)
     assert proc.returncode == 2
-    assert "spec.md: missing section '## Red Flags'" in proc.stderr
+    assert "spec.md: missing section '## Objective'" in proc.stderr
     # exit-2 blocking must not be mixed with structured stdout (hooks-guide contract)
     assert proc.stdout == ""
+
+
+def test_heading_present_but_body_empty_blocks(tmp_path, run_hook, sections):
+    """The templates carry their guidance as HTML comments, so a section left
+    unwritten renders as a bare heading. Heading-presence alone would pass it --
+    the gate must read the body, and must not count the comment as content."""
+    folder = write_plan(tmp_path / "specs", "my-plan", sections)
+    spec = folder / "spec.md"
+    spec.write_text(
+        spec.read_text().replace(
+            "## Objective\n\ncontent", "## Objective\n\n<!-- what is true when this is done -->"
+        )
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 2
+    assert "spec.md: section '## Objective' is empty" in proc.stderr
+
+
+def test_leftover_template_placeholder_blocks(tmp_path, run_hook, sections):
+    """An unreplaced `<placeholder>` reads as real prose in the rendered file --
+    specs/sensitive-file-guard/spec.md shipped that way. Quote the offending span
+    so the repair is unambiguous."""
+    folder = write_plan(tmp_path / "specs", "my-plan", sections)
+    spec = folder / "spec.md"
+    spec.write_text(
+        spec.read_text().replace(
+            "## Objective\n\ncontent", "## Objective\n\n<one or two sentences>"
+        )
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 2
+    assert "spec.md: section '## Objective' still holds the template placeholder" in proc.stderr
+    assert "<one or two sentences>" in proc.stderr
+
+
+def test_filled_content_with_angle_brackets_is_not_a_placeholder(tmp_path, run_hook, sections):
+    """Real spec bodies carry `<type>/<N>-<slug>` branch names, autolinks, and code
+    fences. Flagging those would make the gate unpassable, so only an angle span
+    with an inner space -- the template's own shape -- counts."""
+    folder = write_plan(tmp_path / "specs", "my-plan", sections)
+    spec = folder / "spec.md"
+    spec.write_text(
+        spec.read_text().replace(
+            "## Tracking\n\ncontent",
+            "## Tracking\n\n- **Branch:** `<type>/<N>-<slug>`\n- **Docs:** <https://example.com>",
+        )
+    )
+    proc = gate(run_hook, tmp_path)
+    assert proc.returncode == 0
+    assert proc.stderr == ""
 
 
 def test_newest_plan_folder_is_the_gated_one(tmp_path, run_hook, sections):

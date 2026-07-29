@@ -25,7 +25,7 @@ STALE_AFTER: `30` days — a KB doc older than this is stale
 
 ## Instructions
 
-- **PLANNING ONLY** — draft the spec; do not build, write code, or deploy builder agents. Allowed subagents: the `claude-code-guide` KB cross-check, `kb-fetcher` for KB mirrors (never write mirror content yourself), and the `opus` page author. You write the spec files and `checks/` scripts yourself — they are one coupled artifact and splitting authorship breaks traceability.
+- **PLANNING ONLY** — draft the spec; do not build, write code, or deploy builder agents. Allowed subagents: the `claude-code-guide` KB cross-check, `kb-fetcher` for KB mirrors (never write mirror content yourself), and the `opus` page author. You write the spec files and any plan-local check scripts yourself — they are one coupled artifact and splitting authorship breaks traceability.
 - If no `USER_PROMPT` is provided, stop and ask the user for it.
 - Determine the task type (feat|fix|docs|style|refactor|perf|test|chore) and complexity (simple|medium|complex).
 - Understand the codebase directly — application code and any existing harness patterns under `.claude/`.
@@ -42,7 +42,7 @@ Conditional expert layer. Run it only when the task touches the harness surface 
 2. **Cross-check.** Deploy a `claude-code-guide` subagent with the specific harness claims the plan depends on, asking it to verify them against current official behavior.
 3. **Reconcile.** Sources agree → continue. They conflict on a claim → refresh that mirror via a `kb-fetcher` subagent (the entry's url + the absolute target path in the worktree), then Read the fresh mirror — it wins; log the conflict + resolution in decisions.md `## KB References`. Fetch fails → prefer the source with the newer verifiable date and mark the claim unverified in the spec.
 4. **Gap-fill.** The KB lacks a doc the plan depends on → spawn a `kb-fetcher` subagent with the official URL (ask the claude-code-guide subagent if unsure) and the absolute target path under `ai-docs/` in the worktree, add its `ai-docs/sources.yaml` entry, then Read the fresh mirror — all committed with the spec.
-5. Log every doc you relied on — path + its `fetched` date — in decisions.md under `## KB References` (a section you append; the templates don't carry it).
+5. Log every doc you relied on — path, `fetched` date, and the claim it grounds — in decisions.md's `## KB References` table.
 
 ## Readiness Gate
 
@@ -71,7 +71,7 @@ IMPORTANT: **PLANNING ONLY** — do not execute, build, or deploy builder agents
 
 ## Output: Spec Folder
 
-Write the plan under `specs/<name-of-plan>/`. Copy each file from `specs/_templates/`, then replace every `<placeholder>` with real content. Keep each template's `##` headings exactly as written — a Stop hook checks that every required section is present before the run can end.
+Write the plan under `specs/<name-of-plan>/`. Copy each file from `specs/_templates/`, then replace every `<placeholder>` with real content; the templates' HTML comments are guidance, not content, so a section holding only a comment counts as unwritten. Keep each template's `##` headings exactly as written — a Stop hook blocks the run while any required section is missing, empty, or still holds a placeholder.
 
 ```text
 specs/<name-of-plan>/
@@ -79,17 +79,17 @@ specs/<name-of-plan>/
 ├── spec.md                # what & why: task, objective, non-goals, locked decisions, tracking, review record
 ├── tasks.md               # how & who: phases, team members, step-by-step tasks
 ├── decisions.md           # the interview record (+ ## KB References when the expert layer is active)
-├── acceptance-criteria.md # done: testable criteria, each mapped to a checks/ script
-├── checks/                # one executable script per AC — `uv run` for Python, `bun` for JS/TS, bash otherwise; pass = exit 0
+├── acceptance-criteria.md # done: testable criteria, each mapped to validation commands
+├── checks/                # plan-local scripts, only where no suite or validator covers an AC — `uv run` for Python, `bun` for JS/TS, bash otherwise; pass = exit 0
 ├── artifacts/             # implementation-plan page (+ reference map when porting semantics)
 └── reviews/               # Codex round reports + findings-ledger.md (the gate writes these)
 ```
 
 When filling them:
 
-- Include the conditional sections (`## Problem Statement` and `## Solution Approach` in spec.md, `## Implementation Phases` in tasks.md) only when task_type is feature or complexity is medium/complex.
+- Include the conditional sections (`## Problem Statement` and `## Solution Approach` in spec.md, `## Implementation Phases` in tasks.md) only when task_type is feature or complexity is medium/complex; `## Interfaces & Contracts` only when the change adds or alters an interface, and `## KB References` in decisions.md only under `kb-grounded`. Delete a section you omit rather than leaving it empty.
 - Volatile-decisions-first: within spec.md's existing `##` headings (do not rename or reorder them), lead with the decisions most likely to change — data model, type/interface signatures, anything user-facing.
-- Name check scripts `ac<N>-<slug>.<ext>`; each is self-contained and runnable from the repo root.
+- Prefer the project's own suite or a checked-in validator over a bespoke script; when a plan-local script is the only option, name it `ac<N>-<slug>.<ext>`, self-contained and runnable from the repo root. Every validation command must fail if the change is reverted.
 
 ## Plan Artifacts
 
@@ -102,7 +102,7 @@ Every plan gets a GitHub issue and its convention branch before anything is push
 - **Enter the worktree.** The discovery chain usually created it — `EnterWorktree(path: ".claude/worktrees/<slug>")`; without one, `EnterWorktree(name: "<slug>")` branches from `origin/main` into `.claude/worktrees/<slug>`. Write the spec folder there, never on `main`. Discovery commits already on the branch ride along with the first push.
 - **Create the issue** (first cycle only). Pick the skeleton kind from `<type>` — feat→`feature`, fix→`bug`, docs/style/refactor/perf/test/chore→`chore`, `epic` only for a genuine multi-issue initiative. Fill `specs/_templates/issues/<kind>.md` from the interview ledger and Assumptions, write it to a temp file, and create the issue: `gh issue create --title "<emoji> <type>: <plan title>" --body-file <tmp> --label <type> --label priority:P<0-3> --assignee <login>` (gitmoji from the commit table) — exactly one type label, one priority label, and your GitHub login (`gh api user -q .login`). Note the returned issue number `#N`.
 - **Link the branch.** `gh issue develop <N> --base main --name <type>/<N>-<slug>`.
-- **Tracking.** In spec.md's `## Tracking`, record Issue `#N`, Branch `<type>/<N>-<slug>`, the absolute worktree path (`git rev-parse --show-toplevel`), and `Review profile: kb-grounded|standard`.
+- **Tracking.** In spec.md's `## Tracking`, record Type and Complexity, Issue `#N`, Branch `<type>/<N>-<slug>`, the absolute worktree path (`git rev-parse --show-toplevel`), and `Review profile: kb-grounded|standard`.
 - **Commit.** Stage the spec folder plus any gap-filled KB docs and make one commit `<emoji> <type>(spec): draft plan for <name-of-plan>` with a `Refs #N` footer.
 - **Push.** `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>` (bare `git push` refuses from the local `worktree-<slug>` branch).
 - **Plan-links comment.** After the first push, upsert one issue comment keyed `<!-- plan-links -->` linking the four spec files as blob URLs on the convention branch — upsert per `pr-process.md` § Idempotent Marker Comments.
@@ -123,14 +123,14 @@ After the gate's human decision, provide a concise report:
 ```text
 ✅ Spec Folder Created
 
-Folder: specs/<name-of-plan>/ (spec.md, tasks.md, decisions.md, acceptance-criteria.md, checks/)
+Folder: specs/<name-of-plan>/ (spec.md, tasks.md, decisions.md, acceptance-criteria.md<, checks/ when used>)
 Issue: #N <url>
 Branch: <type>/<N>-<slug> — pushed to origin
 Worktree: <absolute worktree path>
 Review profile: <kb-grounded | standard>
 Codex Gate: <approved at round N | user chose <proceed|revise|park> — <open blockers | dispute | codex-unavailable>>
 Ledger: <X blocking fixed, Y advisory recorded, Z disputed>
-Checks: <N scripts under checks/>
+Checks: <N validation commands — M plan-local scripts under checks/>
 KB Grounding: <N docs consulted, M gap-filled — or "none (standard profile)">
 Assumptions: <count recorded in decisions.md, or "none">
 Page: <implementation-plan page URL + committed path, or "none — simple plan">

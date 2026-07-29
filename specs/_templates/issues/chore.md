@@ -24,6 +24,7 @@
 - [ ] test — add or fix tests
 - [ ] build — build system, dependencies, packaging
 - [ ] ci — CI configuration and scripts
+- [ ] docs — documentation only
 
 ## Risk & impact
 

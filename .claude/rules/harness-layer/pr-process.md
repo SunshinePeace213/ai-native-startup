@@ -12,15 +12,16 @@ comments. Commit format, branching, and the worktree push refspec live in
 
 ## Pull Request Requirements
 
-- Use **one PR template per commit type**. The 8 templates live under `.github/PULL_REQUEST_TEMPLATE/`: `feat.md`, `fix.md`, `docs.md`, `style.md`, `refactor.md`, `perf.md`, `test.md`, `chore.md`. Each is tailored to its type (e.g. `feat` carries Breaking-changes + Screenshots; `fix` carries Root-cause + Regression-test) and all 8 share the stage table, Test Evidence, Risk & Rollback, Review Reports, and Reviewer Checklist.
+- Use **one PR template per commit type**. The 8 templates live under `.github/PULL_REQUEST_TEMPLATE/`: `feat.md`, `fix.md`, `docs.md`, `style.md`, `refactor.md`, `perf.md`, `test.md`, `chore.md`.
+- Every template runs `## Summary` → `## Plan` → its type-specific sections (`feat` carries Breaking-changes + Screenshots; `fix` carries Root-cause + Regression-test) → a **shared tail that is byte-identical across all 8**: `## Test Evidence`, `## Risk & Rollback`, `## Agent Task Manifest`, `## Build Status`, `## Review Reports`, `## Dev Notes`, `## Follow-ups`. Edit the tail in one → edit all 8 in the same commit, and keep the section set matching what the pipeline commands write. `tests/harness-layer/test_pr_templates.py` fails on either drift.
 - `/harness-layer:harness-build` opens a **draft** PR right after the tidy checkpoint, filling the body from the matching template with `gh pr create --draft --body-file <type>.md` (not `--template`).
 - PR title carries the emoji to mirror the commit, e.g. `✨ feat(api): user login`.
 - The PR body carries `Closes #N` — the PR is the **only** artifact that closes an issue.
 - Fill out the Summary and Test Evidence, and keep the linked-issue line accurate.
-- The PR body carries the **stage table** (Implementation → Ready) and the **Agent Task Manifest** table (copied from `TaskList`) — the single durable audit point for the ephemeral Agent Tasks.
+- The PR body carries the **stage table** (`## Build Status`, Implementation → Ready) and the **Agent Task Manifest** table (copied from `TaskList`) — the single durable audit point for the ephemeral Agent Tasks. Manifest task IDs stay bare kebab-case; a `#N` there autolinks to an unrelated issue.
 - Each review posts a **marker comment** — `<!-- report:tidy -->`, `<!-- report:codex-round-N -->` — upserted in place (never stacked), each stating the reviewed head SHA; the `Review Reports` section links them.
-- The PR flips from draft to **ready only when its head commit equals the Codex-approved SHA**; `/harness-layer:harness-ship` then merges with `gh pr merge --squash --match-head-commit <approved-sha>` (no local squash-merge).
-- If a task requires a bypass (e.g. emergency hotfix), carry over `[skip-ci]` or `[skip-drift-check]` tokens as required.
+- The PR flips from draft to **ready only when its head commit equals the Codex-approved SHA**, recorded in the `## Build Status` **Ready** row's Evidence cell; `/harness-layer:harness-ship` reads that cell and merges with `gh pr merge --squash --match-head-commit <approved-sha>` (no local squash-merge), so a wrong value aborts the merge.
+- Bypass tokens (`[skip-ci]`, `[skip-drift-check]`) belong in the PR title only when a workflow or hook actually consumes them — none exists in this repo today, so leave them off. They also ride into the squash-commit subject, which is capped at 72 characters.
 - If modifying user-facing UI, include structural text maps or mock descriptions.
 
 ## Issue Requirements
@@ -28,7 +29,7 @@ comments. Commit format, branching, and the worktree push refspec live in
 - Use the curated set of **4 issue forms** (GitHub issue-forms YAML) under `.github/ISSUE_TEMPLATE/`, plus `config.yml`:
   - `feature.yml` — feature request (problem, solution, acceptance criteria).
   - `bug.yml` — bug report (repro, expected/actual, severity, environment).
-  - `chore.yml` — maintenance umbrella covering `refactor` / `perf` / `style` / `test` / `build` / `ci`.
+  - `chore.yml` — maintenance umbrella covering `refactor` / `perf` / `style` / `test` / `build` / `ci` / `docs`.
   - `epic.yml` — epic/plan that links the `specs/<name>/` plan files and carries a child-issue checklist.
 - Forms can't be submitted from the CLI, so `/harness-layer:harness-plan` fills the paired markdown skeletons under `specs/_templates/issues/` and creates the issue with `gh issue create --body-file`.
 - A feature issue's **Acceptance Criteria become the Agent-Task success criteria** for the build — write them as verifiable checks.

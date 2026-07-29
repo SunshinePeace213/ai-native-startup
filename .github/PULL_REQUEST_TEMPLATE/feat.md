@@ -1,13 +1,16 @@
-<!--
-PR title convention (carry the gitmoji to match the commit):
-  ✨ feat(<scope>): <short description in imperative mood>
-Append a bypass token to the title only when warranted, e.g.
-  ✨ feat(<scope>): <desc> [skip-ci]   or   [skip-drift-check]
--->
+<!-- PR title: ✨ feat(<scope>): <short description in imperative mood> -->
 
 ## Summary
 
-<!-- What does this feature do and why? 2-4 sentences of user-facing value. -->
+<!-- What this feature does and why. 2-4 sentences of user-facing value. -->
+
+## Plan
+
+<!-- Blob links to the plan's spec.md / tasks.md / decisions.md / acceptance-criteria.md. -->
+
+Closes #<issue>
+
+<!-- `Refs #<issue>` links without closing; `Part of #<epic>` for an epic child. -->
 
 ## Changes
 
@@ -24,11 +27,12 @@ None.
 
 ## Screenshots / recordings
 
-<!-- For user-facing UI, attach images/clips. Include a structural text-map of the UI when visuals are unavailable. -->
+<!-- For user-facing UI, attach images/clips. Include a structural text-map of the UI
+     when visuals are unavailable. -->
 
 ## Test Evidence
 
-<!-- Commands run + observed results (counts, green run, output). -->
+<!-- Commands run + observed results. "N/A" with a reason when nothing is runnable. -->
 
 ## Risk & Rollback
 
@@ -36,23 +40,21 @@ None.
 
 None.
 
-## Linked Issue
-
-Closes #<issue>
-
-<!-- `Refs #<issue>` for related-but-not-closing links; `Part of #<epic>` for an epic child. -->
-
 ## Agent Task Manifest
 
-<!-- One row per Agent Task from TaskList at build time. -->
+<!-- One row per Agent Task from TaskList at build time. Task IDs stay bare kebab-case —
+     never `#N`, which GitHub autolinks to an unrelated issue. -->
 
 | task | owner | done | verification | notes |
 | --- | --- | --- | --- | --- |
-| #<taskId> <subject> | <owner> | ☐ | <how verified> | |
+| `<kebab-case-task-id>` <subject> | <owner> | ☐ | <how verified> | |
 
 ## Build Status
 
-<!-- Updated live by /harness-layer:harness-build. Status: pending / done / N/A. Evidence: commit SHA, report-comment link, or N/A. -->
+<!-- Updated live by /harness-layer:harness-build and /harness-layer:harness-review.
+     Status: pending / done / N/A. The Ready row's Evidence is the approved head SHA —
+     /harness-layer:harness-ship passes it to `gh pr merge --match-head-commit`, so a
+     wrong value aborts the merge. -->
 
 | Stage | Status | Evidence |
 | --- | --- | --- |
@@ -65,15 +67,13 @@ Closes #<issue>
 
 ## Review Reports
 
-<!-- Links to the marker comments on this PR (upserted, each states the reviewed head SHA). -->
+<!-- One link per marker comment as it lands (tidy, then each Codex round). Each comment
+     states the head SHA it reviewed. -->
 
-- Tidy — `<!-- report:tidy -->`
-- Codex R1 — `<!-- report:codex-round-1 -->`
-- Codex R2+ — `<!-- report:codex-round-N -->` — one entry per delta round (if required)
+## Dev Notes
 
-## Reviewer Checklist
+<!-- Links to the build brief and dev report pages under specs/<name>/artifacts/. -->
 
-- [ ] Intent & scope match the linked issue
-- [ ] Validation evidence present and green
-- [ ] Rollback plan is plausible
-- [ ] Security / data / deployment impact considered
+## Follow-ups
+
+<!-- Review advisories, one unchecked box each. Each is filed as its own issue or dropped. -->

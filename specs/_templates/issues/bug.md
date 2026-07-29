@@ -45,5 +45,5 @@
 
 <!-- Relevant log output or screenshots. Redact secrets. -->
 
-```
+```shell
 ```
