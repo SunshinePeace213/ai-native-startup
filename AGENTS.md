@@ -18,6 +18,7 @@
 - **Keep it short**: Write harness/prompt files (skills, agents, commands, and rules under `.claude/`) in fluent, KISS prose. Every line loads into context — say it once, briefly, then stop. When in doubt, cut.
 - **Hooks**: [hooks.md](.claude/rules/harness-layer/hooks.md) is the authoritative catalog of every hook — event/matcher, contract, files, and the hook-test rules. Read it before any hook work; never re-summarize hook behavior elsewhere or re-derive it from memory.
 - **Standards**: plans must clear [spec-standards.md](.claude/rules/harness-layer/spec-standards.md); implementation diffs must clear [impl-standards.md](.claude/rules/harness-layer/impl-standards.md). The drafting agent self-checks; the Codex gate judges against the same list.
+- **Tests**: which tier a change needs — contract, drift, or eval — follows [test-tiers.md](.claude/rules/harness-layer/test-tiers.md). CI (`.github/workflows/ci.yml`) runs the suite and lints `.claude/hooks/` + `tests/` on every PR.
 - **Memory**: `AGENTS.md` is the hub — topic rules live in `.claude/rules/` (domain families in folders like `harness-layer/`, path-scoped via `paths:` frontmatter; rules every session needs stay flat at the root with no `paths:`). Never persist memory in `CLAUDE.md` (it only `@`-imports this file) or a new root markdown file. Fetch/record/edit/create contract: [memory-series.md](.claude/rules/memory-series.md).
 - **Model selection**: every model/effort assignment — Claude and Codex; orchestrators, subagents, workflows, Codex tasks — follows [model-selection.md](.claude/rules/model-selection.md). It loads every session; never duplicate its guidance in templates, tasks, or commands.
 - **Orchestration**: choosing between doing the work yourself, subagents, and an agent team — plus the shared `Task*` board — follows [orchestration.md](.claude/rules/orchestration.md). It loads every session.
@@ -32,6 +33,7 @@
 - `.claude/rules/` — path-scoped project rules
 - `ai-docs/` — cached official docs KB managed by `/kb` (catalog: `ai-docs/index.md`), plus hand-written project notes
 - `specs/` — planning files (per-plan folders; pre-plan discovery pages live in each plan's `discovery/`)
+- `specs/index.md` — catalog of what has shipped. Check it before concluding a feature does not exist, and read a plan's `summary.md` (outcome) before its `spec.md` (intent).
 
 ## Harness-Layer Pipeline
 

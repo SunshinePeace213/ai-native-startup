@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer commit on the same ref supersedes an in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - uses: oven-sh/setup-bun@v2
+      # Both toolchains, matching what the WorktreeCreate hook installs. The
+      # auto-format hooks shell out to prettier and markdownlint-cli2; without
+      # node they fail open and their contract tests assert against unformatted
+      # input.
+      - run: uv sync --locked
+      - run: bun install --frozen-lockfile
+      # No flags: pyproject already wires the plugins, so CI runs the suite the
+      # same way it runs locally -- pytest-xdist `-n auto` fans out across the
+      # runner's cores, pytest-timeout kills a hang at 60s, and pytest-sugar
+      # falls back to plain dots off-TTY, which is what log parsing wants.
+      - run: uv run pytest
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      # pyproject excludes the vendored code-review skill; everything else is
+      # ours and is expected to stay clean.
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  commits:
+    name: commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      # The PR's own commits only. GitHub appends " (#N)" to the squash subject
+      # at merge time, which can push a conforming subject past the 72-char cap,
+      # so main's history is not a valid target for this check.
+      - run: >
+          uv run scripts/check_commit_messages.py
+          ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}

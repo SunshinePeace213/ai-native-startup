@@ -22,6 +22,10 @@ timeout = 60
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# Vendored from github.com/awesome-skills/code-review-skill. Formatting it would
+# diverge the mirror from upstream; an agent editing one of its files still gets
+# linted, since ruff checks explicitly-passed paths regardless of this list.
+extend-exclude = [".claude/skills/code-review"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

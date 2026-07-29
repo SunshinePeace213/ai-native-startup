@@ -16,8 +16,9 @@ review, not after.
 2. **Testability** — every acceptance criterion is observable and backed by a
    command that fails when the change is reverted: the project's own suite, a
    checked-in validator, or a plan-local script under `specs/<name>/checks/`. A
-   shape stated in `## Interfaces & Contracts` is asserted by one of them. No
-   "works well" or "feels fast".
+   shape stated in `## Interfaces & Contracts` is asserted by one of them. A task
+   that changes behavior names the test it adds or extends in its **Files**, at the
+   tier [test-tiers.md](test-tiers.md) assigns. No "works well" or "feels fast".
 3. **Feasibility & ordering** — every step can run as written, and prerequisites
    come before their dependents.
 4. **Scope fidelity** — the plan implements the locked decisions exactly: nothing
