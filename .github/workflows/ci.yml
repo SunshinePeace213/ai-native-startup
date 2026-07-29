@@ -24,7 +24,13 @@ jobs:
         with:
           python-version: "3.13"
           enable-cache: true
+      - uses: oven-sh/setup-bun@v2
+      # Both toolchains, matching what the WorktreeCreate hook installs. The
+      # auto-format hooks shell out to prettier and markdownlint-cli2; without
+      # node they fail open and their contract tests assert against unformatted
+      # input.
       - run: uv sync --locked
+      - run: bun install --frozen-lockfile
       # No flags: pyproject already wires the plugins, so CI runs the suite the
       # same way it runs locally -- pytest-xdist `-n auto` fans out across the
       # runner's cores, pytest-timeout kills a hang at 60s, and pytest-sugar
