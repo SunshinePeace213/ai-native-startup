@@ -138,6 +138,7 @@
     "codex@openai-codex": true,
     "playground@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
-    "claude-security@claude-plugins-official": true
+    "claude-security@claude-plugins-official": true,
+    "document-skills@anthropic-agent-skills": true
   }
 }

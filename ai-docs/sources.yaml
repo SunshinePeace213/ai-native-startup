@@ -134,6 +134,12 @@ anthropic/blog:
     file: anthropic/blog/verification-loops-with-skills.md
     topic: Verification loops with skills — closing the check-your-work loop in Claude Code
     fetched: null
+  - url: https://claude.com/blog/the-founders-playbook
+    kind: pdf
+    dir: anthropic/blog/founders-playbook/
+    file: anthropic/blog/founders-playbook/index.md
+    topic: Founder's playbook — building an AI-native startup, stage by stage
+    fetched: null
 openai:
   - url: https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide
     file: openai/codex-prompting-guide.md
