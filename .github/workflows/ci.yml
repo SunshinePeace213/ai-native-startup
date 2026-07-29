@@ -48,7 +48,27 @@ jobs:
           python-version: "3.13"
           enable-cache: true
       - run: uv sync --locked
-      # Scoped to the Python this repo authors and maintains. The vendored and
-      # utility scripts under .claude/skills/ carry pre-existing violations;
-      # linting them here would block every PR on unrelated debt.
-      - run: uv run ruff check .claude/hooks tests
+      # pyproject excludes the vendored code-review skill; everything else is
+      # ours and is expected to stay clean.
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  commits:
+    name: commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      # The PR's own commits only. GitHub appends " (#N)" to the squash subject
+      # at merge time, which can push a conforming subject past the 72-char cap,
+      # so main's history is not a valid target for this check.
+      - run: >
+          uv run scripts/check_commit_messages.py
+          ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
