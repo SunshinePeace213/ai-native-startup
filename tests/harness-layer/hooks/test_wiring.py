@@ -179,10 +179,22 @@ def test_registered_commands_are_uv_script_shaped_and_safe():
         assert (HOOKS_ROOT / script).is_file(), command
 
 
+def frontmatter_of(md: Path) -> str:
+    """A command's YAML frontmatter, where its registrars live. Body prose
+    naming a hook path is documentation, not a registration."""
+    text = md.read_text()
+    if not text.startswith("---\n"):
+        return ""
+    end = text.find("\n---", 3)
+    return text[4:end] if end != -1 else ""
+
+
 def command_scoped_scripts() -> set[str]:
     """Hook scripts referenced by command-frontmatter registrars."""
     return {
-        match for md in COMMANDS_DIR.rglob("*.md") for match in HOOK_PATH_RE.findall(md.read_text())
+        match
+        for md in COMMANDS_DIR.rglob("*.md")
+        for match in HOOK_PATH_RE.findall(frontmatter_of(md))
     }
 
 
@@ -212,6 +224,25 @@ def test_command_scoped_references_point_at_real_files():
     time -- unless this pins it."""
     for script in command_scoped_scripts():
         assert (HOOKS_ROOT / script).is_file(), script
+
+
+def test_body_prose_naming_a_hook_path_is_not_a_registration(tmp_path):
+    """Commands document hook paths in prose. Reading that as a registration
+    fails this suite on a docs-only edit -- which is exactly how it broke."""
+    md = tmp_path / "cmd.md"
+    md.write_text(
+        "---\n"
+        "description: demo\n"
+        "hooks:\n"
+        "  Stop:\n"
+        "    - hooks:\n"
+        "        - type: command\n"
+        '          command: uv run --script "$D"/.claude/hooks/real.py\n'
+        "---\n"
+        "\n"
+        "Deploy a scan when the diff touches (`.claude/hooks/`, `scripts/`).\n"
+    )
+    assert HOOK_PATH_RE.findall(frontmatter_of(md)) == ["real.py"]
 
 
 def codex_entries() -> list[tuple[tuple[str, str, tuple], dict]]:
