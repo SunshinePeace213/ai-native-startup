@@ -35,10 +35,11 @@ REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — under `kb-gro
 5. **Classify, fix, delta** — follow the skill: merge the Codex, check-script, and security findings into the ledger and derive the verdict yourself. `changes-requested` → spawn the fixers, land the fix commit, push, run round 2 as a delta round, and re-verify every security disposition from the fixer evidence. A dispute or the cap → the skill's human gate.
 6. **Terminal** — artifacts and memory FIRST, then one terminal commit, then the PR flip; nothing mutates the repository after the terminal commit:
    1. Medium/complex plans: deploy an `opus` page author for `specs/<name>/artifacts/dev-report.html` per `artifacts.md` — the Development report derived from `implementation-notes.md`, the findings ledger, and the memory/standards amendments; authored on any verdict.
-   2. Run the skill's self-improve step and route memory-marked lessons per `memory-series.md`.
-   3. ONE terminal commit (round reports, ledger, `dev-report.html`, memory/standards edits), pushed.
-   4. `approved` (including override & ready) → link the page under `## Dev Notes`, verify the PR head equals the terminal commit, tick the stage table with it as **Ready** evidence, `gh pr ready` — no question.
-   5. Parked or `codex-unavailable` → the terminal commit carries the final report; leave the PR draft — the human owns the blockers.
+   2. Write `specs/<name>/summary.md` from `specs/_templates/summary.md` — every plan carries one, on any verdict, from those same sources. On `approved`, also add the plan's row at the top of `specs/index.md`'s table, so the index lands with the merge.
+   3. Run the skill's self-improve step and route memory-marked lessons per `memory-series.md`.
+   4. ONE terminal commit (round reports, ledger, `summary.md`, `index.md`, `dev-report.html`, memory/standards edits), pushed.
+   5. `approved` (including override & ready) → link the page under `## Dev Notes`, verify the PR head equals the terminal commit, tick the stage table with it as **Ready** evidence, `gh pr ready` — no question.
+   6. Parked or `codex-unavailable` → the terminal commit carries the final report; leave the PR draft — the human owns the blockers.
 7. **Report** — end the run with the `## Report` output.
 
 ## Security pass
@@ -66,6 +67,7 @@ Checks: <all passed | N failures fixed>
 Security: <light | full> pass — <clean | N findings fixed | report: CLAUDE-SECURITY-<ts>/>
 KB grounding: <checked | n/a — standard profile>
 Dev report: <artifacts/dev-report.html + URL | n/a — simple plan>
+Summary: specs/<name>/summary.md — <indexed in specs/index.md | not indexed, left draft>
 Standards: <amended: <one line> | unchanged>
 
 Blockers (left draft only):

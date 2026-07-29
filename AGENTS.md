@@ -33,6 +33,7 @@
 - `.claude/rules/` — path-scoped project rules
 - `ai-docs/` — cached official docs KB managed by `/kb` (catalog: `ai-docs/index.md`), plus hand-written project notes
 - `specs/` — planning files (per-plan folders; pre-plan discovery pages live in each plan's `discovery/`)
+- `specs/index.md` — catalog of what has shipped. Check it before concluding a feature does not exist, and read a plan's `summary.md` (outcome) before its `spec.md` (intent).
 
 ## Harness-Layer Pipeline
 
