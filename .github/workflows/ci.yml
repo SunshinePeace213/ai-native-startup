@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer commit on the same ref supersedes an in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      # No flags: pyproject already wires the plugins, so CI runs the suite the
+      # same way it runs locally -- pytest-xdist `-n auto` fans out across the
+      # runner's cores, pytest-timeout kills a hang at 60s, and pytest-sugar
+      # falls back to plain dots off-TTY, which is what log parsing wants.
+      - run: uv run pytest
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      # Scoped to the Python this repo authors and maintains. The vendored and
+      # utility scripts under .claude/skills/ carry pre-existing violations;
+      # linting them here would block every PR on unrelated debt.
+      - run: uv run ruff check .claude/hooks tests
