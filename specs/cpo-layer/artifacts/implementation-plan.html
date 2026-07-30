@@ -1,0 +1,939 @@
+<title>Implementation plan — studio-layer</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --surface-2: #E7E2D8;
+    --ok: #4A6B3D;
+    --warn: #8A6212;
+
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+    --measure: 68ch;
+    --r: 3px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 56px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 32px 160px;
+  }
+
+  /* ---------- rail ---------- */
+  .rail { position: sticky; top: 0; align-self: start; padding-top: 72px; }
+  .rail nav { display: flex; flex-direction: column; gap: 2px; border-left: 1px solid var(--border); }
+  .rail a {
+    padding: 7px 0 7px 14px;
+    margin-left: -1px;
+    border-left: 1px solid transparent;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 1.35;
+    transition: color .15s, border-color .15s;
+  }
+  .rail a:hover { color: var(--text); }
+  .rail a.on { color: var(--accent); border-left-color: var(--accent); }
+  .rail .step {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    display: block;
+    opacity: .65;
+  }
+
+  /* ---------- head ---------- */
+  header { padding: 76px 0 0; max-width: var(--measure); }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-size: clamp(30px, 4.4vw, 44px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+  .lede { font-size: 18px; color: #4A443E; margin: 0 0 28px; }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: var(--surface);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .fact { padding: 12px 18px; border-right: 1px solid var(--border); flex: 1 1 auto; }
+  .fact:last-child { border-right: 0; }
+  .fact dt {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 3px;
+  }
+  .fact dd { margin: 0; font-size: 14px; font-weight: 500; }
+  .fact a { color: var(--accent); }
+
+  .stops {
+    border-left: 2px solid var(--accent);
+    padding: 4px 0 4px 16px;
+    margin: 30px 0 0;
+    font-size: 15px;
+    color: #4A443E;
+  }
+
+  /* ---------- sections ---------- */
+  section { padding-top: 76px; max-width: var(--measure); }
+  section > h2 {
+    font-size: 13px;
+    font-family: var(--mono);
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--text);
+    margin: 0 0 6px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+  }
+  section > h2 span { color: var(--muted); letter-spacing: .04em; text-transform: none; font-size: 12px; }
+  .intro { color: var(--muted); font-size: 15px; margin: 14px 0 30px; }
+
+  /* ---------- decision cards ---------- */
+  .card {
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: var(--surface);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .card > header { padding: 16px 20px 14px; max-width: none; }
+  .card h3 {
+    margin: 0 0 8px;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+  .vol {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 7px;
+  }
+  .card p { margin: 0 0 10px; font-size: 15px; }
+  .card p:last-child { margin-bottom: 0; }
+  .why { color: #4A443E; }
+
+  .alt {
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+    padding: 15px 20px;
+    font-size: 14.5px;
+    color: #4A443E;
+  }
+  .alt strong { color: var(--text); }
+  .alt[hidden] { display: none; }
+
+  .rowtools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    padding: 11px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  button.ghost {
+    font: inherit;
+    font-size: 13px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    color: var(--text);
+    padding: 5px 11px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  button.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  button.ghost[aria-expanded="true"] { background: var(--surface-2); border-color: var(--muted); }
+
+  label.tweak {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  label.tweak:hover { color: var(--text); }
+  label.tweak input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; margin: 0; }
+  label.tweak.picked { color: var(--accent); font-weight: 500; }
+
+  /* ---------- build order ---------- */
+  .phase { margin-bottom: 26px; }
+  .phase > h3 {
+    font-size: 15px;
+    margin: 0 0 4px;
+    font-weight: 600;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .phase > h3 em {
+    font-family: var(--mono);
+    font-style: normal;
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .phase > p { margin: 0 0 12px; font-size: 14.5px; color: var(--muted); }
+
+  .task {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 16px;
+    align-items: start;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+  }
+  .task:last-child { border-bottom: 1px solid var(--border); }
+  .task .id {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    word-break: break-all;
+  }
+  .task .desc { grid-column: 1 / -1; font-size: 14.5px; color: #4A443E; margin: 0; }
+  .task .meta {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .chip {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 2px 9px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .chip.model { border-color: var(--accent); color: var(--accent); }
+  .chip.ac { color: #4A443E; }
+  .chip.dep { background: transparent; }
+
+  /* ---------- collapsed mechanical ---------- */
+  details {
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: var(--surface);
+    margin-bottom: 10px;
+  }
+  details > summary {
+    cursor: pointer;
+    padding: 13px 18px;
+    font-size: 14.5px;
+    font-weight: 500;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after {
+    content: "+";
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 15px;
+  }
+  details[open] > summary::after { content: "\2013"; }
+  details[open] > summary { border-bottom: 1px solid var(--border); }
+  .dbody { padding: 15px 18px 18px; }
+  .dbody p { margin: 0 0 10px; font-size: 14.5px; }
+
+  ul.files { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+  ul.files li { padding: 5px 0; border-bottom: 1px dotted var(--border); }
+  ul.files li:last-child { border-bottom: 0; }
+  ul.files code { color: var(--accent); }
+
+  ol.acs { margin: 0; padding-left: 20px; font-size: 14.5px; }
+  ol.acs li { padding: 5px 0; }
+  ol.acs .cmd { display: block; margin-top: 3px; }
+
+  code, .cmd {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-2);
+    border-radius: 2px;
+    padding: 1px 5px;
+    word-break: break-word;
+  }
+  .cmd { color: #3D3831; }
+
+  .scroller { overflow-x: auto; }
+
+  /* ---------- dock ---------- */
+  .dock {
+    position: sticky;
+    bottom: 0;
+    margin-top: 80px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    max-width: var(--measure);
+  }
+  .dock > header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    max-width: none;
+  }
+  .dock h2 { margin: 0; font-size: 14px; font-weight: 600; }
+  .dock .count { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .dock .body { padding: 16px 18px 18px; }
+
+  textarea {
+    width: 100%;
+    font: inherit;
+    font-size: 14px;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: var(--bg);
+    color: var(--text);
+    resize: vertical;
+    min-height: 62px;
+    margin-bottom: 12px;
+  }
+  textarea:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  pre.out {
+    margin: 0 0 12px;
+    padding: 14px 15px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.62;
+    white-space: pre-wrap;
+    max-height: 260px;
+    overflow-y: auto;
+    color: #3D3831;
+  }
+
+  button.primary {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    background: var(--accent);
+    color: #FFF9F4;
+    border: 1px solid var(--accent);
+    border-radius: var(--r);
+    padding: 8px 18px;
+    cursor: pointer;
+  }
+  button.primary:hover { filter: brightness(1.07); }
+  button.primary.done { background: var(--ok); border-color: var(--ok); }
+
+  footer.foot {
+    max-width: var(--measure);
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  }
+  html { scroll-behavior: smooth; }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; gap: 0; padding: 0 22px 120px; }
+    .rail { display: none; }
+    .fact { border-right: 0; border-bottom: 1px solid var(--border); flex-basis: 100%; }
+    .fact:last-child { border-bottom: 0; }
+  }
+</style>
+
+<div class="shell">
+  <aside class="rail">
+    <nav id="rail">
+      <a href="#decisions"><span class="step">Most volatile</span>Six decisions</a>
+      <a href="#order"><span class="step">Then</span>Build order</a>
+      <a href="#scope"><span class="step">Fence</span>What it will not do</a>
+      <a href="#mechanical"><span class="step">Collapsed</span>Files &amp; criteria</a>
+      <a href="#tweaks"><span class="step">Output</span>Revise the plan</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header>
+      <p class="eyebrow">Implementation plan · Issue #80</p>
+      <h1>A design studio that stops at the signed handoff</h1>
+      <p class="lede">
+        Soriza sells design but runs it from memory. This plan turns a client engagement into
+        eight phase commands with gates that can actually fail — and hands the finished layout
+        over without writing a line of the site.
+      </p>
+
+      <dl class="facts">
+        <div class="fact"><dt>Type</dt><dd>feat · complex</dd></div>
+        <div class="fact"><dt>Issue</dt><dd><a href="https://github.com/SunshinePeace213/ai-native-startup/issues/80">#80</a></dd></div>
+        <div class="fact"><dt>Branch</dt><dd>feat/80-cpo-layer</dd></div>
+        <div class="fact"><dt>Profile</dt><dd>kb-grounded</dd></div>
+        <div class="fact"><dt>Tasks</dt><dd>10 across 5 phases</dd></div>
+      </dl>
+
+      <p class="stops">
+        The principal is <strong>Maya Lindqvist (CPO)</strong> — the main session, orchestrator
+        only, never a spawned teammate. She spawns nine role agents directly. Client work lives in
+        a gitignored <code>clients/</code> inside this repo, so path-scoped rules and command hooks
+        resolve while nothing client-owned enters git history.
+      </p>
+    </header>
+
+    <!-- ============ VOLATILE FIRST ============ -->
+    <section id="decisions">
+      <h2>Decisions most likely to change <span>tick one to revise it</span></h2>
+      <p class="intro">
+        Ordered by volatility. Each shows the path taken and, behind the toggle, the alternative
+        that is still live. The other twelve decisions came locked from the interview and are not
+        re-litigated here.
+      </p>
+
+      <article class="card" data-key="scripts-home">
+        <header>
+          <span class="vol">Most volatile · placement</span>
+          <h3>The four check scripts live in <code>.claude/scripts/studio-layer/</code></h3>
+          <p class="why">
+            Anything with a PEP&nbsp;723 header under <code>.claude/hooks/</code> is treated as a hook
+            entrypoint that must be claimed by a registration surface, and needs a Codex verdict.
+            A check script a command calls has neither, so putting it there turns the wiring suite red.
+          </p>
+        </header>
+        <div class="alt" hidden>
+          <strong>Still live:</strong> a <code>scripts/</code> folder inside the question-bank skill,
+          on the <code>meta-agent/scripts/validate_agent.py</code> precedent. It loses because three
+          of the four scripts serve commands, not that skill.
+        </div>
+        <div class="rowtools">
+          <button class="ghost" aria-expanded="false">Show the alternative</button>
+          <label class="tweak"><input type="checkbox" data-tweak="scripts-home"> Change this</label>
+        </div>
+      </article>
+
+      <article class="card" data-key="phase-arg">
+        <header>
+          <span class="vol">Volatile · contract</span>
+          <h3>The gate hook takes the phase as <code>argv[1]</code>, and the shared test fixture grows an <code>args</code> parameter</h3>
+          <p class="why">
+            No hook in this repo has ever taken an argument, so <code>run_hook</code> launches scripts
+            with nothing after the path and cannot exercise the new hook as registered. It gains
+            <code>args: tuple = ()</code>; every existing caller is untouched.
+          </p>
+        </header>
+        <div class="alt" hidden>
+          <strong>Still live:</strong> inferring the phase from the newest sign-off file, the way the
+          spec gate infers its plan folder from mtime. It loses because a client project holds all
+          eight phase folders at once, so mtime would gate the wrong phase.
+        </div>
+        <div class="rowtools">
+          <button class="ghost" aria-expanded="false">Show the alternative</button>
+          <label class="tweak"><input type="checkbox" data-tweak="phase-arg"> Change this</label>
+        </div>
+      </article>
+
+      <article class="card" data-key="spawn-shape">
+        <header>
+          <span class="vol">Volatile · orchestration</span>
+          <h3>Roles run as subagents; the cold-designer check is the one teammate</h3>
+          <p class="why">
+            <code>skills:</code> frontmatter is silently ignored when a definition runs as a teammate,
+            so every role body restates what it needs and works either way. P2 spawns a teammate on
+            purpose: a teammate does not inherit the lead's conversation history, which is exactly the
+            amnesia the cold-designer test needs.
+          </p>
+        </header>
+        <div class="alt" hidden>
+          <strong>Still live:</strong> teammates throughout, starting with P4's competing art
+          directions. Deferred until a phase genuinely needs roles talking to each other.
+        </div>
+        <div class="rowtools">
+          <button class="ghost" aria-expanded="false">Show the alternative</button>
+          <label class="tweak"><input type="checkbox" data-tweak="spawn-shape"> Change this</label>
+        </div>
+      </article>
+
+      <article class="card" data-key="agent-names">
+        <header>
+          <span class="vol">Settled · naming</span>
+          <h3>Agent names are plain and layer-prefixed; the person opens the body</h3>
+          <p class="why">
+            Claude routes off <code>name</code> and <code>description</code>, and <code>name</code>
+            must be unique tree-wide. <code>studio-art-director</code> routes; Elena Ferraro appears
+            in the body, where a persona belongs.
+          </p>
+        </header>
+        <div class="alt" hidden>
+          <strong>Still live:</strong> hybrid names like <code>art-director-elena-ferraro</code>.
+          Rejected because it puts the persona back into the routing document the unknowns pass
+          deliberately kept it out of.
+        </div>
+        <div class="rowtools">
+          <button class="ghost" aria-expanded="false">Show the alternative</button>
+          <label class="tweak"><input type="checkbox" data-tweak="agent-names"> Change this</label>
+        </div>
+      </article>
+
+      <article class="card" data-key="question-bank">
+        <header>
+          <span class="vol">Settled · reach</span>
+          <h3>The question bank is a skill the roles invoke, with no <code>disable-model-invocation</code></h3>
+          <p class="why">
+            Preloading via <code>skills:</code> would no-op for teammates, and marking the skill
+            user-invocable-only would put it out of reach of the very roles meant to use it. A check
+            script re-derives the dimension list from the skill itself, so the bank is a mechanism
+            rather than prose.
+          </p>
+        </header>
+        <div class="alt" hidden>
+          <strong>Still live:</strong> preloading the bank through each role's <code>skills:</code>
+          frontmatter. Rejected — it silently does nothing in the teammate shape this plan allows.
+        </div>
+        <div class="rowtools">
+          <button class="ghost" aria-expanded="false">Show the alternative</button>
+          <label class="tweak"><input type="checkbox" data-tweak="question-bank"> Change this</label>
+        </div>
+      </article>
+
+      <article class="card" data-key="all-claude">
+        <header>
+          <span class="vol">Settled · staffing</span>
+          <h3>Every build task stays on a Claude model</h3>
+          <p class="why">
+            The roster would send parsers and matchers to <code>gpt-5.6-sol</code>, but the build
+            command has no Codex implementation path — Codex enters this pipeline at review. The check
+            scripts run on <code>opus</code> at <code>high</code>, and the Codex gate still judges the
+            result.
+          </p>
+        </header>
+        <div class="alt" hidden>
+          <strong>Still live:</strong> stamping <code>studio-check-scripts</code> to
+          <code>gpt-5.6-sol</code>. It would need the build stage to learn a Codex path first, so it
+          is a change to the pipeline, not just to this plan.
+        </div>
+        <div class="rowtools">
+          <button class="ghost" aria-expanded="false">Show the alternative</button>
+          <label class="tweak"><input type="checkbox" data-tweak="all-claude"> Change this</label>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============ BUILD ORDER ============ -->
+    <section id="order">
+      <h2>Build order <span>10 tasks · 5 phases</span></h2>
+      <p class="intro">
+        A phase exists only because its tasks cannot start until the previous one lands. The roster is
+        first because every later model stamp is re-derived from it; the commands are last because
+        every role, script and hook they name must already exist.
+      </p>
+
+      <div class="phase">
+        <h3><em>Phase 1</em> Ground the namespace</h3>
+        <p>Three files that everything downstream reads. All three run in parallel.</p>
+
+        <div class="task">
+          <span class="id">studio-namespace</span>
+          <span class="chip model">sonnet · medium</span>
+          <p class="desc">Gitignore <code>clients/*</code> with a <code>!clients/.gitkeep</code> negation, write the Soriza identity rule, point <code>AGENTS.md</code> at the new rules.</p>
+          <span class="meta"><span class="chip dep">no dependencies</span><span class="chip ac">AC1</span><span class="chip ac">AC5</span></span>
+        </div>
+        <div class="task">
+          <span class="id">studio-roster</span>
+          <span class="chip model">opus · high</span>
+          <p class="desc">Ten rows — the principal plus nine roles — each with function, person, model, effort and escalation. This table is the source of truth a drift test re-derives from.</p>
+          <span class="meta"><span class="chip dep">no dependencies</span><span class="chip ac">AC2</span><span class="chip ac">AC5</span></span>
+        </div>
+        <div class="task">
+          <span class="id">studio-client-artifacts</span>
+          <span class="chip model">opus · high</span>
+          <p class="desc">Fork the artifact rules for client work: inherit craft and publish by reference, drop the palette lock, name a palette source per phase, carry the four page patterns.</p>
+          <span class="meta"><span class="chip dep">no dependencies</span><span class="chip ac">AC4</span><span class="chip ac">AC5</span></span>
+        </div>
+      </div>
+
+      <div class="phase">
+        <h3><em>Phase 2</em> Roles and the question bank</h3>
+        <p>What the phase commands will spawn and invoke.</p>
+
+        <div class="task">
+          <span class="id">studio-role-agents</span>
+          <span class="chip model">opus · high</span>
+          <p class="desc">Nine agent files, each stamped from the roster, each naming its person in the body, none carrying <code>skills:</code> frontmatter.</p>
+          <span class="meta"><span class="chip dep">after studio-roster</span><span class="chip ac">AC2</span><span class="chip ac">AC3</span></span>
+        </div>
+        <div class="task">
+          <span class="id">studio-question-bank</span>
+          <span class="chip model">opus · high</span>
+          <p class="desc">The client question bank as an invocable skill, structured so a checker can re-derive its dimensions by parsing it.</p>
+          <span class="meta"><span class="chip dep">no dependencies</span><span class="chip ac">AC6</span></span>
+        </div>
+      </div>
+
+      <div class="phase">
+        <h3><em>Phase 3</em> Mechanisms that can fail</h3>
+        <p>The hook and the scripts, each landing with its own tests. Independent of each other.</p>
+
+        <div class="task">
+          <span class="id">gate-signoff-hook</span>
+          <span class="chip model">opus · high</span>
+          <p class="desc">The Stop gate: approver, date and artifact SHA must all be real, and the SHA must match what it claims to approve. Also extends the shared <code>run_hook</code> fixture and adds the catalog row and Codex verdict.</p>
+          <span class="meta"><span class="chip dep">no dependencies</span><span class="chip ac">AC8</span><span class="chip ac">AC9</span><span class="chip ac">AC10</span></span>
+        </div>
+        <div class="task">
+          <span class="id">studio-check-scripts</span>
+          <span class="chip model">opus · high</span>
+          <p class="desc">States matrix, computed WCAG contrast and tap targets, question coverage, revision count. Exit 0 pass, 1 countable failure, 2 parse error — so a typo is never reported as a contrast failure.</p>
+          <span class="meta"><span class="chip dep">after studio-question-bank</span><span class="chip ac">AC6</span><span class="chip ac">AC11</span><span class="chip ac">AC12</span><span class="chip ac">AC13</span></span>
+        </div>
+        <div class="task">
+          <span class="id">studio-roster-drift-test</span>
+          <span class="chip model">sonnet · high</span>
+          <p class="desc">Re-derives every stamp from the roster and compares it to the agent file, both directions — a roster row with no file, and a file with no row, each fail by name.</p>
+          <span class="meta"><span class="chip dep">after roster + role-agents</span><span class="chip ac">AC2</span></span>
+        </div>
+      </div>
+
+      <div class="phase">
+        <h3><em>Phase 4</em> The eight phase commands</h3>
+        <p>Everything they reference now exists.</p>
+
+        <div class="task">
+          <span class="id">studio-phase-commands</span>
+          <span class="chip model">opus · high</span>
+          <p class="desc">p0-intake through p7-retro. P2, P3, P4 and P6 register the sign-off hook with their own phase token. P1 is the forked interview loop — page-first rounds the principal conducts, because a subagent cannot prompt the user.</p>
+          <span class="meta"><span class="chip dep">after 5 tasks</span><span class="chip ac">AC7</span><span class="chip ac">AC9</span></span>
+        </div>
+      </div>
+
+      <div class="phase">
+        <h3><em>Phase 5</em> Evidence</h3>
+        <p>The six plan-local checks are already written and committed with this plan — they fail on today's tree and pass once the build lands. The build runs them; it does not author them.</p>
+
+        <div class="task">
+          <span class="id">validate-all</span>
+          <span class="chip model">opus · high</span>
+          <p class="desc">Every validation command from the repo root, with observed output recorded in the implementation notes.</p>
+          <span class="meta"><span class="chip dep">after everything</span><span class="chip ac">every AC</span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCOPE FENCE ============ -->
+    <section id="scope">
+      <h2>What this will not do <span>the scope fence</span></h2>
+      <p class="intro">
+        Twelve brainstorm cards were on the table; this plan builds nine. The three that are left are
+        follow-on plans, not forgotten work.
+      </p>
+      <ul class="files">
+        <li><strong>No development work.</strong> The layer stops at a signed layout handoff. The P6 pack is what a builder consumes; building from it is somebody else's job.</li>
+        <li><strong>No PRD.</strong> The P2 brief is the client agreement. <code>/harness-layer:harness-plan</code> stays the only thing that turns intent into a spec.</li>
+        <li><strong>Card 10 — lesson graduation.</strong> P7 routes lessons to where they will load again; promoting a repeated lesson into a skill is a follow-on plan.</li>
+        <li><strong>Card 11 — the design KB.</strong> No WCAG or ARIA mirrors this run; blocked on which prototype tool P5 commits to.</li>
+        <li><strong>Card 12 — the first real run.</strong> Eight phases on a live brief is a usage run, not a diff, so it cannot be an acceptance criterion of a prompt-file PR.</li>
+        <li><strong>No client data committed.</strong> This plan adds the directory contract and the ignore rule, never a real client's files.</li>
+      </ul>
+    </section>
+
+    <!-- ============ MECHANICAL, COLLAPSED ============ -->
+    <section id="mechanical">
+      <h2>Files and criteria <span>collapsed — open what you need</span></h2>
+
+      <details>
+        <summary>The 27 files this build creates</summary>
+        <div class="dbody">
+          <ul class="files">
+            <li><code>.claude/rules/studio-layer/</code> — roster, client-artifacts, studio-identity. All scoped <code>paths: clients/**</code>, so none load during ordinary harness work.</li>
+            <li><code>.claude/agents/studio-layer/</code> — nine roles: client-partner (Daniel Osei), discovery-lead (Priya Raghavan), ux-architect (Tomas Vieira), art-director (Elena Ferraro), content-strategist (Hana Okabe), prototype-engineer (Marcus Bramley), design-qa (Yusuf Demir), research-analyst (Clara Nyberg), retro-scribe (Ravi Chandran).</li>
+            <li><code>.claude/commands/studio-layer/</code> — p0-intake, p1-discovery, p2-definition, p3-structure, p4-art-direction, p5-prototype, p6-handoff, p7-retro.</li>
+            <li><code>.claude/skills/studio-layer/client-questions/SKILL.md</code> — the invocable question bank.</li>
+            <li><code>.claude/hooks/check_gate_signoff.py</code> — the phase-argument Stop gate.</li>
+            <li><code>.claude/scripts/studio-layer/</code> — states matrix, contrast, question coverage, revision count.</li>
+            <li><code>tests/harness-layer/</code> — roster drift, hook contract tests, studio check tests.</li>
+            <li><code>clients/.gitkeep</code> — the directory contract; everything else there is ignored.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Files that change outside the new namespace</summary>
+        <div class="dbody">
+          <p>Only these four. Everything else is additive.</p>
+          <ul class="files">
+            <li><code>.gitignore</code> — the <code>clients/*</code> pattern pair.</li>
+            <li><code>AGENTS.md</code> — a pointer to the three new rules, nothing duplicated.</li>
+            <li><code>.claude/rules/harness-layer/hooks.md</code> — one catalog row for the new hook; the wiring suite cross-checks this table against the code in both directions.</li>
+            <li><code>tests/harness-layer/hooks/conftest.py</code> and <code>test_wiring.py</code> — the <code>args</code> parameter and the Codex verdict. A mistake in the fixture reddens the whole hook suite, which is also what notices immediately.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>All 14 acceptance criteria, with the command that proves each</summary>
+        <div class="dbody">
+          <p>Every command must fail if the change is reverted. The six shell scripts were confirmed failing on today's tree before this plan was pushed.</p>
+          <div class="scroller">
+            <ol class="acs">
+              <li><code>clients/</code> is contracted, ignored, and invisible to the spec gate.<span class="cmd">bash specs/cpo-layer/checks/ac1-client-data-home.sh</span></li>
+              <li>Roster stamps match every agent file, both directions.<span class="cmd">uv run pytest tests/harness-layer/test_studio_roster_drift.py</span></li>
+              <li>Nine role agents, function-named, person in the body, validator clean.<span class="cmd">bash specs/cpo-layer/checks/ac3-role-agents.sh</span></li>
+              <li>The client-artifact rule forks rather than copies; no hex palette.<span class="cmd">bash specs/cpo-layer/checks/ac4-client-artifacts.sh</span></li>
+              <li>Every studio rule is path-scoped to <code>clients/**</code>.<span class="cmd">bash specs/cpo-layer/checks/ac5-rules-path-scoped.sh</span></li>
+              <li>The question bank is invocable and its coverage is re-derived from it.<span class="cmd">bash specs/cpo-layer/checks/ac6-question-bank-skill.sh</span></li>
+              <li>Eight commands; exactly the four hard gates register the hook, each with its phase.<span class="cmd">bash specs/cpo-layer/checks/ac7-phase-commands.sh</span></li>
+              <li>The gate blocks on a missing, empty, placeholder or mismatched sign-off, and allows a good one.<span class="cmd">uv run pytest tests/harness-layer/hooks/gate-signoff/</span></li>
+              <li>The cold-designer triage gates P2 only — and the diff itself never gates.<span class="cmd">uv run pytest tests/harness-layer/hooks/gate-signoff/ -k triage</span></li>
+              <li>The new hook is claimed, cataloged and dispositioned.<span class="cmd">uv run pytest tests/harness-layer/hooks/test_wiring.py</span></li>
+              <li>The states matrix names every unfilled cell.<span class="cmd">uv run pytest tests/harness-layer/studio-layer/ -k states</span></li>
+              <li>Contrast and tap targets are computed, with one hand-checked ratio pinned.<span class="cmd">uv run pytest tests/harness-layer/studio-layer/ -k contrast</span></li>
+              <li>The revision count is arithmetic re-derived from the signed brief.<span class="cmd">uv run pytest tests/harness-layer/studio-layer/ -k revision</span></li>
+              <li>The whole suite and both ruff commands stay green.<span class="cmd">uv run pytest &amp;&amp; uv run ruff check .</span></li>
+            </ol>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>How the plan is grounded</summary>
+        <div class="dbody">
+          <p>
+            Review profile <code>kb-grounded</code>. Twelve cached doc references back the harness
+            claims this plan depends on — that <code>AskUserQuestion</code> never reaches a subagent,
+            that <code>skills:</code> frontmatter is ignored for teammates, that a subdirectory under
+            <code>.claude/agents/</code> does not change an agent's identity, and that a rule with
+            <code>paths:</code> loads only when the session touches a matching file.
+          </p>
+          <p>
+            The cross-check subagent was unavailable this run, so every claim was verified by reading
+            the cached mirrors directly. No conflicts surfaced and nothing needed gap-filling.
+          </p>
+        </div>
+      </details>
+    </section>
+
+    <!-- ============ DOCK ============ -->
+    <section id="tweaks">
+      <h2>Revise the plan <span>paste the prompt back to trigger a revision</span></h2>
+      <p class="intro">
+        Tick any decision above you want changed, add anything else in your own words, then copy. The
+        prompt mentions only what you actually changed.
+      </p>
+
+      <div class="dock">
+        <header>
+          <h2>Tweak prompt</h2>
+          <span class="count" id="count">nothing changed yet</span>
+        </header>
+        <div class="body">
+          <textarea id="extra" placeholder="Anything else to change — in your own words. For example: make the revision allowance two rounds plus polish by default, or add a P4 step where the client sees all three directions side by side."></textarea>
+          <pre class="out" id="out"></pre>
+          <button class="primary" id="copy">Copy prompt</button>
+        </div>
+      </div>
+
+      <footer class="foot">
+        specs/cpo-layer/artifacts/implementation-plan.html · issue #80 · branch feat/80-cpo-layer
+      </footer>
+    </section>
+  </main>
+</div>
+
+<script>
+  var TWEAKS = {
+    "scripts-home": "Move the four studio check scripts out of .claude/scripts/studio-layer/. Put them in a scripts/ folder inside the question-bank skill instead, following the meta-agent/scripts/validate_agent.py precedent — and make sure the wiring suite still passes, since anything with a PEP 723 header under .claude/hooks/ has to be a registered hook.",
+    "phase-arg": "Don't pass the phase to check_gate_signoff.py as an argument. Infer it instead, the way check_spec_completeness.py infers its plan folder — and solve the problem that a client project holds all eight phase folders at once, so mtime alone would gate the wrong phase. This should also remove the need to extend the shared run_hook fixture.",
+    "spawn-shape": "Run the studio roles as agent-team teammates rather than subagents, starting with P4's competing art directions. Account for the fact that skills: frontmatter is ignored for teammates, that a teammate can't prompt the user, and that teammates editing the same file overwrite each other.",
+    "agent-names": "Use hybrid agent names that carry the person as well as the function — art-director-elena-ferraro rather than studio-art-director — and update the roster drift test and the AC3 check to match.",
+    "question-bank": "Change how the roles reach the question bank: preload it through each role's skills: frontmatter instead of having them invoke it via the Skill tool. Address what happens in the teammate spawn shape, where that frontmatter is ignored.",
+    "all-claude": "Stamp studio-check-scripts to gpt-5.6-sol rather than opus, since it is parser and arithmetic work. Say how the build stage actually invokes Codex, given /harness-layer:harness-build has no Codex implementation path today."
+  };
+
+  var LABELS = {
+    "scripts-home": "where the check scripts live",
+    "phase-arg": "how the gate hook learns its phase",
+    "spawn-shape": "subagents vs teammates",
+    "agent-names": "agent naming",
+    "question-bank": "how roles reach the question bank",
+    "all-claude": "Codex for the check scripts"
+  };
+
+  var out = document.getElementById("out");
+  var count = document.getElementById("count");
+  var extra = document.getElementById("extra");
+  var copyBtn = document.getElementById("copy");
+
+  // Alternative toggles
+  document.querySelectorAll(".card .ghost").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var card = btn.closest(".card");
+      var alt = card.querySelector(".alt");
+      var open = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", String(!open));
+      alt.hidden = open;
+      btn.textContent = open ? "Show the alternative" : "Hide the alternative";
+    });
+  });
+
+  function picked() {
+    return Array.prototype.slice
+      .call(document.querySelectorAll("input[data-tweak]:checked"))
+      .map(function (i) { return i.getAttribute("data-tweak"); });
+  }
+
+  function render() {
+    var keys = picked();
+    var note = extra.value.trim();
+
+    document.querySelectorAll("label.tweak").forEach(function (l) {
+      l.classList.toggle("picked", l.querySelector("input").checked);
+    });
+
+    if (!keys.length && !note) {
+      count.textContent = "nothing changed yet";
+      out.textContent =
+        "Nothing selected — the plan stands as drafted.\n\n" +
+        "Tick a decision above, or write your own change, and a revision prompt appears here.";
+      return;
+    }
+
+    var n = keys.length + (note ? 1 : 0);
+    count.textContent = n + (n === 1 ? " change" : " changes") +
+      (keys.length ? " · " + keys.map(function (k) { return LABELS[k]; }).join(", ") : "");
+
+    var lines = [];
+    lines.push("Revise the studio-layer plan at specs/cpo-layer/ (issue #80, branch feat/80-cpo-layer).");
+    lines.push("");
+    lines.push("Every other locked decision stands — don't re-litigate the interview ledger. Change only what follows, then update spec.md, tasks.md, decisions.md, acceptance-criteria.md and the affected checks/ scripts together so they stay consistent.");
+    lines.push("");
+
+    keys.forEach(function (k, i) {
+      lines.push((i + 1) + ". " + TWEAKS[k]);
+      lines.push("");
+    });
+
+    if (note) {
+      lines.push((keys.length + 1) + ". " + note);
+      lines.push("");
+    }
+
+    lines.push("Log what changed and why in decisions.md, keep issue #80, and run a fresh Codex gate cycle.");
+    out.textContent = lines.join("\n");
+  }
+
+  document.querySelectorAll("input[data-tweak]").forEach(function (i) {
+    i.addEventListener("change", render);
+  });
+  extra.addEventListener("input", render);
+
+  copyBtn.addEventListener("click", function () {
+    var text = out.textContent;
+    var done = function () {
+      copyBtn.textContent = "Copied";
+      copyBtn.classList.add("done");
+      setTimeout(function () {
+        copyBtn.textContent = "Copy prompt";
+        copyBtn.classList.remove("done");
+      }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+    } else {
+      fallback(text, done);
+    }
+  });
+
+  function fallback(text, done) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { /* clipboard unavailable */ }
+    document.body.removeChild(ta);
+  }
+
+  // Rail highlighting
+  var links = Array.prototype.slice.call(document.querySelectorAll("#rail a"));
+  var sections = links.map(function (a) { return document.querySelector(a.getAttribute("href")); });
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var idx = sections.indexOf(e.target);
+        links.forEach(function (a, i) { a.classList.toggle("on", i === idx); });
+      });
+    }, { rootMargin: "-25% 0px -65% 0px" });
+    sections.forEach(function (s) { if (s) io.observe(s); });
+  }
+
+  render();
+</script>
