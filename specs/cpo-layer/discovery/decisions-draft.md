@@ -1,0 +1,189 @@
+# Decisions: studio-layer
+
+> Interview ledger from `/harness-layer:harness-interview`, drafted for transcription into
+> the plan's `decisions.md`. Three rounds; every dimension closed.
+
+## Summary
+
+Build a design-delivery studio layer under the `studio-layer` namespace: eight phase
+commands (`/studio-layer:p0-intake` … `p7-retro`) run by the main session as principal,
+nine role agent files it spawns directly, and client project data in a gitignored
+`clients/<client>/<project>/` inside this repo so path-scoped rules and command-scoped
+hooks resolve while nothing client-owned enters git history. This plan builds brainstorm
+cards 01–09 — the namespace, the roster, the forked discovery loop, the client-artifact
+rule, the eight commands, the cold-designer test, the sign-off hook, the design-QA
+verifier, and the revision counter. Cards 10–12 (lesson graduation, the design KB, the
+first real project run) are follow-on plans. Every acceptance criterion lands as a
+mechanism: a Stop hook per hard gate, a check script per countable claim, a verifier agent
+for the judgment calls.
+
+## Resolved Decisions
+
+- **Q:** Where does client project data live?
+  - **A:** `clients/<client>/<project>/` inside this repo, gitignored.
+  - **Why:** Path-scoped rules (`paths: clients/**`) and command-frontmatter hooks resolve
+    against `CLAUDE_PROJECT_DIR`; a sibling repo puts client files outside that root, so no
+    studio rule would load and no hook would see a sign-off file. Gitignoring keeps NDA'd
+    material out of the harness repo's permanent history. Rules out the sibling-repo layout
+    and a tracked `clients/`.
+
+- **Q:** What is the layer called, and where does the Soriza brand live?
+  - **A:** Namespace `studio-layer`, plus `.claude/rules/studio-layer/studio-identity.md`
+    carrying the studio name, voice, letterhead, and sign-off block that every client-facing
+    document inherits. Soriza is an AI startup providing website design, software
+    development, and agentic-layer services.
+  - **Why:** `harness-layer` set the precedent of naming a function, not an owner. A
+    namespace rename later touches every command path, every `paths:` rule, every agent
+    name, and every test that reads them; a brand in a deliverable costs nothing to change.
+    Rules out `soriza-layer` and `soriza-studio`.
+
+- **Q:** How many of the twelve brainstorm cards land in this plan?
+  - **A:** Cards 01–09. Cards 10, 11, and 12 become follow-on plans.
+  - **Why:** 01–09 is the whole scaffolding in one diff CI can gate. Card 12 is a usage run
+    on a real brief, not a diff — it cannot be an acceptance criterion of a prompt-file PR,
+    and card 11's KB mirrors depend on card 12's prototype-tool answer.
+
+- **Q:** Where does the client-interview cookbook come from?
+  - **A:** Fork `harness-interview.md`'s round mechanics into the P1 phase command, swapping
+    the thirteen harness dimensions for client ones.
+  - **Why:** The mechanics worth reusing are in `harness-interview.md:32-42` — the coverage
+    ledger, one round at a time ordered by blast radius, and the bounded stop condition. The
+    `grilling` skill is ten lines and carries none of it. The two ledgers share no rows, so
+    the fork cannot drift in a way that matters.
+
+- **Q:** Eight phase commands, or one command taking the phase as an argument?
+  - **A:** Eight: `/studio-layer:p0-intake` through `/studio-layer:p7-retro`.
+  - **Why:** A Stop hook that must run inside one command registers in that command's
+    frontmatter (`harness-plan.md:8-12`, named as the spec-gate pattern in `hooks.md:36`).
+    One parameterized command could only register the sign-off hook for every phase at once,
+    firing it on soft gates too — which is the thing card 07 exists to prevent.
+
+- **Q:** Do the nine roles get agent files, or live in spawn prompts?
+  - **A:** Nine agent files under `.claude/agents/studio-layer/`. The principal is the main
+    session and gets no file.
+  - **Why:** `orchestration.md` — spawning a teammate from an existing subagent type reuses
+    that definition's `tools` and `model`. It is the only shape where the roster's stamps are
+    load-bearing rather than prose, and `test_model_drift.py:111` reads exactly that
+    frontmatter. Inline spawn prompts leave every stamp a suggestion CI cannot check.
+
+- **Q:** Hybrid agent names (`art-director-elena-ferraro`) or plain function names?
+  - **A:** Plain function names, layer-prefixed: `studio-art-director`, `studio-discovery-lead`,
+    and so on. The person opens the body.
+  - **Why:** Resolved from the code, not asked. `frontmatter.md:100` — Claude routes off
+    `name` + `description`; `name` must be unique tree-wide. The unknowns pass locked
+    personas out of routing, and a hybrid name puts the persona back into the routing
+    document. The layer prefix satisfies tree-wide uniqueness.
+
+- **Q:** Where does the question bank live, and what makes it fail?
+  - **A:** A skill the client-facing roles **invoke** via the Skill tool, plus a check script
+    that re-derives the dimension list from the skill's own question list and fails when the
+    discovery notes leave one unanswered without an explicit "N/A, because".
+  - **Why:** `frontmatter.md:88` — `skills:` frontmatter is not applied to teammates ("Don't
+    make an agent depend on a preloaded skill if it's also meant to run as a teammate").
+    Preloading would silently no-op in the architecture this plan locks. Invocation works for
+    both spawn shapes. The check script is what turns the bank from prose into a mechanism,
+    per the plan's own acceptance bar; re-deriving rather than hard-coding follows the drift
+    tier rule.
+
+- **Q:** Is the P2 project brief a PRD?
+  - **A:** No. The brief is the client agreement — goals, audience, scope, constraints,
+    success. The P6 handoff pack (tokens, states, breakpoints, copy deck, assets) is what a
+    builder consumes.
+  - **Why:** This repo already owns the converter: `/harness-layer:harness-plan` turns intent
+    into `spec.md`. A studio PRD would duplicate that spec with no mechanism keeping the two
+    in sync, and would pull the layer across the line it was scoped to stop at.
+
+- **Q:** One sign-off hook, or one per hard gate?
+  - **A:** One `check_gate_signoff.py`, with the phase passed as an argument in each
+    command's frontmatter registration (`… check_gate_signoff.py p2`). Four registrations:
+    P2, P3, P4, P6.
+  - **Why:** `check_spec_completeness.py` infers its target from the newest-modified plan
+    folder, which is safe there because a run touches one plan. A client project holds all
+    eight phase folders at once, so mtime inference would gate the wrong phase. One script
+    means one test file and no drift between four near-identical copies.
+
+- **Q:** Does the cold-designer diff block P2 or advise it?
+  - **A:** Advisory list, with the triage document as what the gate requires. The teammate's
+    section plan and its diff against the signed sitemap land as a document; the principal
+    triages every row as "brief unclear, amend it" or "acceptable variance, because…", and
+    the P2 sign-off hook blocks on the triage document existing with no untriaged row.
+  - **Why:** Two competent designers given one brief produce different section plans — that
+    is what "directions, not versions" says elsewhere in the same brief. A zero-diff gate
+    would never open, and the principal would start deleting rows to pass it. Gating the
+    triage document makes the mechanism real without demanding an impossible diff.
+
+- **Q:** What palette do client-facing pages use before a direction is picked at P4?
+  - **A:** The Soriza studio default through P0–P3; the picked direction's tokens from P4
+    onward. The client-artifacts rule names the palette's *source* per phase rather than
+    locking a hex table.
+  - **Why:** The reason to fork `artifacts.md` at all is that a client mockup should not wear
+    our pipeline colors. Borrowing Warm Neutral would make every client's early deliverables
+    identical to our internal pages, with no trigger for "tailor later" ever firing.
+
+- **Q:** Are contrast, focus visibility, and tap targets computed or asserted?
+  - **A:** Computed. The check script reads the handoff's token table, computes the WCAG ratio
+    for every declared foreground/background pair, and checks specced tap targets against the
+    minimum. The design-QA agent judges focus order, whether each state makes sense, and
+    whether the error copy says anything useful.
+  - **Why:** `meta-agent/SKILL.md:46` — guarantees are harness, not prose. Arithmetic on hex
+    values is the least reliable thing a model does; judgment about whether an empty state
+    earns its copy is the least reliable thing a script does. Neither is trusted for the
+    other's job.
+
+- **Q:** What shape is a change order?
+  - **A:** A client-facing document at `clients/<client>/<project>/change-orders/<n>.md` —
+    what is requested, what it costs in rounds and time, and a signature block. The revision
+    log row references it; the signed brief is amended by reference and never re-signed.
+  - **Why:** The P2 sign-off records the hash of what was approved and the revision count
+    re-derives its allowance from that same brief. Re-signing the brief per request would
+    invalidate the recorded hash and destroy the count's baseline.
+
+- **Q:** How does P1 actually run its rounds, and who conducts them?
+  - **A:** Page-first, like this interview: each round publishes an interactive artifact
+    carrying visual references, style examples, and option chips for the client to react to,
+    with a copy-as-prompt block returning their answers. The principal conducts every
+    client-facing round; `studio-discovery-lead` (Priya) authors the question set from the
+    bank before each round and turns the answers into written statements and glossary entries
+    after.
+  - **Why:** A client gives far more when reacting to something visual than when answering
+    prose. It also routes around a hard limit: `frontmatter.md:18` — `AskUserQuestion` is one
+    of six tools that never work in a subagent, and a teammate cannot prompt the user either
+    (`agent-teams.md:163` — you message a teammate, it does not message you). Only the
+    principal's session can drive an interactive round.
+
+## Assumptions
+
+- The sign-off SHA is a content hash of the approved artifact, not a git SHA — `clients/`
+  is gitignored, so no commit object exists. Invalidated if client work later moves to its
+  own git repo inside `clients/`.
+- Roles run as **subagents** by default; agent-team teammates only where a phase genuinely
+  parallelizes over disjoint files (P4's competing directions is the clear case). Every role
+  body must therefore restate what it needs rather than depending on a preloaded skill, so
+  either spawn shape works. Invalidated if a phase turns out to need teammates talking to
+  each other.
+- The question-bank skill does **not** carry `disable-model-invocation: true` — that flag
+  makes a skill user-invocable only, which would put it out of reach of the very roles meant
+  to invoke it.
+- Studio rules are all path-scoped to `clients/**`, so none of them load during ordinary
+  harness work and none count against the ~250-line always-loaded budget in
+  `memory-series.md:28-37`.
+- Card 02's "no new test code" is wrong and the plan corrects it: `_claude_declarations()`
+  sweeps `.claude/{agents,commands,skills}` frontmatter and never opens `.claude/rules/`, so
+  a new drift test must re-derive each role's stamp from `roster.md` and compare it to the
+  agent file. Existing drift tests only check that a stamp appears somewhere in
+  `model-selection.md`.
+- "Self-improving" question bank means write-back **between** projects, not within a run — a
+  loaded skill is static for that session. The write-back mechanism is card 10's retro
+  graduation, deferred to a follow-on plan; v1 ships the bank and the improvement loop
+  arrives later.
+
+## Open Questions / Out of Scope
+
+- **Card 10 — lesson graduation.** The threshold for promoting a repeated lesson into a
+  skill, and whether a client-specific lesson ever leaves that project's folder.
+- **Card 11 — the design KB.** Mirroring WCAG 2.2, the ARIA Authoring Practices Guide, and
+  the platform accessibility guidelines through `kb-fetcher`. Blocked on the P5 tool answer.
+- **Card 12 — the first real run.** Which project goes first, and whether run one is a
+  paying client or an internal dry run.
+- **Which prototype tool P5 commits to** (Claude Design, Lovable, or another). Its docs are
+  the mirror that dates fastest, so card 11 waits on it.
