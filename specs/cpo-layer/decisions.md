@@ -152,7 +152,7 @@ calls.
     after.
   - **Why:** A client gives far more when reacting to something visual than when answering
     prose. It also routes around a hard limit: `AskUserQuestion` is one of six tools that
-    never work in a subagent, and a teammate cannot prompt the user either. Only the
+    never work in a subagent, so no spawned role can ask the client anything. Only the
     principal's session can drive an interactive round.
 
 - **Q:** Where do the four check scripts live?
@@ -256,15 +256,24 @@ on an unmirrored page.
 | `ai-docs/anthropic/model-config.md` | 2026-07-28 | Effort levels are model-dependent (l.446). Grounds the roster's effort column against `model-selection.md`'s table. |
 | `ai-docs/anthropic/blog/html-artifacts-workflows.md` | 2026-07-21 | The two-way interactive page and copy-as-prompt loop that `client-artifacts.md` inherits. Narrowed at round 1: the four per-phase page-pattern mappings are **project decisions**, not claims this article grounds. |
 
-**KB gap — recorded, not filled.** `ai-docs/anthropic/commands.md` mirrors the *built-in*
-slash commands only; the KB has no page documenting **custom** slash-command frontmatter. The
-plan's use of `description`, `argument-hint`, `model`, `effort`, `disable-model-invocation`
-and `hooks:` in command frontmatter is therefore grounded on this repo's own working commands
-(`.claude/commands/harness-layer/harness-plan.md:1-13` registers a Stop hook exactly this way
-and runs today), not on a cached doc. Registering the official custom-command reference via
-`/harness-layer:kb add` is a follow-up; it does not block this plan, because
-`test_wiring.py` already parses these registrations structurally and would fail on a shape
-Claude Code does not accept.
+### Command frontmatter — grounded in the repo's own reference
+
+`ai-docs/anthropic/commands.md` mirrors the *built-in* slash commands only, so the KB has no
+page on **custom** slash-command frontmatter. The repo carries its own authority for that
+surface, and it is the one the discovery ledger cited all along:
+
+| Reference | Grounds |
+| --- | --- |
+| `.claude/skills/meta-skills/references/frontmatter.md` | `argument-hint` (l.26), `disable-model-invocation` (l.30), `effort` (l.33), and `hooks` — "YAML hook config (event → matcher → hooks), lifecycle hooks scoped to this artifact only, active while it runs" (l.37). Every command-frontmatter field this plan uses. |
+| `.claude/skills/meta-skills/references/command-format.md` | The five-section house template every studio phase command follows. |
+| `.claude/skills/meta-skills/evals/evals.json` + `references/evaluation.md` | The eval-suite schema and runner AC16 targets, rather than an invented markdown rubric. |
+| `.claude/commands/harness-layer/harness-plan.md:1-13` | A working command-scoped Stop-hook registration in exactly the shape the four gate commands use. |
+
+Round 2 called this a standards violation on the reading that only `ai-docs/` counts. The
+fields are grounded — just not in the KB — so `spec-standards.md` #6 was amended in the same
+run to accept these checked-in references where the KB has no mirror, and to require saying
+so explicitly. Mirroring the official custom-command page via `/harness-layer:kb add` remains
+a worthwhile follow-up; it is not a blocker, and `kb-fetcher` was unavailable this session.
 
 ## Open Questions / Out of Scope
 

@@ -171,9 +171,13 @@ it does not author them.
 - Follow the `meta-skills` skill for authoring. `name: studio-client-questions`, and the
   **directory** must be `studio-client-questions/` to match: the directory name, not the
   `name:` field, becomes the command a role invokes.
-- Write eval cases in `specs/cpo-layer/evals/question-bank.md` with a rubric — the bank is
-  prose, so only an eval shows whether its questions actually surface the dimension. Manual,
-  scored as a pass rate over repeated runs, not part of CI.
+- Write eval cases in
+  `.claude/skills/studio-layer/studio-client-questions/evals/evals.json`, in the schema the
+  repo's harness already runs (`skill_name`, an `evals` array, each entry with `id`, `name`,
+  `prompt`, and `assertions` carrying an executable `check` wherever the assertion is
+  mechanical). Follow `meta-skills` → `references/evaluation.md`; do not invent a markdown
+  eval format, since a rubric nothing executes cannot produce a reproducible pass rate. The
+  bank is prose, so only an eval shows whether its questions actually surface the dimension.
 - Cover the client discovery dimensions: the job the site does, the audience and their
   situation, brand voice, references loved and hated, the content that actually exists, hard
   constraints (existing brand, CMS, deadline), budget, and what success looks like at six
@@ -248,21 +252,32 @@ it does not author them.
 - All four are PEP 723 scripts with `dependencies = []`, taking their target as `argv[1]`, per
   the CLI contract in spec.md. Exit 0 pass, 1 countable failure with `file:line` diagnostics,
   2 usage/parse error.
-- `check_states_matrix.py`: parse the handoff's component × state matrix and exit 1 naming every
-  unfilled cell across hover, focus, disabled, loading, empty and error at each declared
-  breakpoint. A component row with no state columns is unfilled, not skipped.
-- `check_contrast.py`: parse the token table, compute WCAG relative luminance and the contrast
+- `check_states_matrix.py`: read `handoff/inventory.md` first — it is the authoritative
+  component list — then require a matrix row for every component × breakpoint pair it names,
+  and exit 1 naming every missing pair and every unfilled cell across hover, focus, disabled,
+  loading, empty and error. A component row with no state columns is unfilled, not skipped.
+  An empty or absent inventory exits 2: without a baseline the check would quantify only over
+  what happens to be declared, and a one-component matrix would pass a ten-component design.
+- `check_contrast.py`: parse the token table, compute relative luminance and the contrast
   ratio for every declared foreground/background pair, and compare against the thresholds
   recorded in decisions.md `## Assumptions` (4.5:1 normal text, 3:1 large text and UI
-  components, 24×24 CSS px minimum target). Malformed hex → exit 2, never 1. Pin at least one
-  hand-computed ratio in the tests so the arithmetic itself is checked, not just the branching.
+  components, 24×24 CSS px minimum target). Name them **Soriza project thresholds** in the
+  output — the repo has not mirrored WCAG 2.2, so the script must not claim conformance to a
+  specification it cannot cite. Cross-check against `handoff/inventory.md`: every colour token
+  it names must appear in at least one checked pair, and every component must have a
+  tap-target row, so one compliant pair cannot stand in for the rest. Malformed hex, an empty
+  table, or a missing inventory → exit 2, never 1. Pin at least one hand-computed ratio in the
+  tests so the arithmetic itself is checked, not just the branching.
 - `check_question_coverage.py`: re-derive the dimension list by parsing the question-bank
   `SKILL.md`, then exit 1 for any dimension the discovery notes leave unanswered without an
   explicit "N/A, because". Never carry a second copy of the dimension list — a test must show
   that adding a question to the skill changes what the checker requires.
 - `check_revision_count.py`: re-derive the allowance from the signed brief, walk the revision
-  log, and exit 1 on a round past the allowance with no matching change-order document. No
-  allowance in the brief → exit 2.
+  log, and exit 1 on a round past the allowance whose change order is missing **or
+  incomplete**. A referenced change order must carry all four required fields from spec.md
+  `## Interfaces & Contracts` — `Requested`, an integer `Cost — rounds`, `Cost — time`, and an
+  `Approved by` with a name and date. Accepting any file that merely exists would let an empty
+  document buy a revision round. No allowance in the brief → exit 2.
 - Mirror the test layout under `tests/harness-layer/studio-layer/`, using `tmp_path` fixtures
   so the suite stays parallel-safe. These are not hooks — do not use the `run_hook` fixture and
   do not place them under `.claude/hooks/`.
@@ -300,18 +315,19 @@ it does not author them.
 - **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — eight
   interlocking command prompts, including the forked interview loop; user-facing, taste ≥ 7.
 - **Files:** `.claude/commands/studio-layer/` (all eight files),
-  `specs/cpo-layer/evals/phase-commands.md`
+  `.claude/commands/studio-layer/evals/evals.json`
 - **Parallel:** false
 - **Satisfies:** AC7, AC9, AC15, AC16
 - **Verify:** `uv run pytest tests/harness-layer/hooks/test_wiring.py` — green (every
   frontmatter registration points at a real file), and
   `bash specs/cpo-layer/checks/ac7-phase-commands.sh` — exit 0.
-- Write the eval cases in `specs/cpo-layer/evals/phase-commands.md`. Commands are
-  non-deterministic prose, which `test-tiers.md` puts in the **eval** tier — a structural
-  check proves a command exists, never that it behaves. Cover at minimum: P1 produces a
-  discovery-notes file that passes the coverage check; P2 produces a triage document with a
-  disposition on every row. Give each case a rubric and record the pass rate over repeated
-  runs; evals stay manual and are not part of the CI suite.
+- Write eval cases in `.claude/commands/studio-layer/evals/evals.json`, same harness schema
+  as the skill's. Commands are non-deterministic prose, which `test-tiers.md` puts in the
+  **eval** tier — a structural check proves a command exists, never that it behaves. These
+  two produce gradeable output, so per `meta-skills` they earn evals: P1 must produce a
+  discovery-notes file that `check_question_coverage.py` passes (an executable `check`), and
+  P2 must produce a triage document with a disposition on every row. Record pass rates over
+  repeated runs; evals stay manual and out of CI.
 - Shape each command like the harness eight: frontmatter (`description`, `argument-hint`,
   `model`, `effort`, `disable-model-invocation: true`), then the phase's documents, the roles
   the principal spawns, the gate, and the report block. Keep them short — every line loads into
@@ -330,9 +346,12 @@ it does not author them.
   principal conducts every round via `AskUserQuestion`; `studio-discovery-lead` prepares the
   question set from the bank beforehand and turns answers into written statements and glossary
   entries afterward. Do not edit `harness-interview.md`.
-- P2 runs the cold-designer test: spawn one teammate carrying only the signed project and
-  creative briefs, ask for the section-level plan, diff it against the signed sitemap, and
-  triage every row. The list is advisory; the triage document is what the gate requires.
+- P2 runs the cold-designer test with an **ordinary subagent**, not a teammate: spawn
+  `studio-ux-architect` with a prompt carrying only the signed project and creative briefs —
+  no other context — ask for the section-level plan, diff it against the signed sitemap, and
+  triage every row. A subagent has its own context window and inherits none of the principal's
+  conversation, which is the whole property the test needs. The diff is advisory; the triage
+  document is what the gate requires.
 - **Every check script is invoked by the phase that owns it** — a script nothing runs is an
   orphaned mechanism:
   - P1 runs `check_question_coverage.py` on the discovery notes before its soft gate, and
@@ -363,10 +382,10 @@ it does not author them.
   criterion is met.
 - Run the full suite and both ruff commands from the repo root, and record the observed output
   in `implementation-notes.md` per `impl-standards.md`.
-- Confirm no studio rule loads outside `clients/**`, and that the always-loaded rules plus
-  `AGENTS.md` remain under the ~250-line budget in `memory-series.md` — the pointer section
-  this build adds is expected to grow it slightly, so the bar is "under the limit", not
-  "unchanged".
+- Confirm no studio rule loads outside `clients/**`. The `memory-series.md` ~250-line budget
+  applies to the **unscoped rules only** (`.claude/rules/*.md`, 254 lines today); this build
+  adds no unscoped rule, so that total must not grow. `AGENTS.md` is checked separately and
+  only for a concise pointer section — it is not part of that budget.
 - Run the manual evals under `specs/cpo-layer/evals/` and record their pass rates in
   `implementation-notes.md`. They are not part of the CI suite, so an unrecorded eval is an
   unrun one.

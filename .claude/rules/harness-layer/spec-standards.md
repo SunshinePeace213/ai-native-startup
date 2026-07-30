@@ -27,7 +27,12 @@ review, not after.
    a locked decision.
 6. **Grounding** — under the `kb-grounded` profile, every claim about harness
    behavior (hooks, frontmatter, subagents, skills, commands, MCP, model aliases)
-   cites a cached `ai-docs/` file in decisions.md `## KB References`.
+   cites a source in decisions.md `## KB References`: a cached `ai-docs/` file, or
+   a checked-in authoritative reference under `.claude/skills/meta-skills/references/`
+   (`frontmatter.md`, `command-format.md`, `schemas.md`) where the KB has no mirror
+   for that surface. Cite the file and line; memory is never a source. When neither
+   has it, say so explicitly and name the `/harness-layer:kb add` follow-up rather
+   than asserting the behavior.
 7. **Tracking hygiene** — spec.md `## Tracking` records the change type,
    complexity, Issue `#N`, the convention branch `<type>/<N>-<slug>` carrying the
    same number, the worktree path, and the review profile. No placeholders.

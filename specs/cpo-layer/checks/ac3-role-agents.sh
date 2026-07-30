@@ -64,14 +64,40 @@ for function in "${!people[@]}"; do
     note "$file sets skills: — preloading is not access; roles invoke the bank via the Skill tool"
 
   # Subagents inherit the Agent tool by default, so without an explicit denial "one level
-  # deep" is a sentence rather than a property and a role could spawn its own subagents.
-  if grep -q '^tools:' <<<"$frontmatter"; then
-    grep -qE '^tools:.*\bAgent\b' <<<"$frontmatter" &&
-      note "$file grants Agent in tools: — roles must not spawn subagents"
-  else
-    grep -qE '^disallowedTools:.*\bAgent\b' <<<"$frontmatter" ||
-      note "$file neither restricts tools: nor denies Agent — it inherits Agent and can nest"
-  fi
+  # deep" is a sentence rather than a property. Parsed as YAML because `tools:` may be a
+  # multiline list, which a line-anchored grep would walk straight past.
+  uv run --with pyyaml python - "$file" <<'PY' || fail=1
+import sys
+from pathlib import Path
+
+import yaml
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+end = text.find("\n---", 3)
+meta = yaml.safe_load(text[4:end]) if text.startswith("---\n") and end != -1 else {}
+meta = meta or {}
+
+
+def names(value):
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [part.strip() for part in value.split(",") if part.strip()]
+    return [str(part).strip() for part in value]
+
+
+allowed = names(meta.get("tools"))
+denied = names(meta.get("disallowedTools"))
+granted = [t for t in allowed if t == "Agent" or t.startswith("Agent(")]
+
+if granted:
+    print(f"FAIL: {path} grants {granted} — roles must not spawn subagents")
+    sys.exit(1)
+if not allowed and "Agent" not in denied:
+    print(f"FAIL: {path} does not restrict tools: and does not deny Agent — it can nest")
+    sys.exit(1)
+PY
 
   uv run --with pyyaml python .claude/skills/meta-agent/scripts/validate_agent.py "$file" \
     >/dev/null 2>&1 || note "$file does not pass the meta-agent validator"

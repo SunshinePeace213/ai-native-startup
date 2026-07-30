@@ -121,9 +121,9 @@ either one.
   state makes sense, whether error copy says anything). Neither is trusted for the other's job.
 - **P1 runs page-first.** Each discovery round publishes an interactive artifact the client
   reacts to, forked from `harness-interview.md`'s round mechanics with client dimensions. The
-  principal conducts every round because `AskUserQuestion` is unavailable to subagents and a
-  teammate cannot prompt the user; the discovery lead prepares the question set and analyzes
-  the answers.
+  principal conducts every round because `AskUserQuestion` is unavailable to subagents — a
+  spawned role cannot ask the client anything; the discovery lead prepares the question set
+  and analyzes the answers.
 
 The main alternative — a sibling repo for client work — loses because path-scoped rules and
 command-frontmatter hooks resolve against `CLAUDE_PROJECT_DIR`. Client files outside that
@@ -196,7 +196,12 @@ this order, and the order is the contract:
    print the ambiguity to stderr. A gate that cannot identify its target must not guess, and
    per the repo hook contract an unresolvable configuration fails open.
 
-A project directory is any `clients/<client>/<project>/` containing a `sign-off/` directory.
+A project directory is **any** directory exactly two levels below `clients/` whose name does
+not begin with `.` — that is, every `clients/<client>/<project>/`. Identification must not
+depend on `sign-off/` existing: a project that has never been signed is precisely the case
+the gate must block, and defining it away would make a brand-new project look like zero
+projects and fail open on its very first hard gate. The absence of `sign-off/<phase>.md` is a
+blocking condition, never a reason to skip the project.
 
 ### Sign-off document — `clients/<client>/<project>/sign-off/<phase>.md`
 
@@ -210,8 +215,8 @@ A project directory is any `clients/<client>/<project>/` containing a `sign-off/
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `definition/project-brief.md` | `3f9a1c4e…d3e4a7b6` |
-| `definition/sitemap.md` | `9b21e7f0…4c8a1d55` |
+| `definition/project-brief.md` | `3f9a1c4e8b27d05a6f1e93b4c7208d5e1a6b3f2c9d04e7a815c62b9f0d3e4a7b` |
+| `definition/sitemap.md` | `9b21e7f0c4d83a15e6720b9fd3c81a4e7205d6b93f0a1c8e45d27b6a09f34c8a` |
 ```
 
 `Approver` and `Date` must each be present and non-empty. The artifact table must carry at
@@ -279,9 +284,39 @@ whose number exceeds the allowance must name a change-order file that exists.
 | 3 | 2026-08-14 | swap hero video for a still | `change-orders/1.md` |
 ```
 
-**Change order** — `clients/<c>/<p>/change-orders/<n>.md`: what is requested, what it costs
-in rounds and time, and a signature block. Referenced by the revision log; the signed brief
-is amended by reference and never re-signed, so the P2 sign-off hashes stay valid.
+**Change order** — `clients/<c>/<p>/change-orders/<n>.md`. Four required fields; the revision
+counter parses them, so an unsigned or costless change order does not buy a round.
+
+```markdown
+# Change order 1
+
+- **Requested:** swap the hero video for a still image
+- **Cost — rounds:** 1
+- **Cost — time:** 3 business days
+- **Approved by:** Jordan Reyes · 2026-08-14
+```
+
+`Requested`, `Cost — rounds` (an integer), `Cost — time`, and `Approved by` (a name and a
+date) must each be present and non-empty. Referenced by the revision log; the signed brief is
+amended by reference and never re-signed, so the P2 sign-off hashes stay valid.
+
+**Component inventory** — `clients/<c>/<p>/handoff/inventory.md`. The authoritative list of
+what the handoff must cover, carried forward from P3's wireframes and content model. Without
+it the states matrix and contrast checks would quantify only over whatever happens to be
+declared, so a one-component matrix would pass while the rest of the design went unspecced.
+
+```markdown
+| Component | Breakpoints | Colour tokens used |
+| --- | --- | --- |
+| PrimaryButton | mobile, desktop | `--accent`, `--on-accent` |
+| SearchResults | mobile, desktop | `--text`, `--bg` |
+```
+
+The inventory must be non-empty. `check_states_matrix.py` requires a matrix row for every
+component × breakpoint pair listed here; `check_contrast.py` requires every colour token
+named here to appear in at least one checked foreground/background pair. Adding a component
+to the design without adding it here is the one way to defeat these checks, and it is a
+visible edit to a signed document rather than an omission.
 
 **Design QA report** — `clients/<c>/<p>/handoff/qa-report.md`. One row per finding;
 `Severity` is `blocking` or `advisory`, `Status` is `open` or `resolved`. The p6 gate refuses

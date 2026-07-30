@@ -69,17 +69,21 @@
 - **AC11** — `check_states_matrix.py` exits non-zero naming each unfilled cell when any
   component × state (hover, focus, disabled, loading, empty, error) at any declared breakpoint
   is blank, and exits 0 on a fully-specced matrix. A component row with no state columns
-  counts as unfilled, not skipped. An empty or absent matrix cannot pass vacuously: zero
-  breakpoints, zero component rows, or a missing state column each exit non-zero, so the
-  check quantifies over a required inventory rather than over whatever happens to be declared.
+  counts as unfilled, not skipped. It cannot pass vacuously: the check reads
+  `handoff/inventory.md` and requires a matrix row for **every** component × breakpoint pair
+  listed there, so a one-component matrix covering a ten-component design fails naming each
+  missing pair. An empty or absent inventory exits 2 — a missing baseline, not a pass.
 - **AC12** — `check_contrast.py` computes the relative-luminance ratio for every
   foreground/background pair in the handoff token table and exits non-zero naming any pair
   below its threshold and any specced tap target below the minimum; it exits 0 on a compliant
   table. The thresholds are Soriza project thresholds, named as such — this criterion asserts
   the arithmetic, not conformance to a specification the repo has not mirrored. At least one
   hand-computed ratio is pinned in the tests so the formula itself is checked, not just the
-  branching. An empty pair table or an empty target table exits non-zero rather than passing
-  vacuously, and a malformed hex value exits 2, never 1.
+  branching. It cannot pass vacuously either: every colour token named in
+  `handoff/inventory.md` must appear in at least one checked foreground/background pair, and
+  every inventory component must have a tap-target row, so declaring one compliant pair and
+  omitting the rest fails. An empty pair or target table exits 2, and a malformed hex value
+  exits 2 — never 1.
 - **AC13** — `check_revision_count.py` re-derives the allowance from the signed brief — not a
   hard-coded number — and exits non-zero for a revision-log round past that allowance with no
   matching change-order document, exits 0 when a change order is present, and exits 2 when the
@@ -92,10 +96,12 @@
   finding marked `blocking` is still `open`, allowing it once each is `resolved`. Every role
   agent denies the `Agent` tool, so no role can spawn its own subagents and the tree stays one
   level deep.
-- **AC16** — The non-deterministic surfaces carry eval coverage per `test-tiers.md`: the
-  question-bank skill and the P1 and P2 commands each have eval cases with a rubric under
-  `specs/cpo-layer/evals/`, scored as a pass rate over repeated runs. Evals are manual and
-  stay out of CI; their recorded pass rates are the evidence.
+- **AC16** — The non-deterministic surfaces carry eval coverage per `test-tiers.md`, in the
+  format the repo's existing harness already runs: an `evals/evals.json` beside the
+  question-bank skill, and one beside the studio commands, each entry carrying a prompt and
+  assertions with executable `check` commands where the assertion is mechanical. They are
+  executed by the meta-skills runner, not read as prose, and scored as a pass rate over
+  repeated runs. Evals are manual and stay out of CI; the recorded rates are the evidence.
 
 ### Suite health
 
@@ -116,11 +122,12 @@ and exit 0 on pass.
 
 ### AC2 — roster stamps are load-bearing
 
-- `uv run pytest tests/harness-layer/test_studio_roster_drift.py` — pass: all tests green.
-  Fails when an agent file's `model`/`effort` diverges from its roster row, when a roster row
-  has no agent file, or when an agent file has no roster row.
-- `uv run pytest tests/harness-layer/test_model_drift.py` — pass: green. Pins every new
-  `model:`/`effort:` value to `model-selection.md`'s roster.
+- `uv run pytest "tests/harness-layer/test_studio_roster_drift.py::test_roster_table_parses" "tests/harness-layer/test_studio_roster_drift.py::test_every_roster_row_has_an_agent_file" "tests/harness-layer/test_studio_roster_drift.py::test_every_agent_file_has_a_roster_row" "tests/harness-layer/test_studio_roster_drift.py::test_agent_model_matches_its_roster_row" "tests/harness-layer/test_studio_roster_drift.py::test_agent_effort_matches_its_roster_row" "tests/harness-layer/test_studio_roster_drift.py::test_principal_row_is_skipped"` —
+  pass: 6 passed. The first guards the parser, so a reformatted roster fails loudly instead of
+  silently disabling the gate.
+- `uv run pytest tests/harness-layer/test_model_drift.py` — pass: green. Whole-file by design:
+  it is parametrized over every declaration in the tree, so the node ids are generated and
+  naming them would pin today's file set.
 
 ### AC3 — nine role agents, function-named, person in the body
 
@@ -159,17 +166,9 @@ and exit 0 on pass.
 
 ### AC8 — the sign-off gate blocks and allows for the right reasons
 
-- `uv run pytest tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py` — pass:
-  green, and the file must contain at least these node ids:
-  `::test_missing_signoff_file_blocks`, `::test_empty_approver_blocks`,
-  `::test_placeholder_date_blocks`, `::test_empty_artifact_table_blocks`,
-  `::test_artifact_path_that_does_not_exist_blocks`, `::test_sha_mismatch_blocks`,
-  `::test_complete_signoff_allows`, `::test_no_clients_dir_allows_silently`,
-  `::test_unknown_phase_argument_fails_open`,
-  `::test_phase_comes_from_argv_not_mtime`,
-  `::test_cwd_selects_the_project_when_two_exist`,
-  `::test_two_projects_and_outside_cwd_fails_open`,
-  `::test_stop_hook_active_allows_with_warning`.
+- `uv run pytest "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_missing_signoff_file_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_empty_approver_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_placeholder_date_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_empty_artifact_table_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_artifact_path_that_does_not_exist_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_sha_mismatch_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_complete_signoff_allows" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_no_clients_dir_allows_silently" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_unknown_phase_argument_fails_open" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_phase_comes_from_argv_not_mtime" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_cwd_selects_the_project_when_two_exist" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_two_projects_and_outside_cwd_fails_open" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_project_without_signoff_dir_still_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_stop_hook_active_allows_with_warning"` —
+  pass: 14 passed. `test_project_without_signoff_dir_still_blocks` is the one that proves a
+  brand-new project is gated rather than defined away as "no projects".
 
 ### AC9 — the cold-designer triage gates p2, and the QA report gates p6
 
@@ -178,9 +177,9 @@ and exit 0 on pass.
 
 ### AC10 — the new hook is registered, cataloged, and dispositioned
 
-- `uv run pytest tests/harness-layer/hooks/test_wiring.py` — pass: green. The existing
-  entrypoint-claim, disposition-coverage, and `hooks.md`-catalog assertions all cover the new
-  hook; each fails if its row, verdict, or registration is missing.
+- `uv run pytest "tests/harness-layer/hooks/test_wiring.py::test_every_entrypoint_is_claimed_by_a_registration_surface" "tests/harness-layer/hooks/test_wiring.py::test_command_scoped_references_point_at_real_files" "tests/harness-layer/hooks/test_wiring.py::test_dispositions_cover_every_entrypoint" "tests/harness-layer/hooks/test_wiring.py::test_dispositions_agree_with_codex_registrations" "tests/harness-layer/hooks/test_wiring.py::test_hooks_md_codex_column_matches_family_dispositions"` —
+  pass: 5 passed. Each fails if the new hook's registration, Codex verdict, or `hooks.md`
+  catalog row is missing.
 
 ### AC11 — the states matrix counts cells and cannot pass empty
 
@@ -195,9 +194,9 @@ and exit 0 on pass.
 
 ### AC13 — the revision count is arithmetic
 
-- `uv run pytest "tests/harness-layer/studio-layer/test_studio_checks.py::test_round_within_allowance_passes" "tests/harness-layer/studio-layer/test_studio_checks.py::test_round_past_allowance_without_change_order_fails" "tests/harness-layer/studio-layer/test_studio_checks.py::test_round_past_allowance_with_change_order_passes" "tests/harness-layer/studio-layer/test_studio_checks.py::test_changing_the_brief_allowance_changes_the_verdict" "tests/harness-layer/studio-layer/test_studio_checks.py::test_brief_with_no_allowance_exits_2"` —
-  pass: 5 passed. The fourth is what proves the allowance is re-derived from the brief rather
-  than hard-coded.
+- `uv run pytest "tests/harness-layer/studio-layer/test_studio_checks.py::test_round_within_allowance_passes" "tests/harness-layer/studio-layer/test_studio_checks.py::test_round_past_allowance_without_change_order_fails" "tests/harness-layer/studio-layer/test_studio_checks.py::test_round_past_allowance_with_complete_change_order_passes" "tests/harness-layer/studio-layer/test_studio_checks.py::test_change_order_missing_cost_rounds_fails" "tests/harness-layer/studio-layer/test_studio_checks.py::test_unsigned_change_order_fails" "tests/harness-layer/studio-layer/test_studio_checks.py::test_changing_the_brief_allowance_changes_the_verdict" "tests/harness-layer/studio-layer/test_studio_checks.py::test_brief_with_no_allowance_exits_2"` —
+  pass: 7 passed. The two middle cases stop an empty file from buying a round; the
+  allowance-change case proves the number is re-derived from the brief rather than hard-coded.
 
 ### AC15 — design QA blocks handoff, and no role spawns subagents
 
@@ -206,12 +205,19 @@ and exit 0 on pass.
 - `bash specs/cpo-layer/checks/ac3-role-agents.sh` — pass: exit 0; it asserts every role sets
   `disallowedTools: Agent`.
 
-### AC16 — the non-deterministic surfaces carry evals
+### AC16 — the non-deterministic surfaces carry runnable evals
 
-- `manual: run the cases in specs/cpo-layer/evals/question-bank.md and evals/phase-commands.md` —
-  pass: each case meets its rubric on the recorded majority of runs; pass rates recorded in
-  `implementation-notes.md`. Per `test-tiers.md` evals stay manual and out of CI, so the
-  recorded rate is the evidence — a single green run proves nothing.
+- `uv run --with pyyaml python -m scripts.eval .claude/skills/studio-layer/studio-client-questions --lint` —
+  pass: no `FAIL`. Run from `.claude/skills/meta-skills/`, the harness's own directory.
+- `manual: uv run --with pyyaml python -m scripts.eval .claude/skills/studio-layer/studio-client-questions` —
+  pass: every assertion in that skill's `evals/evals.json` meets its rubric on the recorded
+  majority of runs; the pass rate is recorded in `implementation-notes.md`. Per
+  `test-tiers.md` evals stay manual and out of CI, so the recorded rate is the evidence — a
+  single green run proves nothing.
+- `bash specs/cpo-layer/checks/ac16-evals-are-runnable.sh` — pass: exit 0. Asserts the eval
+  files exist in the harness's `evals/evals.json` schema (a `skill_name`, an `evals` array,
+  and every entry carrying `id`, `name`, `prompt`, and a non-empty `assertions` list), so the
+  claimed pass rates are reproducible rather than prose.
 
 ### AC14 — the whole suite stays green
 

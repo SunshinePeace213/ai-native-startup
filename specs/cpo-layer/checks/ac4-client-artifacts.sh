@@ -108,10 +108,17 @@ else:
     body = [r for r in table[1:] if any(c for c in r)]
     if len(body) != 4:
         note(f"page-pattern table has {len(body)} rows, expected exactly 4: {[label_of(r) for r in body]}")
+    # Matched as an exact multiset, one row per label. Substring matching would let one row
+    # carry two required labels while an unrelated fourth row rode along.
     labels = [label_of(r) for r in body]
-    for wanted in WANTED:
-        if not any(wanted in label for label in labels):
-            note(f"page-pattern table has no '{wanted}' row (found {labels})")
+    matched = []
+    for label in labels:
+        hits = [w for w in WANTED if w in label]
+        matched.append(hits[0] if len(hits) == 1 else None)
+        if len(hits) > 1:
+            note(f"row '{label}' carries more than one required label {hits} — one row each")
+    if sorted(m for m in matched if m) != sorted(WANTED):
+        note(f"page-pattern rows {labels} do not map one-to-one onto {WANTED}")
     # The return contract is a COLUMN: the header declares it and every row fills it. One
     # generic mention in the surrounding prose is what this rejects.
     header = [re.sub(r"[`*]", "", c).strip().lower() for c in table[0]]
