@@ -1,0 +1,338 @@
+# Tasks: studio-layer — design-delivery studio through signed handoff
+
+> Execution plan for [spec.md](./spec.md). Owner and scope are defined there; this file is
+> how & who. Orchestration mechanics live in `.claude/rules/orchestration.md`.
+
+## Implementation Phases
+
+### Phase 1: Ground the namespace
+
+The roster is the source of truth every later stamp is re-derived from, and the rules are
+path-scoped, so nothing that reads them can be written until they exist.
+
+- `studio-namespace`, `studio-roster`, `studio-client-artifacts`
+
+### Phase 2: Roles and the question bank
+
+Nine agent files stamp themselves from the roster; the skill is what the client-facing roles
+invoke. Both are prerequisites for the commands that spawn and invoke them.
+
+- `studio-role-agents`, `studio-question-bank`
+
+### Phase 3: Mechanisms that can fail
+
+The hook and the four check scripts, each landing with its tests. These are independent of
+each other and of the commands that will call them, so they run in parallel.
+
+- `gate-signoff-hook`, `studio-check-scripts`, `studio-roster-drift-test`
+
+### Phase 4: The eight phase commands
+
+Commands name the roles they spawn, the scripts they run, and — for the four hard gates —
+register the hook. Every referent must already exist.
+
+- `studio-phase-commands`
+
+### Phase 5: Evidence
+
+- `validate-all`
+
+The six plan-local checks under `specs/cpo-layer/checks/` are already written and committed
+with this plan — they fail on today's tree and pass once the build lands. The build runs them;
+it does not author them.
+
+## Step by Step Tasks
+
+### 1. Claim the namespace, the client-data home, and the studio identity
+
+- **Task ID:** `studio-namespace`
+- **Depends On:** none
+- **Agent Type:** `general-purpose`
+- **Model / Effort:** `sonnet` / `medium` per `.claude/rules/model-selection.md` — a scoped
+  config edit plus one short rule, precisely specified.
+- **Files:** `.gitignore`, `clients/.gitkeep`, `.claude/rules/studio-layer/studio-identity.md`,
+  `AGENTS.md`
+- **Parallel:** true
+- **Satisfies:** AC1, AC5
+- **Verify:** `git check-ignore -v clients/acme/site/brief.md` names the new rule, and
+  `git status --porcelain clients/` is empty after writing a scratch file there.
+- Add a `clients/` section to `.gitignore` with a comment stating the boundary: client project
+  data lives here so path-scoped rules and command hooks resolve, and never enters history.
+  Use exactly this pattern pair — verified during planning:
+
+  ```gitignore
+  clients/*
+  !clients/.gitkeep
+  ```
+
+  `clients/` (the whole directory) instead of `clients/*` makes `.gitkeep` **untrackable**:
+  git never descends into an excluded directory, so the negation cannot re-include it and
+  `git add clients/.gitkeep` fails silently. AC1 asserts the file is tracked, so the wrong
+  pattern fails the check rather than shipping a directory contract that vanishes on a clean
+  checkout.
+- Write `studio-identity.md` with `paths: clients/**` frontmatter: the Soriza name and what the
+  studio sells, the client-facing voice, the document letterhead, and the sign-off block shape
+  from spec.md `## Interfaces & Contracts` that every client-facing document inherits.
+- Add a `## Studio Layer` section to `AGENTS.md` pointing at the three new rules, per
+  `memory-series.md`'s "add a pointer from the matching AGENTS.md section". Keep it to the
+  pointer — no duplicated guidance.
+
+### 2. Cast the roster from the model table
+
+- **Task ID:** `studio-roster`
+- **Depends On:** none
+- **Agent Type:** `general-purpose`
+- **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — the roster is
+  the source of truth a drift test re-derives from, and it encodes taste requirements.
+- **Files:** `.claude/rules/studio-layer/roster.md`
+- **Parallel:** true
+- **Satisfies:** AC2, AC5
+- **Verify:** the file parses as one markdown table with ten rows; every `Model` cell is an
+  alias listed in `model-selection.md`'s Roster and every `Effort` cell appears in its Effort
+  table.
+- Write `roster.md` with `paths: clients/**` frontmatter and the exact column set from spec.md
+  `## Interfaces & Contracts`: Function, Person, Model, Effort, May escalate.
+- Ten rows. The principal first — Maya Lindqvist, Principal/CPO, main session, `fable`,
+  `xhigh`, orchestrator only, **no agent file** (state this in the row, since it is the one
+  row the drift test must skip). Then the nine roles exactly as stamped in spec.md
+  `## Relevant Files → New Files`.
+- State the escalation rule per role and mark the client-facing roles (art director, content
+  strategist) as requiring taste ≥ 7, matching `model-selection.md`.
+- No prose beyond one short intro paragraph — this file is read by a parser as well as a
+  person.
+
+### 3. Fork the artifact rules for client work
+
+- **Task ID:** `studio-client-artifacts`
+- **Depends On:** none
+- **Agent Type:** `general-purpose`
+- **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — client-facing
+  artifact direction, taste ≥ 7.
+- **Files:** `.claude/rules/studio-layer/client-artifacts.md`
+- **Parallel:** true
+- **Satisfies:** AC4, AC5
+- **Verify:** the file contains no 6-digit hex literal, references `artifacts.md`, and its
+  page-pattern table has exactly four rows.
+- Write `client-artifacts.md` with `paths: clients/**` frontmatter. Inherit craft and publish
+  by reference to `.claude/rules/harness-layer/artifacts.md` — do not restate either.
+- Replace the palette lock with a palette **source** per phase: the Soriza studio default
+  through P0–P3, the picked direction's tokens from P4 onward. Name no hex values.
+- Carry the four-row page-pattern table: brief review → inline suggestions; sitemap → the
+  ordering board; art direction → design directions; feedback triage → disposition cards.
+  Each row states what its copy-as-prompt returns.
+- Guardrail: this is a fork, not an edit. Leave `artifacts.md` untouched.
+
+### 4. Write the nine role agents
+
+- **Task ID:** `studio-role-agents`
+- **Depends On:** `studio-roster`
+- **Agent Type:** `general-purpose`
+- **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — nine
+  client-facing role definitions whose descriptions control routing; taste ≥ 7.
+- **Files:** `.claude/agents/studio-layer/` (all nine files)
+- **Parallel:** false
+- **Satisfies:** AC2, AC3
+- **Verify:** `uv run --with pyyaml python .claude/skills/meta-agent/scripts/validate_agent.py <file>`
+  is clean for each of the nine.
+- Follow the `meta-agent` skill for frontmatter and body shape; match the house style in
+  `.claude/agents/kb-fetcher.md`.
+- `name:` is the plain layer-prefixed function and equals the filename stem. The person opens
+  the body — never the name, never the description.
+- Stamp `model:` and `effort:` from `roster.md`. A mismatch is what `studio-roster-drift-test`
+  exists to catch; do not invent a stamp.
+- No `skills:` frontmatter on any role — it silently no-ops when a definition runs as a
+  teammate. Each body restates what it needs and, for the client-facing roles, says to invoke
+  the question-bank skill by name via the `Skill` tool.
+- Give each role its owned documents from the phase table in spec.md and the discovery pages,
+  and say which phase commands spawn it.
+- `studio-design-qa` (Yusuf Demir) is adversarial and blocks handoff: its body judges focus
+  order, whether each state makes sense, and whether error copy says anything useful, and it
+  explicitly does **not** recompute what `check_contrast.py` and `check_states_matrix.py`
+  compute.
+
+### 5. Build the client question bank as an invocable skill
+
+- **Task ID:** `studio-question-bank`
+- **Depends On:** none
+- **Agent Type:** `general-purpose`
+- **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — the question
+  quality is what makes discovery work; client-facing.
+- **Files:** `.claude/skills/studio-layer/client-questions/SKILL.md`
+- **Parallel:** true
+- **Satisfies:** AC6
+- **Verify:** frontmatter carries `name` and `description` and does **not** carry
+  `disable-model-invocation`; the question list parses as one machine-readable section.
+- Follow the `meta-skills` skill for authoring. `name: studio-client-questions`.
+- Cover the client discovery dimensions: the job the site does, the audience and their
+  situation, brand voice, references loved and hated, the content that actually exists, hard
+  constraints (existing brand, CMS, deadline), budget, and what success looks like at six
+  months.
+- Structure the questions so `check_question_coverage.py` can re-derive the dimension list from
+  this file — one stable heading or list marker per dimension. Agree the exact shape with
+  `studio-check-scripts`; the checker must parse this file, never carry its own copy.
+- Do **not** set `disable-model-invocation: true`. It would make the skill user-invocable only
+  and put it out of reach of the roles meant to invoke it.
+
+### 6. Build the sign-off Stop gate
+
+- **Task ID:** `gate-signoff-hook`
+- **Depends On:** none
+- **Agent Type:** `general-purpose`
+- **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` —
+  verification-shaped work that also edits the fixture every hook test depends on.
+- **Files:** `.claude/hooks/check_gate_signoff.py`,
+  `tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py`,
+  `tests/harness-layer/hooks/conftest.py`, `tests/harness-layer/hooks/test_wiring.py`,
+  `.claude/rules/harness-layer/hooks.md`
+- **Parallel:** true
+- **Satisfies:** AC8, AC9, AC10
+- **Verify:** `uv run pytest tests/harness-layer/hooks/` — green, including the pre-existing
+  wiring and contract suites.
+- Write the hook as a PEP 723 `# /// script` file with `dependencies = []`, modeled on
+  `check_spec_completeness.py`: resolve the root from `CLAUDE_PROJECT_DIR` with a
+  `git rev-parse` fallback, exit 2 to deny the stop with repair instructions on stderr, and
+  fail open (exit 0) on malformed stdin, a missing root, or any plumbing failure.
+- Take the phase from `argv[1]`. Never infer it from mtime — a client project holds all eight
+  phase folders at once. Missing or unrecognized argument → exit 2 as a usage error.
+- Check the phase's sign-off file for a filled Approver, Date, and Artifact SHA, and verify the
+  SHA against the artifact it names. Empty, whitespace-only, and template-placeholder values
+  all count as missing.
+- For `p2` only, additionally require the cold-designer triage document to exist with no
+  untriaged row.
+- No `clients/` directory → exit 0 silently, mirroring how the spec gate is invisible without
+  `specs/`.
+- Extend `run_hook` in `tests/harness-layer/hooks/conftest.py` with `args: tuple = ()` appended
+  after the script path, per spec.md `## Interfaces & Contracts`. Existing call sites pass
+  nothing and must stay untouched.
+- Add `"check_gate_signoff.py": "not-applicable"` to `CODEX_DISPOSITIONS` in `test_wiring.py`
+  — studio commands are Claude slash commands, like the spec gate.
+- Add the catalog row to `.claude/rules/harness-layer/hooks.md`: event `Stop (command-scoped)`,
+  what it does, Codex column `not-applicable`. The wiring suite cross-checks this table against
+  `CODEX_DISPOSITIONS` in both directions.
+- Test both the block and the allow path for every field, per `hooks.md`'s testing rules.
+  Launch only through `run_hook`; every docstring states why the behavior matters.
+
+### 7. Build the four studio check scripts
+
+- **Task ID:** `studio-check-scripts`
+- **Depends On:** `studio-question-bank`
+- **Agent Type:** `general-purpose`
+- **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — parser and
+  arithmetic work; the build stage has no Codex path, so the highest Claude tier available to
+  a subagent carries it and the Codex review gate judges the result.
+- **Files:** `.claude/scripts/studio-layer/` (all four scripts),
+  `tests/harness-layer/studio-layer/test_studio_checks.py`
+- **Parallel:** false
+- **Satisfies:** AC6, AC11, AC12, AC13
+- **Verify:** `uv run pytest tests/harness-layer/studio-layer/` — green.
+- All four are PEP 723 scripts with `dependencies = []`, taking their target as `argv[1]`, per
+  the CLI contract in spec.md. Exit 0 pass, 1 countable failure with `file:line` diagnostics,
+  2 usage/parse error.
+- `check_states_matrix.py`: parse the handoff's component × state matrix and exit 1 naming every
+  unfilled cell across hover, focus, disabled, loading, empty and error at each declared
+  breakpoint. A component row with no state columns is unfilled, not skipped.
+- `check_contrast.py`: parse the token table, compute WCAG relative luminance and the contrast
+  ratio for every declared foreground/background pair, and compare against the thresholds
+  recorded in decisions.md `## Assumptions` (4.5:1 normal text, 3:1 large text and UI
+  components, 24×24 CSS px minimum target). Malformed hex → exit 2, never 1. Pin at least one
+  hand-computed ratio in the tests so the arithmetic itself is checked, not just the branching.
+- `check_question_coverage.py`: re-derive the dimension list by parsing the question-bank
+  `SKILL.md`, then exit 1 for any dimension the discovery notes leave unanswered without an
+  explicit "N/A, because". Never carry a second copy of the dimension list — a test must show
+  that adding a question to the skill changes what the checker requires.
+- `check_revision_count.py`: re-derive the allowance from the signed brief, walk the revision
+  log, and exit 1 on a round past the allowance with no matching change-order document. No
+  allowance in the brief → exit 2.
+- Mirror the test layout under `tests/harness-layer/studio-layer/`, using `tmp_path` fixtures
+  so the suite stays parallel-safe. These are not hooks — do not use the `run_hook` fixture and
+  do not place them under `.claude/hooks/`.
+
+### 8. Pin the roster against the agent files
+
+- **Task ID:** `studio-roster-drift-test`
+- **Depends On:** `studio-roster`, `studio-role-agents`
+- **Agent Type:** `general-purpose`
+- **Model / Effort:** `sonnet` / `high` per `.claude/rules/model-selection.md` — a scoped
+  drift test on an established pattern, but verification-shaped, so effort stays at the default.
+- **Files:** `tests/harness-layer/test_studio_roster_drift.py`
+- **Parallel:** false
+- **Satisfies:** AC2
+- **Verify:** `uv run pytest tests/harness-layer/test_studio_roster_drift.py` — green; then
+  hand-edit one agent file's `effort`, confirm the suite goes red, and revert.
+- Re-derive every expectation from `roster.md`. Parse its table the way `test_model_drift.py`
+  parses `model-selection.md` — structure, not prose — and reuse that file's frontmatter parser
+  shape rather than inventing a second one.
+- Assert per role: the agent file exists, its `model` matches the roster row, and its `effort`
+  matches. Skip the principal's row, which declares no agent file by design.
+- Assert both directions: a roster row with no agent file fails naming the file, and an agent
+  file under `.claude/agents/studio-layer/` with no roster row fails naming the orphan.
+- Guard the parser itself with a test that fails loudly if the table stops parsing, so a
+  reformatted roster cannot silently disable the gate — the `test_roster_parses_into_both_provider_families`
+  pattern.
+- Every docstring states why the behavior matters.
+
+### 9. Write the eight phase commands
+
+- **Task ID:** `studio-phase-commands`
+- **Depends On:** `studio-role-agents`, `studio-question-bank`, `gate-signoff-hook`,
+  `studio-check-scripts`, `studio-client-artifacts`
+- **Agent Type:** `general-purpose`
+- **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — eight
+  interlocking command prompts, including the forked interview loop; user-facing, taste ≥ 7.
+- **Files:** `.claude/commands/studio-layer/` (all eight files)
+- **Parallel:** false
+- **Satisfies:** AC7, AC9
+- **Verify:** `uv run pytest tests/harness-layer/hooks/test_wiring.py` — green (every
+  frontmatter registration points at a real file), and
+  `bash specs/cpo-layer/checks/ac7-phase-commands.sh` — exit 0.
+- Shape each command like the harness eight: frontmatter (`description`, `argument-hint`,
+  `model`, `effort`, `disable-model-invocation: true`), then the phase's documents, the roles
+  the principal spawns, the gate, and the report block. Keep them short — every line loads into
+  context.
+- Stamp each command `model: fable`, `effort: xhigh` — the principal runs them and is the
+  orchestrator, per `roster.md`.
+- Phases, documents, staffing and gates come from the discovery pages: P0 intake (soft), P1
+  discovery (soft), P2 definition (hard), P3 structure (hard), P4 art direction (hard), P5
+  prototype (rounds), P6 design QA and handoff (hard), P7 retro (soft).
+- P2, P3, P4, P6 register the Stop hook in frontmatter with their own phase token, exactly as
+  spec.md `## Interfaces & Contracts` shows. No other studio command registers it.
+- **P1 is the forked interview.** Take the round mechanics from `harness-interview.md:32-42` —
+  a coverage ledger, one round at a time ordered by blast radius, and the bounded stop when a
+  round resolves nothing new — and swap the harness dimensions for the client ones. Each round
+  publishes an interactive artifact per `client-artifacts.md` that the client reacts to. The
+  principal conducts every round via `AskUserQuestion`; `studio-discovery-lead` prepares the
+  question set from the bank beforehand and turns answers into written statements and glossary
+  entries afterward. Do not edit `harness-interview.md`.
+- P2 runs the cold-designer test: spawn one teammate carrying only the signed project and
+  creative briefs, ask for the section-level plan, diff it against the signed sitemap, and
+  triage every row. The list is advisory; the triage document is what the gate requires.
+- P5 counts revision rounds and names `check_revision_count.py`; P6 names
+  `check_states_matrix.py` and `check_contrast.py` and spawns `studio-design-qa`; P7 routes
+  each lesson to the file where it will load again, and explicitly does not graduate lessons
+  into skills — that is card 10.
+
+### 10. Validate Everything
+
+- **Task ID:** `validate-all`
+- **Depends On:** every preceding Task ID
+- **Agent Type:** `general-purpose`
+- **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — consolidating
+  judgment across every criterion.
+- **Files:** none — read-only
+- **Parallel:** false
+- **Satisfies:** every AC
+- **Verify:** every command in acceptance-criteria.md `## Validation Commands` passes, and each
+  criterion is met.
+- Run the full suite and both ruff commands from the repo root, and record the observed output
+  in `implementation-notes.md` per `impl-standards.md`.
+- Confirm no studio rule loads outside `clients/**`, and that `AGENTS.md`'s always-loaded
+  budget is unchanged.
+- Confirm the diff adds no client data, leaves `artifacts.md` and `harness-interview.md`
+  untouched, and carries no orphaned files.
+
+## Memory
+
+`studio-phase-commands` and `gate-signoff-hook` must record their outcomes to memory per
+`memory-series.md`: the hook's catalog row belongs in `.claude/rules/harness-layer/hooks.md`
+(already a task step), and any lesson about the forked interview loop belongs in the studio
+command it corrects — never a flat log.

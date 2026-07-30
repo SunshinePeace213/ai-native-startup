@@ -1,0 +1,341 @@
+# Spec: studio-layer — design-delivery studio through signed handoff
+
+- **Owner:** @SunshinePeace213
+- **Status:** Drafted for Review
+
+## Tracking
+
+- **Type:** feat
+- **Complexity:** complex
+- **Issue:** #80
+- **Branch:** feat/80-cpo-layer
+- **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/cpo-layer
+- **Review profile:** kb-grounded
+- **PR:** filled by /harness-layer:harness-build
+
+## Task Description
+
+Build the `studio-layer` — a design-delivery studio for Soriza (an AI startup selling
+website design, software development, and agentic-layer services) that owns what gets
+built and what it looks like, and stops at a signed layout handoff with no development
+work.
+
+The layer runs as eight phase commands driven by the main session acting as principal
+(Maya Lindqvist, Principal/CPO — orchestrator only, never a spawned teammate). The
+principal spawns nine role agents directly, one level deep. Client project data lives in
+a gitignored `clients/<client>/<project>/` inside this repo, so path-scoped rules and
+command-frontmatter hooks resolve against `CLAUDE_PROJECT_DIR` while nothing client-owned
+enters git history.
+
+Scope is brainstorm cards 01–09: the namespace and client-data home, the roster, the
+forked client-discovery loop, the client-artifact rule, the eight phase commands, the
+cold-designer test, the sign-off hook, the design-QA verifier, and the revision counter.
+Cards 10 (lesson graduation), 11 (design KB mirrors), and 12 (the first real project run)
+are follow-on plans.
+
+Every decision is already locked in `specs/cpo-layer/discovery/decisions-draft.md` and
+transcribed into [decisions.md](./decisions.md). Nothing here is re-interviewed.
+
+## Objective
+
+`/studio-layer:p0-intake` through `/studio-layer:p7-retro` exist and run; each hard gate
+(P2, P3, P4, P6) refuses to close without a signed document the hook can read; and each
+countable design claim — states matrix, contrast, question coverage, revision rounds,
+role model stamps — fails a check script or a test rather than passing on assertion.
+
+## Non-Goals
+
+- **No development work.** The layer stops at a signed layout handoff. The P6 handoff pack
+  is what a builder consumes; building from it is somebody else's job.
+- **No PRD.** The P2 project brief is the client agreement, not a spec. `/harness-layer:harness-plan`
+  already converts intent into `spec.md` and stays the only such converter.
+- **Card 10 — lesson graduation.** Promoting a repeated lesson into a skill, and the
+  threshold for doing so, is a follow-on plan. P7 routes lessons; it does not graduate them.
+- **Card 11 — the design KB.** No WCAG 2.2, ARIA APG, or platform accessibility mirrors this
+  run; blocked on the P5 prototype-tool decision.
+- **Card 12 — the first real run.** Running eight phases on a live brief is a usage run, not
+  a diff, and cannot be an acceptance criterion of a prompt-file PR.
+- **No question-bank write-back within a run.** A loaded skill is static for that session;
+  the improvement loop is card 10's.
+- **No client data committed.** `clients/` is gitignored; this plan adds the directory
+  contract and the `.gitignore` entry, never a real client's files.
+
+## Problem Statement
+
+Soriza sells design but runs it from memory. What each phase produces, who does it, what
+"signed off" means, and how many revision rounds the client actually bought are all
+unwritten, so scope creep, unsigned approvals, and missing interaction states are caught by
+someone noticing rather than by a check failing.
+
+The harness layer already proved the shape that fixes this in this repo — phase commands
+with a gate each, path-scoped rules, agent files whose model stamps CI pins, and Stop hooks
+that refuse to let a stage close half-finished. None of it is reachable from client design
+work today: `check_spec_completeness.py` walks `specs/` only, `artifacts.md` locks every page
+to our internal Warm Neutral palette, and no rule or agent describes a design role.
+
+Doing it now, before the first real engagement, is what makes card 12 a test of the layer
+rather than an improvised project that later has to be reverse-engineered into one.
+
+## Solution Approach
+
+Fork the harness layer's proven shapes into a sibling namespace rather than generalizing
+either one.
+
+- **Namespace, not owner.** `studio-layer` names a function the way `harness-layer` does.
+  The Soriza brand lives in one rule (`studio-identity.md`) that client-facing documents
+  inherit, so rebranding costs one file while a namespace rename would touch every command
+  path, `paths:` rule, agent name, and test.
+- **Eight commands, not one parameterized command.** A Stop hook that must run inside one
+  command registers in that command's own frontmatter. One parameterized command could only
+  register the sign-off gate for every phase at once — firing it on soft gates too, which is
+  exactly what the gate exists to prevent.
+- **Roles as agent files.** Nine files under `.claude/agents/studio-layer/` make the roster's
+  model and effort stamps load-bearing: a new drift test re-derives each stamp from
+  `roster.md` and compares it to the agent file. Inline spawn prompts would leave every stamp
+  a suggestion CI cannot check.
+- **Mechanisms, split by what each is good at.** Scripts compute (WCAG ratios, matrix cells,
+  question coverage, revision rounds); the design-QA agent judges (focus order, whether a
+  state makes sense, whether error copy says anything). Neither is trusted for the other's job.
+- **P1 runs page-first.** Each discovery round publishes an interactive artifact the client
+  reacts to, forked from `harness-interview.md`'s round mechanics with client dimensions. The
+  principal conducts every round because `AskUserQuestion` is unavailable to subagents and a
+  teammate cannot prompt the user; the discovery lead prepares the question set and analyzes
+  the answers.
+
+The main alternative — a sibling repo for client work — loses because path-scoped rules and
+command-frontmatter hooks resolve against `CLAUDE_PROJECT_DIR`. Client files outside that
+root mean no studio rule loads and no hook sees a sign-off file, which would delete every
+mechanism this plan exists to build.
+
+## Requirements & Decisions
+
+Ordered most-volatile first. The full record is in [decisions.md](./decisions.md).
+
+1. **The four check scripts live in `.claude/scripts/studio-layer/`, not `.claude/hooks/`.**
+   `test_wiring.py::test_every_entrypoint_is_claimed_by_a_registration_surface` treats any
+   PEP 723 or shebang file under `.claude/hooks/` as a hook entrypoint that must be claimed by
+   a registration surface. A check script invoked by a command body is not a hook and has no
+   registration, so placing it there turns the wiring suite red.
+   *Alternative still live:* a `scripts/` subdirectory inside the question-bank skill, on the
+   `meta-agent/scripts/validate_agent.py` precedent — rejected because three of the four
+   scripts serve commands, not that skill.
+
+2. **`check_gate_signoff.py` takes the phase as `argv[1]`; the `run_hook` fixture grows an
+   `args` parameter to match.** No hook in this repo has taken an argument before, so
+   `run_hook` runs `uv run --script <path>` with no extra argv and cannot exercise the new
+   hook as registered. The fixture gains `args: tuple = ()` appended to the command.
+   *Alternative still live:* inferring the phase from the client folder's newest sign-off
+   file, mirroring `check_spec_completeness.py`'s mtime inference — rejected because a client
+   project holds all eight phase folders at once, so mtime would gate the wrong phase.
+
+3. **Roles run as subagents by default; the cold-designer test is the one teammate.** Every
+   role body restates what it needs rather than depending on a preloaded skill, because
+   `skills:` frontmatter is not applied when a definition runs as a teammate. P2's
+   cold-designer check spawns a teammate carrying only the signed briefs precisely because a
+   teammate does not inherit the lead's conversation history.
+   *Alternative still live:* teammates throughout, for P4's competing directions — deferred
+   until a phase needs roles talking to each other.
+
+4. **Agent names are plain and layer-prefixed (`studio-art-director`); the person opens the
+   body.** Claude routes off `name` + `description`, and `name` must be unique tree-wide. A
+   hybrid name (`art-director-elena-ferraro`) would put the persona back into the routing
+   document the unknowns pass deliberately kept it out of.
+
+5. **The question bank is a skill the roles invoke via the `Skill` tool, without
+   `disable-model-invocation`.** `skills:` preloading silently no-ops for teammates, and a
+   skill marked `disable-model-invocation: true` cannot be invoked by the very roles meant to
+   invoke it. Runtime invocation works for both spawn shapes.
+
+6. **All build tasks stay on Claude models.** `/harness-layer:harness-build` has no Codex
+   implementation path — Codex enters this pipeline at review. The check scripts are
+   parser-and-arithmetic work that would otherwise be stamped `gpt-5.6-sol`; they run on
+   `opus` at `high` instead, and the Codex review gate still judges the result.
+
+## Interfaces & Contracts
+
+### Sign-off document — `clients/<client>/<project>/sign-off/<phase>.md`
+
+```markdown
+# Sign-off: P2 — Definition
+
+- **Approver:** Jordan Reyes, Head of Marketing, Acme Co.
+- **Date:** 2026-07-31
+- **Artifact SHA:** 3f9a1c4e8b27d05a6f1e93b4c7208d5e1a6b3f2c9d04e7a815c62b9f0d3e4a7b6
+- **Approves:** project-brief.md, sitemap.md
+```
+
+`Approver`, `Date`, and `Artifact SHA` must each be present and non-empty. The SHA is a
+content hash of the approved artifact (`sha256sum`), never a git SHA — `clients/` is
+gitignored, so no commit object exists.
+
+### Hook registration — P2, P3, P4, P6 command frontmatter
+
+```yaml
+hooks:
+  Stop:
+    - hooks:
+        - type: command
+          command: uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/check_gate_signoff.py p2
+```
+
+The phase token is the only difference between the four registrations. `HOOK_PATH_RE` in
+`test_wiring.py` stops at whitespace, so the argument does not disturb the existing wiring
+assertions.
+
+### Check script CLI — all four
+
+```bash
+uv run --script .claude/scripts/studio-layer/check_states_matrix.py <handoff.md>
+uv run --script .claude/scripts/studio-layer/check_contrast.py <handoff.md>
+uv run --script .claude/scripts/studio-layer/check_question_coverage.py <discovery-notes.md>
+uv run --script .claude/scripts/studio-layer/check_revision_count.py <project-dir>
+```
+
+Exit 0 = pass. Exit 1 = a countable failure, with `file:line` diagnostics on stdout naming
+each failing cell, pair, dimension, or round. Exit 2 is reserved for usage errors (missing
+or unreadable argument).
+
+### Roster row — `.claude/rules/studio-layer/roster.md`
+
+```markdown
+| Function | Person | Model | Effort | May escalate |
+| --- | --- | --- | --- | --- |
+| `studio-art-director` | Elena Ferraro | `opus` | `high` | yes |
+```
+
+The drift test parses this table and asserts `.claude/agents/studio-layer/<function>.md`
+declares the same `model:` and `effort:` in its frontmatter.
+
+### `run_hook` fixture extension — `tests/harness-layer/hooks/conftest.py`
+
+```python
+def _run(script, payload, *, args: tuple = (), env_overrides=None, unset_env=(), cwd=REPO_ROOT):
+    return subprocess.run([UV, "run", "--script", str(HOOKS_ROOT / script), *args], ...)
+```
+
+Existing call sites pass no `args` and are unaffected.
+
+## Relevant Files
+
+- `.gitignore` — gains the `clients/` entry that keeps client work out of history.
+- `AGENTS.md` — gains a `## Studio Layer` pointer to the three new rules, per `memory-series.md`.
+- `.claude/rules/harness-layer/hooks.md` — the authoritative hook catalog gains the
+  `check_gate_signoff.py` row; `test_wiring.py` cross-checks this table against the code.
+- `tests/harness-layer/hooks/conftest.py` — `run_hook` gains `args` so the new hook can be
+  launched as registered.
+- `tests/harness-layer/hooks/test_wiring.py` — `CODEX_DISPOSITIONS` gains the new hook as
+  `not-applicable`; `test_dispositions_cover_every_entrypoint` fails without it.
+- `.claude/commands/harness-layer/harness-interview.md` — read-only reference; its Round Loop
+  (lines 36–42) and Coverage Ledger (line 32) are the fork source for P1.
+- `.claude/rules/harness-layer/artifacts.md` — read-only reference; `client-artifacts.md`
+  inherits its craft and publish sections.
+
+### New Files
+
+- `.claude/rules/studio-layer/roster.md` — ten rows (principal + nine roles), each with
+  function, person, model, effort, escalation.
+- `.claude/rules/studio-layer/client-artifacts.md` — `paths: clients/**`; inherits craft and
+  publish from `artifacts.md`, drops the palette lock, carries the four-row page-pattern table.
+- `.claude/rules/studio-layer/studio-identity.md` — `paths: clients/**`; Soriza name, voice,
+  letterhead, and the sign-off block every client-facing document inherits.
+- `.claude/agents/studio-layer/studio-client-partner.md` — Daniel Osei, `sonnet`/`medium`.
+- `.claude/agents/studio-layer/studio-discovery-lead.md` — Priya Raghavan, `opus`/`high`.
+- `.claude/agents/studio-layer/studio-ux-architect.md` — Tomas Vieira, `opus`/`high`.
+- `.claude/agents/studio-layer/studio-art-director.md` — Elena Ferraro, `opus`/`high`.
+- `.claude/agents/studio-layer/studio-content-strategist.md` — Hana Okabe, `opus`/`high`.
+- `.claude/agents/studio-layer/studio-prototype-engineer.md` — Marcus Bramley, `sonnet`/`high`.
+- `.claude/agents/studio-layer/studio-design-qa.md` — Yusuf Demir, `opus`/`high`.
+- `.claude/agents/studio-layer/studio-research-analyst.md` — Clara Nyberg, `sonnet`/`medium`.
+- `.claude/agents/studio-layer/studio-retro-scribe.md` — Ravi Chandran, `sonnet`/`medium`.
+- `.claude/commands/studio-layer/` — eight phase commands, named exactly `p0-intake.md`,
+  `p1-discovery.md`, `p2-definition.md`, `p3-structure.md`, `p4-art-direction.md`,
+  `p5-prototype.md`, `p6-handoff.md`, `p7-retro.md`.
+- `.claude/skills/studio-layer/client-questions/SKILL.md` — the invocable question bank.
+- `.claude/hooks/check_gate_signoff.py` — the phase-argument Stop gate.
+- `.claude/scripts/studio-layer/check_states_matrix.py` — every component × state cell filled.
+- `.claude/scripts/studio-layer/check_contrast.py` — computed WCAG ratios and tap targets.
+- `.claude/scripts/studio-layer/check_question_coverage.py` — coverage re-derived from the skill.
+- `.claude/scripts/studio-layer/check_revision_count.py` — rounds re-derived from the signed brief.
+- `tests/harness-layer/test_studio_roster_drift.py` — roster ↔ agent-file stamp drift.
+- `tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py` — hook contract tests.
+- `tests/harness-layer/studio-layer/test_studio_checks.py` — contract tests for the four scripts.
+- `clients/.gitkeep` — the directory contract; the folder itself is ignored.
+
+## Edge Cases
+
+- **Sign-off file missing entirely** — hook exits 2 naming the expected path, so the phase
+  cannot close. This is the common case on a first run and must read as an instruction, not
+  a crash.
+- **Sign-off file present but a field is blank or still a template placeholder** — treated
+  identically to missing: exit 2 naming the specific empty field.
+- **Sign-off SHA does not match the artifact it claims to approve** — the hook reports the
+  mismatch and blocks; a client approved something, and it was not this file.
+- **A phase folder for a different phase is newer** — irrelevant by construction: the phase
+  comes from `argv[1]`, never from mtime. A client project holds all eight phase folders at
+  once, which is exactly why inference was rejected.
+- **No `clients/` directory at all** — every studio check and the hook exit 0 and stay silent.
+  A harness-only session must never trip a studio gate, mirroring how `check_spec_completeness.py`
+  is invisible in a project with no `specs/`.
+- **Handoff token table declares a colour pair with a malformed hex value** — the contrast
+  script exits 2 (usage/parse) rather than 1, so a typo is never reported as a contrast
+  failure the designer would chase.
+- **A component row exists with no state columns at all** — counted as unfilled, not skipped;
+  an empty row is the failure mode the matrix check exists to catch.
+- **Revision round past the allowance with a change order present** — passes. Without one —
+  fails, naming the round and the expected change-order path.
+- **The signed brief declares no revision allowance** — the counter exits 2: the baseline is
+  missing, which is a different defect from exceeding it.
+- **Re-running any check or the hook on unchanged inputs** — same exit code, no writes. All
+  five are read-only and idempotent.
+- **A role's agent file is deleted but its roster row remains** — the drift test fails naming
+  the missing file, rather than silently checking nothing.
+- **P1 round that resolves nothing new** — the forked bounded-round condition ends discovery:
+  record what is left as assumptions and go to the soft gate.
+
+## Risk & Rollback
+
+- **Blast radius:** two changes reach outside the new namespace. `run_hook` gaining an `args`
+  parameter touches the fixture every hook test uses — a mistake there reddens the whole hook
+  suite, which is also what notices immediately. `CODEX_DISPOSITIONS` and the `hooks.md`
+  catalog row are cross-checked in both directions, so omitting either fails `test_wiring.py`
+  rather than shipping quietly. Everything else is additive and path-scoped to `clients/**`,
+  so no studio rule loads during ordinary harness work.
+- **Rollback:** revert the squash commit. The three rules are path-scoped and the eight
+  commands are namespaced, so nothing else reads them; no migration, no data to unwind.
+- **In-flight work:** none. No client project exists yet — card 12 is a follow-on plan — so
+  there is no engagement mid-flight to strand and no `clients/` content to migrate.
+
+## Guardrails
+
+- **Fork the interview mechanics; do not import them.** P1 gets its own round loop with client
+  dimensions. Do not edit `harness-interview.md`, and do not factor the two into a shared file
+  — the ledgers share no rows, so the fork cannot drift in a way that matters.
+- **Do not put a check script under `.claude/hooks/`.** It becomes an unclaimed entrypoint and
+  reddens the wiring suite.
+- **Do not hard-code the roster in the drift test.** Re-derive every stamp from `roster.md`; a
+  second hard-coded copy drifts in step with the first and pins nothing.
+- **Do not copy `artifacts.md`'s palette table into `client-artifacts.md`.** Naming the
+  palette's *source* per phase is the whole point of forking it.
+- **Do not give the question-bank skill `disable-model-invocation: true`.** It would put the
+  bank out of reach of the roles meant to invoke it.
+- **Do not add `skills:` frontmatter to the role agents.** It silently no-ops when the
+  definition runs as a teammate; the bodies must restate what they need.
+- **The cold-designer diff is advisory.** Gate the triage document, not a zero-diff. Two
+  competent designers given one brief produce different section plans; a zero-diff gate would
+  never open.
+- **Do not create a real client folder.** `clients/.gitkeep` and the ignore entry only.
+
+## Notes
+
+No new dependencies. The check scripts and the hook are PEP 723 `# /// script` files with
+empty `dependencies = []`, run through `uv run --script` like every existing hook.
+
+The plan folder keeps the chain slug `cpo-layer` (the branch is `feat/80-cpo-layer`) because
+discovery is already committed under it and the user's prompt names that path twice. The
+`studio-layer` naming decision governs the harness namespace — commands, rules, agents — not
+the plan folder.
+
+## Codex Verification
+
+- **Outcome:** pending — filled after the Codex gate runs.
+- **Rejected findings:** pending.
