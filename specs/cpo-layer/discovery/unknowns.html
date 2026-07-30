@@ -1,0 +1,1218 @@
+<title>CPO Layer — Unknowns &amp; Vocabulary</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --ok: #4A7C59;
+    --warn: #A8761E;
+    --stop: #9B3B2E;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --serif: "Iowan Old Style", Charter, Georgia, serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px 220px; }
+
+  /* ---------- masthead ---------- */
+
+  .masthead { padding: 72px 0 40px; border-bottom: 2px solid var(--text); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+
+  h1 {
+    font-size: clamp(38px, 7vw, 66px);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 800;
+    margin: 0 0 22px;
+    max-width: 15ch;
+  }
+
+  .thesis {
+    font-family: var(--serif);
+    font-size: clamp(18px, 2.4vw, 22px);
+    line-height: 1.45;
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  .thesis strong { color: var(--accent); font-weight: 600; }
+
+  .stamps { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+
+  .stamp {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+  }
+
+  /* ---------- section scaffolding ---------- */
+
+  section { padding: 64px 0 8px; border-bottom: 1px solid var(--border); }
+
+  .sec-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 10px; flex-wrap: wrap; }
+
+  .sec-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    padding-top: 6px;
+  }
+
+  h2 {
+    font-size: clamp(26px, 4vw, 36px);
+    letter-spacing: -0.025em;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .lede {
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.5;
+    max-width: 66ch;
+    margin: 0 0 34px;
+    color: #443E39;
+  }
+
+  .lede code, p code, li code, .term-line code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--surface);
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+  }
+
+  /* ---------- the split (section A) ---------- */
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--border); margin-bottom: 20px; }
+
+  .split > div { padding: 26px; background: var(--surface); }
+
+  .split > div + div { border-left: 1px solid var(--border); background: var(--bg); }
+
+  .split h3 { font-size: 19px; margin: 0 0 4px; letter-spacing: -0.01em; }
+
+  .split .role { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
+
+  .split ul { margin: 0; padding-left: 18px; font-size: 15px; }
+
+  .split li { margin-bottom: 7px; }
+
+  .verdict {
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    background: var(--surface);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.5;
+  }
+
+  /* ---------- unknowns board ---------- */
+
+  .board-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .filter[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .filter:focus-visible, button:focus-visible, textarea:focus-visible, .term:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .tally { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; letter-spacing: 0.06em; }
+
+  .card {
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--muted);
+    background: var(--surface);
+    padding: 24px 26px;
+    margin-bottom: 14px;
+  }
+
+  .card[data-status="resolve"] { border-left-color: var(--ok); }
+  .card[data-status="accept"] { border-left-color: var(--warn); }
+  .card[data-status="discuss"] { border-left-color: var(--stop); }
+  .card.hidden { display: none; }
+
+  .card-top { display: flex; gap: 14px; align-items: baseline; margin-bottom: 8px; flex-wrap: wrap; }
+
+  .card-id { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.1em; }
+
+  .card h3 { font-size: 21px; margin: 0; letter-spacing: -0.015em; line-height: 1.2; flex: 1 1 320px; }
+
+  .card .bites { font-family: var(--serif); font-size: 16.5px; margin: 12px 0 14px; max-width: 74ch; }
+
+  .card .instead { font-size: 15px; margin: 0 0 16px; max-width: 74ch; }
+
+  .card .instead b { color: var(--accent); }
+
+  .evidence { font-family: var(--mono); font-size: 11.5px; color: var(--muted); line-height: 1.9; margin-bottom: 18px; word-break: break-word; }
+
+  .evidence span { border-bottom: 1px dotted var(--border); }
+
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+  .act {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 7px 13px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .act[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .note {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text);
+    resize: vertical;
+    min-height: 44px;
+  }
+
+  /* ---------- vocabulary ---------- */
+
+  .tier-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 34px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .term { border-bottom: 1px solid var(--border); }
+
+  .term-head {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    padding: 15px 0;
+    cursor: pointer;
+    font-family: inherit;
+    color: inherit;
+  }
+
+  .term-head .word { font-size: 17.5px; font-weight: 700; letter-spacing: -0.01em; flex: 1 1 auto; }
+
+  .term-head .gloss { font-size: 14.5px; color: var(--muted); flex: 2 1 300px; font-family: var(--serif); }
+
+  .term-head .tick { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+
+  .term-body { display: none; padding: 0 0 22px 0; }
+
+  .term.open .term-body { display: block; }
+
+  .term-line { display: grid; grid-template-columns: 110px 1fr; gap: 16px; margin-bottom: 9px; align-items: start; }
+
+  .term-line dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding-top: 4px; }
+
+  .term-line dd { margin: 0; font-size: 15.5px; max-width: 72ch; }
+
+  /* ---------- pipeline ---------- */
+
+  .rail { border-left: 2px solid var(--border); margin-left: 8px; padding-left: 0; }
+
+  .phase { position: relative; padding: 0 0 4px 30px; }
+
+  .phase::before {
+    content: "";
+    position: absolute;
+    left: -7px;
+    top: 22px;
+    width: 12px;
+    height: 12px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 50%;
+  }
+
+  .phase.on::before { background: var(--accent); border-color: var(--accent); }
+
+  .phase-head {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    padding: 16px 0 6px;
+    cursor: pointer;
+    font-family: inherit;
+    color: inherit;
+    flex-wrap: wrap;
+  }
+
+  .phase-head .pnum { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.1em; }
+
+  .phase-head .pname { font-size: 19px; font-weight: 700; letter-spacing: -0.015em; }
+
+  .phase-head .pstate { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-left: auto; }
+
+  .phase.on .phase-head .pstate { color: var(--accent); }
+
+  .phase.off { opacity: 0.45; }
+
+  .phase-body { padding-bottom: 18px; }
+
+  .docs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+
+  .doc { font-family: var(--mono); font-size: 11px; padding: 4px 9px; background: var(--surface); border: 1px solid var(--border); color: #4A443E; }
+
+  .staffed { font-size: 14px; color: var(--muted); margin: 0 0 12px; }
+
+  .staffed b { color: var(--text); font-weight: 600; }
+
+  .gate {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--stop);
+    border-top: 2px solid var(--stop);
+    padding-top: 7px;
+    max-width: 560px;
+  }
+
+  .gate.soft { color: var(--muted); border-top-color: var(--border); }
+
+  /* ---------- roster ---------- */
+
+  .roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+
+  .person {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 18px 20px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    width: 100%;
+  }
+
+  .person.off { opacity: 0.42; background: var(--bg); }
+
+  .mono-chip {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    display: grid;
+    place-items: center;
+    background: var(--text);
+    color: var(--bg);
+  }
+
+  .person.off .mono-chip { background: var(--border); color: var(--muted); }
+
+  .person .who { font-size: 16.5px; font-weight: 700; letter-spacing: -0.01em; }
+
+  .person .title { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent); margin: 2px 0 7px; }
+
+  .person .owns { font-size: 14px; color: #4A443E; margin: 0 0 9px; }
+
+  .person .cast { font-family: var(--mono); font-size: 10.5px; color: var(--muted); letter-spacing: 0.04em; }
+
+  .core-flag { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; color: var(--stop); }
+
+  /* ---------- quality bar ---------- */
+
+  .bar-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+
+  .bar-item input { margin-top: 5px; width: 16px; height: 16px; accent-color: var(--accent); flex: 0 0 auto; }
+
+  .bar-item label { font-size: 15.5px; max-width: 76ch; cursor: pointer; }
+
+  .bar-item label b { font-weight: 700; }
+
+  /* ---------- prompt dock ---------- */
+
+  .dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--surface);
+    border-top: 2px solid var(--text);
+    z-index: 20;
+  }
+
+  .dock-inner { max-width: 1080px; margin: 0 auto; padding: 14px 28px 18px; }
+
+  .dock-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+  .dock-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+
+  .dock-meta { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  .dock-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border: 1px solid var(--text);
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+  }
+
+  .dock-btn.ghost { background: transparent; color: var(--text); }
+
+  .dock-btn + .dock-btn { margin-left: 6px; }
+
+  #promptOut {
+    display: none;
+    margin-top: 12px;
+    max-height: 34vh;
+    overflow: auto;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+  }
+
+  .dock.open #promptOut { display: block; }
+
+  @media (max-width: 720px) {
+    .split { grid-template-columns: 1fr; }
+    .split > div + div { border-left: 0; border-top: 1px solid var(--border); }
+    .term-line { grid-template-columns: 1fr; gap: 2px; }
+    .wrap { padding: 0 18px 240px; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card, .person { transition: opacity 0.15s ease, border-color 0.15s ease; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Discovery · unknowns pass · cpo-layer</p>
+    <h1>You are not building a CPO. You are building a studio.</h1>
+    <p class="thesis">
+      The workflow you described — interview the client, draft the briefs, settle the sitemap, show
+      directions, prototype, hand off the layout and stop before engineering — is a
+      <strong>design studio's delivery pipeline</strong>, not a chief product officer's job. Both are
+      real, both are buildable, and they need different documents, different gates and different
+      people. This page separates them, hands you the vocabulary to name what you actually want,
+      and flags eight places where this repo already has an opinion about how you build it.
+    </p>
+    <div class="stamps">
+      <span class="stamp">MODE · CODEBASE + DOMAIN</span>
+      <span class="stamp">8 UNKNOWNS</span>
+      <span class="stamp">19 TERMS</span>
+      <span class="stamp">8 PHASES · 10 ROLES</span>
+    </div>
+  </header>
+
+  <!-- ============ A. THE SPLIT ============ -->
+  <section id="split">
+    <div class="sec-head"><span class="sec-num">A</span><h2>The unknown under every other unknown</h2></div>
+    <p class="lede">
+      "CPO" and "design studio principal" both answer "what do we build?" — but they are measured on
+      different things, and that difference decides every document in your layer. Read both columns
+      before you name the layer.
+    </p>
+
+    <div class="split">
+      <div>
+        <p class="role">Chief Product Officer</p>
+        <h3>Owns one product, over years</h3>
+        <ul>
+          <li>Judged on <b>outcomes</b> — retention, activation, revenue per user. Shipping a feature is not a win.</li>
+          <li>The client is internal: founders, sales, support, the market.</li>
+          <li>Work is <b>continuous</b>. There is no delivery date, only a roadmap that keeps being wrong.</li>
+          <li>Core artifacts: product strategy, opportunity solution tree, PRDs, an OKR set, a prioritized backlog.</li>
+          <li>Fails by: building the right thing badly measured — no way to tell if it worked.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="role">Design studio principal</p>
+        <h3>Owns many projects, each with an end</h3>
+        <ul>
+          <li>Judged on <b>deliverables accepted</b> — the client signs off, the invoice clears, the file is handed over.</li>
+          <li>The client is external, pays, and often cannot describe what they want.</li>
+          <li>Work is <b>bounded</b>. Scope, rounds and sign-off gates are the whole business model.</li>
+          <li>Core artifacts: project brief, creative brief, sitemap, wireframes, art direction, prototype, handoff pack.</li>
+          <li>Fails by: infinite revisions — no gate, so "one more tweak" eats the margin.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="verdict">
+      Everything you wrote — client interviews, section briefs, sitemaps, wireframes, showing several
+      cases to choose from, ship the layout with no build requirements — is the right column. Name the
+      layer for what it does (a <b>design delivery studio</b>) and keep "CPO" for a later layer that
+      owns the roadmap. If you insist on one layer that does both, the interview stage has to fork on
+      day one, because "what does this client want their site to look like" and "what should we build
+      next quarter" are not the same conversation.
+    </p>
+  </section>
+
+  <!-- ============ B. UNKNOWNS BOARD ============ -->
+  <section id="board">
+    <div class="sec-head"><span class="sec-num">B</span><h2>What this repo already decided for you</h2></div>
+    <p class="lede">
+      Eight findings from reading this codebase, not from general advice. Each one is a place where
+      you were about to invent something that exists, or build something the rules here forbid. Mark
+      each: <b>resolve</b> (fold the fix into the plan), <b>accept</b> (live with it, note the cost),
+      or <b>discuss</b> (you want to argue about it first).
+    </p>
+
+    <div class="board-bar">
+      <button class="filter" data-filter="all" aria-pressed="true">All</button>
+      <button class="filter" data-filter="pending" aria-pressed="false">Undecided</button>
+      <button class="filter" data-filter="resolve" aria-pressed="false">Resolve</button>
+      <button class="filter" data-filter="accept" aria-pressed="false">Accept</button>
+      <button class="filter" data-filter="discuss" aria-pressed="false">Discuss</button>
+      <span class="tally" id="tally"></span>
+    </div>
+
+    <div id="cards"></div>
+  </section>
+
+  <!-- ============ C. VOCABULARY ============ -->
+  <section id="vocab">
+    <div class="sec-head"><span class="sec-num">C</span><h2>The words that make your prompts land</h2></div>
+    <p class="lede">
+      Nineteen terms, in the order a project uses them. Each opens to a plain definition, the
+      mechanism underneath, and how a professional actually says it. Click a term to expand it; the
+      ones you expand are the ones the improved prompt will assume you now know.
+    </p>
+    <div id="terms"></div>
+  </section>
+
+  <!-- ============ D. PIPELINE ============ -->
+  <section id="pipeline">
+    <div class="sec-head"><span class="sec-num">D</span><h2>A project, beginning to end</h2></div>
+    <p class="lede">
+      Eight phases, the documents each one produces, and the gate that closes it. A <span
+      style="color:var(--stop);font-weight:600">hard gate</span> means the client signs before anyone
+      does the next phase's work — that is the single mechanism that stops infinite revisions. Toggle
+      off any phase your first version should skip.
+    </p>
+    <div class="rail" id="phases"></div>
+  </section>
+
+  <!-- ============ E. ROSTER ============ -->
+  <section id="roster-sec">
+    <div class="sec-head"><span class="sec-num">E</span><h2>Who you actually need</h2></div>
+    <p class="lede">
+      Ten roles with names, so you can say "ask Priya" instead of "ask the discovery agent." Five are
+      marked <span class="core-flag">CORE</span> — a studio runs without the other five, badly but it
+      runs. Model and effort come from <code>.claude/rules/model-selection.md</code>; every
+      client-facing role needs taste ≥ 7, which rules out <code>haiku</code> everywhere it matters.
+      Toggle off anyone you don't want in version one.
+    </p>
+    <div class="roster" id="roster"></div>
+  </section>
+
+  <!-- ============ F. QUALITY BAR ============ -->
+  <section id="bar">
+    <div class="sec-head"><span class="sec-num">F</span><h2>What separates a studio from a mockup mill</h2></div>
+    <p class="lede">
+      The standards a working studio is judged against. Check the ones your layer must enforce — each
+      checked line becomes an acceptance criterion in the plan, and most of them want a hook or a
+      verifier agent, not a sentence in a prompt.
+    </p>
+    <div id="barlist"></div>
+  </section>
+
+</div>
+
+<div class="dock" id="dock">
+  <div class="dock-inner">
+    <div class="dock-bar">
+      <span class="dock-title">Improved prompt</span>
+      <span class="dock-meta" id="dockMeta"></span>
+      <span style="margin-left:auto">
+        <button class="dock-btn ghost" id="toggleBtn">Show</button>
+        <button class="dock-btn" id="copyBtn">Copy prompt</button>
+      </span>
+    </div>
+    <pre id="promptOut"></pre>
+  </div>
+</div>
+
+<script>
+/* ============================== DATA ============================== */
+
+const CARDS = [
+  {
+    id: "U1",
+    title: "Your client-interview cookbook already exists in this repo",
+    bites: "You described the hardest part of the job correctly — clients who cannot describe what they want, so you keep talking until you can. This repo already implements that loop: /harness-layer:harness-interview runs a coverage ledger, orders questions by blast radius, asks one round at a time through a page redeployed to the same URL, and stops itself when a round resolves nothing new. .claude/skills/grilling does the lightweight version. Writing a second interview engine forks a pattern that is already tested here.",
+    instead: "Fork the ledger, not the loop. Keep the round mechanics verbatim and replace the dimensions: harness-interview covers data model, APIs, authz. A client discovery interview covers audience, the job the site does, brand voice, references they love and hate, content they actually have, hard constraints (existing brand, CMS, deadlines), and what success looks like six months out. Ship that as a new dimension list, not a new command shape.",
+    evidence: [".claude/commands/harness-layer/harness-interview.md:32 — Coverage Ledger", ".claude/commands/harness-layer/harness-interview.md:36 — Round Loop", ".claude/skills/grilling/SKILL.md"]
+  },
+  {
+    id: "U2",
+    title: "\"Self-learning from feedback\" is forbidden in the shape you're imagining",
+    bites: "You want agents that learn from mistakes and client feedback. This repo already has a learning mechanism and it explicitly bans the obvious implementation: memory-series.md says a lesson routes immediately to where it loads when relevant — file-scoped goes to the matching path-scoped rule, process lessons go to the command they correct, plan-local goes to that plan's implementation-notes.md — and ends with \"No flat lesson log.\" A growing feedback.md that every agent reads is the exact thing that rule exists to prevent, and it would also blow the ~250-line budget on always-loaded rules.",
+    instead: "Make learning a routing step, not a store. After each project's retro, every lesson lands in one of three homes: a craft lesson edits a paths:-scoped rule under .claude/rules/ so it loads only when that work happens; a pipeline lesson edits the command that got it wrong; a client-specific lesson stays in that project's notes and never loads again. Then the layer improves without any file growing without bound.",
+    evidence: [".claude/rules/memory-series.md:23 — \"No flat lesson log\"", ".claude/rules/memory-series.md:28-37 — paths: scoping and the ~250-line unscoped budget", "AGENTS.md — Memory + Lessons bullets"]
+  },
+  {
+    id: "U3",
+    title: "Client deliverables have nowhere to live, and the palette is locked",
+    bites: "Every artifact rule in this repo is scoped to specs/**/* and mandates one palette — Warm Neutral, #FAF8F5 background, #B8602A accent — for every page. That is correct for internal pipeline pages and fatal for client work: a client's mockup must be in the client's brand, not yours. But if you put client pages outside specs/, the rest of artifacts.md silently stops loading too, and you lose the parts you do want: self-contained HTML, the copy-as-prompt block, publish-best-effort.",
+    instead: "Decide the client-artifact home before planning, and author a sibling rule for it. Something like clients/<client>/<project>/ with its own paths:-scoped rule that inherits the craft and publish rules and drops the palette lock — the palette becomes an input from the art direction phase instead of a constant. Say this explicitly in the plan or the first client page will come out the color of this one.",
+    evidence: [".claude/rules/harness-layer/artifacts.md:2-4 — paths: specs/**/*", ".claude/rules/harness-layer/artifacts.md:27-39 — \"Commit every page to this single light look\"", ".claude/rules/harness-layer/artifacts.md:15-25 — the craft rules you want to keep"]
+  },
+  {
+    id: "U4",
+    title: "The pages you're about to invent are already specified",
+    bites: "\"If we have an update, provide several cases for the user to choose\" is already a named pattern here: Design directions — two to four rendered alternatives side by side with tweak controls, whose copy-as-prompt returns the chosen direction plus tweaks. Reviewing a brief with the client is \"inline suggestions with approve/reject/comment.\" Ordering a sitemap is \"a draggable board that exports the final order.\" Triaging client feedback is \"approve/reject/tag cards that export the dispositions.\"",
+    instead: "Name these patterns in the plan instead of describing new ones. Each phase of your pipeline maps to an existing page shape: brief review to document-critique, sitemap to the ordering board, art direction to design-directions, feedback triage to the disposition cards. The plan then says which pattern each phase uses and what its copy-as-prompt returns — that is the whole artifact spec.",
+    evidence: [".claude/rules/harness-layer/artifacts.md:62 — Design directions", ".claude/rules/harness-layer/artifacts.md:73-81 — Beyond the inventory", "playground templates: design-playground, document-critique, concept-map"]
+  },
+  {
+    id: "U5",
+    title: "Human names in agent frontmatter break the thing that makes agents work",
+    bites: "You want first-name + last-name agents so the structure is legible. The problem is that name: is the filename and description: is the entire routing interface — meta-agent states it flatly: \"description is the whole input interface.\" An agent whose name is elena-ferraro tells the router nothing, tells you nothing in six months, and its checklist requires the name be unique across the whole agents tree. Every agent in this repo is named for its function: kb-fetcher, code-simplifier, harness-simplifier.",
+    instead: "Put the function in name:, the person in the body. Either art-director with a body that opens \"You are Elena Ferraro, art director,\" or a hybrid that leads with the function — art-director-elena-ferraro. Keep the roster itself in one document so you can look up who is who. Personas are for your mental model and the client-facing voice; they must not be load-bearing for routing.",
+    evidence: [".claude/skills/meta-agent/SKILL.md:30 — description is the whole input interface", ".claude/skills/meta-agent/SKILL.md:109 — name lowercase-hyphen, unique across the tree", ".claude/agents/kb-fetcher.md:1-12 — the house style"]
+  },
+  {
+    id: "U6",
+    title: "Your org chart cannot nest — the studio is flat, whatever the titles say",
+    bites: "A C-suite metaphor implies CPO over a design director over three designers. The harness does not do that. orchestration.md: no nested teams, teammates cannot run background subagents, /resume does not restore them, and task status lags so completed is not proof. Teams are enabled here (CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 in .claude/settings.json), and teammates load AGENTS.md but not your conversation — every brief has to be complete in the spawn prompt.",
+    instead: "One level. The main session is the principal and spawns every role directly; a \"design director\" is a phase the principal runs, not a middle manager who spawns designers. Where you genuinely need depth, run the deeper level as a separate later phase from the main session rather than nesting. And write each spawn prompt as if the teammate has never heard of the project, because it hasn't.",
+    evidence: [".claude/rules/orchestration.md — Agent teams: limits", ".claude/settings.json:3 — CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", ".claude/rules/orchestration.md — \"Teammates do not inherit the lead's model\""]
+  },
+  {
+    id: "U7",
+    title: "model-selection.md has already cast your roles — you just have to read it",
+    bites: "Three constraints you would otherwise discover by shipping something bad. Anything user-facing — UI, copy, API design — needs taste ≥ 7, which disqualifies haiku (taste 3) from every design, writing and client-facing role in the studio. fable is marked \"Orchestrator only — never deploy as a subagent,\" so the principal can be fable only as your main session, never a spawned teammate. And a role that must run unattended end to end, or whose job is verification, never drops below medium effort.",
+    instead: "Stamp the roster from the table rather than by vibes: design and copy roles on opus (taste 8) or sonnet (taste 7); the adversarial QA role on opus at high effort because verification-shaped work sits at high by default; research and scheduling utilities on sonnet; haiku only for eligibility checks and counting. The plan should carry one model + effort stamp per role, and a line saying which roles may escalate.",
+    evidence: [".claude/rules/model-selection.md — Roster table, taste column", ".claude/rules/model-selection.md — \"Anything user-facing needs taste ≥ 7\"", ".claude/rules/model-selection.md — Effort table, verification-shaped work"]
+  },
+  {
+    id: "U8",
+    title: "This repo has never held a non-harness layer, and the pipeline assumes it never will",
+    bites: "Git history has no prior product, design or client layer — no reverted attempt to learn from, which is good news, but it also means nothing here was built for client work. specs/index.md is a catalog of harness plans. test-tiers.md offers contract, drift and eval tiers aimed at hooks and prompts. The review gate judges implementation diffs against impl-standards.md. None of that knows what to do with a wireframe or a client sign-off, and the harness pipeline will happily run your studio layer through gates that do not apply to it.",
+    instead: "Decide up front whether the studio layer is a harness feature built through the normal pipeline (plan → build → review → ship, with prompt-file drift tests) or a product that lives beside it with its own gates. Recommendation: build the layer through the normal pipeline — it is prompt files, so drift and eval tiers apply — but keep client project data out of specs/ entirely so the two catalogs never mix.",
+    evidence: ["git log — no prior product/design/client layer", "specs/index.md — harness-only catalog", ".claude/rules/harness-layer/test-tiers.md, impl-standards.md"]
+  }
+];
+
+const TIERS = [
+  {
+    label: "Tier 1 · What the strategy layer is made of",
+    terms: [
+      {
+        word: "Product strategy stack",
+        gloss: "vision → strategy → roadmap → OKR, in that order",
+        plain: "Four documents at four altitudes. Vision is where you're going in years; strategy is the bet on how; the roadmap is the sequence of bets; OKRs are how you'll know quarterly.",
+        mech: "Each level constrains the one below. A roadmap item that traces to no strategy is a pet feature; an OKR that traces to no roadmap item is a metric nobody owns.",
+        pro: "\"What's the strategy this ladders up to?\" is the standard challenge to any proposed feature. If nothing answers it, the feature dies."
+      },
+      {
+        word: "Outcomes over outputs",
+        gloss: "ship a change in behavior, not a change in the codebase",
+        plain: "An output is what you built. An outcome is what changed for a user because of it. Teams get graded on outputs and wonder why nothing improves.",
+        mech: "Every proposed piece of work states the behavior it should move and how it will be measured before it starts. Work whose outcome can't be named is either infrastructure or vanity.",
+        pro: "\"What outcome is this buying?\" A PM who answers with a feature list has just failed the question."
+      },
+      {
+        word: "Discovery and delivery (dual-track)",
+        gloss: "deciding what to build runs in parallel with building it",
+        plain: "Two continuous streams, not two phases. Discovery is figuring out what's worth building; delivery is building it. They run at the same time on the same team.",
+        mech: "Discovery is always a sprint or two ahead — its output is validated, specified work that delivery can pick up without stopping to think.",
+        pro: "\"That's a discovery question\" means: stop coding, we don't know if this is worth doing yet. Your studio layer is almost entirely a discovery machine."
+      },
+      {
+        word: "Opportunity Solution Tree",
+        gloss: "outcome at the root, opportunities as branches, solutions as leaves",
+        plain: "A diagram that forces every proposed solution to hang off a real user problem, which hangs off the outcome you're chasing.",
+        mech: "Desired outcome → the opportunities (unmet needs, pains, desires) that could move it → candidate solutions per opportunity → the assumption tests that kill bad ones cheaply.",
+        pro: "The tool for arguing with a stakeholder who arrives with a solution. You don't say no; you ask which opportunity it attaches to, and the tree does the arguing."
+      },
+      {
+        word: "Jobs To Be Done (JTBD)",
+        gloss: "people hire a product to make progress in a situation",
+        plain: "A framing that describes what someone was trying to get done, in what circumstance, rather than who they are demographically.",
+        mech: "Written as: when [situation], I want to [motivation], so I can [expected outcome]. The competitor is whatever they'd do otherwise — including a spreadsheet or nothing.",
+        pro: "Cuts through a client saying \"our audience is millennials.\" The job — \"when a prospect finds us at 11pm, I want them to believe we're a real company\" — tells you what the homepage must do."
+      },
+      {
+        word: "RICE / ICE / MoSCoW",
+        gloss: "three ways to force a ranking",
+        plain: "RICE scores reach × impact × confidence ÷ effort. ICE is the quick version. MoSCoW sorts into must / should / could / won't.",
+        mech: "The scores are not truth — they are a way to make disagreement explicit. Two people arguing about a RICE score are arguing about a real assumption instead of about taste.",
+        pro: "MoSCoW is the one clients understand; the \"won't\" column is the whole value, because it's a written record of what you agreed not to do."
+      }
+    ]
+  },
+  {
+    label: "Tier 2 · The documents, in the order a project makes them",
+    terms: [
+      {
+        word: "The four documents everyone calls \"the brief\"",
+        gloss: "project brief, creative brief, PRD, PR-FAQ — different jobs",
+        plain: "A project brief scopes the engagement: goals, audience, deliverables, timeline, budget, constraints. A creative brief directs the making: positioning, tone, art direction, mandatories, what to avoid. A PRD specifies a product's behavior. A PR-FAQ describes the launch as if it already happened, to test whether anyone would care.",
+        mech: "The project brief is signed by the client. The creative brief is written by you and approved by the client — it's the document a designer who never met the client can execute from. That test is the whole point of it.",
+        pro: "\"Get it in the brief\" means: if it isn't written there, it isn't in scope, and a request for it later is a change order. A studio without a signed brief has no defense against revision creep."
+      },
+      {
+        word: "Ubiquitous language",
+        gloss: "one word, one meaning, written down — the DDD idea you meant",
+        plain: "A glossary the client and the studio both use, where each term means exactly one thing. From domain-driven design: the model and the language people speak are the same artifact.",
+        mech: "Built during discovery by writing down every noun the client uses and asking what it means. \"Dashboard,\" \"member,\" \"listing\" and \"portal\" are where projects quietly diverge for six weeks.",
+        pro: "A bounded context is the scope inside which a term holds. When the client's sales team and ops team use \"account\" differently, you don't reconcile them — you name two contexts and say which one the site serves."
+      },
+      {
+        word: "Information architecture",
+        gloss: "what exists, what it's called, and how it nests",
+        plain: "The structure of the content — the set of pages and content types, their names, and their hierarchy. It is decided before any layout.",
+        mech: "Produced by inventorying content, grouping it (often by card sort), and naming the groups in the client's own language. Output is a sitemap plus a page inventory.",
+        pro: "\"IA before UI.\" Every layout argument that won't resolve is usually an unsettled IA question wearing a visual costume."
+      },
+      {
+        word: "Sitemap, user flow, and section brief",
+        gloss: "the pages, the paths through them, and what each page must contain",
+        plain: "The sitemap is the tree of pages. A user flow is one path a specific person takes to finish a job. A section brief says what each section of a page must accomplish and what content it needs.",
+        mech: "The sitemap answers \"what exists.\" The flow answers \"can they get there.\" The section brief answers \"what goes in this block and who writes it\" — and it is the document that stops lorem ipsum from becoming the design.",
+        pro: "Section briefs are what you hand to whoever writes the copy, and they're the reason a hi-fi mockup can be filled with real words instead of placeholder text."
+      },
+      {
+        word: "The fidelity ladder",
+        gloss: "lo-fi wireframe → hi-fi mockup → prototype",
+        plain: "Three rungs of how finished something looks. A lo-fi wireframe is boxes and labels, deliberately ugly. A hi-fi mockup is the real visual design, static. A prototype is clickable.",
+        mech: "You climb the ladder only as questions get settled below. Polishing a layout whose structure is still in dispute is throwing away work you're about to redo.",
+        pro: "Lo-fi is deliberately ugly so the client critiques structure. Show a client something beautiful and they will talk about the blue, not about whether the page works."
+      },
+      {
+        word: "Moodboard, style tile, art direction, design system",
+        gloss: "from reference images to enforceable rules",
+        plain: "A moodboard is collected references establishing a feeling. A style tile is your type, color and component treatments on one page, without any layout. Art direction is the stated point of view behind those choices. A design system is the whole thing codified into reusable components with rules.",
+        mech: "The style tile exists so you can settle look-and-feel without designing pages — it's cheap to redo. Tokens are the machine-readable version: named values for color, spacing and type that a prototype tool consumes directly.",
+        pro: "\"What's the art direction?\" asks for a defensible sentence, not a mood. \"Editorial, high-contrast, generous whitespace, one accent used only for actions\" is an art direction. \"Modern and clean\" is not."
+      },
+      {
+        word: "Content model and copy deck",
+        gloss: "the shape of the content, and the actual words",
+        plain: "A content model defines the types of content and their fields. A copy deck is the real, final words for every element, in a document the client approves.",
+        mech: "Both exist because content is always the thing that's late. A design signed off against lorem ipsum breaks the moment real headlines turn out to be three lines long.",
+        pro: "\"Design with real content\" is the whole rule. Studios that skip the copy deck spend the last week of a project redesigning around sentences nobody planned for."
+      },
+      {
+        word: "Design QA, redlines, and the handoff pack",
+        gloss: "proving the design is buildable before it leaves",
+        plain: "Design QA checks the finished design against the brief and against reality. Redlines are the measurements and specs. The handoff pack is everything a developer needs to build it without asking you.",
+        mech: "The pack carries tokens, component states (hover, focus, disabled, loading, empty, error), responsive rules at each breakpoint, the copy deck, and asset exports. States and empty screens are what's always missing.",
+        pro: "\"Did you spec the empty state?\" is the standard QA question, because a design that only shows the happy path isn't finished — it's a poster."
+      }
+    ]
+  },
+  {
+    label: "Tier 3 · The mechanics that keep a project from eating you",
+    terms: [
+      {
+        word: "Double diamond",
+        gloss: "diverge, converge, diverge, converge",
+        plain: "Four movements: discover (widen the problem), define (narrow to one problem statement), develop (widen the solutions), deliver (narrow to one).",
+        mech: "The failure everyone makes is converging early — settling on a solution during discovery, then spending the project defending it.",
+        pro: "\"We're still in the first diamond\" means: stop proposing layouts, we haven't agreed what problem this site solves."
+      },
+      {
+        word: "Directions, not versions",
+        gloss: "show two or three real bets, never three shades of one",
+        plain: "When you present options, they must be genuinely different points of view — different art direction, different structural emphasis — not the same design in three colors.",
+        mech: "Three near-identical options teach you nothing, because whatever the client picks tells you nothing about what they wanted. Genuinely distinct directions turn a vague client into a decisive one.",
+        pro: "Present each direction with the thinking that produced it and a recommendation. \"Which do you like?\" invites taste; \"here's why B fits the job you described\" invites a decision."
+      },
+      {
+        word: "Revision rounds and change orders",
+        gloss: "revisions are counted; new scope is a new agreement",
+        plain: "A round is one consolidated pass of client feedback plus your response. Studios sell a fixed number — commonly two plus a final polish. Anything outside the signed brief is a change order: new scope, new price, new date.",
+        mech: "Counting rounds converts an unbounded conversation into a finite one. Without the count, \"just one more small thing\" is unbounded by construction.",
+        pro: "\"That's a change order\" is not hostile — it's the sentence that keeps the project deliverable. Consolidate feedback per round too; five stakeholders emailing separately is not a round."
+      },
+      {
+        word: "Sign-off gate",
+        gloss: "a written approval that closes a phase",
+        plain: "An explicit, recorded client approval that a phase's output is accepted, before the next phase begins.",
+        mech: "It's what makes rework a change order instead of an argument. Gates go after the brief, after the sitemap and wireframes, after the direction pick, and at final delivery.",
+        pro: "Sign-off is a document, not a nod on a call. \"Approved on the call\" is worth nothing in week six when someone's manager sees it for the first time."
+      },
+      {
+        word: "Scope creep and gold plating",
+        gloss: "the client adds; you add",
+        plain: "Scope creep is the client's requests growing past the brief. Gold plating is you adding polish nobody asked for and nobody will pay for.",
+        mech: "Both are invisible until margin is gone, because both feel like good service in the moment.",
+        pro: "The brief plus the round count is the entire defense. A studio that says yes to everything delivers late, and the client remembers the lateness, not the generosity."
+      }
+    ]
+  }
+];
+
+const PHASES = [
+  {
+    n: "P0", name: "Intake and qualification", on: true,
+    docs: ["intake form", "qualification note"],
+    staff: ["Daniel Osei"],
+    why: "Decide whether this project is worth taking and what kind of project it is, before anyone does discovery work for free.",
+    gate: "Soft — internal go / no-go", soft: true
+  },
+  {
+    n: "P1", name: "Discovery", on: true,
+    docs: ["discovery notes", "glossary (ubiquitous language)", "competitive audit", "reference audit"],
+    staff: ["Priya Raghavan", "Clara Nyberg"],
+    why: "The interview loop. Keep talking until the client's vague wants become written statements: the job the site does, the audience, the voice, what they love and hate in other sites, the content that actually exists, the hard constraints.",
+    gate: "Soft — discovery notes reviewed with the client", soft: true
+  },
+  {
+    n: "P2", name: "Definition", on: true,
+    docs: ["project brief", "creative brief", "sitemap", "section briefs", "user flows"],
+    staff: ["Priya Raghavan", "Tomas Vieira", "Hana Okabe"],
+    why: "Turn discovery into documents a designer who never met the client could execute from. This is where scope becomes a written boundary.",
+    gate: "HARD — brief and sitemap signed"
+  },
+  {
+    n: "P3", name: "Structure", on: true,
+    docs: ["lo-fi wireframes (annotated)", "content model", "copy outline"],
+    staff: ["Tomas Vieira", "Hana Okabe"],
+    why: "Settle what goes where, deliberately ugly, so the client critiques structure instead of color.",
+    gate: "HARD — wireframes signed"
+  },
+  {
+    n: "P4", name: "Art direction", on: true,
+    docs: ["moodboard", "style tile", "2–3 design directions", "direction rationale"],
+    staff: ["Elena Ferraro", "Hana Okabe"],
+    why: "Establish look and feel on cheap surfaces before designing pages. Present genuinely different bets with a recommendation.",
+    gate: "HARD — one direction picked"
+  },
+  {
+    n: "P5", name: "Prototype", on: true,
+    docs: ["prompt pack for Claude Design / Lovable", "hi-fi prototype link", "revision log"],
+    staff: ["Marcus Bramley", "Elena Ferraro"],
+    why: "Build the clickable thing from the signed direction, with real copy. Revisions are counted here, not everywhere.",
+    gate: "Rounds — 2 revision rounds plus polish", soft: true
+  },
+  {
+    n: "P6", name: "Design QA and handoff", on: true,
+    docs: ["design QA report", "accessibility check", "handoff pack (tokens, states, breakpoints, copy deck, assets)", "sign-off document"],
+    staff: ["Yusuf Demir", "Daniel Osei"],
+    why: "Prove the design matches the brief and is buildable. Every state specced, contrast and focus checked, then a written acceptance.",
+    gate: "HARD — final sign-off, project closed"
+  },
+  {
+    n: "P7", name: "Retro and lesson routing", on: true,
+    docs: ["project retro", "routed lessons"],
+    staff: ["Ravi Chandran"],
+    why: "The self-improving part. Each lesson goes to the file where it will load again — a craft rule, the command that got it wrong, or this project's notes. Never a growing log.",
+    gate: "Soft — lessons committed to their homes", soft: true
+  }
+];
+
+const ROSTER = [
+  { name: "Maya Lindqvist", title: "Principal / CPO", core: true, owns: "Owns what gets built and what gets refused. Runs the phase gates, arbitrates scope, is the only one who talks to the client about money and dates.", cast: "main session · fable or opus · xhigh", note: "Orchestrator only — fable can never be a spawned teammate." },
+  { name: "Daniel Osei", title: "Client Partner", core: true, owns: "Intake, qualification, the relationship, and the scope boundary. Turns \"one more small thing\" into a change order without losing the client.", cast: "sonnet · medium" },
+  { name: "Priya Raghavan", title: "Discovery Lead", core: true, owns: "The interview. Keeps asking until vague wants are written statements — the job, the audience, the voice, the constraints. Owns the glossary.", cast: "opus · high" },
+  { name: "Tomas Vieira", title: "UX Architect", core: true, owns: "Information architecture, sitemap, user flows, annotated lo-fi wireframes. Decides what exists and where it sits before anything gets styled.", cast: "opus · high" },
+  { name: "Elena Ferraro", title: "Art Director", core: true, owns: "Moodboard, style tile, and the two-to-three genuinely different directions — each with the thinking behind it and a recommendation.", cast: "opus · high", note: "Client-facing: taste ≥ 7 required." },
+  { name: "Hana Okabe", title: "Content Strategist", core: false, owns: "Content model, section briefs, copy deck, and the voice. The reason a mockup can be filled with real words instead of lorem ipsum.", cast: "opus · high", note: "Client-facing: taste ≥ 7 required." },
+  { name: "Marcus Bramley", title: "Prototype Engineer", core: false, owns: "Writes the prompt packs that drive Claude Design and Lovable, assembles the clickable prototype, keeps the revision log.", cast: "sonnet · high" },
+  { name: "Yusuf Demir", title: "Design QA", core: true, owns: "Adversarial. Checks the finished design against the signed brief, hunts missing states, empty screens, contrast, focus order, tap targets. Blocks handoff.", cast: "opus · high", note: "A separate verifier agent — a guarantee needs a harness, not a prompt line." },
+  { name: "Clara Nyberg", title: "Research Analyst", core: false, owns: "Competitive audit, reference sweep, market and audience evidence that keeps discovery from being just opinions.", cast: "sonnet · medium" },
+  { name: "Ravi Chandran", title: "Retro Scribe", core: false, owns: "Runs the retro and routes every lesson to the file where it will load again. The mechanism behind \"the layer improves.\"", cast: "sonnet · medium" }
+];
+
+const BAR = [
+  { id: "b1", text: "<b>A brief is good only if a designer who never met the client can execute it.</b> That is the acceptance test for the definition phase — not whether it reads well." },
+  { id: "b2", text: "<b>Every design decision traces to a stated constraint or goal.</b> \"I liked it\" is not a rationale a client can approve or reject." },
+  { id: "b3", text: "<b>Directions, not versions.</b> Options presented to a client must be genuinely different bets, each with its reasoning and a recommendation." },
+  { id: "b4", text: "<b>Nothing climbs to hi-fi before IA and content are settled.</b> Polish on an unanswered question is work you are about to throw away." },
+  { id: "b5", text: "<b>Real content, real data, real lengths.</b> Lorem ipsum hides every layout failure until the week you can't fix it." },
+  { id: "b6", text: "<b>Revision rounds are counted and written down.</b> Two plus polish; anything outside the signed brief is a change order." },
+  { id: "b7", text: "<b>Sign-off is a document, not a nod.</b> Each hard gate produces a recorded approval before the next phase starts." },
+  { id: "b8", text: "<b>Every state is specced — hover, focus, disabled, loading, empty, error.</b> Plus contrast, focus visibility and tap targets, checked before handoff, not after." }
+];
+
+/* ============================== STATE ============================== */
+
+const state = {
+  cards: Object.fromEntries(CARDS.map(c => [c.id, { status: "pending", note: "" }])),
+  filter: "all",
+  openTerms: new Set(),
+  phases: Object.fromEntries(PHASES.map(p => [p.n, p.on])),
+  roster: Object.fromEntries(ROSTER.map(r => [r.name, true])),
+  bar: Object.fromEntries(BAR.map(b => [b.id, true]))
+};
+
+const STATUS_WORD = { resolve: "Resolve", accept: "Accept", discuss: "Discuss", pending: "Undecided" };
+
+/* ============================== RENDER: CARDS ============================== */
+
+const cardsEl = document.getElementById("cards");
+
+function renderCards() {
+  cardsEl.innerHTML = "";
+  for (const c of CARDS) {
+    const st = state.cards[c.id];
+    const el = document.createElement("article");
+    el.className = "card";
+    el.dataset.status = st.status;
+    if (state.filter !== "all" && state.filter !== st.status) el.classList.add("hidden");
+
+    el.innerHTML = `
+      <div class="card-top">
+        <span class="card-id">${c.id}</span>
+        <h3>${c.title}</h3>
+      </div>
+      <p class="bites">${c.bites}</p>
+      <p class="instead"><b>Instead —</b> ${c.instead}</p>
+      <div class="evidence">${c.evidence.map(e => `<span>${e}</span>`).join("<br>")}</div>
+      <div class="actions">
+        <button class="act" data-act="resolve" aria-pressed="${st.status === "resolve"}">Resolve</button>
+        <button class="act" data-act="accept" aria-pressed="${st.status === "accept"}">Accept</button>
+        <button class="act" data-act="discuss" aria-pressed="${st.status === "discuss"}">Needs discussion</button>
+      </div>
+      <textarea class="note" placeholder="Your note on ${c.id} — folded into the prompt verbatim"></textarea>
+    `;
+    el.querySelector(".note").value = st.note;
+
+    el.querySelectorAll(".act").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const a = btn.dataset.act;
+        st.status = st.status === a ? "pending" : a;
+        renderCards();
+        updateAll();
+      });
+    });
+
+    el.querySelector(".note").addEventListener("input", e => {
+      st.note = e.target.value;
+      updatePrompt();
+    });
+
+    cardsEl.appendChild(el);
+  }
+  renderTally();
+}
+
+function renderTally() {
+  const c = { resolve: 0, accept: 0, discuss: 0, pending: 0 };
+  for (const k in state.cards) c[state.cards[k].status]++;
+  document.getElementById("tally").textContent =
+    `${c.resolve} resolve · ${c.accept} accept · ${c.discuss} discuss · ${c.pending} undecided`;
+}
+
+document.querySelectorAll(".filter").forEach(f => {
+  f.addEventListener("click", () => {
+    state.filter = f.dataset.filter;
+    document.querySelectorAll(".filter").forEach(x =>
+      x.setAttribute("aria-pressed", String(x.dataset.filter === state.filter)));
+    renderCards();
+  });
+});
+
+/* ============================== RENDER: TERMS ============================== */
+
+const termsEl = document.getElementById("terms");
+
+for (const tier of TIERS) {
+  const lab = document.createElement("p");
+  lab.className = "tier-label";
+  lab.textContent = tier.label;
+  termsEl.appendChild(lab);
+
+  for (const t of tier.terms) {
+    const el = document.createElement("div");
+    el.className = "term";
+    el.innerHTML = `
+      <button class="term-head" aria-expanded="false">
+        <span class="tick">+</span>
+        <span class="word">${t.word}</span>
+        <span class="gloss">${t.gloss}</span>
+      </button>
+      <div class="term-body">
+        <dl>
+          <div class="term-line"><dt>Plain</dt><dd>${t.plain}</dd></div>
+          <div class="term-line"><dt>Mechanism</dt><dd>${t.mech}</dd></div>
+          <div class="term-line"><dt>In practice</dt><dd>${t.pro}</dd></div>
+        </dl>
+      </div>
+    `;
+    const head = el.querySelector(".term-head");
+    head.addEventListener("click", () => {
+      const open = el.classList.toggle("open");
+      head.setAttribute("aria-expanded", String(open));
+      el.querySelector(".tick").textContent = open ? "–" : "+";
+      if (open) state.openTerms.add(t.word); else state.openTerms.delete(t.word);
+      updatePrompt();
+    });
+    termsEl.appendChild(el);
+  }
+}
+
+/* ============================== RENDER: PHASES ============================== */
+
+const phasesEl = document.getElementById("phases");
+
+for (const p of PHASES) {
+  const el = document.createElement("div");
+  el.className = "phase on";
+  el.innerHTML = `
+    <button class="phase-head" aria-pressed="true">
+      <span class="pnum">${p.n}</span>
+      <span class="pname">${p.name}</span>
+      <span class="pstate">included</span>
+    </button>
+    <div class="phase-body">
+      <div class="docs">${p.docs.map(d => `<span class="doc">${d}</span>`).join("")}</div>
+      <p class="staffed"><b>${p.staff.join(" · ")}</b></p>
+      <p class="staffed" style="color:#4A443E">${p.why}</p>
+      <p class="gate ${p.soft ? "soft" : ""}">${p.gate}</p>
+    </div>
+  `;
+  el.querySelector(".phase-head").addEventListener("click", () => {
+    state.phases[p.n] = !state.phases[p.n];
+    const on = state.phases[p.n];
+    el.classList.toggle("on", on);
+    el.classList.toggle("off", !on);
+    el.querySelector(".pstate").textContent = on ? "included" : "skipped";
+    el.querySelector(".phase-head").setAttribute("aria-pressed", String(on));
+    updatePrompt();
+  });
+  phasesEl.appendChild(el);
+}
+
+/* ============================== RENDER: ROSTER ============================== */
+
+const rosterEl = document.getElementById("roster");
+
+for (const r of ROSTER) {
+  const initials = r.name.split(" ").map(w => w[0]).join("");
+  const el = document.createElement("button");
+  el.className = "person";
+  el.setAttribute("aria-pressed", "true");
+  el.innerHTML = `
+    <span class="mono-chip">${initials}</span>
+    <span>
+      <span class="who">${r.name}</span> ${r.core ? '<span class="core-flag">CORE</span>' : ""}
+      <div class="title">${r.title}</div>
+      <p class="owns">${r.owns}</p>
+      <span class="cast">${r.cast}${r.note ? " — " + r.note : ""}</span>
+    </span>
+  `;
+  el.addEventListener("click", () => {
+    state.roster[r.name] = !state.roster[r.name];
+    el.classList.toggle("off", !state.roster[r.name]);
+    el.setAttribute("aria-pressed", String(state.roster[r.name]));
+    updatePrompt();
+  });
+  rosterEl.appendChild(el);
+}
+
+/* ============================== RENDER: QUALITY BAR ============================== */
+
+const barEl = document.getElementById("barlist");
+
+for (const b of BAR) {
+  const el = document.createElement("div");
+  el.className = "bar-item";
+  el.innerHTML = `<input type="checkbox" id="${b.id}" checked><label for="${b.id}">${b.text}</label>`;
+  el.querySelector("input").addEventListener("change", e => {
+    state.bar[b.id] = e.target.checked;
+    updatePrompt();
+  });
+  barEl.appendChild(el);
+}
+
+/* ============================== PROMPT ============================== */
+
+function stripTags(s) { return s.replace(/<[^>]+>/g, ""); }
+
+function updatePrompt() {
+  const lines = [];
+
+  lines.push("Build a design-delivery studio layer for this repo — the layer that owns what to build and what it should look like, stopping at a signed layout handoff with no development work (no building, deploying or infrastructure). Treat \"CPO\" as the principal role inside that studio, not as the shape of the layer.");
+  lines.push("");
+  lines.push("Before writing anything, read these and plan against what they already decide:");
+  lines.push("- .claude/commands/harness-layer/harness-interview.md — the round loop and coverage ledger you will fork for client discovery");
+  lines.push("- .claude/rules/memory-series.md — how lessons route, and why there is no flat lesson log");
+  lines.push("- .claude/rules/harness-layer/artifacts.md — page craft, the palette lock, and the page patterns already named");
+  lines.push("- .claude/rules/model-selection.md — the taste >= 7 rule, fable-is-orchestrator-only, and effort floors");
+  lines.push("- .claude/rules/orchestration.md and .claude/settings.json — agent-team limits and the flat org they force");
+  lines.push("- .claude/skills/meta-agent/SKILL.md — description is the routing interface; name is not");
+
+  // Findings
+  const grouped = { resolve: [], accept: [], discuss: [] };
+  for (const c of CARDS) {
+    const st = state.cards[c.id];
+    if (st.status === "pending") continue;
+    grouped[st.status].push({ c, note: st.note.trim() });
+  }
+
+  if (grouped.resolve.length) {
+    lines.push("");
+    lines.push("Fold these fixes into the plan:");
+    for (const { c, note } of grouped.resolve) {
+      lines.push(`- ${c.title}. ${c.instead}${note ? " My note: " + note : ""}`);
+    }
+  }
+  if (grouped.accept.length) {
+    lines.push("");
+    lines.push("I am accepting these as-is — note the cost in the plan but do not design around them:");
+    for (const { c, note } of grouped.accept) {
+      lines.push(`- ${c.title}.${note ? " My note: " + note : ""}`);
+    }
+  }
+  if (grouped.discuss.length) {
+    lines.push("");
+    lines.push("Stop and settle these with me before drafting the spec — do not assume an answer:");
+    for (const { c, note } of grouped.discuss) {
+      lines.push(`- ${c.title}.${note ? " My note: " + note : ""}`);
+    }
+  }
+
+  const undecided = CARDS.filter(c => state.cards[c.id].status === "pending");
+  if (undecided.length && undecided.length < CARDS.length) {
+    lines.push("");
+    lines.push(`Still undecided, treat as open questions: ${undecided.map(c => c.id).join(", ")}.`);
+  }
+
+  // Pipeline
+  const on = PHASES.filter(p => state.phases[p.n]);
+  const off = PHASES.filter(p => !state.phases[p.n]);
+  lines.push("");
+  lines.push("Build the project pipeline as these phases, each producing its documents and closing at its gate:");
+  for (const p of on) {
+    lines.push(`- ${p.n} ${p.name} — produces ${p.docs.join(", ")}; gate: ${p.gate.replace(/^HARD — /, "hard gate, ").replace(/^Soft — /, "soft, ").replace(/^Rounds — /, "")}.`);
+  }
+  if (off.length) {
+    lines.push(`Leave out of version one: ${off.map(p => p.n + " " + p.name).join(", ")}.`);
+  }
+
+  // Roster
+  const staffed = ROSTER.filter(r => state.roster[r.name]);
+  const cut = ROSTER.filter(r => !state.roster[r.name]);
+  lines.push("");
+  lines.push("Staff it with these roles. Give each agent a functional name in frontmatter and the person's name in the body — never the person's name as the agent name:");
+  for (const r of staffed) {
+    lines.push(`- ${r.name}, ${r.title} (${r.cast}) — ${r.owns}${r.note ? " " + r.note : ""}`);
+  }
+  if (cut.length) {
+    lines.push(`Not in version one: ${cut.map(r => r.name + " (" + r.title + ")").join(", ")}.`);
+  }
+
+  // Quality bar
+  const checked = BAR.filter(b => state.bar[b.id]);
+  if (checked.length) {
+    lines.push("");
+    lines.push("These are acceptance criteria for the layer, not advice — each one needs a mechanism (a gate, a checklist artifact, or a verifier agent), not a sentence in a prompt:");
+    for (const b of checked) lines.push(`- ${stripTags(b.text)}`);
+  }
+
+  // Vocabulary
+  if (state.openTerms.size) {
+    lines.push("");
+    lines.push(`Use this vocabulary precisely in the spec — I know what these mean now: ${[...state.openTerms].join("; ")}.`);
+  }
+
+  lines.push("");
+  lines.push("Stop and confirm with me after you have named the client-artifact home and the layer's directory layout, before writing any agent or command files.");
+  lines.push("");
+  lines.push("Worktree: .claude/worktrees/cpo-layer");
+
+  document.getElementById("promptOut").textContent = lines.join("\n");
+  document.getElementById("dockMeta").textContent =
+    `${grouped.resolve.length + grouped.accept.length + grouped.discuss.length}/${CARDS.length} findings · ${on.length} phases · ${staffed.length} roles`;
+}
+
+function updateAll() { updatePrompt(); }
+
+/* ============================== DOCK ============================== */
+
+const dock = document.getElementById("dock");
+document.getElementById("toggleBtn").addEventListener("click", e => {
+  const open = dock.classList.toggle("open");
+  e.target.textContent = open ? "Hide" : "Show";
+});
+
+document.getElementById("copyBtn").addEventListener("click", e => {
+  navigator.clipboard.writeText(document.getElementById("promptOut").textContent).then(() => {
+    const b = e.target;
+    b.textContent = "Copied";
+    setTimeout(() => { b.textContent = "Copy prompt"; }, 1400);
+  });
+});
+
+renderCards();
+updatePrompt();
+</script>
