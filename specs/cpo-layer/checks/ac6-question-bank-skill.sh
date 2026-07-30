@@ -6,8 +6,9 @@ set -uo pipefail
 
 root=$(git rev-parse --show-toplevel)
 cd "$root" || exit 1
-skill=".claude/skills/studio-layer/client-questions/SKILL.md"
+skill=".claude/skills/studio-layer/studio-client-questions/SKILL.md"
 checker=".claude/scripts/studio-layer/check_question_coverage.py"
+p1=".claude/commands/studio-layer/p1-discovery.md"
 fail=0
 note() {
   echo "FAIL: $1"
@@ -22,6 +23,13 @@ note() {
 frontmatter=$(awk 'NR>1 && /^---[[:space:]]*$/{exit} NR>1{print}' "$skill")
 grep -q '^name:' <<<"$frontmatter" || note "$skill declares no name:"
 grep -q '^description:' <<<"$frontmatter" || note "$skill declares no description:"
+
+# The DIRECTORY name becomes the command, not the name: field — so they must agree, or the
+# roles would invoke a name that does not resolve.
+declared=$(grep -m1 '^name:' <<<"$frontmatter" | sed 's/^name:[[:space:]]*//; s/["'\'']//g' | xargs)
+dirname_of=$(basename "$(dirname "$skill")")
+[ "$declared" = "$dirname_of" ] ||
+  note "skill name '$declared' != directory '$dirname_of'; the directory is what becomes the command"
 
 # The flag would make the bank user-invocable only, putting it out of reach of the very
 # roles meant to invoke it.
@@ -38,6 +46,14 @@ if [ -f "$checker" ]; then
   # Re-derivation is the whole point: the checker must read the skill, not restate it.
   grep -q 'SKILL.md' "$checker" ||
     note "$checker does not read SKILL.md — a second hard-coded dimension list pins nothing"
+fi
+
+# A check nothing runs is an orphaned mechanism. P1 is the phase that owns coverage.
+if [ -f "$p1" ]; then
+  grep -q 'check_question_coverage\.py' "$p1" ||
+    note "$p1 never invokes check_question_coverage.py — the coverage gate would never run"
+else
+  note "$p1 is missing — nothing invokes the coverage check"
 fi
 
 [ "$fail" -eq 0 ] && echo "AC6 pass: the question bank is invocable and its coverage is re-derived"

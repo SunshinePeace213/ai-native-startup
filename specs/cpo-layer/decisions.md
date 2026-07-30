@@ -174,6 +174,21 @@ calls.
     per-feature launcher would be exactly the drift the shared fixture exists to prevent, so
     the fixture grows the parameter. Existing call sites pass no `args` and are unaffected.
 
+- **Q:** Do any roles run as agent-team teammates?
+  - **A:** No. Every role is a subagent, and each denies the `Agent` tool. Revised at Codex
+    round 1 (R1-F7 through R1-F10).
+  - **Why:** The draft kept one teammate for P2's cold-designer check, on the reasoning that a
+    teammate does not inherit the lead's conversation history. That property is not special to
+    teammates — a subagent gets its own context window and inherits no conversation history
+    either, so the teammate bought nothing while adding the experimental agent-teams
+    dependency. It also cost correctness: teammate reuse of a subagent definition covers
+    `tools` and `model`, not `effort`, so the roster's effort stamps — the very thing the
+    drift test pins — would silently stop applying. One spawn shape removes a dependency,
+    removes a contradiction between "P2 is the only teammate" and "P4 is the clear teammate
+    case", and keeps every stamp load-bearing. Subagents inherit the `Agent` tool by default,
+    so `disallowedTools: Agent` on each role is what makes "one level deep" a property rather
+    than a sentence.
+
 - **Q:** Do the check scripts go to Codex, given they are parser and arithmetic work?
   - **A:** No — `opus` at `high`, like the rest of the build.
   - **Why:** `model-selection.md` routes parsers and matchers to `gpt-5.6-sol`, but
@@ -187,11 +202,10 @@ calls.
 - The sign-off SHA is a content hash of the approved artifact, not a git SHA — `clients/`
   is gitignored, so no commit object exists. Invalidated if client work later moves to its
   own git repo inside `clients/`.
-- Roles run as **subagents** by default; agent-team teammates only where a phase genuinely
-  parallelizes over disjoint files (P4's competing directions is the clear case). Every role
-  body must therefore restate what it needs rather than depending on a preloaded skill, so
-  either spawn shape works. Invalidated if a phase turns out to need teammates talking to
-  each other.
+- Every role runs as a **subagent**, one level deep, with `disallowedTools: Agent`. Each body
+  restates what it needs and invokes the question bank through the `Skill` tool. Invalidated
+  if a phase turns out to need roles talking to each other — that would require first
+  re-deriving how a teammate's effort is set, since it does not come from the agent file.
 - The question-bank skill does **not** carry `disable-model-invocation: true` — that flag
   makes a skill user-invocable only, which would put it out of reach of the very roles meant
   to invoke it.
@@ -207,11 +221,15 @@ calls.
   loaded skill is static for that session. The write-back mechanism is card 10's retro
   graduation, deferred to a follow-on plan; v1 ships the bank and the improvement loop
   arrives later.
-- WCAG 2.2 threshold values (4.5:1 normal text, 3:1 large text and UI components, 24×24 CSS
-  px minimum target size) are encoded in the contrast script from the specification as
-  commonly published. Card 11 will mirror WCAG 2.2 into the KB and the script's constants
-  should then cite it; until then these are the plan's stated values, not KB-grounded ones.
-  Invalidated if card 11's mirror shows a different threshold.
+- The contrast thresholds ship as **Soriza project thresholds**, not as a WCAG conformance
+  claim: 4.5:1 for normal text, 3:1 for large text and UI components, and a 24×24 CSS px
+  minimum target. They are taken from WCAG 2.2 as commonly published, but card 11 — which
+  would mirror the specification into the KB — is explicitly out of scope, so nothing in this
+  repo can cite the source yet. The script names them project thresholds and the QA report
+  says the same; when card 11 lands, the constants gain a citation and may change. Claiming
+  conformance to a specification the repo has not mirrored would be the kind of unfalsifiable
+  assertion this plan exists to remove. Invalidated if card 11's mirror shows a different
+  value.
 - The plan folder keeps the chain slug `cpo-layer` rather than being renamed to
   `studio-layer`. Discovery is already committed under it and the prompt names that path
   twice; the naming decision governs the harness namespace, not the plan folder. Invalidated
@@ -231,13 +249,22 @@ on an unmirrored page.
 | `ai-docs/anthropic/subagents.md` | 2026-07-21 | `skills:` controls preloading, not access — without it a subagent still invokes skills through the `Skill` tool (l.478); a skill with `disable-model-invocation: true` cannot be preloaded at all (l.480). Grounds the invocable question bank. |
 | `ai-docs/anthropic/subagents.md` | 2026-07-21 | `model:` accepts an alias or `inherit`, defaulting to `inherit` (l.300–301). Grounds the roster's per-role alias stamps. |
 | `ai-docs/anthropic/agent-teams.md` | 2026-07-21 | "The `skills` and `mcpServers` frontmatter fields in a subagent definition are not applied when that definition runs as a teammate" (l.261). The load-bearing claim behind invoke-don't-preload; every role body must restate what it needs. |
-| `ai-docs/anthropic/agent-teams.md` | 2026-07-21 | A teammate is an independent session that loads project context but not the lead's conversation history (l.274); the lead messages teammates, and a teammate cannot supply consent on the user's behalf (l.268). Grounds both the cold-designer test and "only the principal can drive an interactive round". |
-| `ai-docs/anthropic/agent-teams.md` | 2026-07-21 | Teams require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (l.13) — already set in `.claude/settings.json`, so the P2 cold-designer teammate can be spawned. |
-| `ai-docs/anthropic/skills.md` | 2026-07-21 | Subdirectories of `.claude/skills/` load, so `.claude/skills/studio-layer/client-questions/SKILL.md` registers (l.109); `disable-model-invocation: true` makes a skill user-invocable only (l.166). Grounds the skill's path and its omitted flag. |
-| `ai-docs/anthropic/hooks.md` | 2026-07-21 | Stop-hook event schema and exit-code semantics behind `check_gate_signoff.py` (exit 2 denies the stop, stderr returns to Claude). |
+| `ai-docs/anthropic/agent-teams.md` | 2026-07-21 | A teammate is an independent session loading project context but not the lead's conversation history (l.274); a teammate cannot supply consent on the user's behalf (l.268); teams need `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (l.13). Grounds dropping teammates — the isolation is not teammate-specific and the dependency is experimental. Corrected at round 1: these lines do **not** state that a teammate cannot prompt the user, and that claim has been removed. |
+| `ai-docs/anthropic/skills.md` | 2026-07-21 | Subdirectories of `.claude/skills/` load (l.109), and **the directory name — not the `name:` field — becomes the command** (l.120); `disable-model-invocation: true` makes a skill user-invocable only (l.166). Grounds naming the directory `studio-client-questions/` to match the skill name, and omitting the flag. |
+| `ai-docs/anthropic/hooks.md` | 2026-07-21 | Stop-hook input schema and exit-code semantics behind `check_gate_signoff.py`: exit 2 denies the stop and stderr returns to Claude; `stop_hook_active` is true when Claude is already continuing because of a Stop hook, must be checked "to avoid blocking on a condition that will never resolve", and Claude Code force-ends the turn after 8 consecutive blocks (l.2171). Grounds the re-entry behavior. |
 | `ai-docs/anthropic/memory.md` | 2026-07-21 | `paths:` frontmatter scopes a rule so it loads only when the session touches a matching file. Grounds `paths: clients/**` on all three studio rules and the claim that none load during harness work. |
 | `ai-docs/anthropic/model-config.md` | 2026-07-28 | Effort levels are model-dependent (l.446). Grounds the roster's effort column against `model-selection.md`'s table. |
-| `ai-docs/anthropic/blog/html-artifacts-workflows.md` | 2026-07-21 | The two-way page + copy-as-prompt pattern `client-artifacts.md` inherits and the four page patterns it names per phase. |
+| `ai-docs/anthropic/blog/html-artifacts-workflows.md` | 2026-07-21 | The two-way interactive page and copy-as-prompt loop that `client-artifacts.md` inherits. Narrowed at round 1: the four per-phase page-pattern mappings are **project decisions**, not claims this article grounds. |
+
+**KB gap — recorded, not filled.** `ai-docs/anthropic/commands.md` mirrors the *built-in*
+slash commands only; the KB has no page documenting **custom** slash-command frontmatter. The
+plan's use of `description`, `argument-hint`, `model`, `effort`, `disable-model-invocation`
+and `hooks:` in command frontmatter is therefore grounded on this repo's own working commands
+(`.claude/commands/harness-layer/harness-plan.md:1-13` registers a Stop hook exactly this way
+and runs today), not on a cached doc. Registering the official custom-command reference via
+`/harness-layer:kb add` is a follow-up; it does not block this plan, because
+`test_wiring.py` already parses these registrations structurally and would fail on a shape
+Claude Code does not accept.
 
 ## Open Questions / Out of Scope
 
@@ -249,6 +276,8 @@ on an unmirrored page.
 - **Out of scope — Card 12, the first real run.** Which project goes first, and whether run
   one is a paying client or an internal dry run.
 - **Out of scope — all development work.** The layer stops at a signed layout handoff.
-- **Open question:** which prototype tool P5 commits to (Claude Design, Lovable, or another).
-  Its docs are the mirror that dates fastest, so card 11 waits on it. Owner: the principal,
-  at the first P5.
+- **Resolved as a runtime input, not deferred:** which prototype tool P5 drives. Rather than
+  leaving it open — which contradicted the plan's own "every decision is locked" claim — the
+  P5 command takes the tool as an argument and applies the selection rules in spec.md
+  `## Interfaces & Contracts`, recording the choice in the prompt pack. Card 11's KB mirror
+  still waits on what the first engagements actually pick.

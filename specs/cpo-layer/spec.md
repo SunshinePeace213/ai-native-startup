@@ -11,7 +11,6 @@
 - **Branch:** feat/80-cpo-layer
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/cpo-layer
 - **Review profile:** kb-grounded
-- **PR:** filled by /harness-layer:harness-build
 
 ## Task Description
 
@@ -33,8 +32,32 @@ cold-designer test, the sign-off hook, the design-QA verifier, and the revision 
 Cards 10 (lesson graduation), 11 (design KB mirrors), and 12 (the first real project run)
 are follow-on plans.
 
-Every decision is already locked in `specs/cpo-layer/discovery/decisions-draft.md` and
-transcribed into [decisions.md](./decisions.md). Nothing here is re-interviewed.
+Every **build-time** decision is already locked in
+`specs/cpo-layer/discovery/decisions-draft.md` and transcribed into
+[decisions.md](./decisions.md); nothing there is re-interviewed. One question is
+deliberately not a build-time decision: which prototype tool P5 drives. It is a **runtime
+input** to the P5 command, chosen per project against the selection rules in
+`## Interfaces & Contracts`, because the answer belongs to a client engagement and its docs
+are what card 11's KB mirror waits on.
+
+### The eight phases
+
+The authoritative phase table. Tasks and commands reference these rows rather than the
+discovery pages.
+
+| Phase | Name | Documents | Roles the principal spawns | Gate |
+| --- | --- | --- | --- | --- |
+| P0 | Intake and qualification | intake form, qualification note | `studio-client-partner` | Soft — internal go / no-go |
+| P1 | Discovery | discovery notes, glossary, competitive audit, reference audit | `studio-discovery-lead`, `studio-research-analyst` | Soft — notes reviewed with the client |
+| P2 | Definition | project brief, creative brief, sitemap, section briefs, user flows, cold-designer triage | `studio-discovery-lead`, `studio-ux-architect`, `studio-content-strategist` | **Hard** — brief + sitemap signed, triage complete |
+| P3 | Structure | annotated lo-fi wireframes, content model, copy outline | `studio-ux-architect`, `studio-content-strategist` | **Hard** — wireframes signed |
+| P4 | Art direction | moodboard, style tile, 2–3 directions, direction rationale | `studio-art-director`, `studio-content-strategist` | **Hard** — one direction picked |
+| P5 | Prototype | prompt pack, prototype link, revision log | `studio-prototype-engineer`, `studio-art-director` | Rounds — allowance from the signed brief |
+| P6 | Design QA and handoff | QA report, accessibility check, handoff pack, sign-off | `studio-design-qa`, `studio-client-partner` | **Hard** — QA clean, final sign-off |
+| P7 | Retro and lesson routing | project retro, routed lessons | `studio-retro-scribe` | Soft — lessons committed to their homes |
+
+The handoff pack is tokens, states, breakpoints, copy deck and assets — what a builder
+consumes. Producing it ends the engagement.
 
 ## Objective
 
@@ -128,13 +151,20 @@ Ordered most-volatile first. The full record is in [decisions.md](./decisions.md
    file, mirroring `check_spec_completeness.py`'s mtime inference — rejected because a client
    project holds all eight phase folders at once, so mtime would gate the wrong phase.
 
-3. **Roles run as subagents by default; the cold-designer test is the one teammate.** Every
-   role body restates what it needs rather than depending on a preloaded skill, because
-   `skills:` frontmatter is not applied when a definition runs as a teammate. P2's
-   cold-designer check spawns a teammate carrying only the signed briefs precisely because a
-   teammate does not inherit the lead's conversation history.
-   *Alternative still live:* teammates throughout, for P4's competing directions — deferred
-   until a phase needs roles talking to each other.
+3. **Every role runs as a subagent. No agent teams anywhere, including the cold-designer
+   test.** A subagent already gets its own context window and does not inherit the lead's
+   conversation history, which is the entire property the cold-designer check needs — so a
+   teammate buys no isolation while costing the experimental agent-teams dependency. It also
+   costs correctness: a teammate does not take its effort from the agent file, so the roster's
+   effort stamps would silently stop applying to exactly the roles the drift test pins.
+   One spawn shape, one policy, stamps that hold.
+   *Alternative still live:* teammates for P4's competing directions, if a phase ever needs
+   roles talking to each other. It would require re-deriving how effort is set per teammate
+   before any stamped role could run that way.
+
+   Roles are also **one level deep**: subagents inherit the `Agent` tool by default, so each
+   role file sets `disallowedTools: Agent`. Without it, "the principal spawns each role
+   directly, one level deep" is a sentence rather than a property.
 
 4. **Agent names are plain and layer-prefixed (`studio-art-director`); the person opens the
    body.** Claude routes off `name` + `description`, and `name` must be unique tree-wide. A
@@ -153,6 +183,21 @@ Ordered most-volatile first. The full record is in [decisions.md](./decisions.md
 
 ## Interfaces & Contracts
 
+### Project targeting — how the hook knows which project it is gating
+
+The Stop payload carries no command arguments, so `argv[1]` gives the hook its phase but not
+its project, and a studio may hold several projects at once. The hook resolves the project in
+this order, and the order is the contract:
+
+1. The Stop payload's `cwd`, when it resolves inside `clients/<client>/<project>/` — that
+   project, at any depth below it.
+2. Otherwise, when exactly one project directory exists under `clients/`, that one.
+3. Otherwise — zero projects, or two or more with no `cwd` inside any of them — exit 0 and
+   print the ambiguity to stderr. A gate that cannot identify its target must not guess, and
+   per the repo hook contract an unresolvable configuration fails open.
+
+A project directory is any `clients/<client>/<project>/` containing a `sign-off/` directory.
+
 ### Sign-off document — `clients/<client>/<project>/sign-off/<phase>.md`
 
 ```markdown
@@ -160,13 +205,102 @@ Ordered most-volatile first. The full record is in [decisions.md](./decisions.md
 
 - **Approver:** Jordan Reyes, Head of Marketing, Acme Co.
 - **Date:** 2026-07-31
-- **Artifact SHA:** 3f9a1c4e8b27d05a6f1e93b4c7208d5e1a6b3f2c9d04e7a815c62b9f0d3e4a7b6
-- **Approves:** project-brief.md, sitemap.md
+
+## Approved artifacts
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `definition/project-brief.md` | `3f9a1c4e…d3e4a7b6` |
+| `definition/sitemap.md` | `9b21e7f0…4c8a1d55` |
 ```
 
-`Approver`, `Date`, and `Artifact SHA` must each be present and non-empty. The SHA is a
-content hash of the approved artifact (`sha256sum`), never a git SHA — `clients/` is
+`Approver` and `Date` must each be present and non-empty. The artifact table must carry at
+least one row; every path is project-relative and must exist; every SHA is the 64-hex
+`sha256sum` of that file's current content. One row per artifact — a single hash cannot
+attest to two documents. The hash is of file content, never a git SHA: `clients/` is
 gitignored, so no commit object exists.
+
+### Phase documents — the machine-readable schemas
+
+Each format below is what the phase command writes and the check script parses. A phase
+command that invents its own shape fails its check.
+
+**Handoff states matrix** — `clients/<c>/<p>/handoff/states-matrix.md`. One table per
+breakpoint, `### <breakpoint>` above each. Rows are components, columns are exactly
+`hover | focus | disabled | loading | empty | error`. A cell is filled when it holds
+non-whitespace text other than `-` or `TBD`.
+
+```markdown
+### mobile
+
+| Component | hover | focus | disabled | loading | empty | error |
+| --- | --- | --- | --- | --- | --- | --- |
+| PrimaryButton | darkens 8% | 2px ring | 40% opacity, no pointer | spinner replaces label | n/a — always has a label | inline message below |
+```
+
+**Handoff token table** — `clients/<c>/<p>/handoff/tokens.md`. Two tables. The colour-pair
+table declares what is checked; `Kind` selects the threshold.
+
+```markdown
+| Foreground | Background | Kind | Used for |
+| --- | --- | --- | --- |
+| `#2C2825` | `#FAF8F5` | normal-text | body copy |
+| `#8A837A` | `#FAF8F5` | large-text | section labels |
+
+| Target | Width (px) | Height (px) |
+| --- | --- | --- |
+| PrimaryButton | 44 | 44 |
+```
+
+**Discovery notes** — `clients/<c>/<p>/discovery/notes.md`. One `## <dimension>` heading per
+question-bank dimension, matching the skill's dimension headings exactly. A dimension is
+answered when its section holds non-whitespace prose; the literal opener `N/A, because` also
+counts as answered.
+
+**Cold-designer triage** — `clients/<c>/<p>/definition/cold-designer-triage.md`. One row per
+diff row; `Disposition` must be `brief unclear — amended` or begin `acceptable variance —`.
+
+```markdown
+| Section | Cold designer produced | Signed sitemap says | Disposition |
+| --- | --- | --- | --- |
+| Pricing | three tiers | two tiers plus contact | acceptable variance — tiering is a P4 call |
+```
+
+**Revision allowance** — declared once in the signed project brief as a line matching
+`- **Revision rounds:** <integer> (plus polish)`. Its absence is a missing baseline, not a
+zero allowance.
+
+**Revision log** — `clients/<c>/<p>/prototype/revision-log.md`. One row per round; a round
+whose number exceeds the allowance must name a change-order file that exists.
+
+```markdown
+| Round | Date | Requested | Change order |
+| --- | --- | --- | --- |
+| 3 | 2026-08-14 | swap hero video for a still | `change-orders/1.md` |
+```
+
+**Change order** — `clients/<c>/<p>/change-orders/<n>.md`: what is requested, what it costs
+in rounds and time, and a signature block. Referenced by the revision log; the signed brief
+is amended by reference and never re-signed, so the P2 sign-off hashes stay valid.
+
+**Design QA report** — `clients/<c>/<p>/handoff/qa-report.md`. One row per finding;
+`Severity` is `blocking` or `advisory`, `Status` is `open` or `resolved`. The p6 gate refuses
+to close while any `blocking` finding is `open`.
+
+```markdown
+| Finding | Severity | Status | Evidence |
+| --- | --- | --- | --- |
+| Empty state for SearchResults has no copy | blocking | resolved | states-matrix.md row 4 |
+```
+
+### P5 prototype tool — a runtime input, not a build-time decision
+
+The P5 command takes the tool as an argument and records it in the prompt pack. Selection
+rules, applied in order: a tool the client already pays for wins; otherwise the one that can
+export or be re-driven from the prompt pack, so the engagement is not locked to it;
+otherwise Claude Design. The chosen tool is written to
+`clients/<c>/<p>/prototype/prompt-pack.md` so P7 can route a lesson about it and card 11 can
+mirror its docs.
 
 ### Hook registration — P2, P3, P4, P6 command frontmatter
 
@@ -192,8 +326,14 @@ uv run --script .claude/scripts/studio-layer/check_revision_count.py <project-di
 ```
 
 Exit 0 = pass. Exit 1 = a countable failure, with `file:line` diagnostics on stdout naming
-each failing cell, pair, dimension, or round. Exit 2 is reserved for usage errors (missing
-or unreadable argument).
+each failing cell, pair, dimension, or round. Exit 2 = the check could not run its
+arithmetic: a missing or unreadable argument, an unparseable table, a malformed hex value, or
+a missing revision allowance. The distinction is what makes exit 1 trustworthy — a typo must
+never be reported as a contrast failure a designer would chase.
+
+The scripts are plain CLIs, not hooks: given a target that does not exist they exit 2. Only
+the Stop hook has the fail-open-when-there-is-no-client behavior, because only the hook runs
+unbidden in sessions that have nothing to do with a client.
 
 ### Roster row — `.claude/rules/studio-layer/roster.md`
 
@@ -250,7 +390,8 @@ Existing call sites pass no `args` and are unaffected.
 - `.claude/commands/studio-layer/` — eight phase commands, named exactly `p0-intake.md`,
   `p1-discovery.md`, `p2-definition.md`, `p3-structure.md`, `p4-art-direction.md`,
   `p5-prototype.md`, `p6-handoff.md`, `p7-retro.md`.
-- `.claude/skills/studio-layer/client-questions/SKILL.md` — the invocable question bank.
+- `.claude/skills/studio-layer/studio-client-questions/SKILL.md` — the invocable question
+  bank. The **directory name** becomes the command, so it matches the skill's `name:` exactly.
 - `.claude/hooks/check_gate_signoff.py` — the phase-argument Stop gate.
 - `.claude/scripts/studio-layer/check_states_matrix.py` — every component × state cell filled.
 - `.claude/scripts/studio-layer/check_contrast.py` — computed WCAG ratios and tap targets.
@@ -270,12 +411,24 @@ Existing call sites pass no `args` and are unaffected.
   identically to missing: exit 2 naming the specific empty field.
 - **Sign-off SHA does not match the artifact it claims to approve** — the hook reports the
   mismatch and blocks; a client approved something, and it was not this file.
+- **An artifact row names a file that does not exist** — blocks, naming the row. An approval
+  of a deleted or renamed document is not an approval.
 - **A phase folder for a different phase is newer** — irrelevant by construction: the phase
   comes from `argv[1]`, never from mtime. A client project holds all eight phase folders at
   once, which is exactly why inference was rejected.
-- **No `clients/` directory at all** — every studio check and the hook exit 0 and stay silent.
-  A harness-only session must never trip a studio gate, mirroring how `check_spec_completeness.py`
-  is invisible in a project with no `specs/`.
+- **Two client projects exist and `cwd` is inside neither** — the hook exits 0 and says it
+  could not identify a target. Guessing would gate the wrong engagement.
+- **The registration passes an unknown or missing phase token** — exit 0. A bad registration
+  is a configuration failure, and the repo's hook contract fails those open; `test_wiring.py`
+  is what catches them, at CI time rather than mid-engagement.
+- **Stop re-entry (`stop_hook_active: true`)** — the hook blocks on the first stop and, on
+  re-entry, allows the stop while printing the unresolved gate to stderr. A client signature
+  is not something Claude can produce by trying again, and Claude Code force-ends the turn
+  after eight consecutive blocks, so re-blocking would burn the turn and land in the same
+  place. The phase stays unsigned and visibly so.
+- **No `clients/` directory at all** — the hook exits 0 and stays silent, mirroring how
+  `check_spec_completeness.py` is invisible in a project with no `specs/`. The four check
+  scripts are ordinary CLIs and exit 2 on a target that does not exist.
 - **Handoff token table declares a colour pair with a malformed hex value** — the contrast
   script exits 2 (usage/parse) rather than 1, so a typo is never reported as a contrast
   failure the designer would chase.
@@ -294,12 +447,21 @@ Existing call sites pass no `args` and are unaffected.
 
 ## Risk & Rollback
 
-- **Blast radius:** two changes reach outside the new namespace. `run_hook` gaining an `args`
-  parameter touches the fixture every hook test uses — a mistake there reddens the whole hook
-  suite, which is also what notices immediately. `CODEX_DISPOSITIONS` and the `hooks.md`
-  catalog row are cross-checked in both directions, so omitting either fails `test_wiring.py`
-  rather than shipping quietly. Everything else is additive and path-scoped to `clients/**`,
-  so no studio rule loads during ordinary harness work.
+- **Blast radius:** six changes reach outside the new namespace; everything else is additive.
+  - `tests/harness-layer/hooks/conftest.py` — `run_hook` gains `args`. This fixture launches
+    every hook test, so a mistake reddens the whole hook suite; that is also what notices
+    immediately. Existing callers pass nothing and are unaffected.
+  - `tests/harness-layer/hooks/test_wiring.py` — a `CODEX_DISPOSITIONS` entry. Omitting it
+    fails `test_dispositions_cover_every_entrypoint`.
+  - `.claude/rules/harness-layer/hooks.md` — one catalog row, cross-checked against the
+    dispositions in both directions.
+  - `.gitignore` — the `clients/*` pair. A wrong pattern silently untracks `.gitkeep`; AC1
+    catches it.
+  - `AGENTS.md` — a pointer section. It is always-loaded, so it must stay short; AC5 asserts
+    the pointer exists and the file stays under the ~250-line budget.
+  - `clients/` — a new top-level directory. Ignored, so it cannot affect any other tooling.
+
+  No studio rule loads during ordinary harness work: all three are scoped `paths: clients/**`.
 - **Rollback:** revert the squash commit. The three rules are path-scoped and the eight
   commands are namespaced, so nothing else reads them; no migration, no data to unwind.
 - **In-flight work:** none. No client project exists yet — card 12 is a follow-on plan — so
@@ -318,8 +480,11 @@ Existing call sites pass no `args` and are unaffected.
   palette's *source* per phase is the whole point of forking it.
 - **Do not give the question-bank skill `disable-model-invocation: true`.** It would put the
   bank out of reach of the roles meant to invoke it.
-- **Do not add `skills:` frontmatter to the role agents.** It silently no-ops when the
-  definition runs as a teammate; the bodies must restate what they need.
+- **Do not add `skills:` frontmatter to the role agents.** Preloading is not access — a
+  subagent invokes the bank through the `Skill` tool either way, and the frontmatter would be
+  dead weight that also no-ops in any future teammate shape.
+- **Do not spawn agent-team teammates.** Every role is a subagent, and each denies the `Agent`
+  tool so the tree stays one level deep.
 - **The cold-designer diff is advisory.** Gate the triage document, not a zero-diff. Two
   competent designers given one brief produce different section plans; a zero-diff gate would
   never open.

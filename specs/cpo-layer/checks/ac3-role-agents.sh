@@ -61,7 +61,17 @@ for function in "${!people[@]}"; do
     note "$file body does not name its person, ${people[$function]}"
 
   grep -q '^skills:' <<<"$frontmatter" &&
-    note "$file sets skills: — preloading silently no-ops when the role runs as a teammate"
+    note "$file sets skills: — preloading is not access; roles invoke the bank via the Skill tool"
+
+  # Subagents inherit the Agent tool by default, so without an explicit denial "one level
+  # deep" is a sentence rather than a property and a role could spawn its own subagents.
+  if grep -q '^tools:' <<<"$frontmatter"; then
+    grep -qE '^tools:.*\bAgent\b' <<<"$frontmatter" &&
+      note "$file grants Agent in tools: — roles must not spawn subagents"
+  else
+    grep -qE '^disallowedTools:.*\bAgent\b' <<<"$frontmatter" ||
+      note "$file neither restricts tools: nor denies Agent — it inherits Agent and can nest"
+  fi
 
   uv run --with pyyaml python .claude/skills/meta-agent/scripts/validate_agent.py "$file" \
     >/dev/null 2>&1 || note "$file does not pass the meta-agent validator"

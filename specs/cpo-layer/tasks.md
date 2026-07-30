@@ -140,15 +140,20 @@ it does not author them.
   the body — never the name, never the description.
 - Stamp `model:` and `effort:` from `roster.md`. A mismatch is what `studio-roster-drift-test`
   exists to catch; do not invent a stamp.
-- No `skills:` frontmatter on any role — it silently no-ops when a definition runs as a
-  teammate. Each body restates what it needs and, for the client-facing roles, says to invoke
-  the question-bank skill by name via the `Skill` tool.
-- Give each role its owned documents from the phase table in spec.md and the discovery pages,
-  and say which phase commands spawn it.
+- Set `disallowedTools: Agent` on every role. Subagents inherit the `Agent` tool by default,
+  so without this the "one level deep" architecture is unenforced and a role could spawn its
+  own subagents.
+- No `skills:` frontmatter on any role — preloading is not access. Each body restates what it
+  needs and, for the client-facing roles, says to invoke `studio-client-questions` via the
+  `Skill` tool.
+- Give each role its owned documents and phases from spec.md's `### The eight phases` table —
+  that table is authoritative; do not read the discovery HTML for this.
 - `studio-design-qa` (Yusuf Demir) is adversarial and blocks handoff: its body judges focus
   order, whether each state makes sense, and whether error copy says anything useful, and it
   explicitly does **not** recompute what `check_contrast.py` and `check_states_matrix.py`
-  compute.
+  compute. It writes `handoff/qa-report.md` in the schema from spec.md
+  `## Interfaces & Contracts`, marking each finding `blocking` or `advisory` — that file is
+  what the p6 gate reads, so "blocks handoff" is a mechanism rather than a claim.
 
 ### 5. Build the client question bank as an invocable skill
 
@@ -157,12 +162,18 @@ it does not author them.
 - **Agent Type:** `general-purpose`
 - **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — the question
   quality is what makes discovery work; client-facing.
-- **Files:** `.claude/skills/studio-layer/client-questions/SKILL.md`
+- **Files:** `.claude/skills/studio-layer/studio-client-questions/SKILL.md`,
+  `specs/cpo-layer/evals/question-bank.md`
 - **Parallel:** true
-- **Satisfies:** AC6
+- **Satisfies:** AC6, AC16
 - **Verify:** frontmatter carries `name` and `description` and does **not** carry
   `disable-model-invocation`; the question list parses as one machine-readable section.
-- Follow the `meta-skills` skill for authoring. `name: studio-client-questions`.
+- Follow the `meta-skills` skill for authoring. `name: studio-client-questions`, and the
+  **directory** must be `studio-client-questions/` to match: the directory name, not the
+  `name:` field, becomes the command a role invokes.
+- Write eval cases in `specs/cpo-layer/evals/question-bank.md` with a rubric — the bank is
+  prose, so only an eval shows whether its questions actually surface the dimension. Manual,
+  scored as a pass rate over repeated runs, not part of CI.
 - Cover the client discovery dimensions: the job the site does, the audience and their
   situation, brand voice, references loved and hated, the content that actually exists, hard
   constraints (existing brand, CMS, deadline), budget, and what success looks like at six
@@ -193,12 +204,21 @@ it does not author them.
   `git rev-parse` fallback, exit 2 to deny the stop with repair instructions on stderr, and
   fail open (exit 0) on malformed stdin, a missing root, or any plumbing failure.
 - Take the phase from `argv[1]`. Never infer it from mtime — a client project holds all eight
-  phase folders at once. Missing or unrecognized argument → exit 2 as a usage error.
-- Check the phase's sign-off file for a filled Approver, Date, and Artifact SHA, and verify the
-  SHA against the artifact it names. Empty, whitespace-only, and template-placeholder values
-  all count as missing.
-- For `p2` only, additionally require the cold-designer triage document to exist with no
-  untriaged row.
+  phase folders at once. A missing or unrecognized phase argument is a **registration**
+  mistake, so exit 0: the repo hook contract fails plumbing failures open, and
+  `test_wiring.py` is what catches a bad registration, at CI time rather than mid-engagement.
+- Resolve the project by the three-step rule in spec.md `## Interfaces & Contracts` →
+  "Project targeting": the Stop payload's `cwd` when it is inside a project, else the sole
+  project, else exit 0 reporting the ambiguity. Test it with two projects present.
+- Check the phase's sign-off file for a filled Approver and Date, and for an artifact table
+  with at least one row where every path exists and every SHA-256 matches that file's current
+  content. Empty, whitespace-only, and template-placeholder values all count as missing.
+- Handle `stop_hook_active`: block on the first stop; on re-entry allow the stop and print the
+  unresolved gate to stderr. A client signature will not appear because Claude tried again,
+  and Claude Code force-ends the turn after 8 consecutive blocks — so re-blocking burns the
+  turn and ends in the same place. Test both values of the flag.
+- For `p2`, additionally require the cold-designer triage document with no untriaged row. For
+  `p6`, additionally require `handoff/qa-report.md` with no `blocking` finding still `open`.
 - No `clients/` directory → exit 0 silently, mirroring how the spec gate is invisible without
   `specs/`.
 - Extend `run_hook` in `tests/harness-layer/hooks/conftest.py` with `args: tuple = ()` appended
@@ -279,12 +299,19 @@ it does not author them.
 - **Agent Type:** `general-purpose`
 - **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — eight
   interlocking command prompts, including the forked interview loop; user-facing, taste ≥ 7.
-- **Files:** `.claude/commands/studio-layer/` (all eight files)
+- **Files:** `.claude/commands/studio-layer/` (all eight files),
+  `specs/cpo-layer/evals/phase-commands.md`
 - **Parallel:** false
-- **Satisfies:** AC7, AC9
+- **Satisfies:** AC7, AC9, AC15, AC16
 - **Verify:** `uv run pytest tests/harness-layer/hooks/test_wiring.py` — green (every
   frontmatter registration points at a real file), and
   `bash specs/cpo-layer/checks/ac7-phase-commands.sh` — exit 0.
+- Write the eval cases in `specs/cpo-layer/evals/phase-commands.md`. Commands are
+  non-deterministic prose, which `test-tiers.md` puts in the **eval** tier — a structural
+  check proves a command exists, never that it behaves. Cover at minimum: P1 produces a
+  discovery-notes file that passes the coverage check; P2 produces a triage document with a
+  disposition on every row. Give each case a rubric and record the pass rate over repeated
+  runs; evals stay manual and are not part of the CI suite.
 - Shape each command like the harness eight: frontmatter (`description`, `argument-hint`,
   `model`, `effort`, `disable-model-invocation: true`), then the phase's documents, the roles
   the principal spawns, the gate, and the report block. Keep them short — every line loads into
@@ -306,10 +333,21 @@ it does not author them.
 - P2 runs the cold-designer test: spawn one teammate carrying only the signed project and
   creative briefs, ask for the section-level plan, diff it against the signed sitemap, and
   triage every row. The list is advisory; the triage document is what the gate requires.
-- P5 counts revision rounds and names `check_revision_count.py`; P6 names
-  `check_states_matrix.py` and `check_contrast.py` and spawns `studio-design-qa`; P7 routes
-  each lesson to the file where it will load again, and explicitly does not graduate lessons
-  into skills — that is card 10.
+- **Every check script is invoked by the phase that owns it** — a script nothing runs is an
+  orphaned mechanism:
+  - P1 runs `check_question_coverage.py` on the discovery notes before its soft gate, and
+    reports the result.
+  - P5 runs `check_revision_count.py` before closing each round, and names the change-order
+    path when it fails.
+  - P6 runs `check_states_matrix.py` and `check_contrast.py` on the handoff, then spawns
+    `studio-design-qa`, which writes `handoff/qa-report.md`. The p6 Stop gate reads that
+    report, so an unresolved blocking finding keeps the phase open.
+- Each phase command writes its documents in the exact schemas from spec.md
+  `## Interfaces & Contracts`. A command that invents its own table shape fails its check.
+- P5 takes the prototype tool as an argument and applies the selection rules from the same
+  section, recording the choice in the prompt pack.
+- P7 routes each lesson to the file where it will load again, and explicitly does not graduate
+  lessons into skills — that is card 10.
 
 ### 10. Validate Everything
 
@@ -318,15 +356,20 @@ it does not author them.
 - **Agent Type:** `general-purpose`
 - **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — consolidating
   judgment across every criterion.
-- **Files:** none — read-only
+- **Files:** `specs/cpo-layer/implementation-notes.md` (evidence only — reads everything else)
 - **Parallel:** false
-- **Satisfies:** every AC
+- **Satisfies:** AC14, and re-confirms AC1–AC13, AC15
 - **Verify:** every command in acceptance-criteria.md `## Validation Commands` passes, and each
   criterion is met.
 - Run the full suite and both ruff commands from the repo root, and record the observed output
   in `implementation-notes.md` per `impl-standards.md`.
-- Confirm no studio rule loads outside `clients/**`, and that `AGENTS.md`'s always-loaded
-  budget is unchanged.
+- Confirm no studio rule loads outside `clients/**`, and that the always-loaded rules plus
+  `AGENTS.md` remain under the ~250-line budget in `memory-series.md` — the pointer section
+  this build adds is expected to grow it slightly, so the bar is "under the limit", not
+  "unchanged".
+- Run the manual evals under `specs/cpo-layer/evals/` and record their pass rates in
+  `implementation-notes.md`. They are not part of the CI suite, so an unrecorded eval is an
+  unrun one.
 - Confirm the diff adds no client data, leaves `artifacts.md` and `harness-interview.md`
   untouched, and carries no orphaned files.
 
