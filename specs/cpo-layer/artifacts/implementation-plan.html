@@ -431,6 +431,13 @@
         eight phase commands with gates that can actually fail — and hands the finished layout
         over without writing a line of the site.
       </p>
+      <p class="stops" style="border-left-color: var(--muted);">
+        <strong>Reviewed twice.</strong> The Codex gate raised 47 findings across two rounds, 27 of
+        them blocking. All are fixed. The largest change: agent teams are gone entirely — a plain
+        subagent already lacks the lead's conversation history, so the one teammate bought no
+        isolation while silently breaking the roster's effort stamps. The round-2 fixes were not
+        re-verified by a third round; the cap is two.
+      </p>
 
       <dl class="facts">
         <div class="fact"><dt>Type</dt><dd>feat · complex</dd></div>
@@ -502,17 +509,21 @@
       <article class="card" data-key="spawn-shape">
         <header>
           <span class="vol">Volatile · orchestration</span>
-          <h3>Roles run as subagents; the cold-designer check is the one teammate</h3>
+          <h3>Every role is a subagent — no agent teams anywhere</h3>
           <p class="why">
-            <code>skills:</code> frontmatter is silently ignored when a definition runs as a teammate,
-            so every role body restates what it needs and works either way. P2 spawns a teammate on
-            purpose: a teammate does not inherit the lead's conversation history, which is exactly the
-            amnesia the cold-designer test needs.
+            The draft kept one teammate for P2's cold-designer test, on the reasoning that a teammate
+            does not inherit the lead's conversation history. That property is not teammate-specific:
+            an ordinary subagent has its own context window too. So the teammate bought no isolation
+            while adding the experimental agent-teams dependency — and broke the roster, since
+            teammate reuse of a definition covers <code>tools</code> and <code>model</code> but not
+            <code>effort</code>. Each role also sets <code>disallowedTools: Agent</code>, so "one
+            level deep" is enforced rather than asserted.
           </p>
         </header>
         <div class="alt" hidden>
-          <strong>Still live:</strong> teammates throughout, starting with P4's competing art
-          directions. Deferred until a phase genuinely needs roles talking to each other.
+          <strong>Still live:</strong> teammates for P4's competing art directions, if a phase ever
+          needs roles talking to each other. It would first require re-deriving how a teammate's
+          effort is set, since it does not come from the agent file.
         </div>
         <div class="rowtools">
           <button class="ghost" aria-expanded="false">Show the alternative</button>
@@ -643,8 +654,8 @@
         <div class="task">
           <span class="id">gate-signoff-hook</span>
           <span class="chip model">opus · high</span>
-          <p class="desc">The Stop gate: approver, date and artifact SHA must all be real, and the SHA must match what it claims to approve. Also extends the shared <code>run_hook</code> fixture and adds the catalog row and Codex verdict.</p>
-          <span class="meta"><span class="chip dep">no dependencies</span><span class="chip ac">AC8</span><span class="chip ac">AC9</span><span class="chip ac">AC10</span></span>
+          <p class="desc">The Stop gate: approver, date and a one-row-per-artifact hash table must all be real, and every hash must match the file it claims to approve. Resolves its project by <code>cwd</code> → sole project → fail open, blocks on a never-signed project, fails open on a bad registration, and allows the second stop rather than burning the turn. Also extends the shared <code>run_hook</code> fixture and adds the catalog row and Codex verdict.</p>
+          <span class="meta"><span class="chip dep">no dependencies</span><span class="chip ac">AC8</span><span class="chip ac">AC9</span><span class="chip ac">AC10</span><span class="chip ac">AC15</span></span>
         </div>
         <div class="task">
           <span class="id">studio-check-scripts</span>
@@ -809,7 +820,7 @@
   var TWEAKS = {
     "scripts-home": "Move the four studio check scripts out of .claude/scripts/studio-layer/. Put them in a scripts/ folder inside the question-bank skill instead, following the meta-agent/scripts/validate_agent.py precedent — and make sure the wiring suite still passes, since anything with a PEP 723 header under .claude/hooks/ has to be a registered hook.",
     "phase-arg": "Don't pass the phase to check_gate_signoff.py as an argument. Infer it instead, the way check_spec_completeness.py infers its plan folder — and solve the problem that a client project holds all eight phase folders at once, so mtime alone would gate the wrong phase. This should also remove the need to extend the shared run_hook fixture.",
-    "spawn-shape": "Run the studio roles as agent-team teammates rather than subagents, starting with P4's competing art directions. Account for the fact that skills: frontmatter is ignored for teammates, that a teammate can't prompt the user, and that teammates editing the same file overwrite each other.",
+    "spawn-shape": "Run some studio roles as agent-team teammates rather than subagents, starting with P4's competing art directions. Address how each teammate's effort level gets set, since it does not come from the agent file — the roster's effort stamps and the drift test that pins them depend on it — and that teammates editing the same file overwrite each other.",
     "agent-names": "Use hybrid agent names that carry the person as well as the function — art-director-elena-ferraro rather than studio-art-director — and update the roster drift test and the AC3 check to match.",
     "question-bank": "Change how the roles reach the question bank: preload it through each role's skills: frontmatter instead of having them invoke it via the Skill tool. Address what happens in the teammate spawn shape, where that frontmatter is ignored.",
     "all-claude": "Stamp studio-check-scripts to gpt-5.6-sol rather than opus, since it is parser and arithmetic work. Say how the build stage actually invokes Codex, given /harness-layer:harness-build has no Codex implementation path today."
