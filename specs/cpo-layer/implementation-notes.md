@@ -97,6 +97,18 @@
   - Deviations: none.
 - **2026-08-01 · phase 2/3** — launched `studio-role-agents` (roster landed) and
   `studio-check-scripts` (question bank landed) as concurrent builders.
+- **2026-08-01 · hand-off `studio-check-scripts`** — the four scripts under
+  `.claude/scripts/studio-layer/`, `tests/harness-layer/studio-layer/test_studio_checks.py`
+  - `uv run pytest tests/harness-layer/studio-layer/` → `25 passed in 1.91s`. All 22 node ids
+    named verbatim across AC6, AC11, AC12 and AC13 are defined; none missing.
+  - Lead independently recomputed the pinned contrast ratio rather than trusting the test's
+    own docstring: `#8A837A` on `#FAF8F5` → `L_fg=0.230410 L_bg=0.940514 ratio=3.5324`,
+    matching the asserted `3.53:1`. AC12's "the formula itself is checked, not just the
+    branching" therefore holds. The script prints `Soriza project threshold`, so it never
+    claims conformance to a specification this repo has not mirrored.
+  - Scripts live under `.claude/scripts/studio-layer/`, not `.claude/hooks/`, so the wiring
+    suite never sees them as unclaimed hook entrypoints.
+  - Deviations: none.
 - **2026-08-01 · hand-off `studio-roster-drift-test`** —
   `tests/harness-layer/test_studio_roster_drift.py`
   - AC2's exact six-node-id command → `6 passed in 1.64s`.
