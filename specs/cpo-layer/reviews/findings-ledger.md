@@ -1,7 +1,10 @@
 # Findings Ledger: cpo-layer (studio-layer)
 
-Spec flavor. One row per finding, IDs stable across rounds.
+One row per finding, IDs stable across rounds and flavors. Spec-flavor rounds carry
+`R<N>-F<M>` ids; implementation-flavor rounds carry `I<N>-F<M>`.
 Blocking = severity `critical`/`major` with confidence ≥ 80. Everything else is advisory.
+
+## Spec flavor
 
 Round 1 — `gpt-5.6-sol` at `xhigh`, reviewed head `bf76b7e`. 35 findings: 21 blocking,
 14 advisory. Fixes committed in the round-1 fix series.
@@ -86,3 +89,36 @@ asked to accept.
 | --- | --- | --- | --- | --- | --- |
 | R4-F1 | major | 99 | R3-F2 was only half-fixed: the p3 gate checked the inventory's signed SHA, but P6 read the current file, so rows deleted between P3 and P6 shrank the denominator with no gate noticing | fixed | the `p6` gate now re-reads the P3 sign-off, recomputes the inventory's SHA-256, and blocks on a mismatch. spec.md "Component inventory" states why signing at P3 alone is insufficient; AC9 gains `test_p6_inventory_mutated_after_p3_signoff_blocks` and `test_p6_inventory_matching_p3_sha_allows` |
 | R4-F2 | major | 97 | The command-eval runner staged the studio namespace but omitted `.claude/hooks/check_gate_signoff.py`, which the evaluated P2 command's frontmatter registers — so the eval would measure P2 with its gate silently absent | fixed | the hook joins the staged set in spec.md "Command-eval runner" and task 10, with a test asserting the P2 command's registered hook path resolves to a real file inside the scratch project |
+
+---
+
+## Implementation flavor
+
+Round 1 — `gpt-5.6-sol` at `xhigh`, reviewed head `339b2c5`, diff `fb5e6ea..339b2c5`.
+22 findings: 13 blocking, 9 advisory. Check scripts (7/7 exit 0) and the full suite
+(990 passed, 2 skipped) contributed no findings of their own.
+
+| ID | Sev | Conf | Finding | Disposition | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| I1-F1 | major | 100 | AC16's commands-suite `manual:` eval scored 0.8889 against a required 1.0, so AC16 and impl-standard 2 are unmet — the build disclosed this rather than papering over it | open | |
+| I1-F2 | major | 100 | `build-brief.html` claims "16 of 16 with evidence" while its AC16 row is pending and the recorded eval failed | open | |
+| I1-F3 | major | 99 | The hard gates accept **any one** signed artifact; the tests sign `docs/<phase>-approved.md`, so P2 closes without its briefs/sitemap, P3 without wireframes, P4 without the picked direction, P6 without the handoff pack | open | |
+| I1-F4 | major | 100 | `check_revision_count.py` reads the allowance from the mutable current brief without verifying its P2-signed SHA; editing 2→3 is tested as an *allow* path, bypassing change orders | open | |
+| I1-F5 | major | 99 | Round numbers are trusted, never counted or validated — rows all numbered `1` never exceed the allowance, so unlimited rounds pass | open | |
+| I1-F6 | major | 99 | `Cost — rounds: 0` passes `\d+`, and one one-round change order can be reused by unlimited excess rounds — no capacity accounting | open | |
+| I1-F7 | major | 99 | Commands use repo-relative `clients/$1` and `.claude/…` paths while the four gate commands instruct multi-project users to run *inside* `PROJECT_DIR`, where every one of those paths misresolves | open | |
+| I1-F8 | major | 98 | Only a missing `PROJECT` is rejected; `../` segments, absolute paths, dot segments or extra levels redirect writes outside `clients/<client>/<project>` | open | |
+| I1-F9 | major | 99 | Sign-off artifact paths are unconstrained, so absolute paths, `../` traversal and escaping symlinks can satisfy a client signature with files outside the project | open | |
+| I1-F10 | major | 99 | QA rows with blank or malformed cells (`blocking \| TBD`, `blocker \| open`) silently allow P6 — only the exact pair `blocking`/`open` blocks | open | |
+| I1-F11 | major | 99 | `check_contrast.py` token coverage scans the whole row including `Used for`, so a token passes by being mentioned in prose outside the colour cells | open | |
+| I1-F12 | major | 99 | `run_command_evals.py` stages `client-artifacts.md` but not the `artifacts.md` it inherits from, so P1/P2 are evaluated with a broken dependency | open | |
+| I1-F13 | major | 98 | A `claude -p` run marked as an error is recorded as `run_error` but its score still contributes normally, and the runner can still exit 0 | open | |
+| I1-F14 | minor | 97 | The allowance regex accepts any line starting with an integer, not the locked `(plus polish)` schema | advisory | Below the blocking bar; folded into the I1-F4/F5 fix since the same function was being rewritten |
+| I1-F15 | minor | 98 | Short rows in `check_states_matrix.py` raise `IndexError` — a traceback and exit 1 instead of the contracted exit 2 | advisory | Below the blocking bar; folded into the same file's fix |
+| I1-F16 | minor | 96 | Duplicate component/breakpoint rows overwrite earlier rows, hiding a blank or contradictory specification | advisory | Below the blocking bar; folded into the same file's fix |
+| I1-F17 | minor | 96 | Reusing `--workspace` leaves prior-run output, so judge-only assertions can grade stale artifacts | advisory | Below the blocking bar; folded into the eval-runner fix |
+| I1-F18 | minor | 95 | Schema validation rejects neither duplicate case IDs nor non-scalar IDs | advisory | Below the blocking bar; folded into the eval-runner fix |
+| I1-F19 | minor | 100 | The routed glob lesson grew the unscoped rules 254→257 against the task's "must not grow" wording | advisory | Below the blocking bar, and the growth is the pipeline's own mandated memory step: `memory-series.md` requires a build lesson to be routed to the rule where it reloads. AC5 enforces a ~280-line budget and the rules sit at 257. Recorded as a follow-up to reconcile the task's wording with the budget the check actually enforces |
+| I1-F20 | minor | 99 | AC5 accepts invalid scopes such as `clients/**bogus` via substring grep and relaxes the stated budget to 280 | advisory | Below the blocking bar; recorded as a follow-up — the check is plan-local and its budget number is the one AC5 documents |
+| I1-F21 | info | 94 | P6's Stop gate never runs the states and contrast checks, so a signed handoff with a failing matrix can close if the command skipped its prose instructions | advisory | Genuine design observation at `info`; recorded as a follow-up rather than a same-run redesign of the gate's responsibilities |
+| I1-F22 | info | 92 | Rationale-heavy module headers in the hook and the eval runner duplicate the plan instead of stating usage and exit semantics | advisory | Recorded as a follow-up; the tidy pass already cut cross-seat rationale, and trimming module docstrings mid-review risks losing the contract text the checks are read against |
