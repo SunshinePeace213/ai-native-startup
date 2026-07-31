@@ -1,7 +1,7 @@
 # Spec: studio-layer — design-delivery studio through signed handoff
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
 
 ## Tracking
 
@@ -605,7 +605,9 @@ the plan folder.
 
 ## Codex Verification
 
-- **Outcome:** four rounds run against `gpt-5.6-sol`, two per run — rounds 1–2 (`xhigh`, then
+- **Outcome:** **approved at the human gate** — the user chose proceed-to-build with the
+  round-4 fixes unverified, knowing the build carries its own Codex review round. Four rounds
+  run against `gpt-5.6-sol`, two per run — rounds 1–2 (`xhigh`, then
   `high`) in the drafting run, rounds 3–4 (`medium`) in this revision run. 52 findings total:
   32 blocking, all fixed; 20 advisory, recorded. No finding was disputed, and no round reopened
   an earlier disposition. The full record is in
