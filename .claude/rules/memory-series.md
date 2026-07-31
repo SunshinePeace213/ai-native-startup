@@ -34,5 +34,8 @@ the hub or in `.claude/rules/` — never create a new root-level memory markdown
    | `*.md` | markdown files in the project root |
    | `src/components/*.tsx` | React components in that one directory |
 
+   To scope a rule to everything under a directory, write `<dir>/**/*`. A bare `<dir>/**` is
+   not a documented form, and if it fails to match the rule silently never loads.
+
 3. No `paths:` frontmatter → the rule loads at session start, exactly like CLAUDE.md content. Reserve that for rules every session needs (`model-selection.md`, `orchestration.md`); everything else must be path-scoped. Keep the unscoped rules under ~250 lines total — a rule that outgrows the budget gets split, with the ship-time or domain half path-scoped.
 4. Add a pointer to the new rule from the matching `AGENTS.md` section.

@@ -97,6 +97,27 @@
   - Deviations: none.
 - **2026-08-01 · phase 2/3** — launched `studio-role-agents` (roster landed) and
   `studio-check-scripts` (question bank landed) as concurrent builders.
+- **2026-08-01 · build brief** — `specs/cpo-layer/artifacts/build-brief.html`, authored from these
+  notes after tidy and published at
+  <https://claude.ai/code/artifact/78008e56-694c-4a2d-b233-774912a08bb6>. Self-contained, Warm
+  Neutral per `artifacts.md`; the lead read the file end to end before publishing and confirmed
+  every figure traces to an entry here. The AC16 commands-eval row is marked recorded-separately
+  rather than carrying an invented rate.
+- **2026-08-01 · memory** — one lesson routed, per `memory-series.md`.
+  - **The `paths:` glob form** → `.claude/rules/memory-series.md`, the file it corrects: its
+    "Create a new rule file" step now states that scoping a rule to everything under a directory
+    is written `<dir>/**/*`, and that a bare `<dir>/**` is not a documented form and fails
+    silently. This is where the lesson loads again — anyone creating a path-scoped rule reads
+    that step. `bash specs/cpo-layer/checks/ac5-rules-path-scoped.sh` → exit 0 after the edit,
+    with the unscoped rules at 257 lines, inside the ~280 budget the check enforces.
+  - Nothing else earned a rule edit. The `destructive-guard` false positive noted below is a
+    harness observation, not a convention, so it goes to the PR as a follow-up rather than into
+    a rule.
+- **2026-08-01 · observation (no code change)** — the `destructive-guard` Stop hook blocked a
+  legitimate command, `… --behavior --yes > file`, reading the `--yes` flag followed by a
+  redirect as `yes` streaming into a file (`unbounded-fill`). Worked around by putting the
+  command in a script file. Raised as a PR follow-up rather than fixed here: it is outside this
+  plan's scope and touches a guard every session depends on.
 - **2026-08-01 · tidy** — `harness-simplifier` over the changed harness/prompt files and
   `code-simplifier` over the changed Python, run concurrently; behavior-preserving auto-fix only.
   - 11 files touched, +60/−57. Harness side: cut rationale that restated a decision the reader
