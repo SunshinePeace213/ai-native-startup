@@ -18,8 +18,8 @@
         },
         {
           "id": "a3",
-          "text": "Budget — the one dimension the client put out of scope — is recorded with the 'N/A, because' opener naming the parent company, rather than left blank or invented",
-          "check": "grep -A4 -i '^## Budget' clients/harlow-dental/site/discovery/notes.md | grep -q 'N/A, because'"
+          "text": "Budget — the one dimension the client put out of scope — is closed in the notes' Budget section: either an explicit 'N/A, because' opener or a written statement naming the parent company as the budget holder, never left blank and never given a figure the client did not state",
+          "check": "f=clients/harlow-dental/site/discovery/notes.md; test -f \"$f\" || { echo \"no discovery notes at $f\"; exit 1; }; awk 'tolower($0) ~ /^#+[ \\t]*budget/ { inb = 1; next } /^#/ { inb = 0; next } inb { body = body \" \" $0 } END { low = tolower(body) \" \"; bare = body; gsub(/[ \\t\\r]/, \"\", bare); if (bare == \"\") { print \"Budget is blank -- the dimension is unanswered\"; exit 1 } if (low ~ /[$£€][ ]*[0-9]/ || low ~ /[0-9][ ]*[km][^a-z]/ || low ~ /[0-9][^0-9a-z]*(gbp|usd|eur|pound|dollar|euro)/ || low ~ /[0-9],[0-9][0-9][0-9]/ || low ~ /[0-9][0-9][0-9][0-9][0-9]/) { print \"Budget names a figure the client never gave:\" body; exit 1 } if (index(low, \"n/a, because\") || index(low, \"n/a because\")) exit 0; if ((index(low, \"parent\") || index(low, \"group\")) && (index(low, \"hold\") || index(low, \"set\") || index(low, \"own\") || index(low, \"control\") || index(low, \"decide\") || index(low, \"no number\") || index(low, \"budget\"))) exit 0; print \"Budget neither says N/A, because nor states who holds it:\" body; exit 1 }' \"$f\""
         },
         {
           "id": "a4",
@@ -57,7 +57,8 @@
         },
         {
           "id": "b4",
-          "text": "The cold designer's plan was produced by a subagent given only the two briefs, and the triage's 'Cold designer produced' column reflects an independent section plan rather than a restatement of the signed sitemap"
+          "text": "The cold designer's plan is saved as its own artifact at `definition/cold-designer-plan.md` — a section plan in its own words, not the signed sitemap copied back — and the sections the triage rules on trace back to it",
+          "check": "p=clients/northgate-clinic/site/definition/cold-designer-plan.md; s=clients/northgate-clinic/site/definition/sitemap.md; t=clients/northgate-clinic/site/definition/cold-designer-triage.md; test -f \"$p\" || { echo \"no cold-designer plan at $p\"; exit 1; }; test -f \"$t\" || { echo \"no triage at $t\"; exit 1; }; awk '/^[[:space:]]*(#|[-*+][[:space:]]|[0-9]+[.)][[:space:]]|\\|)/ { n++ } END { if (n+0 < 3) { print \"the plan names \" n+0 \" section-level entries -- it carries no section plan\"; exit 1 } }' \"$p\" || exit 1; if test -f \"$s\" && [ \"$(tr -dc '[:alnum:]' < \"$p\" | tr 'A-Z' 'a-z')\" = \"$(tr -dc '[:alnum:]' < \"$s\" | tr 'A-Z' 'a-z')\" ]; then echo \"the plan only restates the signed sitemap\"; exit 1; fi; awk -F'|' -v plan=\"$p\" 'BEGIN { while ((getline line < plan) > 0) body = body \" \" tolower(line) } /^[[:space:]]*\\|/ { if ($2 ~ /^[[:space:]]*:?---/) next; sec = $2; gsub(/^[[:space:]]+|[[:space:]]+$/, \"\", sec); if (sec == \"\" || sec == \"Section\") next; low = tolower(sec); gsub(/[^a-z0-9]+/, \" \", low); c = split(low, w, \" \"); for (i = 1; i <= c; i++) if (length(w[i]) > 3 && index(body, w[i])) traced = 1 } END { if (!traced) { print \"no section the triage rules on is named in the plan\"; exit 1 } }' \"$t\""
         },
         {
           "id": "b5",

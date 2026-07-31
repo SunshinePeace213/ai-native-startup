@@ -18,13 +18,14 @@ Give the project a look. Two or three directions, each a different answer to the
 ## Variables
 
 PROJECT: $1 — the engagement, as `client/project`
-PROJECT_DIR: `clients/$1/`
-IDENTITY: `.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead, sign-off shape
-ARTIFACT_RULES: `.claude/rules/studio-layer/client-artifacts.md` — craft, palette source, and publish rules
+PROJECT_DIR: `$(git rev-parse --show-toplevel)/clients/$1/`
+IDENTITY: `$(git rev-parse --show-toplevel)/.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead, sign-off shape
+ARTIFACT_RULES: `$(git rev-parse --show-toplevel)/.claude/rules/studio-layer/client-artifacts.md` — craft, palette source, and publish rules
 
 ## Instructions
 
 - No `PROJECT` → stop and ask for it as `client/project`. P3 must be signed.
+- `PROJECT` must be exactly two segments, neither starting with `.` nor containing another `/` — anything else can write outside `clients/`. Reject it the same way and ask again.
 - Read `IDENTITY` and `ARTIFACT_RULES` before authoring anything.
 - Write only under `PROJECT_DIR`. `clients/` is gitignored — never stage, commit, or push client files.
 - Spawn `studio-art-director` and `studio-content-strategist` as ordinary subagents, one level deep. Never teammates.

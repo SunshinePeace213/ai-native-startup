@@ -16,12 +16,12 @@ that runner cannot reach a command: it stages its target into `<scratch>/.claude
 invocable as `/<namespace>:<name>` from `.claude/commands/`.
 
 Per run it stages the whole namespace -- `.claude/{commands,agents,skills,rules,scripts}/
-<namespace>/` plus `.claude/hooks/check_gate_signoff.py` -- into a throwaway project
-outside this repo, so the command resolves, the roles it spawns exist, the check scripts
-it calls are on disk, and the four hard-gate commands find the hook their frontmatter
-registers, while the repo's own rules never contaminate the run. The case's prompt is
-invoked verbatim as a slash command with the scratch project as cwd, so what the command
-writes lands inside it.
+<namespace>/` plus every file outside it that the namespace reaches (`STAGED_FILES`) --
+into a throwaway project outside this repo, so the command resolves, the roles it spawns
+exist, the check scripts it calls are on disk, the four hard-gate commands find the hook
+their frontmatter registers, and the staged rules' outbound links resolve, while the
+repo's own rules never contaminate the run. The case's prompt is invoked verbatim as a
+slash command with the scratch project as cwd, so what the command writes lands inside it.
 
 Each assertion carrying a `check` is graded by running it (exit 0 = pass); the rest go to
 a fresh-context judge that sees the produced files and never the executor's own account of
@@ -44,7 +44,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 STAGED_NAMESPACE_DIRS = ("commands", "agents", "skills", "rules", "scripts")
-STAGED_HOOKS = ("check_gate_signoff.py",)
+# Files outside the namespace that the staged files reference by path, relative to
+# `.claude/`. Each is load-bearing: the hard-gate commands register the hook, and the two
+# staged studio rules link out to these rules, so omitting one stages a broken dependency.
+STAGED_FILES = (
+    "hooks/check_gate_signoff.py",
+    "rules/harness-layer/artifacts.md",
+    "rules/model-selection.md",
+)
 DEFAULT_PASS_RATE = 1.0
 MAX_JUDGE_FILE_CHARS = 20000
 
@@ -92,6 +99,11 @@ def load_suite(commands_dir: Path) -> tuple[dict, Path]:
     return data, path
 
 
+def scalar_id(value: object) -> bool:
+    """An id names a run directory and keys a rate map, so it must be a hashable scalar."""
+    return isinstance(value, (str, int)) and not isinstance(value, bool)
+
+
 def validate(suite: object, path: Path) -> list[str]:
     """Every way the suite can be unrunnable, reported at once rather than one per run."""
     if not isinstance(suite, dict):
@@ -106,6 +118,7 @@ def validate(suite: object, path: Path) -> list[str]:
         problems.append(f"{path} has no 'evals' array")
         return problems
 
+    seen_cases: set[object] = set()
     for case in evals:
         if not isinstance(case, dict):
             problems.append(f"{path} has a case that is not an object")
@@ -114,6 +127,19 @@ def validate(suite: object, path: Path) -> list[str]:
         for field in ("id", "name", "prompt"):
             if case.get(field) in (None, ""):
                 problems.append(f"{path} case {label!r} is missing '{field}'")
+        case_id = case.get("id")
+        if case_id not in (None, "") and not scalar_id(case_id):
+            problems.append(
+                f"{path} case {label!r} records a non-scalar id -- it cannot name a run "
+                "directory or key a pass rate"
+            )
+        elif case_id in seen_cases:
+            problems.append(
+                f"{path} reuses case id {case_id!r} -- the two would share run directories "
+                "and one pass rate would overwrite the other"
+            )
+        elif case_id not in (None, ""):
+            seen_cases.add(case_id)
         prompt = case.get("prompt")
         # The runner invokes the prompt verbatim; one that is not a slash command
         # evaluates the model's general behavior rather than the command under test.
@@ -135,6 +161,12 @@ def validate(suite: object, path: Path) -> list[str]:
             if not isinstance(assertion, dict) or not assertion.get("id"):
                 problems.append(f"{path} case {label!r} has an assertion with no id")
                 continue
+            if not scalar_id(assertion["id"]):
+                problems.append(
+                    f"{path} case {label!r} has an assertion with a non-scalar id -- "
+                    "it cannot key a verdict"
+                )
+                continue
             if not assertion.get("text"):
                 problems.append(f"{path} case {label!r} assertion {assertion['id']!r} has no text")
             if assertion["id"] in seen:
@@ -153,9 +185,10 @@ def validate(suite: object, path: Path) -> list[str]:
 def stage_project(commands_dir: Path, root: Path) -> None:
     """Stage the whole namespace into `root` so the command resolves with its machinery.
 
-    The hook sits outside the namespace but is load-bearing: the hard-gate commands
-    register `"$CLAUDE_PROJECT_DIR"/.claude/hooks/check_gate_signoff.py`, so omitting it
-    would evaluate them with their gate silently absent.
+    `STAGED_FILES` sit outside the namespace but are reached from inside it -- the
+    hard-gate commands register `"$CLAUDE_PROJECT_DIR"/.claude/hooks/check_gate_signoff.py`
+    and the staged studio rules link out to the two harness rules -- so omitting one would
+    evaluate the commands with a gate silently absent or a rule pointing at nothing.
     """
     claude = commands_dir.parents[1]
     namespace = commands_dir.name
@@ -165,12 +198,12 @@ def stage_project(commands_dir: Path, root: Path) -> None:
         if not src.is_dir():
             raise SuiteError(f"{src} is missing -- the staged project would be incomplete")
         shutil.copytree(src, dest / kind / namespace)
-    (dest / "hooks").mkdir(parents=True, exist_ok=True)
-    for hook in STAGED_HOOKS:
-        src = claude / "hooks" / hook
+    for rel in STAGED_FILES:
+        src = claude / rel
         if not src.is_file():
-            raise SuiteError(f"{src} is missing -- the hard gates would run ungated")
-        shutil.copy2(src, dest / "hooks" / hook)
+            raise SuiteError(f"{src} is missing -- the staged project would be incomplete")
+        (dest / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest / rel)
 
 
 def claude_headless(
@@ -356,6 +389,14 @@ def run_one(spec: dict) -> dict:
                 "evidence": verdict.get("evidence", "not graded"),
             }
         )
+    # A run the CLI reported as failed produced partial files at best, so grading them
+    # normally would let a crashed run score like a clean one and clear the case's rate.
+    run_error = envelope.get("error")
+    if run_error:
+        for expectation in expectations:
+            expectation["passed"] = False
+            expectation["evidence"] = f"run errored ({run_error}); {expectation['evidence']}"
+
     passed = sum(1 for e in expectations if e["passed"])
     total = len(expectations)
     grading = {
@@ -367,15 +408,15 @@ def run_one(spec: dict) -> dict:
             "pass_rate": round(passed / total, 4) if total else 0.0,
         },
     }
-    if "error" in envelope:
-        grading["run_error"] = envelope["error"]
+    if run_error:
+        grading["run_error"] = run_error
     (run_dir / "grading.json").write_text(json.dumps(grading, indent=2), encoding="utf-8")
 
     return {
         "eval_id": case["id"],
         "run": k,
         "pass_rate": grading["summary"]["pass_rate"],
-        "error": envelope.get("error"),
+        "error": run_error,
     }
 
 
@@ -422,6 +463,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.workspace
         else Path(tempfile.mkdtemp(prefix="studio-command-evals-"))
     )
+    # A reused workspace keeps the previous run's output files, and the checks and the
+    # judge both read that directory -- a run would be graded on artifacts it never wrote.
+    if args.workspace and workspace.is_dir() and any(workspace.iterdir()):
+        print(f"{workspace} is not empty -- point --workspace at a new or empty directory")
+        return 2
 
     print(f"Commands:   {suite.get('skill_name')} ({commands_dir})")
     print(f"Cases:      {len(cases)}  ×  repeats: {args.repeats}")

@@ -235,6 +235,27 @@ least one row; every path is project-relative and must exist; every SHA is the 6
 attest to two documents. The hash is of file content, never a git SHA: `clients/` is
 gitignored, so no commit object exists.
 
+Every path is also **confined to the project**. An absolute path, any `..` segment, and any
+path whose resolved target — symlinks followed — falls outside
+`clients/<client>/<project>/` each block the gate. A client signs one engagement, so a row
+naming a file elsewhere on disk is never an approval, however correctly it hashes.
+
+**Required artifacts per gated phase.** A signature over *some* file is not a signature over
+the phase's deliverables: hashing whatever rows the table happens to carry would let P2 close
+with no brief and P6 with no handoff pack. Each gate therefore names the rows its sign-off
+table must list, and each required path is then hash-verified like any other row.
+
+| Phase | Rows `sign-off/<phase>.md` must list |
+| --- | --- |
+| P2 | `definition/project-brief.md`, `definition/sitemap.md` |
+| P3 | `structure/wireframes.md`, `structure/inventory.md` |
+| P4 | `art-direction/rationale.md`, `art-direction/style-tile.md` |
+| P6 | `handoff/pack.md`, `handoff/states-matrix.md`, `handoff/tokens.md` |
+
+Each set is the phase's Gate column made machine-readable, and is a floor rather than a
+ceiling — a phase may sign more. P3's `structure/inventory.md` row is this one rule applied,
+not a second mechanism.
+
 ### Phase documents — the machine-readable schemas
 
 Each format below is what the phase command writes and the check script parses. A phase
@@ -347,8 +368,11 @@ baseline is never a pass. Adding a component to the design without adding it her
 way to defeat these checks, and after P3 that means amending a client-signed document.
 
 **Design QA report** — `clients/<c>/<p>/handoff/qa-report.md`. One row per finding;
-`Severity` is `blocking` or `advisory`, `Status` is `open` or `resolved`. The p6 gate refuses
-to close while any `blocking` finding is `open`.
+`Severity` is exactly `blocking` or `advisory`, `Status` exactly `open` or `resolved`. The p6
+gate refuses to close while any `blocking` finding is `open`, and it blocks on any row whose
+`Severity` or `Status` is blank or outside those values. A row the gate cannot read is never
+a resolved one — matching only the exact pair `blocking`/`open` would let `blocking | TBD` or
+`blocker | open` hand over an engagement QA said was not ready.
 
 ```markdown
 | Finding | Severity | Status | Evidence |

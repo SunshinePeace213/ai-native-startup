@@ -254,3 +254,81 @@
   - The registration line the four gate commands must carry:
     `uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/check_gate_signoff.py <phase>`.
   - Deviations: none.
+- **2026-08-01 · review · codex implementation round 1** — `gpt-5.6-sol` at `xhigh`, reviewed
+  head `339b2c5`, diff `fb5e6ea..339b2c5`. 22 findings: 13 blocking, 9 advisory, recorded in
+  `reviews/findings-ledger.md` as `I1-F*`.
+  - All seven plan-local checks exit 0 and `uv run pytest` → `990 passed, 2 skipped` at the
+    reviewed head, so neither the check scripts nor the suite contributed a finding of its own.
+  - The blockers cluster in four places: the hard gates accepted **any** one signed artifact;
+    the revision counter never actually counted; sign-off artifact paths and the `PROJECT`
+    argument were unconstrained; and QA rows fell open on any value but the exact pair
+    `blocking`/`open`.
+- **2026-08-01 · review · fix round** — four file-disjoint fixers, `opus`/`high` except the
+  commands fixer (`sonnet`/`high`). Every finding was verified against the code before it was
+  fixed; none was disputed.
+  - `check_gate_signoff.py` — required-artifact set per gated phase (a floor, not a ceiling),
+    path containment (absolute, `..` and escaping symlinks all block), and QA severity/status
+    validated against their enums so an unreadable row blocks rather than reading as resolved.
+    15 tests added; the fixer restored the pre-fix hook and confirmed 14 of the 15 fail against
+    it, the exception being the p3-inventory case an earlier round already covered.
+  - `check_revision_count.py` — round numbers must be positive, unique and contiguous from 1;
+    `Cost — rounds` must be ≥ 1; each change order buys only the rounds it declares; and the
+    allowance is refused unless `definition/project-brief.md` still hashes to what `sign-off/p2.md`
+    recorded. It parses that sign-off on `check_gate_signoff.py`'s own table schema, so the gate
+    and the counter read one document alike.
+  - `check_contrast.py` / `check_states_matrix.py` — token coverage is exact set membership over
+    the colour columns only; short rows and duplicate keys exit 2 rather than raising `IndexError`
+    or hiding a blank row.
+  - The eight commands — every body path anchored to `$(git rev-parse --show-toplevel)`, and
+    `PROJECT` validated as exactly two non-dot segments.
+  - **One regression caught before it landed.** The commands fixer first anchored on
+    `"$CLAUDE_PROJECT_DIR"`, flagging that it could not confirm the variable reaches a command
+    body. It does not: `echo "[$CLAUDE_PROJECT_DIR]"` in a Bash tool call prints `[]`, and
+    `ai-docs/anthropic/hooks.md:494` documents the variable for hooks, stdio MCP servers and
+    plugin LSP servers only — command-body Bash is not in that set. Anchoring there would have
+    expanded to `/clients/<client>/<project>/` at the filesystem root. Re-anchored on
+    `git rev-parse --show-toplevel`, which is also what the hook's own `resolve_root()` falls
+    back to. The four frontmatter registration lines keep `"$CLAUDE_PROJECT_DIR"` — that one *is*
+    a hook, which is exactly the documented case.
+  - `acceptance-criteria.md` was updated by the lead, not the fixers, because it is shared:
+    `test_changing_the_brief_allowance_changes_the_verdict` was removed by the counter fix (it
+    asserted post-signature mutation as an *allow* path) and its AC13 reference would have gone
+    dead. All ten AC pytest commands were then re-run verbatim — AC8 → 26 passed, AC9 → 12,
+    AC11 → 9, AC12 → 7, AC13 → 17, AC16's new runner-contract line → 6 — so every recorded node
+    id resolves rather than silently matching nothing.
+  - After the fix round: `uv run pytest` → `1025 passed, 2 skipped`; `uv run ruff check .` →
+    `All checks passed!`; `uv run ruff format --check .` → `71 files already formatted`.
+- **2026-08-01 · review · AC16 closed at its bar** — run by the review lead, twice, because the
+  first fix round moved the rate without clearing it.
+  - After the first fix: `eval-0` 0.9444, `eval-1` 0.9444, both needing 1.0 — `EVAL_EXIT=1`.
+    Two assertions failed, each in 1 run of 3, and they were **not** the same kind of problem:
+    - `b4` (eval-1) was unfalsifiable. It asked the judge to confirm a *process* — that a
+      subagent was given only the two briefs — from *artifacts that record no process*. The
+      judge said so explicitly: the plan "does differ structurally from the signed sitemap,
+      which is consistent with independence, but the files alone don't show the generation
+      method". Fixed on both sides: `p2-definition.md` now writes the cold designer's reply
+      verbatim to `definition/cold-designer-plan.md` before anything is compared, and `b4`
+      became a largely executable check — the file exists, carries at least three section-level
+      entries, is not a byte-identical restatement of the signed sitemap, and the sections the
+      triage rules on trace back to it.
+    - `a5` (eval-0) was a fair assertion the command failed: the glossary omitted the twelve
+      treatments and three locations the assertion names. **The assertion was left untouched**
+      and `p1-discovery.md` was corrected instead — its glossary step now asks for the client's
+      own words for "every service, product and location they list by name, the words they ban,
+      and the words they insist on". Deliberately general: naming the fixture's client in the
+      command would have tuned the command to the eval.
+  - Final: `eval-0` **1.0**, `eval-1` **1.0**, each needing 1.0, over 6 `claude -p` runs,
+    `EVAL_EXIT=0`. **AC16's commands-suite `manual:` check now meets its bar**, and the
+    hand-off note's "known gap for review" is closed.
+  - The `a3` adjudication that started this: the build was right that the assertion
+    over-specified. `SKILL.md:14` closes a dimension on "a written statement of what is true",
+    reserving `N/A, because` for one that genuinely does not apply, so demanding that literal
+    opener tested phrasing rather than the contract. The replacement accepts either form,
+    still fails a blank section and still fails an invented figure, and reads the whole
+    `## Budget` section rather than a four-line `grep -A4` window. Verified against nine
+    hand-built Budget sections before the eval was re-run — including "the 2026 financial
+    year", which an intermediate version wrongly failed as an invented figure.
+  - Method note, again: `EVAL_EXIT` is captured inside the runner script. The task
+    notification for the wrapper reported exit 0 while the eval had actually returned 1,
+    because a trailing `echo` supplied the compound's status — the same masking the build hit
+    with `tail`. The rate in this entry comes from the runner's own recorded exit code.

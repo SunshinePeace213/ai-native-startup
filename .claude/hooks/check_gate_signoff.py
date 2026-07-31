@@ -18,12 +18,13 @@ hook contract; a bad registration is caught by test_wiring.py at CI time rather
 than mid-engagement.
 
 The sign-off at clients/<client>/<project>/sign-off/<phase>.md needs a filled
-Approver and Date plus an artifact table whose every row names an existing
-project-relative file whose SHA-256 still matches the recorded hash (a content
-hash -- clients/ is gitignored, so no commit object exists). p2 additionally
-needs a fully triaged cold-designer document, p3 a client-signed component
-inventory, and p6 a QA report with no open blocking finding plus that same
-inventory still hashing to what the P3 sign-off recorded.
+Approver and Date plus an artifact table that lists every one of the phase's
+required deliverables and whose every row names an existing file inside the
+project whose SHA-256 still matches the recorded hash (a content hash --
+clients/ is gitignored, so no commit object exists). p2 additionally needs a
+fully triaged cold-designer document, p3 a non-empty component inventory, and p6
+a QA report with no open blocking finding plus that same inventory still hashing
+to what the P3 sign-off recorded.
 """
 
 import hashlib
@@ -39,6 +40,19 @@ GATED_PHASES = ("p2", "p3", "p4", "p6")
 INVENTORY = "structure/inventory.md"
 TRIAGE = "definition/cold-designer-triage.md"
 QA_REPORT = "handoff/qa-report.md"
+
+# The rows each phase's sign-off table must carry -- a floor, never a ceiling.
+# Without it any one signed file closes a gate, so p2 could close with no brief
+# and p6 with no handoff pack.
+REQUIRED_ARTIFACTS = {
+    "p2": ("definition/project-brief.md", "definition/sitemap.md"),
+    "p3": ("structure/wireframes.md", INVENTORY),
+    "p4": ("art-direction/rationale.md", "art-direction/style-tile.md"),
+    "p6": ("handoff/pack.md", "handoff/states-matrix.md", "handoff/tokens.md"),
+}
+
+QA_SEVERITIES = ("blocking", "advisory")
+QA_STATUSES = ("open", "resolved")
 
 SHA_RE = re.compile(r"^[0-9a-f]{64}$")
 SEPARATOR_CELL_RE = re.compile(r"^:?-{2,}:?$")
@@ -114,6 +128,21 @@ def relative(value: str) -> str:
     return unwrap(value).removeprefix("./")
 
 
+def contained(project: Path, artifact: str) -> Path | None:
+    """Where an artifact row points, or None when it leaves the project.
+
+    A client signs one engagement, so a row may only name a file inside it. An
+    absolute path, a `..` segment, or a symlink out of the tree would otherwise
+    let a file elsewhere on disk carry the signature and open the gate.
+    """
+    path = Path(artifact)
+    if path.is_absolute() or ".." in path.parts:
+        return None
+    root = project.resolve()
+    target = (project / path).resolve()
+    return target if root in target.parents else None
+
+
 def resolve_root() -> Path:
     env_root = os.environ.get("CLAUDE_PROJECT_DIR")
     if env_root:
@@ -162,13 +191,14 @@ def artifact_rows(text: str) -> list[tuple[str, str]] | None:
     return [(relative(cell(row, path_at)), cell(row, sha_at).lower()) for row in rows]
 
 
-def check_signoff(project: Path, phase: str, problems: list[str]) -> list[tuple[str, str]]:
-    """Approver, Date, and an artifact table every row of which still resolves."""
+def check_signoff(project: Path, phase: str, problems: list[str]) -> None:
+    """Approver, Date, and an artifact table that carries the phase's required
+    deliverables and every row of which still resolves inside the project."""
     rel = f"sign-off/{phase}.md"
     path = project / rel
     if not path.is_file():
         problems.append(f"{rel}: MISSING FILE — the phase has no client sign-off")
-        return []
+        return
 
     text = path.read_text(errors="replace")
     for name in ("Approver", "Date"):
@@ -181,7 +211,7 @@ def check_signoff(project: Path, phase: str, problems: list[str]) -> list[tuple[
     rows = artifact_rows(text)
     if rows is None:
         problems.append(f"{rel}: no artifact table with 'Artifact' and 'SHA-256' columns")
-        return []
+        return
     if not rows:
         problems.append(f"{rel}: the artifact table has no rows — nothing was approved")
 
@@ -189,8 +219,13 @@ def check_signoff(project: Path, phase: str, problems: list[str]) -> list[tuple[
         if is_placeholder(artifact):
             problems.append(f"{rel}: an artifact row names no file")
             continue
-        target = project / artifact
-        if not SHA_RE.match(sha):
+        target = contained(project, artifact)
+        if target is None:
+            problems.append(
+                f"{rel}: '{artifact}' resolves outside the project — a signature approves "
+                "files inside the engagement it signs, never elsewhere on disk"
+            )
+        elif not SHA_RE.match(sha):
             problems.append(f"{rel}: '{artifact}' carries no 64-hex SHA-256")
         elif not target.is_file():
             problems.append(f"{rel}: '{artifact}' does not exist — an approval of a missing file")
@@ -199,7 +234,14 @@ def check_signoff(project: Path, phase: str, problems: list[str]) -> list[tuple[
                 f"{rel}: '{artifact}' no longer matches what was approved "
                 f"(signed {sha}, current {actual})"
             )
-    return rows
+
+    signed = {artifact for artifact, _sha in rows}
+    for required in REQUIRED_ARTIFACTS[phase]:
+        if required not in signed:
+            problems.append(
+                f"{rel}: the artifact table does not list {required} — "
+                "a deliverable of this phase the client never approved"
+            )
 
 
 def is_triaged(value: str) -> bool:
@@ -230,21 +272,17 @@ def check_triage(project: Path, problems: list[str]) -> None:
             )
 
 
-def check_inventory_signed(
-    project: Path, approved: list[tuple[str, str]], problems: list[str]
-) -> None:
-    """p3: the inventory P6 measures the design against is approved here, not
-    authored at P6 alongside the matrix that would then agree with it."""
+def check_inventory_present(project: Path, problems: list[str]) -> None:
+    """p3: the inventory P6 measures the design against exists and says something.
+
+    Its presence in the P3 sign-off table is the required-artifact rule doing its
+    job, so only the file itself is checked here.
+    """
     path = project / INVENTORY
     if not path.is_file():
         problems.append(f"{INVENTORY}: MISSING FILE — P3 enumerates it from the signed wireframes")
     elif not path.read_text(errors="replace").strip():
         problems.append(f"{INVENTORY}: is empty — a missing baseline is never a pass")
-    if not any(artifact == INVENTORY for artifact, _sha in approved):
-        problems.append(
-            f"sign-off/p3.md: the artifact table does not list {INVENTORY} — "
-            "the client must approve the list P6 is measured against"
-        )
 
 
 def check_inventory_unchanged(project: Path, problems: list[str]) -> None:
@@ -281,7 +319,12 @@ def check_inventory_unchanged(project: Path, problems: list[str]) -> None:
 
 def check_qa_report(project: Path, problems: list[str]) -> None:
     """p6: design QA blocks handoff as a mechanism — an open blocking finding
-    keeps the phase open."""
+    keeps the phase open.
+
+    Every Severity and Status is validated against the documented enums first: a
+    row the gate cannot read must never read as resolved, or `blocker | TBD`
+    would close the engagement while saying the opposite.
+    """
     path = project / QA_REPORT
     if not path.is_file():
         problems.append(f"{QA_REPORT}: MISSING FILE — design QA has not reported")
@@ -295,8 +338,22 @@ def check_qa_report(project: Path, problems: list[str]) -> None:
     severity_at = column(header, "severity")
     status_at = column(header, "status")
     for row in rows:
-        if cell(row, severity_at).lower() == "blocking" and cell(row, status_at).lower() == "open":
-            problems.append(f"{QA_REPORT}: blocking finding still open — {cell(row, finding_at)}")
+        label = cell(row, finding_at) or "(unnamed finding)"
+        severity = cell(row, severity_at).lower()
+        status = cell(row, status_at).lower()
+        unreadable = False
+        for name, value, allowed in (
+            ("Severity", severity, QA_SEVERITIES),
+            ("Status", status, QA_STATUSES),
+        ):
+            if value not in allowed:
+                unreadable = True
+                problems.append(
+                    f"{QA_REPORT}: '{label}' has an unreadable {name} "
+                    f"{value or '(blank)'!r} — one of {', '.join(allowed)}"
+                )
+        if not unreadable and severity == "blocking" and status == "open":
+            problems.append(f"{QA_REPORT}: blocking finding still open — {label}")
 
 
 def main(argv: list[str]) -> int:
@@ -326,11 +383,11 @@ def main(argv: list[str]) -> int:
         return 0
 
     problems: list[str] = []
-    approved = check_signoff(project, phase, problems)
+    check_signoff(project, phase, problems)
     if phase == "p2":
         check_triage(project, problems)
     elif phase == "p3":
-        check_inventory_signed(project, approved, problems)
+        check_inventory_present(project, problems)
     elif phase == "p6":
         check_qa_report(project, problems)
         check_inventory_unchanged(project, problems)

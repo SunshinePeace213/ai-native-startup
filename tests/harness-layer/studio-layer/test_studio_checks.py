@@ -6,6 +6,7 @@ countable failure, 2 the check could not run its arithmetic. Every fixture is bu
 under tmp_path so the suite stays parallel-safe.
 """
 
+import hashlib
 import shutil
 import subprocess
 from pathlib import Path
@@ -50,6 +51,19 @@ CHANGE_ORDER = """\
 - **Cost — rounds:** 1
 - **Cost — time:** 3 business days
 - **Approved by:** Jordan Reyes · 2026-08-14
+"""
+
+P2_SIGNOFF = """\
+# Sign-off: P2 — Definition
+
+- **Approver:** Jordan Reyes, Head of Marketing, Acme Co.
+- **Date:** 2026-07-31
+
+## Approved artifacts
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `definition/project-brief.md` | `{sha}` |
 """
 
 
@@ -118,11 +132,18 @@ def notes_for(dimensions, blank=()) -> str:
     return "\n".join(body)
 
 
+def sign_brief(project: Path) -> Path:
+    """Record the brief's current SHA-256 in the P2 sign-off, as collecting the signature does."""
+    digest = hashlib.sha256((project / "definition" / "project-brief.md").read_bytes()).hexdigest()
+    return write(project / "sign-off" / "p2.md", P2_SIGNOFF.format(sha=digest))
+
+
 def revisions(tmp_path: Path, *, brief=BRIEF, rounds=(), change_orders=()) -> Path:
     """A project with a signed brief, a revision log, and any change orders."""
     project = tmp_path / "clients" / "acme" / "site"
     if brief is not None:
         write(project / "definition" / "project-brief.md", brief)
+        sign_brief(project)
     log = ["| Round | Date | Requested | Change order |", "| --- | --- | --- | --- |"]
     log += [f"| {n} | 2026-08-1{n} | a change | {ref} |" for n, ref in rounds]
     write(project / "prototype" / "revision-log.md", "\n".join(log) + "\n")
@@ -253,6 +274,35 @@ def test_missing_state_column_fails(tmp_path):
     assert result.stdout.count("leaves 'error' unfilled") == 4
 
 
+def test_duplicate_matrix_row_exits_2(tmp_path):
+    """Two rows for one component and breakpoint make the verdict depend on which is read
+    last, so a filled duplicate could hide a blank row instead of contradicting it."""
+    states = matrix() + "| PrimaryButton | " + " | ".join(["specified"] * len(STATES)) + " |\n"
+    project = handoff(tmp_path, states=states)
+    result = run_check("check_states_matrix.py", project / "handoff" / "states-matrix.md")
+    assert result.returncode == 2, result.stdout
+    assert "PrimaryButton at desktop is already specified at line" in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("kind", "extra"),
+    [("matrix", "| Card | hover only |\n"), ("inventory", "| Card |\n")],
+    ids=["matrix", "inventory"],
+)
+def test_short_row_exits_2(tmp_path, kind, extra):
+    """A row with fewer cells than columns is a broken table, not a set of blank states. The
+    contract reserves exit 2 for what the check cannot read, so a markdown typo is never
+    reported as a design gap -- and never as a traceback."""
+    project = handoff(
+        tmp_path,
+        states=matrix() + extra if kind == "matrix" else None,
+        inventory=INVENTORY + extra if kind == "inventory" else INVENTORY,
+    )
+    result = run_check("check_states_matrix.py", project / "handoff" / "states-matrix.md")
+    assert result.returncode == 2, result.stdout
+    assert "of the table's" in result.stdout
+
+
 # --- AC12: contrast and tap targets are computed, not asserted ------------------------
 
 
@@ -353,6 +403,20 @@ def test_one_compliant_pair_cannot_stand_in_for_the_rest(tmp_path):
     assert "SearchResults has no tap-target row" in result.stdout
 
 
+def test_token_named_only_in_used_for_is_not_covered(tmp_path):
+    """Coverage means the token was measured, not mentioned: naming it in the prose column
+    would let a designer describe a pair into compliance without any pair being computed."""
+    tokens = TOKENS.replace(
+        "| `--text` `#2C2825` | `--bg` `#FAF8F5` | normal-text | body copy |",
+        "| `#2C2825` | `#FAF8F5` | normal-text | body copy, `--text` on `--bg` |",
+    )
+    project = handoff(tmp_path, tokens=tokens)
+    result = run_check("check_contrast.py", project / "handoff" / "tokens.md")
+    assert result.returncode == 1, result.stdout
+    assert "colour token --text appears in no checked foreground/background pair" in result.stdout
+    assert "colour token --bg appears in no checked foreground/background pair" in result.stdout
+
+
 @pytest.mark.parametrize(
     ("script", "target"),
     [("check_states_matrix.py", "states-matrix.md"), ("check_contrast.py", "tokens.md")],
@@ -422,21 +486,123 @@ def test_unsigned_change_order_fails(tmp_path):
     assert "'Approved by' carries no YYYY-MM-DD date" in result.stdout
 
 
-def test_changing_the_brief_allowance_changes_the_verdict(tmp_path):
-    """The allowance is re-derived from the signed brief every run: one unchanged log
-    flips verdict when the brief that sold the rounds says a different number."""
+def test_change_order_buying_zero_rounds_fails(tmp_path):
+    """A costless order clears the paperwork while buying nothing -- exactly the free round
+    the counter exists to refuse, so 'Cost - rounds: 0' cannot pay for round 3."""
+    free = CHANGE_ORDER.replace("- **Cost — rounds:** 1", "- **Cost — rounds:** 0")
+    project = revisions(
+        tmp_path,
+        rounds=[(1, "-"), (2, "-"), (3, "`change-orders/1.md`")],
+        change_orders=[("1.md", free)],
+    )
+    result = run_check("check_revision_count.py", project)
+    assert result.returncode == 1, result.stdout
+    assert "an order that buys no round cannot pay for one" in result.stdout
+
+
+def test_one_change_order_cannot_buy_two_rounds(tmp_path):
+    """Capacity, not presence: a one-round order named again on the next round would let a
+    single client approval pay for unlimited revisions."""
+    project = revisions(
+        tmp_path,
+        rounds=[(1, "-"), (2, "-"), (3, "`change-orders/1.md`"), (4, "`change-orders/1.md`")],
+        change_orders=[("1.md", CHANGE_ORDER)],
+    )
+    result = run_check("check_revision_count.py", project)
+    assert result.returncode == 1, result.stdout
+    assert "2 rounds past the 2-round allowance" in result.stdout
+    assert "which buys 1" in result.stdout
+
+
+def test_change_order_buying_two_rounds_covers_both(tmp_path):
+    """The counter arithmetic, not a ban on reuse: the same two rounds pass once the order
+    the client approved is priced for two."""
+    two = CHANGE_ORDER.replace("- **Cost — rounds:** 1", "- **Cost — rounds:** 2")
+    project = revisions(
+        tmp_path,
+        rounds=[(1, "-"), (2, "-"), (3, "`change-orders/1.md`"), (4, "`change-orders/1.md`")],
+        change_orders=[("1.md", two)],
+    )
+    result = run_check("check_revision_count.py", project)
+    assert result.returncode == 0, result.stdout
+
+
+@pytest.mark.parametrize(
+    ("logged", "expected"),
+    [
+        ([(1, "-"), (1, "-")], "already logged at line"),
+        ([(1, "-"), (3, "-")], "skips round(s) 2"),
+        ([(0, "-"), (1, "-")], "round number 0 is not positive"),
+        ([(-1, "-"), (1, "-")], "round number -1 is not positive"),
+    ],
+    ids=["duplicate", "skipped", "zero", "negative"],
+)
+def test_misnumbered_rounds_exit_2(tmp_path, logged, expected):
+    """Round numbers are counted, never trusted: a log whose rows all read '1' would stay
+    inside any allowance forever. Numbering that is not positive, unique and contiguous is a
+    broken document, so it exits 2 rather than reporting a design failure nobody can act on."""
+    project = revisions(tmp_path, rounds=logged)
+    result = run_check("check_revision_count.py", project)
+    assert result.returncode == 2, result.stdout
+    assert expected in result.stdout
+
+
+def test_allowance_is_re_derived_from_the_signed_brief(tmp_path):
+    """The number is never hard-coded: the same three-round log fails against a brief that
+    sold two rounds and passes against one the client signed for three."""
+    two = revisions(tmp_path / "two", rounds=[(1, "-"), (2, "-"), (3, "-")])
+    assert run_check("check_revision_count.py", two).returncode == 1
+
+    three = revisions(
+        tmp_path / "three",
+        brief=BRIEF.replace("** 2 (", "** 3 ("),
+        rounds=[(1, "-"), (2, "-"), (3, "-")],
+    )
+    result = run_check("check_revision_count.py", three)
+    assert result.returncode == 0, result.stdout
+
+
+def test_brief_edited_after_signature_exits_2(tmp_path):
+    """Editing 2 to 3 in the brief would buy a round without a change order and without the
+    client, so the allowance counts only while the brief still hashes to what P2 approved."""
     project = revisions(tmp_path, rounds=[(1, "-"), (2, "-"), (3, "-")])
     assert run_check("check_revision_count.py", project).returncode == 1
 
     write(project / "definition" / "project-brief.md", BRIEF.replace("** 2 (", "** 3 ("))
     result = run_check("check_revision_count.py", project)
-    assert result.returncode == 0, result.stdout
+    assert result.returncode == 2, result.stdout
+    assert "changed since the P2 sign-off" in result.stdout
+
+
+def test_unsigned_brief_exits_2(tmp_path):
+    """A brief the P2 artifact table never lists was approved by nobody, so the number on it
+    is a proposal, not an allowance to count against."""
+    project = revisions(tmp_path, rounds=[(1, "-")])
+    write(
+        project / "sign-off" / "p2.md", "# Sign-off: P2\n\n| Artifact | SHA-256 |\n| --- | --- |\n"
+    )
+    result = run_check("check_revision_count.py", project)
+    assert result.returncode == 2, result.stdout
+    assert "does not list definition/project-brief.md" in result.stdout
 
 
 def test_brief_with_no_allowance_exits_2(tmp_path):
     """A missing baseline is a different defect from exceeding it: the brief never sold
     a number of rounds, so there is no arithmetic to do."""
     project = revisions(tmp_path, brief="# Project brief\n", rounds=[(1, "-")])
+    result = run_check("check_revision_count.py", project)
+    assert result.returncode == 2, result.stdout
+    assert "Revision rounds" in result.stdout
+
+
+def test_malformed_allowance_line_exits_2(tmp_path):
+    """The allowance is one locked line. Reading the first integer off anything that mentions
+    revision rounds would invent a baseline from a sentence nobody agreed to as a number."""
+    project = revisions(
+        tmp_path,
+        brief="# Project brief\n\n- **Revision rounds:** 2 to 3, to be agreed\n",
+        rounds=[(1, "-")],
+    )
     result = run_check("check_revision_count.py", project)
     assert result.returncode == 2, result.stdout
     assert "Revision rounds" in result.stdout

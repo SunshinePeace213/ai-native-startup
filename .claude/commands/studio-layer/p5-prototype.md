@@ -14,13 +14,14 @@ Turn the picked direction into something the client can click, then revise it in
 
 PROJECT: $1 — the engagement, as `client/project`
 TOOL: $2 — the prototype tool this project drives
-PROJECT_DIR: `clients/$1/`
-IDENTITY: `.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead
-ARTIFACT_RULES: `.claude/rules/studio-layer/client-artifacts.md` — craft, palette source, and publish rules for the feedback page
+PROJECT_DIR: `$(git rev-parse --show-toplevel)/clients/$1/`
+IDENTITY: `$(git rev-parse --show-toplevel)/.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead
+ARTIFACT_RULES: `$(git rev-parse --show-toplevel)/.claude/rules/studio-layer/client-artifacts.md` — craft, palette source, and publish rules for the feedback page
 
 ## Instructions
 
 - No `PROJECT` → stop and ask for it as `client/project`. P4 must be signed.
+- `PROJECT` must be exactly two segments, neither starting with `.` nor containing another `/` — anything else can write outside `clients/`. Reject it the same way and ask again.
 - No `TOOL` → pick it by the rules below and say which rule decided, before writing the prompt pack.
 - Read `IDENTITY` and `ARTIFACT_RULES` before authoring anything.
 - Write only under `PROJECT_DIR`. `clients/` is gitignored — never stage, commit, or push client files.
@@ -45,7 +46,7 @@ In order, first match wins: a tool the client already pays for; otherwise one th
    | 3 | 2026-08-14 | swap hero video for a still | `change-orders/1.md` |
    ```
 
-5. Close the round with `uv run --script .claude/scripts/studio-layer/check_revision_count.py clients/$1/` and report its verdict. Exit 1 names each round past the allowance whose change order is missing or incomplete — write `change-orders/N.md` (Requested, an integer `Cost — rounds`, `Cost — time`, and `Approved by` with a name and date), get the client's approval into it, and re-run. Exit 2 means the brief declares no allowance: that is a missing baseline, so go back to P2 rather than assuming a number.
+5. Close the round with `uv run --script $(git rev-parse --show-toplevel)/.claude/scripts/studio-layer/check_revision_count.py $(git rev-parse --show-toplevel)/clients/$1/` and report its verdict. Exit 1 names each round past the allowance whose change order is missing or incomplete — write `change-orders/N.md` (Requested, an integer `Cost — rounds`, `Cost — time`, and `Approved by` with a name and date), get the client's approval into it, and re-run. Exit 2 means the brief declares no allowance: that is a missing baseline, so go back to P2 rather than assuming a number.
 6. Repeat from step 3 while the client has rounds left and wants one. Report when the prototype is settled.
 
 ## Report

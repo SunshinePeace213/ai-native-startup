@@ -70,6 +70,18 @@ def read_lines(path: Path, what: str) -> list[str]:
         raise ParseError(f"cannot read the {what} at {path}: {err}") from err
 
 
+def require_width(path: Path, line_no: int, row: list[str], header: list[str]) -> None:
+    """A row narrower than its header is malformed markdown, not an unfilled cell.
+
+    Reading it as blanks would report a typo as a design gap, so it exits 2 instead.
+    """
+    if len(row) < len(header):
+        raise ParseError(
+            f"{path}:{line_no}: the row fills {len(row)} of the table's "
+            f"{len(header)} columns, so it cannot be read"
+        )
+
+
 def read_inventory(path: Path) -> list[tuple[int, str, list[str]]]:
     """(line_no, component, breakpoints) per row of the client-signed inventory."""
     lines = read_lines(path, "component inventory")
@@ -81,9 +93,12 @@ def read_inventory(path: Path) -> list[tuple[int, str, list[str]]]:
             raise ParseError(f"the component inventory at {path} declares no Breakpoints column")
         entries = []
         for line_no, row in rows:
-            component = row[index["component"]].strip("` ")
+            require_width(path, line_no, row, header)
+            component = cell_at(row, index["component"]).strip("` ")
             breakpoints = [
-                bp.strip("` ") for bp in row[index["breakpoints"]].split(",") if bp.strip("` ")
+                bp.strip("` ")
+                for bp in cell_at(row, index["breakpoints"]).split(",")
+                if bp.strip("` ")
             ]
             if component:
                 entries.append((line_no, component, breakpoints))
@@ -107,11 +122,18 @@ def read_matrix(path: Path) -> dict[tuple[str, str], tuple[int, str, str, dict[s
             if "component" not in index:
                 continue
             for line_no, row in rows:
-                component = row[index["component"]].strip("` ")
+                require_width(path, line_no, row, header)
+                component = cell_at(row, index["component"]).strip("` ")
                 if not component:
                     continue
                 states = {state: cell_at(row, index.get(state)) for state in STATES}
                 key = (component.casefold(), breakpoint_name.casefold())
+                if key in matrix:
+                    raise ParseError(
+                        f"{path}:{line_no}: {component} at {breakpoint_name} is already "
+                        f"specified at line {matrix[key][0]} -- a second row would decide "
+                        "which states count by which one is read last"
+                    )
                 matrix[key] = (line_no, component, breakpoint_name, states)
     return matrix
 

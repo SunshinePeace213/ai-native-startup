@@ -18,13 +18,14 @@ Write down what the project is. The project brief is the client agreement — no
 ## Variables
 
 PROJECT: $1 — the engagement, as `client/project`
-PROJECT_DIR: `clients/$1/`
-IDENTITY: `.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead, sign-off shape
-ARTIFACT_RULES: `.claude/rules/studio-layer/client-artifacts.md` — craft, palette source, and publish rules for the review pages
+PROJECT_DIR: `$(git rev-parse --show-toplevel)/clients/$1/`
+IDENTITY: `$(git rev-parse --show-toplevel)/.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead, sign-off shape
+ARTIFACT_RULES: `$(git rev-parse --show-toplevel)/.claude/rules/studio-layer/client-artifacts.md` — craft, palette source, and publish rules for the review pages
 
 ## Instructions
 
 - No `PROJECT` → stop and ask for it as `client/project`. P1's notes must exist.
+- `PROJECT` must be exactly two segments, neither starting with `.` nor containing another `/` — anything else can write outside `clients/`. Reject it the same way and ask again.
 - Read `IDENTITY` and `ARTIFACT_RULES` before authoring anything.
 - Write only under `PROJECT_DIR`. `clients/` is gitignored — never stage, commit, or push client files.
 - Spawn `studio-discovery-lead`, `studio-ux-architect` and `studio-content-strategist` as ordinary subagents, one level deep. Never teammates.
@@ -36,7 +37,7 @@ ARTIFACT_RULES: `.claude/rules/studio-layer/client-artifacts.md` — craft, pale
 1. Spawn `studio-discovery-lead` for `definition/project-brief.md` (goals, audience, scope, constraints, success, revision allowance) and `definition/creative-brief.md` (the feeling, the references and what they point at, what to avoid).
 2. Spawn `studio-ux-architect` for `definition/sitemap.md`, `definition/section-briefs.md` and `definition/user-flows.md`; spawn `studio-content-strategist` alongside for each section's copy intent.
 3. Review both briefs and the sitemap with the client through their pages per `ARTIFACT_RULES`, and amend from what comes back before anything is signed.
-4. Run the **cold-designer test** (below) and write the triage.
+4. Run the **cold-designer test** (below), save the cold designer's plan, then write the triage from that file.
 5. Take the client's signature into `sign-off/p2.md` in the shape `IDENTITY` carries: a filled Approver and Date, and one artifact row per approved file with the `sha256sum` of its current content — at least the project brief and the sitemap.
 6. Report.
 
@@ -44,7 +45,9 @@ ARTIFACT_RULES: `.claude/rules/studio-layer/client-artifacts.md` — craft, pale
 
 Spawn `studio-ux-architect` as a fresh subagent with a prompt carrying **only** the signed project and creative briefs — no sitemap, no notes, no conversation — and ask for its section-level plan. Its own context window is the whole point: a role that can read the signed answer is not testing anything.
 
-Diff its plan against the signed sitemap and triage every row into `definition/cold-designer-triage.md`:
+Write what it returns verbatim to `definition/cold-designer-plan.md` before comparing anything — the triage is derived from that file, not from memory of the reply.
+
+Diff that plan against the signed sitemap and triage every row into `definition/cold-designer-triage.md`:
 
 ```markdown
 | Section | Cold designer produced | Signed sitemap says | Disposition |

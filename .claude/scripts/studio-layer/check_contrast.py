@@ -147,12 +147,22 @@ def read_inventory(path: Path) -> tuple[list[tuple[int, str]], list[tuple[int, s
     )
 
 
-def check_pairs(path: Path, lines: list[str]) -> tuple[list[str], list[str]]:
-    """(failures, row texts) for the colour-pair table."""
+def token_names(cell: str) -> set[str]:
+    """The token names a Foreground or Background cell binds to its colour value.
+
+    Read from that cell alone: a token named anywhere else on the row -- 'Used for'
+    prose, say -- is described, not checked, and must not count as coverage.
+    """
+    return {part.strip("`,;'\" ") for part in HEX_RE.sub(" ", cell).split()} - {""}
+
+
+def check_pairs(path: Path, lines: list[str]) -> tuple[list[str], set[str]]:
+    """(failures, tokens bound to a checked colour) for the colour-pair table."""
     index, rows = find_table(lines, ("foreground", "background", "kind"), path, "colour-pair table")
-    failures, texts = [], []
+    failures, checked = [], set()
     for line_no, row in rows:
-        texts.append(" ".join(row))
+        for column in ("foreground", "background"):
+            checked |= token_names(cell_at(row, index[column]))
         kind = cell_at(row, index["kind"]).casefold()
         if kind not in THRESHOLDS:
             raise ParseError(
@@ -167,7 +177,7 @@ def check_pairs(path: Path, lines: list[str]) -> tuple[list[str], list[str]]:
                 f"{path}:{line_no}: {fore} on {back} is {ratio:.2f}:1, below the "
                 f"{THRESHOLDS[kind]}:1 Soriza project threshold for {kind}"
             )
-    return failures, texts
+    return failures, checked
 
 
 def check_targets(path: Path, lines: list[str]) -> tuple[list[str], set[str]]:
@@ -199,7 +209,7 @@ def main(argv: list[str]) -> int:
     try:
         components, tokens = read_inventory(inventory_path)
         lines = read_lines(target, "token table")
-        pair_failures, pair_texts = check_pairs(target, lines)
+        pair_failures, checked = check_pairs(target, lines)
         target_failures, named = check_targets(target, lines)
     except ParseError as err:
         print(err)
@@ -207,8 +217,7 @@ def main(argv: list[str]) -> int:
 
     failures = pair_failures + target_failures
     for line_no, token in tokens:
-        pattern = re.compile(re.escape(token) + r"(?![-\w])")
-        if not any(pattern.search(text) for text in pair_texts):
+        if token not in checked:
             failures.append(
                 f"{inventory_path}:{line_no}: colour token {token} appears in no checked "
                 "foreground/background pair"

@@ -18,13 +18,14 @@ Produce what a builder consumes — tokens, states, breakpoints, copy deck, asse
 ## Variables
 
 PROJECT: $1 — the engagement, as `client/project`
-PROJECT_DIR: `clients/$1/`
-IDENTITY: `.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead, sign-off shape
-INVENTORY: `clients/$1/structure/inventory.md` — the P3-signed component list every check quantifies over
+PROJECT_DIR: `$(git rev-parse --show-toplevel)/clients/$1/`
+IDENTITY: `$(git rev-parse --show-toplevel)/.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead, sign-off shape
+INVENTORY: `$(git rev-parse --show-toplevel)/clients/$1/structure/inventory.md` — the P3-signed component list every check quantifies over
 
 ## Instructions
 
 - No `PROJECT` → stop and ask for it as `client/project`. P4 must be signed and P5 settled.
+- `PROJECT` must be exactly two segments, neither starting with `.` nor containing another `/` — anything else can write outside `clients/`. Reject it the same way and ask again.
 - Read `IDENTITY` before writing anything. Write only under `PROJECT_DIR`; `clients/` is gitignored — never stage, commit, or push client files.
 - Spawn `studio-design-qa` and `studio-client-partner` as ordinary subagents, one level deep. Never teammates.
 - **Never author or edit `INVENTORY` here.** It is a P3 deliverable the client signed; the gate re-hashes it against that signature. A component genuinely missing from it needs a change order and a re-signature, not a quiet edit.
@@ -45,8 +46,8 @@ INVENTORY: `clients/$1/structure/inventory.md` — the P3-signed component list 
 
 3. `handoff/tokens.md` carries two tables — colour pairs (`Foreground`, `Background`, `Kind` of `normal-text`, `large-text` or `ui-component`, `Used for`) and tap targets (`Target`, `Width (px)`, `Height (px)`) — covering every colour token and every component `INVENTORY` names.
 4. Run both checks and fix what they name, never the file they measure against:
-   - `uv run --script .claude/scripts/studio-layer/check_states_matrix.py clients/$1/handoff/states-matrix.md`
-   - `uv run --script .claude/scripts/studio-layer/check_contrast.py clients/$1/handoff/tokens.md`
+   - `uv run --script $(git rev-parse --show-toplevel)/.claude/scripts/studio-layer/check_states_matrix.py $(git rev-parse --show-toplevel)/clients/$1/handoff/states-matrix.md`
+   - `uv run --script $(git rev-parse --show-toplevel)/.claude/scripts/studio-layer/check_contrast.py $(git rev-parse --show-toplevel)/clients/$1/handoff/tokens.md`
 
    Exit 1 lists each missing pair, unfilled cell, failing ratio or undersized target. Exit 2 means the check could not run — a malformed hex, an unparseable table, or a missing inventory — so fix the input, not the design.
 5. Spawn `studio-design-qa`, which writes `handoff/qa-report.md` — one row per finding, `Severity` `blocking` or `advisory`, `Status` `open` or `resolved`. Resolve every `blocking` finding and record the evidence; write `handoff/accessibility-check.md` from the computed results plus its judgment on focus order and state copy.

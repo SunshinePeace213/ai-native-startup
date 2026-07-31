@@ -100,19 +100,19 @@ Round 1 — `gpt-5.6-sol` at `xhigh`, reviewed head `339b2c5`, diff `fb5e6ea..33
 
 | ID | Sev | Conf | Finding | Disposition | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| I1-F1 | major | 100 | AC16's commands-suite `manual:` eval scored 0.8889 against a required 1.0, so AC16 and impl-standard 2 are unmet — the build disclosed this rather than papering over it | open | |
-| I1-F2 | major | 100 | `build-brief.html` claims "16 of 16 with evidence" while its AC16 row is pending and the recorded eval failed | open | |
-| I1-F3 | major | 99 | The hard gates accept **any one** signed artifact; the tests sign `docs/<phase>-approved.md`, so P2 closes without its briefs/sitemap, P3 without wireframes, P4 without the picked direction, P6 without the handoff pack | open | |
-| I1-F4 | major | 100 | `check_revision_count.py` reads the allowance from the mutable current brief without verifying its P2-signed SHA; editing 2→3 is tested as an *allow* path, bypassing change orders | open | |
-| I1-F5 | major | 99 | Round numbers are trusted, never counted or validated — rows all numbered `1` never exceed the allowance, so unlimited rounds pass | open | |
-| I1-F6 | major | 99 | `Cost — rounds: 0` passes `\d+`, and one one-round change order can be reused by unlimited excess rounds — no capacity accounting | open | |
-| I1-F7 | major | 99 | Commands use repo-relative `clients/$1` and `.claude/…` paths while the four gate commands instruct multi-project users to run *inside* `PROJECT_DIR`, where every one of those paths misresolves | open | |
-| I1-F8 | major | 98 | Only a missing `PROJECT` is rejected; `../` segments, absolute paths, dot segments or extra levels redirect writes outside `clients/<client>/<project>` | open | |
-| I1-F9 | major | 99 | Sign-off artifact paths are unconstrained, so absolute paths, `../` traversal and escaping symlinks can satisfy a client signature with files outside the project | open | |
-| I1-F10 | major | 99 | QA rows with blank or malformed cells (`blocking \| TBD`, `blocker \| open`) silently allow P6 — only the exact pair `blocking`/`open` blocks | open | |
-| I1-F11 | major | 99 | `check_contrast.py` token coverage scans the whole row including `Used for`, so a token passes by being mentioned in prose outside the colour cells | open | |
-| I1-F12 | major | 99 | `run_command_evals.py` stages `client-artifacts.md` but not the `artifacts.md` it inherits from, so P1/P2 are evaluated with a broken dependency | open | |
-| I1-F13 | major | 98 | A `claude -p` run marked as an error is recorded as `run_error` but its score still contributes normally, and the runner can still exit 0 | open | |
+| I1-F1 | major | 100 | AC16's commands-suite `manual:` eval scored 0.8889 against a required 1.0, so AC16 and impl-standard 2 are unmet — the build disclosed this rather than papering over it | fixed | **AC16 now meets its bar.** `eval-0` 1.0 and `eval-1` 1.0, each needing 1.0, over 6 `claude -p` runs, `EVAL_EXIT=0` — up from 0.8889 through 0.9444. Three assertion-level causes were separated rather than lumped: `a3` demanded one literal phrasing (`N/A, because`) the contract does not require and graded it through a brittle `grep -A4` window; `b4` asked a judge to confirm a **process** (a subagent saw only the briefs) from artifacts carrying no process trace; `a5` was a fair assertion the command genuinely failed. `a3` and `b4` were corrected to test what the contract and the artifacts actually support, and P2 now writes the cold designer's reply verbatim to `definition/cold-designer-plan.md` so `b4` is checkable at all. `a5` was left untouched and `p1-discovery.md`'s glossary instruction was fixed instead — the command was under-performing, not the assertion over-specifying |
+| I1-F2 | major | 100 | `build-brief.html` claims "16 of 16 with evidence" while its AC16 row is pending and the recorded eval failed | fixed | `build-brief.html`'s AC16 row now carries the real rate (`eval-0 1.0 · eval-1 1.0 … exit 0`) instead of "recorded separately"; no evidence row in the page is marked pending any more, so its "16 of 16 with evidence" headline is true rather than aspirational |
+| I1-F3 | major | 99 | The hard gates accept **any one** signed artifact; the tests sign `docs/<phase>-approved.md`, so P2 closes without its briefs/sitemap, P3 without wireframes, P4 without the picked direction, P6 without the handoff pack | fixed | `REQUIRED_ARTIFACTS` per gated phase in `check_gate_signoff.py`, documented as a table in spec.md `### Sign-off document` (a floor, not a ceiling); each required row is hash-verified by the existing loop. 9 parametrized tests; the fixer restored the pre-fix hook and confirmed they fail against it. P2's set is project-brief + sitemap, matching the spec's Gate column ("brief + sitemap signed") and p2-definition.md:40 — the creative brief was deliberately excluded rather than making the hook demand what no command tells the principal to sign |
+| I1-F4 | major | 100 | `check_revision_count.py` reads the allowance from the mutable current brief without verifying its P2-signed SHA; editing 2→3 is tested as an *allow* path, bypassing change orders | fixed | `allowance()` now refuses the brief unless `sign-off/p2.md` lists `definition/project-brief.md` and its SHA-256 still matches; parsed on `check_gate_signoff.py`'s own table schema so the gate and the counter read one document alike. The old test that asserted mutation as an *allow* path was removed and split into `test_brief_edited_after_signature_exits_2` (exit 2) and `test_allowance_is_re_derived_from_the_signed_brief` |
+| I1-F5 | major | 99 | Round numbers are trusted, never counted or validated — rows all numbered `1` never exceed the allowance, so unlimited rounds pass | fixed | `numbered()` rejects non-positive, duplicate and non-contiguous round numbers as exit 2; verified against the pre-fix script, where three rows all numbered `1` against an allowance of 2 exited 0. 4 parametrized cases |
+| I1-F6 | major | 99 | `Cost — rounds: 0` passes `\d+`, and one one-round change order can be reused by unlimited excess rounds — no capacity accounting | fixed | `Cost — rounds` must be ≥ 1, and `main()` groups excess rounds by resolved change-order path and fails when `len(uses) > bought`. A 2-round order legitimately covering two rounds still exits 0, so this is capacity arithmetic rather than a ban on reuse |
+| I1-F7 | major | 99 | Commands use repo-relative `clients/$1` and `.claude/…` paths while the four gate commands instruct multi-project users to run *inside* `PROJECT_DIR`, where every one of those paths misresolves | fixed | Every command-body path anchored on `$(git rev-parse --show-toplevel)`. The first attempt used `"$CLAUDE_PROJECT_DIR"` and was rejected: it is empty in a command body (`echo` prints `[]`) and `ai-docs/anthropic/hooks.md:494` documents it for hooks, stdio MCP servers and plugin LSP servers only. The four frontmatter registration lines keep it — that one *is* a hook |
+| I1-F8 | major | 98 | Only a missing `PROJECT` is rejected; `../` segments, absolute paths, dot segments or extra levels redirect writes outside `clients/<client>/<project>` | fixed | Each command validates `PROJECT` as exactly two segments, neither starting with `.` nor containing another `/`, rejected the same way a missing argument is |
+| I1-F9 | major | 99 | Sign-off artifact paths are unconstrained, so absolute paths, `../` traversal and escaping symlinks can satisfy a client signature with files outside the project | fixed | `contained()` rejects absolute paths and `..` segments and requires the resolved target — symlinks followed — to sit beneath the resolved project root. Tests for absolute, traversal and escaping-symlink rows |
+| I1-F10 | major | 99 | QA rows with blank or malformed cells (`blocking \| TBD`, `blocker \| open`) silently allow P6 — only the exact pair `blocking`/`open` blocks | fixed | `check_qa_report` validates both cells against `QA_SEVERITIES`/`QA_STATUSES` and reports any blank or out-of-enum value as its own blocking problem, so a row the gate cannot read never reads as resolved. Tests for malformed status, misspelled severity and a blank cell |
+| I1-F11 | major | 99 | `check_contrast.py` token coverage scans the whole row including `Used for`, so a token passes by being mentioned in prose outside the colour cells | fixed | `token_names()` binds tokens from the Foreground/Background columns only; coverage is exact set membership. Verified: a token named only in `Used for` exited 0 pre-fix and now exits 1 |
+| I1-F12 | major | 99 | `run_command_evals.py` stages `client-artifacts.md` but not the `artifacts.md` it inherits from, so P1/P2 are evaluated with a broken dependency | fixed | `.claude/rules/harness-layer/artifacts.md` joined the staged set, with `test_every_relative_link_in_the_staged_namespace_resolves_inside_the_scratch_project` asserting no staged rule has a dangling relative link |
+| I1-F13 | major | 98 | A `claude -p` run marked as an error is recorded as `run_error` but its score still contributes normally, and the runner can still exit 0 | fixed | An errored envelope now zeroes every expectation before scoring, so a crashed run cannot score like a clean one |
 | I1-F14 | minor | 97 | The allowance regex accepts any line starting with an integer, not the locked `(plus polish)` schema | advisory | Below the blocking bar; folded into the I1-F4/F5 fix since the same function was being rewritten |
 | I1-F15 | minor | 98 | Short rows in `check_states_matrix.py` raise `IndexError` — a traceback and exit 1 instead of the contracted exit 2 | advisory | Below the blocking bar; folded into the same file's fix |
 | I1-F16 | minor | 96 | Duplicate component/breakpoint rows overwrite earlier rows, hiding a blank or contradictory specification | advisory | Below the blocking bar; folded into the same file's fix |
@@ -122,3 +122,38 @@ Round 1 — `gpt-5.6-sol` at `xhigh`, reviewed head `339b2c5`, diff `fb5e6ea..33
 | I1-F20 | minor | 99 | AC5 accepts invalid scopes such as `clients/**bogus` via substring grep and relaxes the stated budget to 280 | advisory | Below the blocking bar; recorded as a follow-up — the check is plan-local and its budget number is the one AC5 documents |
 | I1-F21 | info | 94 | P6's Stop gate never runs the states and contrast checks, so a signed handoff with a failing matrix can close if the command skipped its prose instructions | advisory | Genuine design observation at `info`; recorded as a follow-up rather than a same-run redesign of the gate's responsibilities |
 | I1-F22 | info | 92 | Rationale-heavy module headers in the hook and the eval runner duplicate the plan instead of stating usage and exit semantics | advisory | Recorded as a follow-up; the tidy pass already cut cross-seat rationale, and trimming module docstrings mid-review risks losing the contract text the checks are read against |
+
+### Security pass — round 1 (full)
+
+`claude-security` at `medium`, scan-only, over the committed range `fb5e6ea..339b2c5`. The
+diff touches `.claude/hooks/`, `.claude/scripts/`, `specs/**/checks/` and eight commands, so
+the full agent ran rather than the light `security-review` pass.
+
+**No findings survived verification — nothing entered the ledger as blocking.** 19 researchers
+produced 46 raw candidates, deduplicated to 29; 13 went to a three-lens adversarial panel
+(reachability, impact, defenses) for 39 votes. Four votes came back TRUE_POSITIVE, spread
+across four different candidates, and none reached the two-of-three keep quorum.
+
+The verifiers converged independently on one structural fact: everything this change adds is
+local, single-principal developer tooling. The gates, the acceptance checks and the eval
+runner are all invoked by the operator, on the operator's machine, against a `clients/` tree
+`.gitignore` keeps out of version control. For every candidate the party who would have to be
+the attacker either *is* the operator or already needs repository write access — which yields
+strictly more than any sink found here, since this repo's own review command executes every
+script under `specs/<name>/checks/`.
+
+Two caveats recorded rather than smoothed over:
+
+- **16 of the 29 candidates were never paneled.** The scan stopped the panel after 13 of 13
+  failed and listed the rest as unverified candidate sites. Five of those 16 are fixed by this
+  round anyway — the three `check_revision_count.py` claims (`I1-F4`, `I1-F5`, `I1-F6`) and the
+  `check_contrast.py` token-coverage claim (`I1-F11`) — and the `check_gate_signoff.py` path
+  join was both paneled and fixed (`I1-F9`). The remainder are recorded as PR follow-ups.
+- **The working tree was dirty while the scan ran**, because the fix round was landing
+  concurrently. The panel verified against the committed revision via `git show` and corrected
+  the mis-anchored line numbers; the report states this explicitly and notes that the
+  uncommitted `contained()` helper already fixes one flagged item.
+
+Closest calls, both voted down 1-of-3 and carried to follow-ups: `studio-research-analyst.md`
+grants every inherited tool to the one role that audits client-named third-party sites, and
+`p7-retro.md` is the only phase waiving the write-only-under-`PROJECT_DIR` rule.

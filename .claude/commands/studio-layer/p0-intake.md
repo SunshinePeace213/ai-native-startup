@@ -13,12 +13,13 @@ Open an engagement: capture the client's request and decide whether Soriza takes
 ## Variables
 
 PROJECT: $1 — the engagement, as `client/project`
-PROJECT_DIR: `clients/$1/`
-IDENTITY: `.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead, sign-off shape
+PROJECT_DIR: `$(git rev-parse --show-toplevel)/clients/$1/`
+IDENTITY: `$(git rev-parse --show-toplevel)/.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead, sign-off shape
 
 ## Instructions
 
 - No `PROJECT` → stop and ask for it as `client/project`.
+- `PROJECT` must be exactly two segments, neither starting with `.` nor containing another `/` — anything else can write outside `clients/`. Reject it the same way and ask again.
 - Read `IDENTITY` before writing anything. Every client-facing document opens with its letterhead and is written in its voice.
 - Write only under `PROJECT_DIR`. `clients/` is gitignored — never stage, commit, or push client files.
 - Spawn `studio-client-partner` as an ordinary subagent, one level deep. Never a teammate.

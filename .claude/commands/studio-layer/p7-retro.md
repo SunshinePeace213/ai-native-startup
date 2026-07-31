@@ -13,12 +13,13 @@ Close the engagement by writing down what it taught and putting each lesson wher
 ## Variables
 
 PROJECT: $1 — the engagement, as `client/project`
-PROJECT_DIR: `clients/$1/`
-IDENTITY: `.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead
+PROJECT_DIR: `$(git rev-parse --show-toplevel)/clients/$1/`
+IDENTITY: `$(git rev-parse --show-toplevel)/.claude/rules/studio-layer/studio-identity.md` — studio, voice, letterhead
 
 ## Instructions
 
 - No `PROJECT` → stop and ask for it as `client/project`. P6 must be signed.
+- `PROJECT` must be exactly two segments, neither starting with `.` nor containing another `/` — anything else can write outside `clients/`. Reject it the same way and ask again.
 - Spawn `studio-retro-scribe` as an ordinary subagent, one level deep. Never a teammate.
 - The retro itself is client data and stays under `PROJECT_DIR`; only the routed lessons leave it, and only as edits to files under `.claude/`.
 - Build the retro from evidence — the revision log and change orders, the QA report's findings, which gates blocked and why, and where a phase's documents had to be rewritten. A retro from memory records the last week only.

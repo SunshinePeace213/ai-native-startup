@@ -27,6 +27,16 @@ INVENTORY = "structure/inventory.md"
 TRIAGE = "definition/cold-designer-triage.md"
 QA_REPORT = "handoff/qa-report.md"
 
+# The deliverables each gated phase's sign-off table must carry, stated here
+# rather than imported from the hook: deriving them from the code under test
+# would make a wrong set unfalsifiable.
+REQUIRED = {
+    "p2": ("definition/project-brief.md", "definition/sitemap.md"),
+    "p3": ("structure/wireframes.md", INVENTORY),
+    "p4": ("art-direction/rationale.md", "art-direction/style-tile.md"),
+    "p6": ("handoff/pack.md", "handoff/states-matrix.md", "handoff/tokens.md"),
+}
+
 INVENTORY_BODY = (
     "| Component | Breakpoints | Colour tokens used |\n"
     "| --- | --- | --- |\n"
@@ -38,8 +48,10 @@ def sha256_of(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def write_artifact(project: Path, rel: str, body: str = "an approved document\n") -> str:
+def write_artifact(project: Path, rel: str, body: str | None = None) -> str:
     """A client document, returning the hash a sign-off row would record for it."""
+    if body is None:
+        body = INVENTORY_BODY if rel == INVENTORY else "an approved document\n"
     path = project / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(body)
@@ -54,10 +66,10 @@ def write_signoff(
     date: str = "2026-07-31",
     artifacts: list[tuple[str, str]] | None = None,
 ) -> Path:
-    """A sign-off in the documented shape; by default it approves one real file."""
+    """A sign-off in the documented shape; by default it approves exactly the
+    phase's required deliverables, which is the state that opens the gate."""
     if artifacts is None:
-        rel = f"docs/{phase}-approved.md"
-        artifacts = [(rel, write_artifact(project, rel))]
+        artifacts = [(rel, write_artifact(project, rel)) for rel in REQUIRED[phase]]
     rows = "".join(f"| `{path}` | `{sha}` |\n" for path, sha in artifacts)
     signoff = project / "sign-off" / f"{phase}.md"
     signoff.parent.mkdir(parents=True, exist_ok=True)
@@ -106,8 +118,27 @@ def sign_p3_over_inventory(project: Path, body: str = INVENTORY_BODY) -> str:
     """P3 signed with the component inventory in its artifact table -- the state
     p6 re-verifies the inventory against."""
     sha = write_artifact(project, INVENTORY, body)
-    write_signoff(project, "p3", artifacts=[(INVENTORY, sha)])
+    write_signoff(
+        project,
+        "p3",
+        artifacts=[
+            (rel, sha if rel == INVENTORY else write_artifact(project, rel))
+            for rel in REQUIRED["p3"]
+        ],
+    )
     return sha
+
+
+def prepare_phase(project: Path, phase: str) -> None:
+    """Every document the phase's gate reads apart from its own sign-off, so a
+    case about the sign-off table is not confounded by a missing side document."""
+    for rel in REQUIRED[phase]:
+        write_artifact(project, rel)
+    if phase == "p2":
+        write_triage(project)
+    elif phase == "p6":
+        sign_p3_over_inventory(project)
+        write_qa_report(project)
 
 
 def make_p6_ready(project: Path) -> None:
@@ -198,6 +229,43 @@ def test_sha_mismatch_blocks(tmp_path, project, run_hook):
     assert f"'{rel}' no longer matches what was approved" in proc.stderr
 
 
+def test_absolute_artifact_path_blocks(tmp_path, project, run_hook):
+    """A signature covers the engagement it names. An absolute path would let any
+    file on the machine carry it -- and it hashes correctly, so the row would
+    otherwise sail through the whole check."""
+    outside = tmp_path / "somebody-elses.md"
+    outside.write_text("a document this client never saw\n")
+    write_signoff(project, "p4", artifacts=[(str(outside), sha256_of(outside))])
+    proc = gate(run_hook, tmp_path, "p4")
+    assert proc.returncode == 2
+    assert "resolves outside the project" in proc.stderr
+
+
+def test_parent_traversal_artifact_path_blocks(tmp_path, project, run_hook):
+    """`../` climbs out of the project while still reading as a relative path, so
+    a neighbouring engagement's approved document could close this one's gate."""
+    outside = project.parent / "other-project-doc.md"
+    outside.write_text("approved on a different engagement\n")
+    write_signoff(project, "p4", artifacts=[("../other-project-doc.md", sha256_of(outside))])
+    proc = gate(run_hook, tmp_path, "p4")
+    assert proc.returncode == 2
+    assert "resolves outside the project" in proc.stderr
+
+
+def test_symlinked_artifact_outside_the_project_blocks(tmp_path, project, run_hook):
+    """The path stays inside the project and the hash matches, so only resolving
+    the link catches it: containment has to be judged on the real target."""
+    outside = tmp_path / "template-rationale.md"
+    outside.write_text("a boilerplate rationale kept outside the project\n")
+    link = project / "art-direction" / "borrowed.md"
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(outside)
+    write_signoff(project, "p4", artifacts=[("art-direction/borrowed.md", sha256_of(outside))])
+    proc = gate(run_hook, tmp_path, "p4")
+    assert proc.returncode == 2
+    assert "resolves outside the project" in proc.stderr
+
+
 def test_complete_signoff_allows(tmp_path, project, run_hook):
     """The allow path: a filled Approver and Date and every artifact row
     resolving to a file that still hashes to what was signed."""
@@ -205,6 +273,23 @@ def test_complete_signoff_allows(tmp_path, project, run_hook):
     proc = gate(run_hook, tmp_path, "p4")
     assert proc.returncode == 0
     assert proc.stderr == ""
+
+
+@pytest.mark.parametrize(
+    "phase, dropped", [(phase, rel) for phase, rels in REQUIRED.items() for rel in rels]
+)
+def test_signoff_missing_a_required_artifact_blocks(tmp_path, project, run_hook, phase, dropped):
+    """Hashing whatever rows the table happens to carry proves only that somebody
+    signed something. Each hard gate exists to get its own deliverables approved,
+    so a sign-off that omits one has not closed the phase -- P2 without its brief
+    or sitemap, P3 without wireframes, P4 without the picked direction, P6
+    without the handoff pack."""
+    prepare_phase(project, phase)
+    kept = [(rel, write_artifact(project, rel)) for rel in REQUIRED[phase] if rel != dropped]
+    write_signoff(project, phase, artifacts=kept)
+    proc = gate(run_hook, tmp_path, phase)
+    assert proc.returncode == 2
+    assert f"does not list {dropped}" in proc.stderr
 
 
 def test_no_clients_dir_allows_silently(tmp_path, run_hook):
@@ -354,6 +439,7 @@ def test_p3_missing_inventory_blocks(tmp_path, project, run_hook):
     P3 could close without it, P6 would author the very list it is then measured
     against -- a one-component matrix agreeing with a one-component list."""
     write_signoff(project, "p3")
+    (project / INVENTORY).unlink()
     proc = gate(run_hook, tmp_path, "p3")
     assert proc.returncode == 2
     assert f"{INVENTORY}: MISSING FILE" in proc.stderr
@@ -372,8 +458,9 @@ def test_p3_empty_inventory_blocks(tmp_path, project, run_hook):
 def test_p3_inventory_absent_from_signoff_table_blocks(tmp_path, project, run_hook):
     """Existing is not the same as approved. The inventory must be a client-signed
     P3 artifact, because a hash the client never saw pins nothing at P6."""
+    wireframes = "structure/wireframes.md"
     write_artifact(project, INVENTORY, INVENTORY_BODY)
-    write_signoff(project, "p3")
+    write_signoff(project, "p3", artifacts=[(wireframes, write_artifact(project, wireframes))])
     proc = gate(run_hook, tmp_path, "p3")
     assert proc.returncode == 2
     assert f"does not list {INVENTORY}" in proc.stderr
@@ -404,8 +491,9 @@ def test_p6_inventory_mutated_after_p3_signoff_blocks(tmp_path, project, run_hoo
 def test_p6_missing_from_p3_signoff_blocks(tmp_path, project, run_hook):
     """P6 has nothing to re-verify against when P3 never listed the inventory,
     which is the same defect as a mutation: the denominator is unsigned."""
+    wireframes = "structure/wireframes.md"
     write_artifact(project, INVENTORY, INVENTORY_BODY)
-    write_signoff(project, "p3")
+    write_signoff(project, "p3", artifacts=[(wireframes, write_artifact(project, wireframes))])
     write_signoff(project, "p6")
     write_qa_report(project)
     proc = gate(run_hook, tmp_path, "p6")
@@ -449,6 +537,37 @@ def test_p6_all_blocking_findings_resolved_allows(tmp_path, project, run_hook):
     proc = gate(run_hook, tmp_path, "p6")
     assert proc.returncode == 0
     assert proc.stderr == ""
+
+
+def test_p6_unreadable_qa_status_blocks(tmp_path, project, run_hook):
+    """A status outside the documented enum is a finding nobody closed. Matching
+    only the exact pair blocking/open would read `blocking | TBD` as resolved and
+    hand over an engagement the QA agent said was not ready."""
+    make_p6_ready(project)
+    write_qa_report(project, findings=(("Focus ring is invisible on accent", "blocking", "TBD"),))
+    proc = gate(run_hook, tmp_path, "p6")
+    assert proc.returncode == 2
+    assert "unreadable Status 'tbd'" in proc.stderr
+
+
+def test_p6_misspelled_qa_severity_blocks(tmp_path, project, run_hook):
+    """`blocker` is what a writer types for `blocking`, and an enum matched by
+    equality silently downgrades the typo to something the gate ignores."""
+    make_p6_ready(project)
+    write_qa_report(project, findings=(("Error copy says 'Error'", "blocker", "open"),))
+    proc = gate(run_hook, tmp_path, "p6")
+    assert proc.returncode == 2
+    assert "unreadable Severity 'blocker'" in proc.stderr
+
+
+def test_p6_blank_qa_cell_blocks(tmp_path, project, run_hook):
+    """An empty cell is the absence of a judgment, not a resolution -- a row the
+    gate cannot read must never be the reason the gate opens."""
+    make_p6_ready(project)
+    write_qa_report(project, findings=(("Empty state has no copy", "blocking", ""),))
+    proc = gate(run_hook, tmp_path, "p6")
+    assert proc.returncode == 2
+    assert "unreadable Status '(blank)'" in proc.stderr
 
 
 def test_p6_advisory_finding_does_not_block(tmp_path, project, run_hook):

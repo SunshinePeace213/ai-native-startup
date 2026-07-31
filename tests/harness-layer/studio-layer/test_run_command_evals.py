@@ -47,8 +47,10 @@ def fake_namespace(tmp_path: Path) -> Path:
         target = claude / kind / "studio-layer"
         target.mkdir(parents=True)
         (target / "marker.md").write_text(kind, encoding="utf-8")
-    (claude / "hooks").mkdir(parents=True)
-    (claude / "hooks" / "check_gate_signoff.py").write_text("# gate", encoding="utf-8")
+    for rel in runner.STAGED_FILES:
+        target = claude / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(f"# {rel}", encoding="utf-8")
     return claude / "commands" / "studio-layer"
 
 
@@ -111,6 +113,36 @@ def test_p2_registered_hook_path_resolves_inside_the_scratch_project(tmp_path):
 
     assert resolved.is_file(), f"P2's registered hook {declared} does not exist in {root}"
     assert resolved.is_relative_to(root), "the gate resolved outside the throwaway project"
+
+
+def test_every_relative_link_in_the_staged_namespace_resolves_inside_the_scratch_project(
+    tmp_path,
+):
+    """The studio files do not restate what they inherit -- `client-artifacts.md` points at
+    `artifacts.md` for craft and publish, `roster.md` at `model-selection.md` for its stamps.
+    A staged copy whose link dangles evaluates the commands against a rule with nothing
+    behind it, the same class of gap as staging a hard-gate command without its hook."""
+    root = tmp_path / "scratch"
+    root.mkdir()
+    runner.stage_project(COMMANDS_DIR, root)
+
+    staged = [
+        path
+        for kind in runner.STAGED_NAMESPACE_DIRS
+        for path in sorted((root / ".claude" / kind / "studio-layer").rglob("*.md"))
+    ]
+    links = [
+        (source, target)
+        for source in staged
+        for target in re.findall(r"\]\(([^)]+)\)", source.read_text(encoding="utf-8"))
+        if not target.startswith(("http://", "https://", "mailto:", "#"))
+    ]
+
+    assert links, "the staged namespace carries no relative links -- this passes vacuously"
+    for source, target in links:
+        resolved = (source.parent / target.split("#")[0]).resolve()
+        assert resolved.is_file(), f"{source.name} links to {target}, which is not staged"
+        assert resolved.is_relative_to(root.resolve()), f"{target} resolved outside the project"
 
 
 def test_staging_refuses_a_namespace_missing_a_directory(tmp_path):
@@ -209,6 +241,44 @@ def test_a_case_short_of_its_rate_exits_one(tmp_path, monkeypatch):
     assert grading["expectations"][0]["passed"] is False
 
 
+def test_an_errored_run_scores_zero_whatever_its_partial_files_satisfy(tmp_path, monkeypatch):
+    """A run the CLI reported as failed got as far as partial files at best. Grading those
+    normally makes a crashed run indistinguishable from a clean one -- the runner would
+    report a pass rate, and exit 0, for a command that never finished."""
+    commands_dir = fake_namespace(tmp_path)
+    write_suite(commands_dir, [CASE])
+    clean = stub_claude()
+
+    def errored(prompt, cwd, timeout, model, permission_mode):
+        envelope = clean(prompt, cwd, timeout, model, permission_mode)
+        if "Grade each assertion" not in prompt:
+            envelope["error"] = "timed out after 900s"
+        return envelope
+
+    monkeypatch.setattr(runner, "claude_headless", errored)
+
+    code = runner.main([str(commands_dir), "-k", "1", "--yes", "--workspace", str(tmp_path / "ws")])
+
+    assert code == 1
+    grading = json.loads((tmp_path / "ws" / "eval-0" / "run-1" / "grading.json").read_text())
+    assert grading["summary"]["pass_rate"] == 0.0
+    assert grading["run_error"] == "timed out after 900s"
+    assert not any(e["passed"] for e in grading["expectations"])
+
+
+def test_a_workspace_holding_an_earlier_run_exits_two(tmp_path, monkeypatch):
+    """Run directories are named from the case id, so a second run into the same workspace
+    collects its outputs beside the first run's files -- and the checks and the judge both
+    read that directory, grading artifacts this run never wrote."""
+    commands_dir = fake_namespace(tmp_path)
+    write_suite(commands_dir, [CASE])
+    monkeypatch.setattr(runner, "claude_headless", stub_claude())
+    workspace = str(tmp_path / "ws")
+
+    assert runner.main([str(commands_dir), "-k", "1", "--yes", "--workspace", workspace]) == 0
+    assert runner.main([str(commands_dir), "-k", "1", "--yes", "--workspace", workspace]) == 2
+
+
 def test_a_recorded_pass_rate_below_one_tolerates_a_failed_assertion(tmp_path, monkeypatch):
     """A case records the rate it must clear, so prose that is right most of the time can
     pass while the default stays every assertion on every run."""
@@ -260,6 +330,44 @@ def test_lint_rejects_a_case_that_could_not_produce_a_rate(tmp_path, mutation, e
     )
 
     assert any(expected in problem for problem in problems), problems
+    assert runner.main([str(commands_dir), "--lint"]) == 2
+
+
+def test_lint_rejects_two_cases_sharing_an_id(tmp_path):
+    """Both cases write into `eval-<id>` and claim the same slot in the rate map, so a
+    duplicate silently discards one case's whole result instead of failing loudly."""
+    commands_dir = fake_namespace(tmp_path)
+    write_suite(commands_dir, [CASE, {**CASE, "name": "a-second-case-reusing-the-id"}])
+
+    problems = runner.validate(
+        json.loads((commands_dir / "evals" / "evals.json").read_text()),
+        commands_dir / "evals" / "evals.json",
+    )
+
+    assert any("reuses case id" in problem for problem in problems), problems
+    assert runner.main([str(commands_dir), "--lint"]) == 2
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        {"id": {"nested": "id"}},
+        {"assertions": [{"id": ["a1"], "text": "an id nothing can key a verdict by"}]},
+    ],
+)
+def test_lint_rejects_an_id_that_could_not_name_a_run_or_key_a_verdict(tmp_path, mutation):
+    """An unhashable id raises mid-sweep, after runs have already spent tokens, and the
+    traceback reads as a crash rather than the exit 2 the pipeline reads as a broken
+    suite. --lint is the only place it can be caught before anything runs."""
+    commands_dir = fake_namespace(tmp_path)
+    write_suite(commands_dir, [{**CASE, **mutation}])
+
+    problems = runner.validate(
+        json.loads((commands_dir / "evals" / "evals.json").read_text()),
+        commands_dir / "evals" / "evals.json",
+    )
+
+    assert any("non-scalar id" in problem for problem in problems), problems
     assert runner.main([str(commands_dir), "--lint"]) == 2
 
 

@@ -996,10 +996,10 @@ uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/check_gate_signoff.py &lt;ph
            { cmd: "uv run --script .claude/scripts/studio-layer/run_command_evals.py .claude/commands/studio-layer --lint",
              res: "…/evals/evals.json: 2 case(s), schema valid — exit 0", k: "pass" },
            { cmd: "manual: uv run --script …/run_command_evals.py .claude/commands/studio-layer -k 3 --yes",
-             res: "rate recorded separately in implementation-notes.md — not in this page's source snapshot", k: "pend" },
+             res: "eval-0 1.0 · eval-1 1.0, each needing 1.0, over 6 claude -p runs — exit 0 (review round 1: 0.8889 → 0.9444 → 1.0)", k: "rate" },
            { cmd: "bash specs/cpo-layer/checks/ac16-evals-are-runnable.sh",
              res: "AC16 pass: both eval suites are present, harness-shaped, and machine-gradeable — exit 0", k: "pass" }],
-      foot: "Per-run rates with the skill: 1.0, 0.833, 1.0 and 1.0, 1.0, 0.8. Without: 0.667, 0.667, 0.667 and 0.6, 0.8, 0.6. Evals stay manual and out of CI, so the recorded rate is the evidence." },
+      foot: "Per-run rates with the skill: 1.0, 0.833, 1.0 and 1.0, 1.0, 0.8. Without: 0.667, 0.667, 0.667 and 0.6, 0.8, 0.6. Commands suite after the review fix: 1.0 on every one of the 6 runs. Evals stay manual and out of CI, so the recorded rate is the evidence." },
     { id: "AC14", g: 5, title: "The whole suite stays green with every new file present",
       ev: [{ cmd: "uv run pytest", res: "990 passed, 2 skipped in 14.40s (baseline 875 passed, 2 skipped)", k: "pass" },
            { cmd: "uv run ruff check .", res: "All checks passed!", k: "pass" },
@@ -1135,7 +1135,7 @@ uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/check_gate_signoff.py &lt;ph
     L.push("");
     L.push("The evidence, as recorded in specs/cpo-layer/implementation-notes.md: the suite went from 875 passed, 2 skipped at build start to 990 passed, 2 skipped; the hooks wiring suite went from one failure naming check_gate_signoff.py as an unclaimed entrypoint to 13 passed once the four gate registrations landed, with no change to the hook itself; all seven plan-local checks under specs/cpo-layer/checks/ exit 0; ruff check and ruff format --check are clean. The roster drift test was mutated from both sides by hand — agent file and roster row — and went red naming the file each time, then reverted clean.");
     L.push("");
-    L.push("The question-bank skill eval scored 93.9% with the skill against 66.7% without it, a delta of +0.27 over 12 claude -p runs, which is the only thing an eval on a prose skill can establish. The commands-suite rate is recorded separately in implementation-notes.md.");
+    L.push("The question-bank skill eval scored 93.9% with the skill against 66.7% without it, a delta of +0.27 over 12 claude -p runs, which is the only thing an eval on a prose skill can establish. The commands suite now scores 1.0 on both cases over 6 claude -p runs, after review round 1 corrected two assertions that tested phrasing and process rather than the documented contract, and closed a real gap in P1\u2019s glossary instruction.");
     L.push("");
     L.push("One deviation from the plan: the three studio rules ship with paths: clients/**/* rather than the plan's literal clients/**, because the cached memory mirror documents only the dir/**/* form and every path-scoped rule already in this repo uses it. AC5 asserts the substring clients/**, which clients/**/* contains, so no acceptance criterion and no locked decision changed — only the glob the plan spelled out in prose. Worth knowing because the wrong form would have failed silently: no studio rule would ever have loaded on a client project.");
     L.push("");
