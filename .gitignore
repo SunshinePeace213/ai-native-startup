@@ -368,3 +368,12 @@ ai-docs/*
 .claude/worktrees
 .claude/settings.local.json
 .claude/.security-scan/
+
+# =============================================================================
+# clients/ — client project data (studio-layer). Lives under CLAUDE_PROJECT_DIR
+# so path-scoped rules and command-frontmatter hooks can resolve against it, but
+# nothing client-owned ever enters this repo's history. Only the directory
+# contract (.gitkeep) is tracked.
+# =============================================================================
+clients/*
+!clients/.gitkeep
