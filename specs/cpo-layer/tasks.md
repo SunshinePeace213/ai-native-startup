@@ -37,7 +37,7 @@ register the hook. Every referent must already exist.
 
 - `validate-all`
 
-The six plan-local checks under `specs/cpo-layer/checks/` are already written and committed
+The seven plan-local checks under `specs/cpo-layer/checks/` are already written and committed
 with this plan — they fail on today's tree and pass once the build lands. The build runs them;
 it does not author them.
 
@@ -163,7 +163,7 @@ it does not author them.
 - **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — the question
   quality is what makes discovery work; client-facing.
 - **Files:** `.claude/skills/studio-layer/studio-client-questions/SKILL.md`,
-  `specs/cpo-layer/evals/question-bank.md`
+  `.claude/skills/studio-layer/studio-client-questions/evals/evals.json`
 - **Parallel:** true
 - **Satisfies:** AC6, AC16
 - **Verify:** frontmatter carries `name` and `description` and does **not** carry
@@ -386,9 +386,11 @@ it does not author them.
   applies to the **unscoped rules only** (`.claude/rules/*.md`, 254 lines today); this build
   adds no unscoped rule, so that total must not grow. `AGENTS.md` is checked separately and
   only for a concise pointer section — it is not part of that budget.
-- Run the manual evals under `specs/cpo-layer/evals/` and record their pass rates in
-  `implementation-notes.md`. They are not part of the CI suite, so an unrecorded eval is an
-  unrun one.
+- Run both manual eval suites and record their pass rates in `implementation-notes.md`. They
+  are not part of the CI suite, so an unrecorded eval is an unrun one. The skill suite runs
+  through the meta-skills runner; the commands suite is graded by running each case's `check`
+  directly, because `eval.py` exits 1 on a directory with no `SKILL.md`. Exact commands are
+  in acceptance-criteria.md `### AC16`.
 - Confirm the diff adds no client data, leaves `artifacts.md` and `harness-interview.md`
   untouched, and carries no orphaned files.
 

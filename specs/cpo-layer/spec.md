@@ -427,6 +427,11 @@ Existing call sites pass no `args` and are unaffected.
   `p5-prototype.md`, `p6-handoff.md`, `p7-retro.md`.
 - `.claude/skills/studio-layer/studio-client-questions/SKILL.md` — the invocable question
   bank. The **directory name** becomes the command, so it matches the skill's `name:` exactly.
+- `.claude/skills/studio-layer/studio-client-questions/evals/evals.json` — the skill's eval
+  suite, in the schema the meta-skills runner executes.
+- `.claude/commands/studio-layer/evals/evals.json` — the commands' eval suite, same schema,
+  graded by running each case's `check` directly (the runner needs a `SKILL.md`, which a
+  command directory has none of).
 - `.claude/hooks/check_gate_signoff.py` — the phase-argument Stop gate.
 - `.claude/scripts/studio-layer/check_states_matrix.py` — every component × state cell filled.
 - `.claude/scripts/studio-layer/check_contrast.py` — computed WCAG ratios and tap targets.

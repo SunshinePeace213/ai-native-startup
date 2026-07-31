@@ -99,9 +99,14 @@
 - **AC16** — The non-deterministic surfaces carry eval coverage per `test-tiers.md`, in the
   format the repo's existing harness already runs: an `evals/evals.json` beside the
   question-bank skill, and one beside the studio commands, each entry carrying a prompt and
-  assertions with executable `check` commands where the assertion is mechanical. They are
-  executed by the meta-skills runner, not read as prose, and scored as a pass rate over
-  repeated runs. Evals are manual and stay out of CI; the recorded rates are the evidence.
+  assertions with executable `check` commands where the assertion is mechanical. Both suites
+  are machine-gradeable rather than prose, and scored as a pass rate over repeated runs.
+  The two are graded by different means, because `scripts/eval.py` resolves a target only
+  when that directory holds a `SKILL.md`: the **skill** suite is executed by the meta-skills
+  runner end to end, while the **commands** suite — `.claude/commands/studio-layer/` is a
+  command directory with no `SKILL.md`, so the runner exits 1 on it — is schema-asserted by
+  `ac16-evals-are-runnable.sh` and graded by running each case's `check` directly. Evals are
+  manual and stay out of CI; the recorded rates are the evidence.
 
 ### Suite health
 
@@ -207,13 +212,21 @@ and exit 0 on pass.
 
 ### AC16 — the non-deterministic surfaces carry runnable evals
 
-- `uv run --with pyyaml python -m scripts.eval .claude/skills/studio-layer/studio-client-questions --lint` —
-  pass: no `FAIL`. Run from `.claude/skills/meta-skills/`, the harness's own directory.
-- `manual: uv run --with pyyaml python -m scripts.eval .claude/skills/studio-layer/studio-client-questions` —
+- `(cd .claude/skills/meta-skills && uv run --with pyyaml python -m scripts.eval ../studio-layer/studio-client-questions --lint)` —
+  pass: exit 0. The `cd` is load-bearing and so is the relative target: `-m scripts.eval`
+  only imports with the harness directory as cwd, and `eval.py` resolves `skill_dir` against
+  that same cwd — so a repo-root-relative path resolves under `meta-skills/` and exits 1
+  with `No SKILL.md`. Verified during planning against an existing skill. Judge this by the
+  exit code, never by grepping for `FAIL`: the path failure prints no such token.
+- `manual: (cd .claude/skills/meta-skills && uv run --with pyyaml python -m scripts.eval ../studio-layer/studio-client-questions --behavior --yes)` —
   pass: every assertion in that skill's `evals/evals.json` meets its rubric on the recorded
   majority of runs; the pass rate is recorded in `implementation-notes.md`. Per
   `test-tiers.md` evals stay manual and out of CI, so the recorded rate is the evidence — a
   single green run proves nothing.
+- `manual:` the commands suite — run each case's `check` in
+  `.claude/commands/studio-layer/evals/evals.json` directly and record the pass rate in
+  `implementation-notes.md`. The meta-skills runner cannot grade it: `eval.py` exits 1 on a
+  directory with no `SKILL.md`, and a command directory has none.
 - `bash specs/cpo-layer/checks/ac16-evals-are-runnable.sh` — pass: exit 0. Asserts the eval
   files exist in the harness's `evals/evals.json` schema (a `skill_name`, an `evals` array,
   and every entry carrying `id`, `name`, `prompt`, and a non-empty `assertions` list), so the
