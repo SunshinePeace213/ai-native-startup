@@ -97,6 +97,22 @@
   - Deviations: none.
 - **2026-08-01 · phase 2/3** — launched `studio-role-agents` (roster landed) and
   `studio-check-scripts` (question bank landed) as concurrent builders.
+- **2026-08-01 · hand-off `studio-phase-commands`** — the eight commands under
+  `.claude/commands/studio-layer/`, `.claude/commands/studio-layer/evals/evals.json`
+  - `bash specs/cpo-layer/checks/ac7-phase-commands.sh` → `AC7 pass: eight phase commands,
+    four Stop registrations, each with its own phase`, exit 0.
+  - `uv run pytest tests/harness-layer/hooks/test_wiring.py` → `13 passed in 1.70s`. **This is
+    the entry that closes the pending failure recorded at the `gate-signoff-hook` hand-off**:
+    the four p2/p3/p4/p6 frontmatter registrations are what claim `check_gate_signoff.py`, so
+    `test_every_entrypoint_is_claimed_by_a_registration_surface` went from red to green with no
+    change to the hook itself.
+  - `bash specs/cpo-layer/checks/ac6-question-bank-skill.sh` → `AC6 pass: the question bank is
+    invocable and its coverage is re-derived`, exit 0 — P1 names `check_question_coverage.py`
+    literally, so the coverage gate is wired rather than orphaned.
+  - `uv run pytest` → `971 passed, 2 skipped in 17.35s` (baseline was 875 passed, 2 skipped).
+  - `uv run ruff check .` → `All checks passed!`; `uv run ruff format --check .` → `69 files
+    already formatted`.
+  - Deviations: none.
 - **2026-08-01 · hand-off `studio-check-scripts`** — the four scripts under
   `.claude/scripts/studio-layer/`, `tests/harness-layer/studio-layer/test_studio_checks.py`
   - `uv run pytest tests/harness-layer/studio-layer/` → `25 passed in 1.91s`. All 22 node ids

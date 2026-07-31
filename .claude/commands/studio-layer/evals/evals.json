@@ -1,0 +1,73 @@
+{
+  "skill_name": "studio-layer-commands",
+  "evals": [
+    {
+      "id": 0,
+      "name": "p1-writes-discovery-notes-that-pass-the-coverage-check",
+      "prompt": "/studio-layer:p1-discovery harlow-dental/site\n\nDry run — nobody is on the call, so publish no page and open no interactive round. Everything the client said at kickoff is below; work from it and write the phase's documents.\n\nHarlow Dental is a three-clinic practice in Essex. The site exists to get patients to book online instead of phoning reception, which loses roughly a third of callers at peak; today booking goes through a phone line staffed 9-5, and the practice watches weekly booked appointments. Who arrives: mostly people searching for an emergency appointment on a phone, in pain, plus parents registering a whole family from a laptop in the evening; they assume a private practice is expensive and need to see prices before they act. Voice: calm and local, never clinical and never jokey; they say 'the practice', not 'we'; the words 'smile journey' and 'dental care family' are banned internally; the principal dentist signs off all copy and pushes back on anything that sounds like an advert. References: they admire Bupa Dental for the booking flow and Nuffield for how the prices read, and they cannot stand anything that looks like a hospital website or uses stock photography of models with perfect teeth — for all three it is the structure they mean, not the look. Content: professional photography of two of the three clinics, no written copy they trust, logo files in EPS, twelve treatments and three locations that change once or twice a year; the practice manager updates the site and is not technical. Constraints: they stay on their existing WordPress install, must not break the existing /new-patients URL, need it live before the September school term, and are bound by their existing brand colours. Budget: Harlow Dental is part of a dental group and the parent company holds the entire website budget — the practice has no number and it is not part of this conversation at all. Success at six months: 60% of new appointments booked online, up from zero today, measured by the practice manager from the booking system and reported to the group monthly.",
+      "assertions": [
+        {
+          "id": "a1",
+          "text": "The discovery notes and glossary are written to the project's discovery folder",
+          "check": "test -f clients/harlow-dental/site/discovery/notes.md && test -f clients/harlow-dental/site/discovery/glossary.md"
+        },
+        {
+          "id": "a2",
+          "text": "The notes pass check_question_coverage.py — every dimension the question bank declares is answered, or carries an explicit 'N/A, because'",
+          "check": "uv run --script .claude/scripts/studio-layer/check_question_coverage.py clients/harlow-dental/site/discovery/notes.md"
+        },
+        {
+          "id": "a3",
+          "text": "Budget — the one dimension the client put out of scope — is recorded with the 'N/A, because' opener naming the parent company, rather than left blank or invented",
+          "check": "grep -A4 -i '^## Budget' clients/harlow-dental/site/discovery/notes.md | grep -q 'N/A, because'"
+        },
+        {
+          "id": "a4",
+          "text": "Each section is a written statement of what is true for this practice, not a transcript of the call or a list of the questions asked"
+        },
+        {
+          "id": "a5",
+          "text": "The glossary carries the client's own terms — 'the practice', the banned phrases, the treatments — rather than generic design vocabulary"
+        },
+        {
+          "id": "a6",
+          "text": "Nothing is invented beyond the call: the notes do not name a budget figure, a CMS other than WordPress, or copy the practice does not have"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "p2-triages-every-cold-designer-row",
+      "prompt": "/studio-layer:p2-definition northgate-clinic/site\n\nDry run — nobody is on the call, so publish no page and ask no client questions. The briefs below are already agreed; write them into the project as given, write the sitemap from them, then run the cold-designer test and triage it. Skip the client signature.\n\nProject brief: Northgate Clinic is a single-site physiotherapy practice. Goal — get self-paying adults with back and sports injuries to book an initial assessment online. Audience — people who have already tried their GP and want to be seen this week. Scope — a marketing site of no more than eight pages plus an online booking link; no patient portal. Constraints — existing brand colours, must launch before October, one clinic location. Success — 40 online assessment bookings a month by six months, from 5 today. Revision rounds: 2 (plus polish).\n\nCreative brief: it should feel like a specialist you would be sent to, not a wellness brand — precise, quiet, evidence-led. They admire how physio-led sports clinics present their staff credentials, and hate anything that reads as spa or lifestyle. Show real practitioners, real equipment, no stock imagery.\n\nSitemap as agreed with the client: Home; What we treat; Our approach; Practitioners; Fees; Book an assessment; About; Contact.",
+      "assertions": [
+        {
+          "id": "b1",
+          "text": "The cold-designer triage document is written to the project's definition folder",
+          "check": "test -f clients/northgate-clinic/site/definition/cold-designer-triage.md"
+        },
+        {
+          "id": "b2",
+          "text": "The triage carries at least one row and every row's Disposition is 'brief unclear — amended' or begins 'acceptable variance —'; an untriaged row is what the p2 gate blocks on",
+          "check": "f=clients/northgate-clinic/site/definition/cold-designer-triage.md; test -f \"$f\" || { echo 'no triage document'; exit 1; }; awk -F'|' '/^[[:space:]]*\\|/ { if ($2 ~ /^[[:space:]]*:?---/) next; d=$5; gsub(/^[[:space:]]+|[[:space:]]+$/, \"\", d); if (d == \"Disposition\") next; n++; if (d !~ /^brief unclear/ && d !~ /^acceptable variance/) { print \"untriaged row: \" $0; bad=1 } } END { if (n == 0) { print \"no triage rows\"; exit 1 } exit bad ? 1 : 0 }' \"$f\""
+        },
+        {
+          "id": "b3",
+          "text": "The project brief keeps the revision allowance on its own line, which is the baseline P5's revision counter re-derives",
+          "check": "grep -qE '^- \\*\\*Revision rounds:\\*\\* [0-9]+' clients/northgate-clinic/site/definition/project-brief.md"
+        },
+        {
+          "id": "b4",
+          "text": "The cold designer's plan was produced by a subagent given only the two briefs, and the triage's 'Cold designer produced' column reflects an independent section plan rather than a restatement of the signed sitemap"
+        },
+        {
+          "id": "b5",
+          "text": "Differences are dispositioned rather than deleted — no row is dropped to make the diff smaller, and each 'acceptable variance' names why the difference is acceptable"
+        },
+        {
+          "id": "b6",
+          "text": "Any row marked 'brief unclear — amended' has a matching amendment actually made in the project or creative brief"
+        }
+      ]
+    }
+  ]
+}
