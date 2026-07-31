@@ -414,7 +414,7 @@
 <div class="shell">
   <aside class="rail">
     <nav id="rail">
-      <a href="#decisions"><span class="step">Most volatile</span>Six decisions</a>
+      <a href="#decisions"><span class="step">Most volatile</span>Seven decisions</a>
       <a href="#order"><span class="step">Then</span>Build order</a>
       <a href="#scope"><span class="step">Fence</span>What it will not do</a>
       <a href="#mechanical"><span class="step">Collapsed</span>Files &amp; criteria</a>
@@ -432,11 +432,12 @@
         over without writing a line of the site.
       </p>
       <p class="stops" style="border-left-color: var(--muted);">
-        <strong>Reviewed twice.</strong> The Codex gate raised 47 findings across two rounds, 27 of
-        them blocking. All are fixed. The largest change: agent teams are gone entirely — a plain
+        <strong>Reviewed across four rounds.</strong> The Codex gate raised 52 findings, 32 of them
+        blocking. All are fixed. Two changes mattered most: agent teams are gone entirely — a plain
         subagent already lacks the lead's conversation history, so the one teammate bought no
-        isolation while silently breaking the roster's effort stamps. The round-2 fixes were not
-        re-verified by a third round; the cap is two.
+        isolation while silently breaking the roster's effort stamps — and the component inventory
+        became a client-signed P3 artifact whose hash the P6 gate re-verifies. The round-4 fixes were
+        not re-verified by a fifth round; the cap is two per run.
       </p>
 
       <dl class="facts">
@@ -444,7 +445,7 @@
         <div class="fact"><dt>Issue</dt><dd><a href="https://github.com/SunshinePeace213/ai-native-startup/issues/80">#80</a></dd></div>
         <div class="fact"><dt>Branch</dt><dd>feat/80-cpo-layer</dd></div>
         <div class="fact"><dt>Profile</dt><dd>kb-grounded</dd></div>
-        <div class="fact"><dt>Tasks</dt><dd>10 across 5 phases</dd></div>
+        <div class="fact"><dt>Tasks</dt><dd>11 across 5 phases</dd></div>
       </dl>
 
       <p class="stops">
@@ -460,14 +461,38 @@
       <h2>Decisions most likely to change <span>tick one to revise it</span></h2>
       <p class="intro">
         Ordered by volatility. Each shows the path taken and, behind the toggle, the alternative
-        that is still live. The other twelve decisions came locked from the interview and are not
+        that is still live. The other decisions came locked from the interview and are not
         re-litigated here.
       </p>
+
+      <article class="card" data-key="signed-inventory">
+        <header>
+          <span class="vol">Most volatile &middot; gate mechanism</span>
+          <h3>The component inventory is a <strong>P3 deliverable signed by the client</strong>, and the P6 gate re-verifies its hash</h3>
+          <p class="why">
+            The matrix and contrast checks are only as honest as the list they quantify over. An
+            inventory written at P6 alongside the matrix could omit nine of ten components and both
+            would agree with each other. So it lands at <code>structure/inventory.md</code> as one of
+            P3's deliverables, enumerated from the signed wireframes, with its SHA-256 in the P3
+            sign-off &mdash; and the <code>p6</code> gate recomputes that hash, because a signature
+            three phases back says nothing about the file P6 actually measures against.
+          </p>
+        </header>
+        <div class="alt" hidden>
+          <strong>Still live:</strong> a P6-authored inventory with no signature, relying on the
+          design-QA agent to notice omissions. It loses because it makes the denominator
+          self-declared &mdash; the exact vacuous pass these checks exist to prevent.
+        </div>
+        <div class="rowtools">
+          <button class="ghost" aria-expanded="false">Show the alternative</button>
+          <label class="tweak"><input type="checkbox" data-tweak="signed-inventory"> Change this</label>
+        </div>
+      </article>
 
       <article class="card" data-key="scripts-home">
         <header>
           <span class="vol">Most volatile · placement</span>
-          <h3>The four check scripts live in <code>.claude/scripts/studio-layer/</code></h3>
+          <h3>The four check scripts &mdash; and the command-eval runner &mdash; live in <code>.claude/scripts/studio-layer/</code></h3>
           <p class="why">
             Anything with a PEP&nbsp;723 header under <code>.claude/hooks/</code> is treated as a hook
             entrypoint that must be claimed by a registration surface, and needs a Codex verdict.
@@ -598,7 +623,7 @@
 
     <!-- ============ BUILD ORDER ============ -->
     <section id="order">
-      <h2>Build order <span>10 tasks · 5 phases</span></h2>
+      <h2>Build order <span>11 tasks · 5 phases</span></h2>
       <p class="intro">
         A phase exists only because its tasks cannot start until the previous one lands. The roster is
         first because every later model stamp is re-derived from it; the commands are last because
@@ -685,7 +710,14 @@
 
       <div class="phase">
         <h3><em>Phase 5</em> Evidence</h3>
-        <p>The six plan-local checks are already written and committed with this plan — they fail on today's tree and pass once the build lands. The build runs them; it does not author them.</p>
+        <p>The seven plan-local checks are already written and committed with this plan — they fail on today's tree and pass once the build lands. The build runs them; it does not author them.</p>
+
+        <div class="task">
+          <span class="id">studio-command-eval-runner</span>
+          <span class="chip model">opus &middot; high</span>
+          <p class="desc">The runner that actually executes the commands eval suite. The meta-skills runner cannot reach a command directory &mdash; <code>eval.py</code> requires a <code>SKILL.md</code> and <code>run_behavior_eval.py</code> stages into <code>.claude/skills/</code> &mdash; so this stages the whole studio namespace plus the sign-off hook into a scratch project and invokes each case as a slash command.</p>
+          <span class="meta"><span class="chip dep">after studio-phase-commands</span><span class="chip ac">AC16</span></span>
+        </div>
 
         <div class="task">
           <span class="id">validate-all</span>
@@ -718,15 +750,15 @@
       <h2>Files and criteria <span>collapsed — open what you need</span></h2>
 
       <details>
-        <summary>The 27 files this build creates</summary>
+        <summary>The files this build creates</summary>
         <div class="dbody">
           <ul class="files">
             <li><code>.claude/rules/studio-layer/</code> — roster, client-artifacts, studio-identity. All scoped <code>paths: clients/**</code>, so none load during ordinary harness work.</li>
             <li><code>.claude/agents/studio-layer/</code> — nine roles: client-partner (Daniel Osei), discovery-lead (Priya Raghavan), ux-architect (Tomas Vieira), art-director (Elena Ferraro), content-strategist (Hana Okabe), prototype-engineer (Marcus Bramley), design-qa (Yusuf Demir), research-analyst (Clara Nyberg), retro-scribe (Ravi Chandran).</li>
             <li><code>.claude/commands/studio-layer/</code> — p0-intake, p1-discovery, p2-definition, p3-structure, p4-art-direction, p5-prototype, p6-handoff, p7-retro.</li>
-            <li><code>.claude/skills/studio-layer/client-questions/SKILL.md</code> — the invocable question bank.</li>
+            <li><code>.claude/skills/studio-layer/studio-client-questions/SKILL.md</code> — the invocable question bank. The directory name is what becomes the command, so it matches the skill's <code>name:</code>.</li>
             <li><code>.claude/hooks/check_gate_signoff.py</code> — the phase-argument Stop gate.</li>
-            <li><code>.claude/scripts/studio-layer/</code> — states matrix, contrast, question coverage, revision count.</li>
+            <li><code>.claude/scripts/studio-layer/</code> — states matrix, contrast, question coverage, revision count, plus <code>run_command_evals.py</code>, the runner for the commands eval suite.</li>
             <li><code>tests/harness-layer/</code> — roster drift, hook contract tests, studio check tests.</li>
             <li><code>clients/.gitkeep</code> — the directory contract; everything else there is ignored.</li>
           </ul>
@@ -736,7 +768,7 @@
       <details>
         <summary>Files that change outside the new namespace</summary>
         <div class="dbody">
-          <p>Only these four. Everything else is additive.</p>
+          <p>Only these six. Everything else is additive.</p>
           <ul class="files">
             <li><code>.gitignore</code> — the <code>clients/*</code> pattern pair.</li>
             <li><code>AGENTS.md</code> — a pointer to the three new rules, nothing duplicated.</li>
@@ -747,24 +779,26 @@
       </details>
 
       <details>
-        <summary>All 14 acceptance criteria, with the command that proves each</summary>
+        <summary>All 16 acceptance criteria, with the command that proves each</summary>
         <div class="dbody">
-          <p>Every command must fail if the change is reverted. The six shell scripts were confirmed failing on today's tree before this plan was pushed.</p>
+          <p>Every command must fail if the change is reverted. All seven shell scripts were confirmed failing on today's tree, each naming exactly what is missing, before this plan was pushed.</p>
           <div class="scroller">
             <ol class="acs">
               <li><code>clients/</code> is contracted, ignored, and invisible to the spec gate.<span class="cmd">bash specs/cpo-layer/checks/ac1-client-data-home.sh</span></li>
-              <li>Roster stamps match every agent file, both directions.<span class="cmd">uv run pytest tests/harness-layer/test_studio_roster_drift.py</span></li>
+              <li>Roster stamps match every agent file, both directions.<span class="cmd">uv run pytest &quot;…::test_agent_effort_matches_its_roster_row&quot; …6 node ids</span></li>
               <li>Nine role agents, function-named, person in the body, validator clean.<span class="cmd">bash specs/cpo-layer/checks/ac3-role-agents.sh</span></li>
               <li>The client-artifact rule forks rather than copies; no hex palette.<span class="cmd">bash specs/cpo-layer/checks/ac4-client-artifacts.sh</span></li>
               <li>Every studio rule is path-scoped to <code>clients/**</code>.<span class="cmd">bash specs/cpo-layer/checks/ac5-rules-path-scoped.sh</span></li>
               <li>The question bank is invocable and its coverage is re-derived from it.<span class="cmd">bash specs/cpo-layer/checks/ac6-question-bank-skill.sh</span></li>
               <li>Eight commands; exactly the four hard gates register the hook, each with its phase.<span class="cmd">bash specs/cpo-layer/checks/ac7-phase-commands.sh</span></li>
-              <li>The gate blocks on a missing, empty, placeholder or mismatched sign-off, and allows a good one.<span class="cmd">uv run pytest tests/harness-layer/hooks/gate-signoff/</span></li>
-              <li>The cold-designer triage gates P2 only — and the diff itself never gates.<span class="cmd">uv run pytest tests/harness-layer/hooks/gate-signoff/ -k triage</span></li>
+              <li>The gate blocks on a missing, empty, placeholder or mismatched sign-off, and allows a good one.<span class="cmd">uv run pytest &quot;…/test_check_gate_signoff.py::test_missing_signoff_file_blocks&quot; …14 node ids</span></li>
+              <li>The cold-designer triage gates P2; the signed inventory gates P3, and P6 re-verifies its hash — the diff itself never gates.<span class="cmd">uv run pytest &quot;…::test_p2_untriaged_row_blocks&quot; &quot;…::test_p6_inventory_mutated_after_p3_signoff_blocks&quot; …9 node ids</span></li>
               <li>The new hook is claimed, cataloged and dispositioned.<span class="cmd">uv run pytest tests/harness-layer/hooks/test_wiring.py</span></li>
-              <li>The states matrix names every unfilled cell.<span class="cmd">uv run pytest tests/harness-layer/studio-layer/ -k states</span></li>
-              <li>Contrast and tap targets are computed, with one hand-checked ratio pinned.<span class="cmd">uv run pytest tests/harness-layer/studio-layer/ -k contrast</span></li>
-              <li>The revision count is arithmetic re-derived from the signed brief.<span class="cmd">uv run pytest tests/harness-layer/studio-layer/ -k revision</span></li>
+              <li>The states matrix names every unfilled cell, quantified over the client-signed inventory.<span class="cmd">uv run pytest &quot;…::test_single_blank_cell_fails_and_names_it&quot; …6 node ids</span></li>
+              <li>Contrast and tap targets are computed, with one hand-checked ratio pinned.<span class="cmd">uv run pytest &quot;…::test_known_pair_matches_hand_computed_ratio&quot; …6 node ids</span></li>
+              <li>The revision count is arithmetic re-derived from the signed brief.<span class="cmd">uv run pytest &quot;…::test_round_past_allowance_without_change_order_fails&quot; …7 node ids</span></li>
+              <li>Design QA blocks handoff as a mechanism, and no role can spawn subagents.<span class="cmd">bash specs/cpo-layer/checks/ac3-role-agents.sh</span></li>
+              <li>Both non-deterministic surfaces carry evals a runner can actually execute.<span class="cmd">bash specs/cpo-layer/checks/ac16-evals-are-runnable.sh</span></li>
               <li>The whole suite and both ruff commands stay green.<span class="cmd">uv run pytest &amp;&amp; uv run ruff check .</span></li>
             </ol>
           </div>
@@ -818,6 +852,7 @@
 
 <script>
   var TWEAKS = {
+    "signed-inventory": "Don't make the component inventory a client-signed P3 artifact. Let P6 author structure/inventory.md alongside the states matrix and token table, and drop the p3 gate check and the p6 SHA re-verification \u2014 but solve the problem that made it signed in the first place: if P6 writes the list it is measured against, a one-component inventory makes a one-component matrix pass while the rest of the design goes unspecced.",
     "scripts-home": "Move the four studio check scripts out of .claude/scripts/studio-layer/. Put them in a scripts/ folder inside the question-bank skill instead, following the meta-agent/scripts/validate_agent.py precedent — and make sure the wiring suite still passes, since anything with a PEP 723 header under .claude/hooks/ has to be a registered hook.",
     "phase-arg": "Don't pass the phase to check_gate_signoff.py as an argument. Infer it instead, the way check_spec_completeness.py infers its plan folder — and solve the problem that a client project holds all eight phase folders at once, so mtime alone would gate the wrong phase. This should also remove the need to extend the shared run_hook fixture.",
     "spawn-shape": "Run some studio roles as agent-team teammates rather than subagents, starting with P4's competing art directions. Address how each teammate's effort level gets set, since it does not come from the agent file — the roster's effort stamps and the drift test that pins them depend on it — and that teammates editing the same file overwrite each other.",
@@ -827,6 +862,7 @@
   };
 
   var LABELS = {
+    "signed-inventory": "whether the component inventory is client-signed at P3",
     "scripts-home": "where the check scripts live",
     "phase-arg": "how the gate hook learns its phase",
     "spawn-shape": "subagents vs teammates",

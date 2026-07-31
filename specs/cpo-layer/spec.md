@@ -605,5 +605,26 @@ the plan folder.
 
 ## Codex Verification
 
-- **Outcome:** pending — filled after the Codex gate runs.
-- **Rejected findings:** pending.
+- **Outcome:** four rounds run against `gpt-5.6-sol`, two per run — rounds 1–2 (`xhigh`, then
+  `high`) in the drafting run, rounds 3–4 (`medium`) in this revision run. 52 findings total:
+  32 blocking, all fixed; 20 advisory, recorded. No finding was disputed, and no round reopened
+  an earlier disposition. The full record is in
+  [reviews/findings-ledger.md](./reviews/findings-ledger.md).
+- **The one thing the gate did not confirm:** this run's 2-round allowance was spent on rounds
+  3 and 4, so the round-4 fixes — the p6 re-verification of the inventory hash (R4-F1) and
+  staging the sign-off hook in the command-eval runner (R4-F2) — were not re-reviewed by a
+  fifth round. Both are spec text and task instructions rather than code, and each is pinned by
+  named tests the build must add (`test_p6_inventory_mutated_after_p3_signoff_blocks`, and the
+  runner's staging-layout test).
+- **Rejected findings:** none. R1-F35 (path scope alone does not prove rules load on a client
+  project's first file) fell below the blocking confidence bar and stands as advisory; the phase
+  commands read the identity rule explicitly, which covers the practical case.
+- **Standards amended (self-improve):** `spec-standards.md` #6 in the drafting run, to accept
+  checked-in `meta-skills/references/` sources where the KB has no mirror; `spec-standards.md`
+  #2 in this run, to require verifying at draft time that a runner a criterion leans on can
+  actually reach its target. R2-F4, R3-F1 and R4-F2 shared that single root cause.
+- **Verified by running, not asserted:** the AC16 lint invocation (proved broken as originally
+  written, then proved working in its corrected form), `eval.py`'s `SKILL.md` requirement,
+  `run_behavior_eval.py`'s staging path, `HOOK_PATH_RE`'s whitespace boundary, `run_hook`'s
+  argv-free launch, all seven plan-local checks failing with precise diagnostics on today's
+  tree, and the full suite green at 875 passed / 2 skipped.
