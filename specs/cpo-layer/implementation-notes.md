@@ -97,6 +97,25 @@
   - Deviations: none.
 - **2026-08-01 · phase 2/3** — launched `studio-role-agents` (roster landed) and
   `studio-check-scripts` (question bank landed) as concurrent builders.
+- **2026-08-01 · hand-off `studio-roster-drift-test`** —
+  `tests/harness-layer/test_studio_roster_drift.py`
+  - AC2's exact six-node-id command → `6 passed in 1.64s`.
+  - Builder's mutation proof (agent side): edited `studio-client-partner.md` to
+    `effort: high` → `AssertionError: .claude/agents/studio-layer/studio-client-partner.md:
+    roster says effort 'medium', file says 'high'`; reverted, `git diff --stat
+    .claude/agents/studio-layer/` empty, suite green again.
+  - Lead's independent mutation proof (roster side): edited the `studio-design-qa` row to
+    `sonnet` → `AssertionError: .claude/agents/studio-layer/studio-design-qa.md: roster says
+    model 'sonnet', file says 'opus'`, `1 failed, 5 passed`; restored from a backup copy,
+    `git status --porcelain .claude/rules/studio-layer/` empty, `6 passed in 1.82s`.
+    Both directions of AC2's "changing either side alone fails" are therefore exercised.
+  - Parser re-derives from `roster.md`, mirroring `test_model_drift.py`'s shape; the principal
+    row is skipped via the literal `No agent file` marker in its escalation cell rather than a
+    hard-coded name; agent files are matched by frontmatter `name:` so a misnamed file is
+    caught as an orphan.
+  - `uv run ruff check .` → `All checks passed!`; `uv run ruff format --check .` → `68 files
+    already formatted`.
+  - Deviations: none.
 - **2026-08-01 · hand-off `gate-signoff-hook`** — `.claude/hooks/check_gate_signoff.py`,
   `tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py`,
   `tests/harness-layer/hooks/conftest.py`, `tests/harness-layer/hooks/test_wiring.py`,
