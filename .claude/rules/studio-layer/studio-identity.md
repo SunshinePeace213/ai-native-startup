@@ -5,8 +5,7 @@ paths:
 
 # Studio Identity
 
-The Soriza brand that every client-facing document under `clients/` wears. One file,
-so rebranding costs an edit here rather than a hunt across every phase's output.
+The Soriza brand that every client-facing document under `clients/` wears.
 
 ## Studio
 
@@ -36,8 +35,7 @@ Every client-facing document opens with:
 
 ## Sign-off block
 
-Every document that closes a hard gate carries the sign-off shape from spec.md
-`## Interfaces & Contracts` → "Sign-off document": an `Approver` name and role, a
-`Date`, and an artifact table of `Artifact` / `SHA-256` rows — one row per approved
-file, the hash of its current content. Approver and Date must both be filled; a
+Every document that closes a hard gate carries the sign-off shape: an `Approver` name
+and role, a `Date`, and an artifact table of `Artifact` / `SHA-256` rows — one row per
+approved file, the hash of its current content. Approver and Date must both be filled; a
 blank or placeholder value is the same as no signature.

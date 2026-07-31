@@ -97,6 +97,32 @@
   - Deviations: none.
 - **2026-08-01 · phase 2/3** — launched `studio-role-agents` (roster landed) and
   `studio-check-scripts` (question bank landed) as concurrent builders.
+- **2026-08-01 · tidy** — `harness-simplifier` over the changed harness/prompt files and
+  `code-simplifier` over the changed Python, run concurrently; behavior-preserving auto-fix only.
+  - 11 files touched, +60/−57. Harness side: cut rationale that restated a decision the reader
+    cannot act on — "the accessibility verdict at P6 belongs to the design-QA seat" and three
+    other cross-seat asides in the role agents, the "why we fork the palette" paragraph in
+    `client-artifacts.md`, and the "one file, so rebranding costs an edit here" opener in
+    `studio-identity.md`. Instructions stayed; only the justifications went.
+  - Code side: `check_gate_signoff.py` lost a dead `return rows` on the empty-table branch
+    (the following loop is a no-op on an empty list, so the value returned is unchanged) and
+    hoisted a repeated problem-list join into one `listing` local; `check_contrast.py` and
+    `run_command_evals.py` collapsed local repetition. No exit code, diagnostic string, or
+    parse behavior changed.
+  - Re-verified after tidy — all seven plan-local checks `PASS`, `uv run pytest` →
+    `990 passed, 2 skipped in 14.40s`, `uv run ruff check .` → `All checks passed!`,
+    `uv run ruff format --check .` → `71 files already formatted`, and both eval suites still
+    lint (`2 case(s), schema valid` / `PASS (0 warning(s))`).
+- **2026-08-01 · AC16 manual eval — question-bank skill** — run by the lead, since an
+  unrecorded eval is an unrun one.
+  - `(cd .claude/skills/meta-skills && uv run --with pyyaml python -m scripts.eval ../studio-layer/studio-client-questions --behavior --yes)`
+    → exit 0. 2 evals × 2 configs × 3 repeats = 12 `claude -p` invocations.
+  - **With skill: 93.9% pass rate. Without skill: 66.7%. Delta +0.27.** Per-run rates with the
+    skill were 1.0, 0.833, 1.0 (eval-0) and 1.0, 1.0, 0.8 (eval-1); without it, 0.667, 0.667,
+    0.667 and 0.6, 0.8, 0.6. The bank measurably changes behavior rather than restating what
+    the model would do anyway, which is the only thing an eval on a prose skill can establish.
+  - The runner writes to `…/studio-client-questions-workspace/`, already covered by
+    `.gitignore:355 *-workspace/`, so no eval scratch reaches the PR.
 - **2026-08-01 · hand-off `studio-command-eval-runner`** —
   `.claude/scripts/studio-layer/run_command_evals.py`,
   `tests/harness-layer/studio-layer/test_run_command_evals.py`

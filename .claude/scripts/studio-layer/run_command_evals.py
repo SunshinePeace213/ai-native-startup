@@ -107,10 +107,10 @@ def validate(suite: object, path: Path) -> list[str]:
         return problems
 
     for case in evals:
-        label = case.get("name") or case.get("id") if isinstance(case, dict) else None
         if not isinstance(case, dict):
             problems.append(f"{path} has a case that is not an object")
             continue
+        label = case.get("name") or case.get("id")
         for field in ("id", "name", "prompt"):
             if case.get(field) in (None, ""):
                 problems.append(f"{path} case {label!r} is missing '{field}'")
@@ -150,7 +150,7 @@ def validate(suite: object, path: Path) -> list[str]:
     return problems
 
 
-def stage_project(commands_dir: Path, root: Path) -> Path:
+def stage_project(commands_dir: Path, root: Path) -> None:
     """Stage the whole namespace into `root` so the command resolves with its machinery.
 
     The hook sits outside the namespace but is load-bearing: the hard-gate commands
@@ -171,7 +171,6 @@ def stage_project(commands_dir: Path, root: Path) -> Path:
         if not src.is_file():
             raise SuiteError(f"{src} is missing -- the hard gates would run ungated")
         shutil.copy2(src, dest / "hooks" / hook)
-    return root
 
 
 def claude_headless(
@@ -279,14 +278,14 @@ def judge_outputs(
         return {}
 
     rendered = []
-    for f in sorted(outputs_dir.rglob("*")):
-        if not f.is_file():
+    for produced in sorted(outputs_dir.rglob("*")):
+        if not produced.is_file():
             continue
         try:
-            body = f.read_text(encoding="utf-8")[:MAX_JUDGE_FILE_CHARS]
+            body = produced.read_text(encoding="utf-8")[:MAX_JUDGE_FILE_CHARS]
         except (UnicodeDecodeError, OSError):
-            body = f"<binary file, {f.stat().st_size} bytes>"
-        rendered.append(f"--- {f.relative_to(outputs_dir)} ---\n{body}")
+            body = f"<binary file, {produced.stat().st_size} bytes>"
+        rendered.append(f"--- {produced.relative_to(outputs_dir)} ---\n{body}")
     outputs_blob = "\n\n".join(rendered) if rendered else "<no files were produced>"
 
     listed = "\n".join(f"- id={a['id']}: {a['text']}" for a in pending)
@@ -303,10 +302,10 @@ def judge_outputs(
     try:
         start, end = raw.index("{"), raw.rindex("}") + 1
         parsed = json.loads(raw[start:end])
-        for v in parsed.get("verdicts", []):
-            verdicts[str(v.get("id"))] = {
-                "passed": bool(v.get("passed")),
-                "evidence": str(v.get("evidence", ""))[:600],
+        for verdict in parsed.get("verdicts", []):
+            verdicts[str(verdict.get("id"))] = {
+                "passed": bool(verdict.get("passed")),
+                "evidence": str(verdict.get("evidence", ""))[:600],
             }
     except (ValueError, json.JSONDecodeError):
         pass
@@ -347,14 +346,16 @@ def run_one(spec: dict) -> dict:
         str(envelope.get("result", envelope.get("error", ""))), encoding="utf-8"
     )
 
-    expectations = [
-        {
-            "text": a["text"],
-            "passed": graded.get(a["id"], {}).get("passed", False),
-            "evidence": graded.get(a["id"], {}).get("evidence", "not graded"),
-        }
-        for a in assertions
-    ]
+    expectations = []
+    for assertion in assertions:
+        verdict = graded.get(assertion["id"], {})
+        expectations.append(
+            {
+                "text": assertion["text"],
+                "passed": verdict.get("passed", False),
+                "evidence": verdict.get("evidence", "not graded"),
+            }
+        )
     passed = sum(1 for e in expectations if e["passed"])
     total = len(expectations)
     grading = {

@@ -34,7 +34,7 @@ them in the pairs `check_contrast.py` computes. Name and give a value to every t
 introduce.
 
 Stay inside the phase you were spawned for. At P5 your question is whether the prototype
-still is the direction — the accessibility verdict at P6 belongs to the design-QA seat.
+still is the direction.
 
 ## Output
 

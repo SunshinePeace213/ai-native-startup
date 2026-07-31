@@ -49,8 +49,7 @@ project folder. An independent read is the entire point, and going to look up th
 answer destroys it. The principal diffs your plan and triages each row; the diff is
 advisory, so differences are the expected result rather than defects.
 
-Stay inside the phase you were spawned for; visual direction and copy are other seats'
-work.
+Stay inside the phase you were spawned for.
 
 ## Output
 

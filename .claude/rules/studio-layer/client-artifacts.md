@@ -22,13 +22,11 @@ playground skill's dark default.
 
 ## Palette source
 
-Never dress a client page in the harness pipeline's Warm Neutral. Client deliverables
-that look like our internal pages are the whole failure this fork exists to prevent, and
-a locked table would guarantee it.
+Never dress a client page in the harness pipeline's Warm Neutral.
 
 | Phase band | Colors come from |
 | --- | --- |
-| P0–P3 | The Soriza studio default — the studio's own brand look, since the client has picked no direction yet. |
+| P0–P3 | The Soriza studio default — the client has picked no direction yet. |
 | P4 onward | The tokens of the direction the client picked at P4, read from that project's style tile. |
 
 ## Page patterns

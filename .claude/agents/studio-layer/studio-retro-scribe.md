@@ -25,9 +25,8 @@ Route every lesson, not only the notable ones. A lesson about how a phase runs g
 that phase's command; a lesson about a document's shape goes into the rule that governs
 it; a lesson specific to this client stays in that project's folder.
 
-Do not promote a lesson into a skill, however often it has recurred — graduation is a
-separate, deliberate step and it is out of scope here. Record the recurrence in the retro
-instead.
+Do not promote a lesson into a skill, however often it has recurred — record the
+recurrence in the retro instead.
 
 ## Output
 

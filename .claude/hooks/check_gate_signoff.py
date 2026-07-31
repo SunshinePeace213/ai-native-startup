@@ -184,7 +184,6 @@ def check_signoff(project: Path, phase: str, problems: list[str]) -> list[tuple[
         return []
     if not rows:
         problems.append(f"{rel}: the artifact table has no rows — nothing was approved")
-        return rows
 
     for artifact, sha in rows:
         if is_placeholder(artifact):
@@ -231,7 +230,9 @@ def check_triage(project: Path, problems: list[str]) -> None:
             )
 
 
-def check_inventory_signed(project: Path, approved: list[tuple[str, str]], problems: list[str]):
+def check_inventory_signed(
+    project: Path, approved: list[tuple[str, str]], problems: list[str]
+) -> None:
     """p3: the inventory P6 measures the design against is approved here, not
     authored at P6 alongside the matrix that would then agree with it."""
     path = project / INVENTORY
@@ -337,18 +338,18 @@ def main(argv: list[str]) -> int:
         return 0
 
     label = project.relative_to(clients.parent)
+    listing = "\n".join(f"  - {problem}" for problem in problems)
     if payload.get("stop_hook_active"):
         # A client signature will not appear because Claude tried again, and the
         # turn is force-ended after 8 consecutive blocks anyway.
         print(
-            f"check_gate_signoff: the {phase} gate for {label} is still unsigned:\n"
-            + "\n".join(f"  - {problem}" for problem in problems),
+            f"check_gate_signoff: the {phase} gate for {label} is still unsigned:\n{listing}",
             file=sys.stderr,
         )
         return 0
 
     print(f"Stop blocked: the {phase} gate for {label} is not signed off:", file=sys.stderr)
-    print("\n" + "\n".join(f"  - {problem}" for problem in problems), file=sys.stderr)
+    print(f"\n{listing}", file=sys.stderr)
     print(
         f"\nWrite the missing documents and collect the client's signature into "
         f"{label}/sign-off/{phase}.md — every artifact row names an existing file and its "

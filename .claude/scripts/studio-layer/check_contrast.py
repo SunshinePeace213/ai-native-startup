@@ -87,7 +87,8 @@ def find_table(lines: list[str], required: tuple[str, ...], path: Path, what: st
 
 
 def cell_at(row: list[str], index: int | None) -> str:
-    return row[index] if index is not None and index < len(row) else ""
+    """The cell at index, unwrapped from its code ticks; empty when the column is absent."""
+    return row[index].strip("` ") if index is not None and index < len(row) else ""
 
 
 def hex_value(cell: str, path: Path, line_no: int) -> str:
@@ -130,7 +131,7 @@ def read_inventory(path: Path) -> tuple[list[tuple[int, str]], list[tuple[int, s
             raise ParseError(f"the component inventory at {path} declares no colour-token column")
         components, tokens = [], []
         for line_no, row in rows:
-            component = cell_at(row, index["component"]).strip("` ")
+            component = cell_at(row, index["component"])
             if not component:
                 continue
             components.append((line_no, component))
@@ -152,7 +153,7 @@ def check_pairs(path: Path, lines: list[str]) -> tuple[list[str], list[str]]:
     failures, texts = [], []
     for line_no, row in rows:
         texts.append(" ".join(row))
-        kind = cell_at(row, index["kind"]).strip("` ").casefold()
+        kind = cell_at(row, index["kind"]).casefold()
         if kind not in THRESHOLDS:
             raise ParseError(
                 f"{path}:{line_no}: '{kind}' is not a known Kind "
@@ -174,11 +175,11 @@ def check_targets(path: Path, lines: list[str]) -> tuple[list[str], set[str]]:
     index, rows = find_table(lines, ("target", "width (px)", "height (px)"), path, "target table")
     failures, named = [], set()
     for line_no, row in rows:
-        name = cell_at(row, index["target"]).strip("` ")
+        name = cell_at(row, index["target"])
         named.add(name.casefold())
         try:
-            width = int(cell_at(row, index["width (px)"]).strip("` "))
-            height = int(cell_at(row, index["height (px)"]).strip("` "))
+            width = int(cell_at(row, index["width (px)"]))
+            height = int(cell_at(row, index["height (px)"]))
         except ValueError as err:
             raise ParseError(f"{path}:{line_no}: {name} declares a non-integer size") from err
         if width < MIN_TARGET_PX or height < MIN_TARGET_PX:

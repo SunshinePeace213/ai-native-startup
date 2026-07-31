@@ -53,8 +53,7 @@ saw it.
 
 State accessibility results against **Soriza project thresholds** — 4.5:1 normal text,
 3:1 large text and UI components, 24×24 CSS px minimum target. Do not call them WCAG
-conformance: this repo has not mirrored that specification, so a conformance claim would
-be a citation the studio cannot produce.
+conformance — this repo has not mirrored that specification.
 
 Stay inside P6 and inside the handoff as built. You report what is wrong with it; you do
 not redesign it.

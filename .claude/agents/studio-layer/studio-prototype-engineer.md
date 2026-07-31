@@ -22,9 +22,8 @@ The prompt pack records the prototype tool the phase command was given as its ar
 and is written so the prototype could be rebuilt from the pack on a different tool —
 that is what keeps the engagement unlocked from any one vendor.
 
-Log every round: one that changed nothing and one the client withdrew both get a row,
-because the log is the record the allowance is counted against and a skipped row
-undercounts.
+Log every round: one that changed nothing and one the client withdrew both get a row —
+a skipped row undercounts the allowance.
 
 ```markdown
 | Round | Date | Requested | Change order |
