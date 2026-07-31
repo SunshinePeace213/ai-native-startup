@@ -25,6 +25,7 @@ mirrored into `.codex/hooks.json`.
 | `security-scan/` | PostToolUse(+Failure) `Write\|Edit\|MultiEdit`/`Bash`, SessionStart, Stop/SubagentStop | Tracks agent-touched files, scans them for secrets (blocking) and vuln patterns (warn-only); a `security-scan: allow` comment suppresses a line | mirrored |
 | `sensitive-files/` | PreToolUse `Read\|Grep\|Edit\|Write\|MultiEdit` + `Bash` | Denies agent access to secret-bearing files by name/path | mirrored (write surface only) |
 | `check_spec_completeness.py` | Stop (command-scoped) | Blocks `/harness-layer:harness-plan` from ending on an incomplete `specs/` folder | not-applicable |
+| `check_gate_signoff.py` | Stop (command-scoped) | Blocks a studio hard gate — phase from `argv[1]` — from closing until the client sign-off, its hashed artifacts, and that phase's extra document all check out | not-applicable |
 | `worktree/` | WorktreeCreate / WorktreeRemove | Creates dep-installed worktrees (`bun install` + `uv sync`); removes worktree + branch | not-applicable |
 
 ## Development

@@ -84,3 +84,22 @@
   - Deviations: none.
 - **2026-08-01 · phase 2/3** — launched `studio-role-agents` (roster landed) and
   `studio-check-scripts` (question bank landed) as concurrent builders.
+- **2026-08-01 · hand-off `gate-signoff-hook`** — `.claude/hooks/check_gate_signoff.py`,
+  `tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py`,
+  `tests/harness-layer/hooks/conftest.py`, `tests/harness-layer/hooks/test_wiring.py`,
+  `.claude/rules/harness-layer/hooks.md`
+  - `uv run pytest tests/harness-layer/hooks/gate-signoff/` → `30 passed in 1.39s`. All 26
+    node ids named verbatim in AC8, AC9 and AC15 are defined — verified by parsing the test
+    file for each `def <name>(`; none missing.
+  - `uv run pytest tests/harness-layer/hooks/` → `1 failed, 806 passed in 10.38s`. The single
+    failure is `test_every_entrypoint_is_claimed_by_a_registration_surface`:
+    `AssertionError: hooks with no registration surface: ['check_gate_signoff.py']`. Expected
+    and pending `studio-phase-commands` — the four hard-gate commands that register the hook do
+    not exist yet. Tracked to green at the `validate-all` step; not a defect in this hand-off.
+  - Blast radius held: `run_hook` gained only `args: tuple = ()` spliced after the script path,
+    every existing call site untouched, and the other 806 hook tests stayed green.
+  - `hooks.md` catalog row added (`Stop (command-scoped)`, Codex `not-applicable`) and
+    `CODEX_DISPOSITIONS` gained the matching entry; the wiring suite cross-checks both directions.
+  - The registration line the four gate commands must carry:
+    `uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/check_gate_signoff.py <phase>`.
+  - Deviations: none.
