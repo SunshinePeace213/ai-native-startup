@@ -97,6 +97,38 @@
   - Deviations: none.
 - **2026-08-01 · phase 2/3** — launched `studio-role-agents` (roster landed) and
   `studio-check-scripts` (question bank landed) as concurrent builders.
+- **2026-08-01 · AC16 manual eval — studio commands · ONE CASE BELOW ITS BAR** — run by the lead.
+  - `uv run --script .claude/scripts/studio-layer/run_command_evals.py .claude/commands/studio-layer -k 3 --yes`
+    → 2 cases × 3 repeats = 6 `claude -p` invocations.
+  - **`eval-1 p2-triages-every-cold-designer-row`: PASS, 1.0 (needs 1.0)** — 1.0, 1.0, 1.0.
+  - **`eval-0 p1-writes-discovery-notes-that-pass-the-coverage-check`: FAIL, 0.8889 (needs
+    1.0)** — per-run 0.8333, 0.8333, 1.0. **AC16's commands-suite `manual:` check therefore
+    does not currently meet its bar**, and is recorded that way rather than as a pass.
+  - Method note against myself: I first read this run as exit 0. It was not — I had piped the
+    runner into `tail`, so the `0` was `tail`'s status. The runner's own logic is correct
+    (`return 1 if short else 0` at `run_command_evals.py:497`), and a case was short, so it
+    returned 1. This is the exact failure mode `git-workflow.md` warns about for pushes and
+    AC16 warns about for the skill lint — judge by exit status, never through a pipe.
+  - **The one failing assertion, exactly:** "Budget — the one dimension the client put out of
+    scope — is recorded with the 'N/A, because' opener naming the parent company". Graded by
+    `grep -A4 -i '^## Budget' … | grep -q 'N/A, because'`, which exited 1. Every other
+    assertion in the case passed on every run, **including** the one that matters most —
+    `check_question_coverage.py` exited 0 with all 8 dimensions answered.
+  - **Diagnosis: the assertion over-specifies against the documented contract, rather than the
+    command misbehaving.** `spec.md` and `SKILL.md:14` both say a dimension is answered when its
+    section holds non-whitespace prose, and that the literal `N/A, because` opener *also* counts
+    — the opener is for a dimension that genuinely does not apply. Budget did apply here; the
+    run wrote "The practice has no number of its own; the parent company sets it", which is a
+    written statement of what is true and is exactly what the coverage check accepts. The
+    assertion demands one particular phrasing the contract does not require, and its `grep -A4`
+    window is brittle besides.
+  - **Deliberately not papered over.** I did not relax the assertion and did not tune
+    `p1-discovery.md` to satisfy it — either move would turn a real signal green without
+    settling which side is wrong. Recommendation carried to the PR for review to adjudicate:
+    correct the assertion to match the contract (accept any written statement, reserving the
+    `N/A, because` grep for a genuinely inapplicable dimension), rather than mandating the
+    opener in P1. Recorded rates stand as the evidence either way.
+  - Workspace `/tmp/studio-command-evals-r7e9fm6n` is outside the repo, so nothing reaches the PR.
 - **2026-08-01 · build brief** — `specs/cpo-layer/artifacts/build-brief.html`, authored from these
   notes after tidy and published at
   <https://claude.ai/code/artifact/78008e56-694c-4a2d-b233-774912a08bb6>. Self-contained, Warm
