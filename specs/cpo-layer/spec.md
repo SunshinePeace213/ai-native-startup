@@ -50,7 +50,7 @@ discovery pages.
 | P0 | Intake and qualification | intake form, qualification note | `studio-client-partner` | Soft — internal go / no-go |
 | P1 | Discovery | discovery notes, glossary, competitive audit, reference audit | `studio-discovery-lead`, `studio-research-analyst` | Soft — notes reviewed with the client |
 | P2 | Definition | project brief, creative brief, sitemap, section briefs, user flows, cold-designer triage | `studio-discovery-lead`, `studio-ux-architect`, `studio-content-strategist` | **Hard** — brief + sitemap signed, triage complete |
-| P3 | Structure | annotated lo-fi wireframes, content model, copy outline | `studio-ux-architect`, `studio-content-strategist` | **Hard** — wireframes signed |
+| P3 | Structure | annotated lo-fi wireframes, content model, copy outline, component inventory | `studio-ux-architect`, `studio-content-strategist` | **Hard** — wireframes + inventory signed |
 | P4 | Art direction | moodboard, style tile, 2–3 directions, direction rationale | `studio-art-director`, `studio-content-strategist` | **Hard** — one direction picked |
 | P5 | Prototype | prompt pack, prototype link, revision log | `studio-prototype-engineer`, `studio-art-director` | Rounds — allowance from the signed brief |
 | P6 | Design QA and handoff | QA report, accessibility check, handoff pack, sign-off | `studio-design-qa`, `studio-client-partner` | **Hard** — QA clean, final sign-off |
@@ -134,7 +134,8 @@ mechanism this plan exists to build.
 
 Ordered most-volatile first. The full record is in [decisions.md](./decisions.md).
 
-1. **The four check scripts live in `.claude/scripts/studio-layer/`, not `.claude/hooks/`.**
+1. **The four check scripts — and the command-eval runner — live in
+   `.claude/scripts/studio-layer/`, not `.claude/hooks/`.**
    `test_wiring.py::test_every_entrypoint_is_claimed_by_a_registration_surface` treats any
    PEP 723 or shebang file under `.claude/hooks/` as a hook entrypoint that must be claimed by
    a registration surface. A check script invoked by a command body is not a hook and has no
@@ -300,10 +301,19 @@ counter parses them, so an unsigned or costless change order does not buy a roun
 date) must each be present and non-empty. Referenced by the revision log; the signed brief is
 amended by reference and never re-signed, so the P2 sign-off hashes stay valid.
 
-**Component inventory** — `clients/<c>/<p>/handoff/inventory.md`. The authoritative list of
-what the handoff must cover, carried forward from P3's wireframes and content model. Without
-it the states matrix and contrast checks would quantify only over whatever happens to be
-declared, so a one-component matrix would pass while the rest of the design went unspecced.
+**Component inventory** — `clients/<c>/<p>/structure/inventory.md`. The authoritative list of
+what the handoff must cover. Without it the states matrix and contrast checks would quantify
+only over whatever happens to be declared, so a one-component matrix would pass while the rest
+of the design went unspecced.
+
+It is a **P3 artifact, signed by the client**, not a P6 convenience file — that is what stops
+the regress. An inventory written at P6 alongside the matrix could omit nine of ten components
+and both would agree with each other; an inventory that is one of P3's deliverables is
+enumerated from the signed wireframes and content model, and its SHA-256 goes in the P3
+sign-off table like any other approved artifact. So the `p3` gate refuses to close until the
+inventory exists and is signed, and the P6 checks quantify over the **signed** list rather than
+over anything P6 authored. Adding a component after P3 therefore means amending a signed
+document by change order, which is visible, rather than quietly shrinking the denominator.
 
 ```markdown
 | Component | Breakpoints | Colour tokens used |
@@ -314,9 +324,10 @@ declared, so a one-component matrix would pass while the rest of the design went
 
 The inventory must be non-empty. `check_states_matrix.py` requires a matrix row for every
 component × breakpoint pair listed here; `check_contrast.py` requires every colour token
-named here to appear in at least one checked foreground/background pair. Adding a component
-to the design without adding it here is the one way to defeat these checks, and it is a
-visible edit to a signed document rather than an omission.
+named here to appear in at least one checked foreground/background pair. Both resolve the
+inventory at `structure/inventory.md` and both exit 2 when it is missing or empty — a missing
+baseline is never a pass. Adding a component to the design without adding it here is the one
+way to defeat these checks, and after P3 that means amending a client-signed document.
 
 **Design QA report** — `clients/<c>/<p>/handoff/qa-report.md`. One row per finding;
 `Severity` is `blocking` or `advisory`, `Status` is `open` or `resolved`. The p6 gate refuses
@@ -369,6 +380,33 @@ never be reported as a contrast failure a designer would chase.
 The scripts are plain CLIs, not hooks: given a target that does not exist they exit 2. Only
 the Stop hook has the fail-open-when-there-is-no-client behavior, because only the hook runs
 unbidden in sessions that have nothing to do with a client.
+
+### Command-eval runner — `run_command_evals.py`
+
+```bash
+uv run --script .claude/scripts/studio-layer/run_command_evals.py \
+  .claude/commands/studio-layer -k 3 --yes
+```
+
+Modeled on `.claude/skills/meta-skills/scripts/run_behavior_eval.py`, which owns the proven
+shape — scratch project, `claude -p` per run, judge-graded assertions, pass rate over `k`
+runs. It differs in exactly one respect, and that is why it has to exist: `run_behavior_eval`
+stages its target into `<scratch>/.claude/skills/<name>` and `eval.py` refuses a directory
+with no `SKILL.md`, so a command is unreachable through it — a command is only invocable as
+`/studio-layer:<name>` from `.claude/commands/`.
+
+Per case it stages the whole studio namespace into a throwaway project outside this repo —
+`.claude/{commands,agents,skills,rules,scripts}/studio-layer/` — so the command resolves, the
+roles it spawns exist, and the check scripts it calls are on disk, while the repo's own rules
+never contaminate the run. It then invokes the case's `prompt` as a slash command, collects
+the files written to the scratch cwd, and grades each assertion: an assertion carrying a
+`check` is graded by running it against the outputs (exit 0 = pass), and the rest go to the
+judge. Exit 0 when every case clears its recorded pass rate, 1 when one does not, 2 on a
+usage or parse failure. `--lint` grades nothing and only validates the suite schema, so it is
+free and safe in any environment.
+
+Evals are manual and stay out of CI: each run spends real tokens, so nothing here is wired
+into `uv run pytest`.
 
 ### Roster row — `.claude/rules/studio-layer/roster.md`
 
@@ -429,9 +467,10 @@ Existing call sites pass no `args` and are unaffected.
   bank. The **directory name** becomes the command, so it matches the skill's `name:` exactly.
 - `.claude/skills/studio-layer/studio-client-questions/evals/evals.json` — the skill's eval
   suite, in the schema the meta-skills runner executes.
-- `.claude/commands/studio-layer/evals/evals.json` — the commands' eval suite, same schema,
-  graded by running each case's `check` directly (the runner needs a `SKILL.md`, which a
-  command directory has none of).
+- `.claude/commands/studio-layer/evals/evals.json` — the commands' eval suite, same schema.
+- `.claude/scripts/studio-layer/run_command_evals.py` — the runner that executes it. The
+  meta-skills runner cannot: it stages its target into `.claude/skills/<name>` and requires a
+  `SKILL.md`, so a command directory is unreachable by it.
 - `.claude/hooks/check_gate_signoff.py` — the phase-argument Stop gate.
 - `.claude/scripts/studio-layer/check_states_matrix.py` — every component × state cell filled.
 - `.claude/scripts/studio-layer/check_contrast.py` — computed WCAG ratios and tap targets.
@@ -474,6 +513,16 @@ Existing call sites pass no `args` and are unaffected.
   failure the designer would chase.
 - **A component row exists with no state columns at all** — counted as unfilled, not skipped;
   an empty row is the failure mode the matrix check exists to catch.
+- **P3 closes with no inventory, or with one absent from its sign-off table** — the p3 gate
+  blocks. Letting P3 close would leave P6 to author the list it is then measured against, which
+  is the vacuous pass the inventory exists to prevent.
+- **A component is added to the design after P3** — the inventory is a signed artifact, so
+  adding it there changes the file's hash and the recorded P3 SHA stops matching. The gate
+  reports the mismatch, and the addition goes through a change order like any other post-signing
+  scope change. Silent growth is not available.
+- **The inventory is complete but the design drifts below it** — the matrix and contrast checks
+  fail naming each missing pair. Over-declaring in the inventory costs work rather than hiding
+  it, which is the direction the incentive should point.
 - **Revision round past the allowance with a change order present** — passes. Without one —
   fails, naming the round and the expected change-order path.
 - **The signed brief declares no revision allowance** — the counter exits 2: the baseline is

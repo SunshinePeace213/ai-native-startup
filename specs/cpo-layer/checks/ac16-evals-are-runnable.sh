@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # AC16 — the non-deterministic surfaces carry evals the repo's harness can actually execute.
-# A markdown rubric nothing runs cannot produce a reproducible pass rate, so this asserts the
-# committed evals.json schema rather than the presence of prose.
+# A suite nothing runs cannot produce a reproducible pass rate, so this asserts both the
+# committed evals.json schema AND that each suite has a runner that can reach it.
 # Run from the repo root. Exit 0 = pass.
 set -uo pipefail
 
@@ -19,6 +19,19 @@ TARGETS = [
 ]
 
 failures = []
+
+# The commands suite is unreachable by the meta-skills runner: scripts/eval.py requires a
+# SKILL.md and run_behavior_eval.py stages into .claude/skills/<name>. Without its own runner
+# the suite is prose with a JSON extension, which is the defect this criterion exists to stop.
+runner = Path(".claude/scripts/studio-layer/run_command_evals.py")
+if not runner.is_file():
+    failures.append(f"{runner} is missing — the commands eval suite has no runner that can execute it")
+
+# The skill suite is reached by the meta-skills runner, which resolves its target relative to
+# its own directory and refuses one without a SKILL.md.
+skill_md = Path(".claude/skills/studio-layer/studio-client-questions/SKILL.md")
+if not skill_md.is_file():
+    failures.append(f"{skill_md} is missing — the meta-skills runner cannot grade the skill suite without it")
 
 for path in TARGETS:
     if not path.is_file():

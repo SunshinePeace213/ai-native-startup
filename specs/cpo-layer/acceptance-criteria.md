@@ -59,7 +59,10 @@
   re-entry with `stop_hook_active: true`.
 - **AC9** — The p2 gate additionally denies the stop when the cold-designer triage document is
   missing or holds an untriaged row, and allows it when every row carries a disposition. The
-  underlying diff itself is advisory and never gates.
+  underlying diff itself is advisory and never gates. The p3 gate additionally denies the stop
+  when `structure/inventory.md` is missing or empty, or when the P3 sign-off's artifact table
+  does not list it — so the inventory the P6 checks quantify over is one the client actually
+  approved, and P6 cannot author its own denominator.
 - **AC10** — `check_gate_signoff.py` is registered in `hooks.md`'s catalog with a Codex verdict
   matching `CODEX_DISPOSITIONS`, and is claimed by a registration surface — the existing
   wiring suite passes with the new hook present.
@@ -69,25 +72,31 @@
 - **AC11** — `check_states_matrix.py` exits non-zero naming each unfilled cell when any
   component × state (hover, focus, disabled, loading, empty, error) at any declared breakpoint
   is blank, and exits 0 on a fully-specced matrix. A component row with no state columns
-  counts as unfilled, not skipped. It cannot pass vacuously: the check reads
-  `handoff/inventory.md` and requires a matrix row for **every** component × breakpoint pair
-  listed there, so a one-component matrix covering a ten-component design fails naming each
-  missing pair. An empty or absent inventory exits 2 — a missing baseline, not a pass.
+  counts as unfilled, not skipped. It cannot pass vacuously: the check reads the
+  client-signed `structure/inventory.md` and requires a matrix row for **every** component ×
+  breakpoint pair listed there, so a one-component matrix covering a ten-component design fails
+  naming each missing pair. An empty or absent inventory exits 2 — a missing baseline, not a
+  pass. Because the inventory is a P3 deliverable whose hash the P3 sign-off records, P6 cannot
+  shrink its own denominator: the list it is measured against was approved by the client one
+  phase earlier.
 - **AC12** — `check_contrast.py` computes the relative-luminance ratio for every
   foreground/background pair in the handoff token table and exits non-zero naming any pair
   below its threshold and any specced tap target below the minimum; it exits 0 on a compliant
   table. The thresholds are Soriza project thresholds, named as such — this criterion asserts
   the arithmetic, not conformance to a specification the repo has not mirrored. At least one
   hand-computed ratio is pinned in the tests so the formula itself is checked, not just the
-  branching. It cannot pass vacuously either: every colour token named in
-  `handoff/inventory.md` must appear in at least one checked foreground/background pair, and
+  branching. It cannot pass vacuously either: every colour token named in the client-signed
+  `structure/inventory.md` must appear in at least one checked foreground/background pair, and
   every inventory component must have a tap-target row, so declaring one compliant pair and
-  omitting the rest fails. An empty pair or target table exits 2, and a malformed hex value
-  exits 2 — never 1.
+  omitting the rest fails. An empty pair or target table exits 2, a missing or empty inventory
+  exits 2, and a malformed hex value exits 2 — never 1.
 - **AC13** — `check_revision_count.py` re-derives the allowance from the signed brief — not a
-  hard-coded number — and exits non-zero for a revision-log round past that allowance with no
-  matching change-order document, exits 0 when a change order is present, and exits 2 when the
-  signed brief declares no allowance at all.
+  hard-coded number — and exits non-zero for a revision-log round past that allowance whose
+  change order is missing **or incomplete**. Presence is not enough: the allow path requires a
+  change order carrying all four required fields from spec.md `## Interfaces & Contracts` —
+  `Requested`, an integer `Cost — rounds`, `Cost — time`, and an `Approved by` with a name and
+  a date — so an empty or unsigned document fails rather than buying a round. It exits 2 when
+  the signed brief declares no allowance at all.
 
 ### Roles, gates, and behavior
 
@@ -99,14 +108,15 @@
 - **AC16** — The non-deterministic surfaces carry eval coverage per `test-tiers.md`, in the
   format the repo's existing harness already runs: an `evals/evals.json` beside the
   question-bank skill, and one beside the studio commands, each entry carrying a prompt and
-  assertions with executable `check` commands where the assertion is mechanical. Both suites
-  are machine-gradeable rather than prose, and scored as a pass rate over repeated runs.
-  The two are graded by different means, because `scripts/eval.py` resolves a target only
-  when that directory holds a `SKILL.md`: the **skill** suite is executed by the meta-skills
-  runner end to end, while the **commands** suite — `.claude/commands/studio-layer/` is a
-  command directory with no `SKILL.md`, so the runner exits 1 on it — is schema-asserted by
-  `ac16-evals-are-runnable.sh` and graded by running each case's `check` directly. Evals are
-  manual and stay out of CI; the recorded rates are the evidence.
+  assertions with executable `check` commands where the assertion is mechanical. Each suite has
+  a runner that actually executes its prompts and grades the files they produce, scored as a
+  pass rate over repeated runs — a suite nothing executes cannot produce a reproducible rate.
+  The **skill** suite runs on the meta-skills runner. The **commands** suite needs its own,
+  `run_command_evals.py`, because `scripts/eval.py` requires a `SKILL.md` and
+  `run_behavior_eval.py` stages its target into `.claude/skills/<name>`, so a command
+  directory is unreachable through either; the studio runner stages the whole studio namespace
+  and invokes each case as a slash command. Evals are manual and stay out of CI; the recorded
+  rates are the evidence.
 
 ### Suite health
 
@@ -177,8 +187,9 @@ and exit 0 on pass.
 
 ### AC9 — the cold-designer triage gates p2, and the QA report gates p6
 
-- `uv run pytest "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_missing_triage_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_untriaged_row_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_fully_triaged_allows" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_p4_p6_do_not_require_triage"` —
-  pass: 4 passed. The diff itself never gates; only the triage document does.
+- `uv run pytest "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_missing_triage_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_untriaged_row_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_fully_triaged_allows" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_p4_p6_do_not_require_triage" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_missing_inventory_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_inventory_absent_from_signoff_table_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_signed_inventory_allows"` —
+  pass: 7 passed. The diff itself never gates; only the triage document does. The three p3
+  cases are what make the P6 denominator client-approved rather than self-declared.
 
 ### AC10 — the new hook is registered, cataloged, and dispositioned
 
@@ -223,10 +234,12 @@ and exit 0 on pass.
   majority of runs; the pass rate is recorded in `implementation-notes.md`. Per
   `test-tiers.md` evals stay manual and out of CI, so the recorded rate is the evidence — a
   single green run proves nothing.
-- `manual:` the commands suite — run each case's `check` in
-  `.claude/commands/studio-layer/evals/evals.json` directly and record the pass rate in
-  `implementation-notes.md`. The meta-skills runner cannot grade it: `eval.py` exits 1 on a
-  directory with no `SKILL.md`, and a command directory has none.
+- `uv run --script .claude/scripts/studio-layer/run_command_evals.py .claude/commands/studio-layer --lint` —
+  pass: exit 0. Schema-only, grades nothing, spends no tokens.
+- `manual: uv run --script .claude/scripts/studio-layer/run_command_evals.py .claude/commands/studio-layer -k 3 --yes` —
+  pass: every case clears its recorded pass rate over the 3 runs; the rates are recorded in
+  `implementation-notes.md`. This is the runner that makes the commands suite executable
+  rather than prose — the meta-skills runner cannot reach a command directory.
 - `bash specs/cpo-layer/checks/ac16-evals-are-runnable.sh` — pass: exit 0. Asserts the eval
   files exist in the harness's `evals/evals.json` schema (a `skill_name`, an `evals` array,
   and every entry carrying `id`, `name`, `prompt`, and a non-empty `assertions` list), so the

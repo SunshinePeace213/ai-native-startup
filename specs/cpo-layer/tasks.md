@@ -35,7 +35,7 @@ register the hook. Every referent must already exist.
 
 ### Phase 5: Evidence
 
-- `validate-all`
+- `studio-command-eval-runner`, then `validate-all`
 
 The seven plan-local checks under `specs/cpo-layer/checks/` are already written and committed
 with this plan — they fail on today's tree and pass once the build lands. The build runs them;
@@ -222,6 +222,9 @@ it does not author them.
   and Claude Code force-ends the turn after 8 consecutive blocks — so re-blocking burns the
   turn and ends in the same place. Test both values of the flag.
 - For `p2`, additionally require the cold-designer triage document with no untriaged row. For
+  `p3`, additionally require `structure/inventory.md` to exist, be non-empty, and appear as a
+  row in that phase's sign-off artifact table — the inventory is what P6's matrix and contrast
+  checks quantify over, so it has to be client-approved at P3 rather than authored at P6. For
   `p6`, additionally require `handoff/qa-report.md` with no `blocking` finding still `open`.
 - No `clients/` directory → exit 0 silently, mirroring how the spec gate is invisible without
   `specs/`.
@@ -252,8 +255,8 @@ it does not author them.
 - All four are PEP 723 scripts with `dependencies = []`, taking their target as `argv[1]`, per
   the CLI contract in spec.md. Exit 0 pass, 1 countable failure with `file:line` diagnostics,
   2 usage/parse error.
-- `check_states_matrix.py`: read `handoff/inventory.md` first — it is the authoritative
-  component list — then require a matrix row for every component × breakpoint pair it names,
+- `check_states_matrix.py`: read `structure/inventory.md` first — the client-signed,
+  authoritative component list — then require a matrix row for every component × breakpoint pair it names,
   and exit 1 naming every missing pair and every unfilled cell across hover, focus, disabled,
   loading, empty and error. A component row with no state columns is unfilled, not skipped.
   An empty or absent inventory exits 2: without a baseline the check would quantify only over
@@ -263,10 +266,11 @@ it does not author them.
   recorded in decisions.md `## Assumptions` (4.5:1 normal text, 3:1 large text and UI
   components, 24×24 CSS px minimum target). Name them **Soriza project thresholds** in the
   output — the repo has not mirrored WCAG 2.2, so the script must not claim conformance to a
-  specification it cannot cite. Cross-check against `handoff/inventory.md`: every colour token
+  specification it cannot cite. Cross-check against `structure/inventory.md`: every colour token
   it names must appear in at least one checked pair, and every component must have a
-  tap-target row, so one compliant pair cannot stand in for the rest. Malformed hex, an empty
-  table, or a missing inventory → exit 2, never 1. Pin at least one hand-computed ratio in the
+  tap-target row, so one compliant pair cannot stand in for the rest. It reads the same
+  client-signed `structure/inventory.md`. Malformed hex, an empty table, or a missing
+  inventory → exit 2, never 1. Pin at least one hand-computed ratio in the
   tests so the arithmetic itself is checked, not just the branching.
 - `check_question_coverage.py`: re-derive the dimension list by parsing the question-bank
   `SKILL.md`, then exit 1 for any dimension the discovery notes leave unanswered without an
@@ -334,9 +338,13 @@ it does not author them.
   context.
 - Stamp each command `model: fable`, `effort: xhigh` — the principal runs them and is the
   orchestrator, per `roster.md`.
-- Phases, documents, staffing and gates come from the discovery pages: P0 intake (soft), P1
-  discovery (soft), P2 definition (hard), P3 structure (hard), P4 art direction (hard), P5
-  prototype (rounds), P6 design QA and handoff (hard), P7 retro (soft).
+- Phases, documents, staffing and gates come from spec.md `### The eight phases` — that table
+  is authoritative; do not read the discovery HTML for this.
+- **P3 writes `structure/inventory.md`** and lists it in the P3 sign-off artifact table.
+  `studio-ux-architect` enumerates it from the signed wireframes and content model, one row per
+  component with its breakpoints and colour tokens, in the schema from spec.md
+  `## Interfaces & Contracts`. This is the list P6's matrix and contrast checks quantify over,
+  so it must be complete at P3 and approved by the client — P6 never authors it.
 - P2, P3, P4, P6 register the Stop hook in frontmatter with their own phase token, exactly as
   spec.md `## Interfaces & Contracts` shows. No other studio command registers it.
 - **P1 is the forked interview.** Take the round mechanics from `harness-interview.md:32-42` —
@@ -368,7 +376,39 @@ it does not author them.
 - P7 routes each lesson to the file where it will load again, and explicitly does not graduate
   lessons into skills — that is card 10.
 
-### 10. Validate Everything
+### 10. Build the command-eval runner
+
+- **Task ID:** `studio-command-eval-runner`
+- **Depends On:** `studio-phase-commands`
+- **Agent Type:** `general-purpose`
+- **Model / Effort:** `opus` / `high` per `.claude/rules/model-selection.md` — subprocess
+  orchestration and grading logic, and it is what makes AC16's commands half real.
+- **Files:** `.claude/scripts/studio-layer/run_command_evals.py`,
+  `tests/harness-layer/studio-layer/test_run_command_evals.py`
+- **Parallel:** false
+- **Satisfies:** AC16
+- **Verify:** `uv run --script .claude/scripts/studio-layer/run_command_evals.py .claude/commands/studio-layer --lint`
+  exits 0, and `uv run pytest tests/harness-layer/studio-layer/test_run_command_evals.py` is green.
+- Model it on `.claude/skills/meta-skills/scripts/run_behavior_eval.py` — scratch project,
+  `claude -p` per run, judge-graded assertions, pass rate over `k` runs. Reuse that shape
+  rather than inventing a second one; the CLI and behavior are in spec.md
+  `## Interfaces & Contracts` → "Command-eval runner".
+- It exists because the meta-skills runner cannot reach a command: `eval.py` requires a
+  `SKILL.md` and `run_behavior_eval.py` stages into `<scratch>/.claude/skills/<name>`, while a
+  command is only invocable as `/studio-layer:<name>` from `.claude/commands/`. Do not edit
+  either meta-skills script to work around this — they serve every other skill in the repo.
+- Stage the whole studio namespace per case —
+  `.claude/{commands,agents,skills,rules,scripts}/studio-layer/` — into a throwaway project
+  outside this repo, so the command resolves, its roles exist, its check scripts are on disk,
+  and the repo's own rules never contaminate the run.
+- Grade an assertion carrying a `check` by running it against the outputs (exit 0 = pass);
+  send the rest to the judge. Exit 0 when every case clears its rate, 1 when one does not, 2 on
+  usage or parse failure. `--lint` validates the suite schema only and spends no tokens.
+- Test with `--lint` and with a stubbed runner: the token-spending path must not run under
+  pytest, so inject the `claude -p` call and assert the staging layout, the `check` grading, and
+  the three exit codes against fixtures. Evals stay manual and out of CI.
+
+### 11. Validate Everything
 
 - **Task ID:** `validate-all`
 - **Depends On:** every preceding Task ID
@@ -388,9 +428,8 @@ it does not author them.
   only for a concise pointer section — it is not part of that budget.
 - Run both manual eval suites and record their pass rates in `implementation-notes.md`. They
   are not part of the CI suite, so an unrecorded eval is an unrun one. The skill suite runs
-  through the meta-skills runner; the commands suite is graded by running each case's `check`
-  directly, because `eval.py` exits 1 on a directory with no `SKILL.md`. Exact commands are
-  in acceptance-criteria.md `### AC16`.
+  through the meta-skills runner; the commands suite runs through `run_command_evals.py`.
+  Exact commands are in acceptance-criteria.md `### AC16`.
 - Confirm the diff adds no client data, leaves `artifacts.md` and `harness-interview.md`
   untouched, and carries no orphaned files.
 
