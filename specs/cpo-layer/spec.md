@@ -11,6 +11,15 @@
 - **Branch:** feat/80-cpo-layer
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/cpo-layer
 - **Review profile:** kb-grounded
+- **PR:** #81 (draft) — <https://github.com/SunshinePeace213/ai-native-startup/pull/81>
+- **Hand-off SHA:** `1aa2497f85ae89c828987117cd434c71ad037c9a` — the last implementation push
+- **Build brief:** <https://claude.ai/code/artifact/78008e56-694c-4a2d-b233-774912a08bb6>
+- **Known gap for review:** AC16's commands-suite `manual:` eval does not meet its bar —
+  `eval-0 p1-writes-discovery-notes-that-pass-the-coverage-check` scored 0.8889 against a
+  required 1.0. The single failing assertion demands the literal `N/A, because` opener for
+  Budget, which `spec.md` and `SKILL.md:14` do not require; `check_question_coverage.py`
+  passed all eight dimensions on every run. Left unresolved on purpose rather than relaxing
+  the assertion or tuning `p1-discovery.md`. Full analysis in `implementation-notes.md`.
 
 ## Task Description
 
