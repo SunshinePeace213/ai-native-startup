@@ -97,6 +97,18 @@
   - Deviations: none.
 - **2026-08-01 · phase 2/3** — launched `studio-role-agents` (roster landed) and
   `studio-check-scripts` (question bank landed) as concurrent builders.
+- **2026-08-01 · hand-off `studio-command-eval-runner`** —
+  `.claude/scripts/studio-layer/run_command_evals.py`,
+  `tests/harness-layer/studio-layer/test_run_command_evals.py`
+  - `uv run --script .claude/scripts/studio-layer/run_command_evals.py .claude/commands/studio-layer --lint`
+    → `…/evals/evals.json: 2 case(s), schema valid`, exit 0.
+  - `bash specs/cpo-layer/checks/ac16-evals-are-runnable.sh` → `AC16 pass: both eval suites are
+    present, harness-shaped, and machine-gradeable`, exit 0. This closes the last pending check
+    recorded at the `studio-question-bank` and `studio-phase-commands` hand-offs.
+  - `uv run pytest` → `990 passed, 2 skipped in 16.90s`.
+  - `uv run ruff check .` → `All checks passed!`; `uv run ruff format --check .` → `71 files
+    already formatted`.
+  - Deviations: none.
 - **2026-08-01 · hand-off `studio-phase-commands`** — the eight commands under
   `.claude/commands/studio-layer/`, `.claude/commands/studio-layer/evals/evals.json`
   - `bash specs/cpo-layer/checks/ac7-phase-commands.sh` → `AC7 pass: eight phase commands,
