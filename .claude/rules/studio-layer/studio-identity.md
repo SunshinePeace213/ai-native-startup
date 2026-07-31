@@ -1,6 +1,6 @@
 ---
 paths:
-  - "clients/**"
+  - "clients/**/*"
 ---
 
 # Studio Identity
