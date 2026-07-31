@@ -82,6 +82,19 @@
     both pending later tasks: `check_question_coverage.py is missing` and
     `p1-discovery.md is missing`. No assertion against the skill itself failed.
   - Deviations: none.
+- **2026-08-01 · hand-off `studio-role-agents`** — the nine files under
+  `.claude/agents/studio-layer/`
+  - `bash specs/cpo-layer/checks/ac3-role-agents.sh` → `AC3 pass: nine role agents,
+    function-named, person in the body`, exit 0.
+  - `uv run pytest tests/harness-layer/test_model_drift.py` → `50 passed, 2 skipped in 1.37s`.
+  - Lead cross-checked every stamp against `roster.md` by parsing both sides: all nine match
+    (`studio-art-director opus/high`, `studio-client-partner sonnet/medium`,
+    `studio-content-strategist opus/high`, `studio-design-qa opus/high`,
+    `studio-discovery-lead opus/high`, `studio-prototype-engineer sonnet/high`,
+    `studio-research-analyst sonnet/medium`, `studio-retro-scribe sonnet/medium`,
+    `studio-ux-architect opus/high`). Every file sets `disallowedTools: Agent`; none carries
+    `skills:` frontmatter. The principal has no agent file.
+  - Deviations: none.
 - **2026-08-01 · phase 2/3** — launched `studio-role-agents` (roster landed) and
   `studio-check-scripts` (question bank landed) as concurrent builders.
 - **2026-08-01 · hand-off `gate-signoff-hook`** — `.claude/hooks/check_gate_signoff.py`,
