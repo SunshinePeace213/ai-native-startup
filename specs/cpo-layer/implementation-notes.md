@@ -65,3 +65,22 @@
   owning each file, not by the lead.
   - `bash specs/cpo-layer/checks/ac4-client-artifacts.sh` → exit 0 after the change.
   - `bash specs/cpo-layer/checks/ac5-rules-path-scoped.sh` → exit 0 after the change.
+- **2026-08-01 · hand-off `studio-question-bank`** —
+  `.claude/skills/studio-layer/studio-client-questions/SKILL.md`, `…/evals/evals.json`
+  - The machine-readable contract the coverage checker parses: **every `###` heading under
+    `## Dimensions` is one dimension, and the heading text is its name.** The skill states this
+    in its own `## Machine-readable dimension list` section, so the parser has a documented
+    anchor rather than an inferred one. Eight dimensions today: the job the site does; the
+    audience and their situation; brand voice; references loved and hated; the content that
+    actually exists; hard constraints; budget; success at six months.
+  - Frontmatter carries `name` and `description` and does **not** carry
+    `disable-model-invocation`; directory name equals `name:`, which is what becomes the command.
+  - `(cd .claude/skills/meta-skills && uv run --with pyyaml python -m scripts.eval ../studio-layer/studio-client-questions --lint)`
+    → `PASS (0 warning(s))`, exit 0.
+  - Eval suite: 2 cases, 11 assertions, 6 of them executable `check`s.
+  - `bash specs/cpo-layer/checks/ac6-question-bank-skill.sh` → exit 1 on exactly two counts,
+    both pending later tasks: `check_question_coverage.py is missing` and
+    `p1-discovery.md is missing`. No assertion against the skill itself failed.
+  - Deviations: none.
+- **2026-08-01 · phase 2/3** — launched `studio-role-agents` (roster landed) and
+  `studio-check-scripts` (question bank landed) as concurrent builders.
