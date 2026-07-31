@@ -225,7 +225,12 @@ it does not author them.
   `p3`, additionally require `structure/inventory.md` to exist, be non-empty, and appear as a
   row in that phase's sign-off artifact table — the inventory is what P6's matrix and contrast
   checks quantify over, so it has to be client-approved at P3 rather than authored at P6. For
-  `p6`, additionally require `handoff/qa-report.md` with no `blocking` finding still `open`.
+  `p6`, additionally require `handoff/qa-report.md` with no `blocking` finding still `open`,
+  **and re-verify `structure/inventory.md` against the SHA-256 recorded for it in the P3
+  sign-off** — block on a mismatch or on a P3 sign-off that never listed it. A signature three
+  phases back says nothing about the file P6 measures the design against; without this step,
+  deleting rows between P3 and P6 shrinks the denominator silently. Test the mutation case
+  directly: sign at P3, edit the inventory, confirm p6 blocks.
 - No `clients/` directory → exit 0 silently, mirroring how the spec gate is invisible without
   `specs/`.
 - Extend `run_hook` in `tests/harness-layer/hooks/conftest.py` with `args: tuple = ()` appended
@@ -398,9 +403,14 @@ it does not author them.
   command is only invocable as `/studio-layer:<name>` from `.claude/commands/`. Do not edit
   either meta-skills script to work around this — they serve every other skill in the repo.
 - Stage the whole studio namespace per case —
-  `.claude/{commands,agents,skills,rules,scripts}/studio-layer/` — into a throwaway project
-  outside this repo, so the command resolves, its roles exist, its check scripts are on disk,
-  and the repo's own rules never contaminate the run.
+  `.claude/{commands,agents,skills,rules,scripts}/studio-layer/` plus
+  `.claude/hooks/check_gate_signoff.py` — into a throwaway project outside this repo, so the
+  command resolves, its roles exist, its check scripts are on disk, and the four hard-gate
+  commands find the hook their frontmatter registers, while the repo's own rules never
+  contaminate the run. The hook sits outside the studio namespace but P2's registration points
+  at `"$CLAUDE_PROJECT_DIR"/.claude/hooks/check_gate_signoff.py`; omitting it would evaluate P2
+  with its gate silently missing. Assert the staged layout in a test, including that the P2
+  command's registered hook path resolves to a real file inside the scratch project.
 - Grade an assertion carrying a `check` by running it against the outputs (exit 0 = pass);
   send the rest to the judge. Exit 0 when every case clears its rate, 1 when one does not, 2 on
   usage or parse failure. `--lint` validates the suite schema only and spends no tokens.

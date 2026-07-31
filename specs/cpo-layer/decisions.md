@@ -275,6 +275,27 @@ run to accept these checked-in references where the KB has no mirror, and to req
 so explicitly. Mirroring the official custom-command page via `/harness-layer:kb add` remains
 a worthwhile follow-up; it is not a blocker, and `kb-fetcher` was unavailable this session.
 
+### Eval-runner reachability — verified by running it
+
+| Reference | Grounds |
+| --- | --- |
+| `.claude/skills/meta-skills/scripts/eval.py:142-144` | `skill_dir` is resolved against the **cwd**, and a target with no `SKILL.md` exits 1. Both verified this run by invoking the runner: a repo-root-relative path from the harness directory resolved to `meta-skills/.claude/skills/…` and failed even for a skill that exists, which is why AC16's command uses a harness-relative path inside a `cd` subshell. |
+| `.claude/skills/meta-skills/scripts/run_behavior_eval.py:79-89` | The scratch project stages its target into `<root>/.claude/skills/<name>`. A command must live in `.claude/commands/` to resolve as `/studio-layer:<name>`, so no command directory is reachable through this runner — the reason `run_command_evals.py` exists rather than reusing it. |
+
+## Revision Log
+
+- **This run (revision cycle, rounds 3–4).** Self-check before the gate found the AC16 lint
+  command could not resolve its target, and that tasks.md still named the `specs/cpo-layer/evals/`
+  markdown path round 2 had removed. Codex round 3 then found the commands eval suite had no
+  runner at all, the component inventory was only *declared* authoritative, and AC13 contradicted
+  its own change-order contract. Round 4 found both round-3 fixes half-done: the inventory was
+  signed at P3 but never re-verified at P6, and the new runner omitted the sign-off hook the
+  evaluated P2 command registers. All fixed; see the findings ledger.
+- **Standards amended.** `spec-standards.md` #2 now requires verifying at draft time that a
+  runner a criterion leans on can actually reach its target. Three findings across rounds 2–4
+  (R2-F4, R3-F1, R4-F2) shared that single root cause — a named runner that could not resolve,
+  stage, or grade what the plan pointed it at.
+
 ## Open Questions / Out of Scope
 
 - **Out of scope — Card 10, lesson graduation.** The threshold for promoting a repeated lesson

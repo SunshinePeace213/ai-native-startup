@@ -311,9 +311,17 @@ the regress. An inventory written at P6 alongside the matrix could omit nine of 
 and both would agree with each other; an inventory that is one of P3's deliverables is
 enumerated from the signed wireframes and content model, and its SHA-256 goes in the P3
 sign-off table like any other approved artifact. So the `p3` gate refuses to close until the
-inventory exists and is signed, and the P6 checks quantify over the **signed** list rather than
-over anything P6 authored. Adding a component after P3 therefore means amending a signed
-document by change order, which is visible, rather than quietly shrinking the denominator.
+inventory exists and is signed.
+
+Signing it at P3 is necessary but not sufficient: the P6 checks read the file as it stands at
+P6, so a signature three phases back proves nothing about the file they actually quantify over.
+Deleting nine rows between P3 and P6 would leave a one-component matrix passing against a
+one-component list, with the P3 signature still sitting untouched in a sign-off file nobody
+re-reads. So **the `p6` gate re-reads the P3 sign-off, recomputes the inventory's SHA-256, and
+blocks on any mismatch** — that is the step that makes the denominator the signed one rather
+than merely descended from it. Changing the inventory after P3 therefore requires a change
+order and a re-signature, which is visible, instead of quietly shrinking what the design is
+measured against.
 
 ```markdown
 | Component | Breakpoints | Colour tokens used |
@@ -396,9 +404,14 @@ with no `SKILL.md`, so a command is unreachable through it — a command is only
 `/studio-layer:<name>` from `.claude/commands/`.
 
 Per case it stages the whole studio namespace into a throwaway project outside this repo —
-`.claude/{commands,agents,skills,rules,scripts}/studio-layer/` — so the command resolves, the
-roles it spawns exist, and the check scripts it calls are on disk, while the repo's own rules
-never contaminate the run. It then invokes the case's `prompt` as a slash command, collects
+`.claude/{commands,agents,skills,rules,scripts}/studio-layer/` **plus
+`.claude/hooks/check_gate_signoff.py`** — so the command resolves, the roles it spawns exist,
+the check scripts it calls are on disk, and the four hard-gate commands find the hook their
+frontmatter registers, while the repo's own rules never contaminate the run. The hook is not
+part of the studio namespace but is load-bearing for the evaluated commands: P2's registration
+points at `"$CLAUDE_PROJECT_DIR"/.claude/hooks/check_gate_signoff.py`, so omitting it would
+evaluate P2 with its gate silently absent — measuring the command without the mechanism the
+eval exists to exercise. It then invokes the case's `prompt` as a slash command, collects
 the files written to the scratch cwd, and grades each assertion: an assertion carrying a
 `check` is graded by running it against the outputs (exit 0 = pass), and the rest go to the
 judge. Exit 0 when every case clears its recorded pass rate, 1 when one does not, 2 on a
@@ -516,10 +529,11 @@ Existing call sites pass no `args` and are unaffected.
 - **P3 closes with no inventory, or with one absent from its sign-off table** — the p3 gate
   blocks. Letting P3 close would leave P6 to author the list it is then measured against, which
   is the vacuous pass the inventory exists to prevent.
-- **A component is added to the design after P3** — the inventory is a signed artifact, so
-  adding it there changes the file's hash and the recorded P3 SHA stops matching. The gate
-  reports the mismatch, and the addition goes through a change order like any other post-signing
-  scope change. Silent growth is not available.
+- **The inventory is edited between P3 and P6 — rows added or deleted** — the `p6` gate
+  recomputes its SHA-256 against the hash recorded in the P3 sign-off and blocks on the
+  mismatch. This is the case a P3-only check would miss entirely: deleting nine rows before P6
+  would otherwise let a one-component matrix pass against a one-component list while the P3
+  signature sat untouched. Changing it legitimately means a change order and a re-signature.
 - **The inventory is complete but the design drifts below it** — the matrix and contrast checks
   fail naming each missing pair. Over-declaring in the inventory costs work rather than hiding
   it, which is the direction the incentive should point.

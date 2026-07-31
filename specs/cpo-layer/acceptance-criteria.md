@@ -62,7 +62,10 @@
   underlying diff itself is advisory and never gates. The p3 gate additionally denies the stop
   when `structure/inventory.md` is missing or empty, or when the P3 sign-off's artifact table
   does not list it — so the inventory the P6 checks quantify over is one the client actually
-  approved, and P6 cannot author its own denominator.
+  approved, and P6 cannot author its own denominator. The p6 gate additionally re-verifies that
+  inventory against the SHA-256 recorded in the P3 sign-off and denies the stop on a mismatch,
+  so rows deleted between P3 and P6 are caught: signing at P3 alone would leave the file P6
+  actually measures against unverified.
 - **AC10** — `check_gate_signoff.py` is registered in `hooks.md`'s catalog with a Codex verdict
   matching `CODEX_DISPOSITIONS`, and is claimed by a registration surface — the existing
   wiring suite passes with the new hook present.
@@ -187,9 +190,11 @@ and exit 0 on pass.
 
 ### AC9 — the cold-designer triage gates p2, and the QA report gates p6
 
-- `uv run pytest "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_missing_triage_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_untriaged_row_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_fully_triaged_allows" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_p4_p6_do_not_require_triage" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_missing_inventory_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_inventory_absent_from_signoff_table_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_signed_inventory_allows"` —
-  pass: 7 passed. The diff itself never gates; only the triage document does. The three p3
-  cases are what make the P6 denominator client-approved rather than self-declared.
+- `uv run pytest "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_missing_triage_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_untriaged_row_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p2_fully_triaged_allows" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_p4_p6_do_not_require_triage" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_missing_inventory_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_inventory_absent_from_signoff_table_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p3_signed_inventory_allows" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p6_inventory_mutated_after_p3_signoff_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p6_inventory_matching_p3_sha_allows"` —
+  pass: 9 passed. The diff itself never gates; only the triage document does. The three p3
+  cases are what make the P6 denominator client-approved rather than self-declared, and
+  `test_p6_inventory_mutated_after_p3_signoff_blocks` is the one that proves the signature is
+  re-checked at P6 rather than trusted from three phases back.
 
 ### AC10 — the new hook is registered, cataloged, and dispositioned
 

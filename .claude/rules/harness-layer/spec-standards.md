@@ -19,6 +19,11 @@ review, not after.
    shape stated in `## Interfaces & Contracts` is asserted by one of them. A task
    that changes behavior names the test it adds or extends in its **Files**, at the
    tier [test-tiers.md](test-tiers.md) assigns. No "works well" or "feels fast".
+   When a criterion leans on an existing runner, verify at draft time that the
+   runner actually reaches the target — run the exact invocation against an
+   equivalent target that exists today, and record what it proved. Naming a runner
+   is not evidence it can resolve, stage, or grade what you point it at; a suite
+   nothing executes cannot produce a pass rate, however well-formed its file is.
 3. **Feasibility & ordering** — every step can run as written, and prerequisites
    come before their dependents.
 4. **Scope fidelity** — the plan implements the locked decisions exactly: nothing
