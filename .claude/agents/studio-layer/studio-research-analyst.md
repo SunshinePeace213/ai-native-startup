@@ -7,7 +7,7 @@ description: >-
   to. Use when a studio phase command needs a market read or a reference set analyzed.
   Not for questioning the client or writing the discovery notes and glossary
   (studio-discovery-lead).
-disallowedTools: Agent
+tools: Read, Grep, Glob, Write, Edit, WebFetch, WebSearch
 model: sonnet
 effort: medium
 ---

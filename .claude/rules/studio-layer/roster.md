@@ -7,6 +7,8 @@ paths:
 
 Every studio seat: the principal, who runs as the main session, and the nine roles it spawns as subagents. Model and effort come from [model-selection.md](../model-selection.md) — `fable` is orchestrator-only, so a spawned role escalates effort before model. `tests/harness-layer/test_studio_roster_drift.py` re-derives each stamp from this table, so a row and its agent file change together.
 
+Every seat denies `Agent` — no role spawns another role. `studio-research-analyst` reads third-party sites the client named, so it carries a `tools:` allowlist instead; never widen that allowlist to `Bash`.
+
 | Function | Person | Model | Effort | May escalate |
 | --- | --- | --- | --- | --- |
 | `principal` | Maya Lindqvist, Principal/CPO | `fable` | `xhigh` | No agent file — the main session holds this seat and is never spawned as a subagent |

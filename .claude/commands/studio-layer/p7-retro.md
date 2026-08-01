@@ -21,7 +21,8 @@ IDENTITY: `$(git rev-parse --show-toplevel)/.claude/rules/studio-layer/studio-id
 - No `PROJECT` → stop and ask for it as `client/project`. P6 must be signed.
 - `PROJECT` must be exactly two segments, neither starting with `.` nor containing another `/` — anything else can write outside `clients/`. Reject it the same way and ask again.
 - Spawn `studio-retro-scribe` as an ordinary subagent, one level deep. Never a teammate.
-- The retro itself is client data and stays under `PROJECT_DIR`; only the routed lessons leave it, and only as edits to files under `.claude/`.
+- The retro itself is client data and stays under `PROJECT_DIR`. The only writes outside it are the routed lessons, and only into the three `studio-layer` directories step 2 names — never another namespace, a hook, a settings file, or `AGENTS.md`.
+- A routed lesson is the studio's own conclusion in the studio's own words. Never carry client-supplied or third-party text into a `.claude/` file — those load into every later session, while `clients/` does not.
 - Build the retro from evidence — the revision log and change orders, the QA report's findings, which gates blocked and why, and where a phase's documents had to be rewritten. A retro from memory records the last week only.
 - **Route, do not graduate.** No lesson becomes a new skill, command, or agent here. Promoting a repeated lesson is a separate decision with its own plan.
 - A lesson that names no file it would change is an observation. Keep it in the retro and route nothing.
