@@ -723,6 +723,15 @@ def test_b4_still_passes_a_genuinely_independent_plan(tmp_path):
     assert grade_b4(tmp_path, plan, TRACEABLE_TRIAGE) == 0
 
 
+def test_b4_keeps_level_one_headings_when_they_are_the_sections(tmp_path):
+    """I4-F1: discarding the first heading unconditionally cost a titleless plan one of its
+    sections. A level-1 heading is a document title only when something else supplies the
+    inventory — deeper headings or a list — so a plan whose sections *are* level-1 headings
+    keeps all of them."""
+    plan = "# Pricing\n# Emergency care\n# Referrals\n"
+    assert grade_b4(tmp_path, plan, TRACEABLE_TRIAGE) == 0
+
+
 def test_b4_still_passes_a_bulleted_plan_that_diverges(tmp_path):
     """A cold designer writes prose, not a schema. With no headings below the title the
     bullets are the section inventory, so a bulleted plan that genuinely diverges passes."""
