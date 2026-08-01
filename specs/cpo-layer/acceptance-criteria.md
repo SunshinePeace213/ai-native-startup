@@ -232,8 +232,9 @@ and exit 0 on pass.
 
 - `uv run pytest "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p6_open_blocking_qa_finding_blocks" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p6_all_blocking_findings_resolved_allows" "tests/harness-layer/hooks/gate-signoff/test_check_gate_signoff.py::test_p6_advisory_finding_does_not_block"` —
   pass: 3 passed.
-- `bash specs/cpo-layer/checks/ac3-role-agents.sh` — pass: exit 0; it asserts every role sets
-  `disallowedTools: Agent`.
+- `bash specs/cpo-layer/checks/ac3-role-agents.sh` — pass: exit 0; it asserts no role can
+  spawn a subagent, accepting either `disallowedTools: Agent` or a `tools:` allowlist that
+  omits `Agent`.
 
 ### AC16 — the non-deterministic surfaces carry runnable evals
 

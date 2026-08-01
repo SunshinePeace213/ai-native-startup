@@ -14,12 +14,10 @@
 - **PR:** #81 (ready for review) — <https://github.com/SunshinePeace213/ai-native-startup/pull/81>
 - **Hand-off SHA:** `1aa2497f85ae89c828987117cd434c71ad037c9a` — the last implementation push
 - **Build brief:** <https://claude.ai/code/artifact/78008e56-694c-4a2d-b233-774912a08bb6>
-- **Known gap for review:** AC16's commands-suite `manual:` eval does not meet its bar —
-  `eval-0 p1-writes-discovery-notes-that-pass-the-coverage-check` scored 0.8889 against a
-  required 1.0. The single failing assertion demands the literal `N/A, because` opener for
-  Budget, which `spec.md` and `SKILL.md:14` do not require; `check_question_coverage.py`
-  passed all eight dimensions on every run. Left unresolved on purpose rather than relaxing
-  the assertion or tuning `p1-discovery.md`. Full analysis in `implementation-notes.md`.
+- **AC16 rate of record:** `eval-0` 1.0 and `eval-1` 1.0, each needing 1.0, over 6 `claude -p`
+  runs, runner exit 0. Measured against a scratch project that is a real git repository, so it
+  exercises the `$(git rev-parse --show-toplevel)` anchor every command body carries. Full
+  analysis in `implementation-notes.md`.
 
 ## Task Description
 
@@ -173,8 +171,10 @@ Ordered most-volatile first. The full record is in [decisions.md](./decisions.md
    before any stamped role could run that way.
 
    Roles are also **one level deep**: subagents inherit the `Agent` tool by default, so each
-   role file sets `disallowedTools: Agent`. Without it, "the principal spawns each role
-   directly, one level deep" is a sentence rather than a property.
+   role file withholds the `Agent` tool — eight via `disallowedTools: Agent`, and
+   `studio-research-analyst` via a `tools:` allowlist that omits it, since that seat reads
+   third-party sites and must also be denied `Bash`. Without it, "the principal spawns each
+   role directly, one level deep" is a sentence rather than a property.
 
 4. **Agent names are plain and layer-prefixed (`studio-art-director`); the person opens the
    body.** Claude routes off `name` + `description`, and `name` must be unique tree-wide. A

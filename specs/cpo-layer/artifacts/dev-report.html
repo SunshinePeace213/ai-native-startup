@@ -84,11 +84,12 @@
 <header>
   <div class="eyebrow">Development report · /harness-layer:harness-review</div>
   <h1>studio-layer — design delivery through signed handoff</h1>
-  <p class="lede">Two Codex rounds and a full security scan over a 66-file build. Every
-  blocking finding is fixed; one piece of evidence could not be regenerated, and that is
-  what keeps the PR in draft.</p>
-  <div class="status">⚠️ <span><b>PR #81 left draft.</b> AC16 has no valid recorded rate —
-  the behavioral eval returned the account session limit on all six invocations.</span></div>
+  <p class="lede">Three Codex rounds and a full security scan over a 66-file build. Every
+  blocking finding is fixed, and the one piece of evidence that could not be regenerated at
+  the time has since been measured.</p>
+  <div class="status">✅ <span><b>PR #81 ready for review.</b> AC16's rate of record is
+  <code>eval-0</code> 1.0 and <code>eval-1</code> 1.0, each needing 1.0, over 6 runs with the
+  runner exiting 0.</span></div>
 </header>
 
 <h2><span class="n">01</span>What shipped</h2>
@@ -134,17 +135,16 @@ claim fails a check script or a test rather than passing on someone's say-so.</p
     <tr data-k="closed"><td>AC11</td><td>States matrix counts against the signed inventory</td><td><code>test_studio_checks.py</code> ×9</td><td class="ok">9 passed</td></tr>
     <tr data-k="closed"><td>AC12</td><td>Contrast computed, one ratio hand-pinned</td><td><code>test_studio_checks.py</code> ×7</td><td class="ok">7 passed</td></tr>
     <tr data-k="closed"><td>AC13</td><td>Revision count is arithmetic over a signed brief</td><td><code>test_studio_checks.py</code> ×17</td><td class="ok">17 passed</td></tr>
-    <tr data-k="closed"><td>AC14</td><td>The whole suite stays green</td><td><code>uv run pytest</code> · ruff ×2</td><td class="ok">1030 passed · clean</td></tr>
+    <tr data-k="closed"><td>AC14</td><td>The whole suite stays green</td><td><code>uv run pytest</code> · ruff ×2</td><td class="ok">1039 passed · clean</td></tr>
     <tr data-k="closed"><td>AC15</td><td>Design QA blocks handoff as a mechanism</td><td><code>test_check_gate_signoff.py</code> ×3</td><td class="ok">3 passed</td></tr>
-    <tr data-k="open"><td>AC16</td><td>Both eval suites are runnable — <em>and clear their bar</em></td><td><code>run_command_evals.py … -k 3 --yes</code></td><td class="bad">no valid rate</td></tr>
+    <tr data-k="closed"><td>AC16</td><td>Both eval suites are runnable — <em>and clear their bar</em></td><td><code>run_command_evals.py</code>, 3 repeats</td><td class="ok">1.0 · 1.0 · exit 0</td></tr>
   </tbody>
 </table>
 </div>
 
 <div class="note">
-  <p><b>Why AC16 is the one left open.</b> It began the review as a disclosed gap: the
-  commands suite scored 0.8889 against a required 1.0, and the build deliberately did not
-  paper over it.</p>
+  <p><b>How AC16 was closed.</b> It began the review as a disclosed gap: the commands suite
+  scored 0.8889 against a required 1.0, and the build deliberately did not paper over it.</p>
   <p>Three separate causes were untangled rather than lumped together. <code>a3</code>
   demanded one literal phrasing the documented contract never requires. <code>b4</code> was
   <em>unfalsifiable</em> — it asked a judge to confirm a process from artifacts that record
@@ -154,9 +154,17 @@ claim fails a check script or a test rather than passing on someone's say-so.</p
   plain directory, not a git repository — while the commands had just been re-anchored on
   <code>$(git rev-parse --show-toplevel)</code>. So the graded agent had been using relative
   paths and the anchoring was never exercised. The runner now <code>git init</code>s each
-  staged root, but the replacement rate could not be measured: all six invocations returned
-  <em>"You've hit your session limit"</em>. The 0.0 that produced is an artifact of the
-  limit, not a defect — every deterministic check in those runs still exited 0.</p>
+  staged root, but the replacement rate could not be measured at the time: all six
+  invocations returned <em>"You've hit your session limit"</em>. The 0.0 that produced was an
+  artifact of the limit, not a defect — every deterministic check in those runs still
+  exited 0.</p>
+  <p><b>The rate of record.</b> Re-run once the limit cleared: <code>eval-0</code> 1.0
+  (1.0, 1.0, 1.0) and <code>eval-1</code> 1.0 (1.0, 1.0, 1.0), each needing 1.0, over 6
+  <code>claude -p</code> runs, runner exit 0 captured directly rather than through a pipe.
+  Every run scored 6 of 6 expectations with <code>run_error: null</code>. The outputs land
+  under the scratch project's own <code>clients/&lt;client&gt;/&lt;project&gt;/</code>, which
+  is reachable only if the anchor resolved inside the staged repository — so this rate
+  exercises the anchoring the void 1.0 never reached.</p>
 </div>
 
 <h2><span class="n">03</span>The review journey</h2>
@@ -245,14 +253,12 @@ severity or by how each was dispositioned.</p>
 </ul>
 
 <h2><span class="n">05</span>Hand this on</h2>
-<p class="sub">Pick what you want to act on; the prompt below is assembled from your choices.</p>
+<p class="sub">The six review follow-ups are closed. What remains is one filed issue and three advisory items; the prompt below is assembled from your choices.</p>
 <div class="controls" role="group" aria-label="Choose follow-ups">
-  <button data-p="ac16" aria-pressed="true">Re-establish AC16</button>
-  <button data-p="envelope" aria-pressed="false">run_error "success"</button>
-  <button data-p="tools" aria-pressed="false">Research-analyst tools</button>
-  <button data-p="retro" aria-pressed="false">p7 write waiver</button>
-  <button data-p="sec" aria-pressed="false">16 unpaneled candidates</button>
-  <button data-p="guard" aria-pressed="false">destructive-guard</button>
+  <button data-p="guard" aria-pressed="true">destructive-guard (#82)</button>
+  <button data-p="gate" aria-pressed="false">P6 gate coverage</button>
+  <button data-p="ac5" aria-pressed="false">AC5 scope grep</button>
+  <button data-p="kb" aria-pressed="false">Mirror command docs</button>
 </div>
 <div class="prompt">
   <textarea id="out" readonly aria-label="Copyable prompt"></textarea>
@@ -261,8 +267,8 @@ severity or by how each was dispositioned.</p>
 
 <footer>
   Plan <code>specs/cpo-layer/</code> · issue #80 · PR #81 · reviewed heads
-  <code>339b2c5</code> then <code>88530d1</code> · rounds
-  <code>reviews/codex-impl-round-{1,2}.md</code> · ledger
+  <code>339b2c5</code>, <code>88530d1</code>, then <code>febd6e4</code> · rounds
+  <code>reviews/codex-impl-round-{1,2,3}.md</code> · ledger
   <code>reviews/findings-ledger.md</code>
 </footer>
 </div>
@@ -299,14 +305,12 @@ severity or by how each was dispositioned.</p>
   });
 
   var TEXT = {
-    ac16: "Re-establish AC16's rate for the studio-layer plan (specs/cpo-layer, PR #81). The behavioural eval could not run — all six `claude -p` invocations returned the account session limit, so the recorded 0.0 is an artefact, not a defect. Re-run `uv run --script .claude/scripts/studio-layer/run_command_evals.py .claude/commands/studio-layer -k 3 --yes` from the worktree, judge it by the runner's own exit status rather than through a pipe, record the per-case rates in implementation-notes.md, and only then flip the PR out of draft. Note the previous 1.0 is void: it was measured before the scratch project was a git repository, so it never exercised the commands' `$(git rev-parse --show-toplevel)` anchor.",
-    envelope: "In .claude/scripts/studio-layer/run_command_evals.py, the failed-run diagnostic reads `run errored (success)` — the envelope field the runner treats as an error carries the literal string `success`. Zeroing a failed run's expectations is correct behaviour, but confirm which field actually signals failure by inspecting a genuinely clean `claude -p` envelope, and make the check key on that. A run that succeeds must not be zeroed.",
-    tools: "`.claude/agents/studio-layer/studio-research-analyst.md` denies only the `Agent` tool, so the one role instructed to audit client-named third-party sites inherits every other tool. This was the security scan's closest call (1 of 3 verifier votes to keep). Consider a `tools:` allowlist scoped to what a research pass actually needs.",
-    retro: "`.claude/commands/studio-layer/p7-retro.md` is the only phase that waives the write-only-under-PROJECT_DIR rule, routing engagement-derived lessons into `.claude/` prompt files that auto-load in later sessions. Security voted it down 1-of-3 on the grounds that `.claude/` edits are git-tracked and reviewable. Decide whether the waiver should be narrowed or the routing made explicit.",
-    sec: "The full security scan of PR #81 left 16 of 29 consolidated candidates unpaneled after 13 of 13 were refuted. Five are fixed by the review round anyway. The remainder are listed in specs/cpo-layer/reviews/findings-ledger.md as unreviewed leads — work through them if you want the coverage gap closed.",
-    guard: "The `destructive-guard` Stop hook blocks a legitimate command of the form `… --yes > file`, reading the `--yes` flag followed by a redirect as `yes` streaming into a file (unbounded-fill). It was hit twice during this review and worked around by putting the command in a script file. It touches a guard every session depends on, so it wants its own issue rather than an in-flight fix."
+    guard: "GitHub issue #82 is open against `.claude/hooks/destructive-guard/_common.py:369`: the unbounded-fill rule matches a `--yes` confirmation flag followed by a redirect, because `\\b` holds between the dash and the word, so any tool invoked with `--yes` and a redirect on the same segment denies. The memory-exhaust rule at line 392 has the same shape. Anchor the branch the way the `cat` branch is anchored, and ship it with contract tests on both paths — a positively observed block for the real generator, and an allow for the flag form.",
+    gate: "P6's Stop gate does not itself run the states-matrix and contrast checks (`I1-F21`, advisory), so a signed handoff with a failing matrix can close if the command skipped its prose instructions. Decide whether the gate should invoke them or whether the prose instruction is the intended contract.",
+    ac5: "`specs/cpo-layer/checks/ac5-rules-path-scoped.sh` accepts invalid scopes such as `clients/**bogus` via a substring grep, and relaxes the stated budget to 280 lines (`I1-F20`, advisory). Parse the `paths:` frontmatter structurally instead of grepping for a substring.",
+    kb: "Mirror the official custom-slash-command documentation into `ai-docs/` via `/harness-layer:kb add <url>`. The command-frontmatter fields this plan relies on are currently grounded in `.claude/skills/meta-skills/references/frontmatter.md` rather than a KB mirror, which spec-standard 6 permits but flags."
   };
-  var HEAD = "Follow-ups from the studio-layer review (specs/cpo-layer, issue #80, PR #81 — left draft).\n\n";
+  var HEAD = "Follow-ups from the studio-layer review (specs/cpo-layer, issue #80, PR #81 — ready for review).\n\n";
   function render(){
     var picked = Array.prototype.slice.call(document.querySelectorAll('[data-p]'))
       .filter(function(b){return b.getAttribute('aria-pressed')==='true';})

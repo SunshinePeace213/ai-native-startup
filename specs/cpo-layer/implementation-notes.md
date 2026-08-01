@@ -92,7 +92,7 @@
     `studio-content-strategist opus/high`, `studio-design-qa opus/high`,
     `studio-discovery-lead opus/high`, `studio-prototype-engineer sonnet/high`,
     `studio-research-analyst sonnet/medium`, `studio-retro-scribe sonnet/medium`,
-    `studio-ux-architect opus/high`). Every file sets `disallowedTools: Agent`; none carries
+    `studio-ux-architect opus/high`). Every file withholds the `Agent` tool; none carries
     `skills:` frontmatter. The principal has no agent file.
   - Deviations: none.
 - **2026-08-01 · phase 2/3** — launched `studio-role-agents` (roster landed) and
@@ -407,3 +407,34 @@
     new envelope tests); `uv run ruff check .` → `All checks passed!`;
     `uv run ruff format --check .` → `71 files already formatted`; all seven plan-local checks
     exit 0.
+- **2026-08-01 · review · codex implementation round 3 (delta on `88530d1..febd6e4`)** —
+  `gpt-5.6-sol` at `high`, reviewed head `febd6e4`. 3 findings, **all 3 blocking**, plus one
+  self-reported. Run to settle the two things the prior run left for the human gate: the
+  round-2 fixes were never Codex-verified, and the head carried no approved SHA.
+  - Effort held at `high` rather than stepped down to `medium`, because the range covers the
+    unverified round-2 fix series as well as the follow-up commits.
+  - Fixes were made by the orchestrator, not fixer subagents — a standing session constraint
+    barred spawning agents. Recorded as a deviation from the gate's fix row.
+  - **`I3-F2` is the one that matters, and it is mine to own.** `check_revision_count.py`
+    joined change-order references with no containment check. My own independent security pass
+    (`S-F3`) read that exact line and cleared it — I checked that `.resolve()` correctly merges
+    two references to the same file and never asked whether the path was *inside the project*.
+    Confirmed by exploiting it before fixing: a log naming `../../globex/shop/change-orders/1.md`
+    for a round past the allowance exited 0, so one client's excess round was paid for by
+    another client's signed order. `contained()` added in the same shape as
+    `check_gate_signoff.py`'s, and the repro now exits 1. Three tests, each confirmed failing
+    against the pre-fix script.
+  - **`I3-F1` reopened `I2-F2` with new evidence and was right to.** The `b4` check counted the
+    document title and metadata bullets as sections, so a title plus two bullets cleared the
+    three-novel-sections bar with no plan at all — the committed check exits 0 on it. Rewritten
+    so the title is skipped, headings beat bullets where both exist, and triage rows trace to
+    the section inventory rather than the raw body. Six fixtures: the old check passes 4 and
+    false-passes 2; the new one passes all 6.
+  - **`I3-F4` was self-reported** — found while checking whether the `S-F1` allowlist broke AC3.
+    It did not, but five plan files still claimed every role uses `disallowedTools: Agent`. Each
+    restated as the property (no role can spawn another) naming both mechanisms.
+  - After the round-3 fixes: `uv run pytest` → **`1039 passed, 2 skipped`**; `uv run ruff check
+    .` → `All checks passed!`; `uv run ruff format --check .` → `71 files already formatted`;
+    all seven plan-local checks exit 0; `run_command_evals.py --lint` exit 0. The suite count
+    moved twice this run (1030 → 1032 → 1039), so every document quoting it was set from the
+    final run rather than carried forward.

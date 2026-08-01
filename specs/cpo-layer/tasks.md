@@ -140,9 +140,10 @@ it does not author them.
   the body — never the name, never the description.
 - Stamp `model:` and `effort:` from `roster.md`. A mismatch is what `studio-roster-drift-test`
   exists to catch; do not invent a stamp.
-- Set `disallowedTools: Agent` on every role. Subagents inherit the `Agent` tool by default,
-  so without this the "one level deep" architecture is unenforced and a role could spawn its
-  own subagents.
+- Withhold the `Agent` tool on every role — `disallowedTools: Agent`, or a `tools:`
+  allowlist that omits it where a seat needs other tools withheld too. Subagents inherit the
+  `Agent` tool by default, so without this the "one level deep" architecture is unenforced
+  and a role could spawn its own subagents.
 - No `skills:` frontmatter on any role — preloading is not access. Each body restates what it
   needs and, for the client-facing roles, says to invoke `studio-client-questions` via the
   `Skill` tool.

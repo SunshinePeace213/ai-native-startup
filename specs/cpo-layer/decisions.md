@@ -186,8 +186,8 @@ calls.
     drift test pins — would silently stop applying. One spawn shape removes a dependency,
     removes a contradiction between "P2 is the only teammate" and "P4 is the clear teammate
     case", and keeps every stamp load-bearing. Subagents inherit the `Agent` tool by default,
-    so `disallowedTools: Agent` on each role is what makes "one level deep" a property rather
-    than a sentence.
+    so withholding it on each role is what makes "one level deep" a property rather than a
+    sentence — by denial on eight seats, by a `tools:` allowlist on the research analyst.
 
 - **Q:** Do the check scripts go to Codex, given they are parser and arithmetic work?
   - **A:** No — `opus` at `high`, like the rest of the build.
@@ -202,8 +202,10 @@ calls.
 - The sign-off SHA is a content hash of the approved artifact, not a git SHA — `clients/`
   is gitignored, so no commit object exists. Invalidated if client work later moves to its
   own git repo inside `clients/`.
-- Every role runs as a **subagent**, one level deep, with `disallowedTools: Agent`. Each body
-  restates what it needs and invokes the question bank through the `Skill` tool. Invalidated
+- Every role runs as a **subagent**, one level deep, with the `Agent` tool withheld — by
+  `disallowedTools: Agent`, or by a `tools:` allowlist omitting it where a seat needs other
+  tools withheld too. Each body restates what it needs and invokes the question bank through
+  the `Skill` tool. Invalidated
   if a phase turns out to need roles talking to each other — that would require first
   re-deriving how a teammate's effort is set, since it does not come from the agent file.
 - The question-bank skill does **not** carry `disable-model-invocation: true` — that flag
