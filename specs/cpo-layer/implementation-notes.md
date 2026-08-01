@@ -438,3 +438,32 @@
     all seven plan-local checks exit 0; `run_command_evals.py --lint` exit 0. The suite count
     moved twice this run (1030 → 1032 → 1039), so every document quoting it was set from the
     final run rather than carried forward.
+- **2026-08-01 · review · codex implementation round 4 (delta on `febd6e4..00771ca`)** —
+  `gpt-5.6-sol` at `medium`, reviewed head `00771ca`. 3 findings: 2 blocking, 1 advisory. All
+  three fixed. **Two of the three are defects in round 3's own fixes**, recorded as such.
+  - **`I4-F1` is a regression I introduced.** The `I3-F1` fix skipped the first level-1
+    heading unconditionally, which is right for `# Title` + `## Section` but wrong for a
+    titleless plan whose sections *are* `#` headings — it silently cost such a plan one
+    section. The rule is now conditional: a level-1 heading is a title only when something
+    else supplies the inventory (a deeper heading, or a list). Seven fixtures now separate the
+    three versions cleanly — pre-`I3-F1` 5/7, round-3 6/7, corrected 7/7.
+  - **`I4-F2` is an incomplete fix, not a new defect.** Round 3 regenerated the AC table and
+    the narrative in `dev-report.html` but missed the headline facts block and the criteria
+    filter buttons, so the page stated `1030` tests and `15 / 16` criteria beside its own
+    updated evidence. Fixed and verified by grep — zero stale counters, zero `data-k="open"`.
+  - **The suite count moved four times this run** (1030 → 1032 → 1039 → 1040) as each round
+    added tests. Every document quoting it was re-derived from the final run rather than
+    incremented, which is what `I3-F3` and `I4-F2` were both about.
+  - Method note: the fixture harness initially reported three false failures because it
+    `cd`s into a scratch directory before invoking the check by the path it was given, so a
+    relative path stopped resolving. Caught by noticing that the *unchanged* round-3 check
+    had apparently regressed. Re-run with absolute paths, the three versions separate exactly
+    as described above. Worth recording because the harness failure looked exactly like a
+    check failure.
+  - After the round-4 fixes: `uv run pytest` → **`1040 passed, 2 skipped`**; `uv run ruff
+    check .` → `All checks passed!`; `uv run ruff format --check .` → `71 files already
+    formatted`; `node --check` on the report's inline script → OK; all seven plan-local checks
+    exit 0; `run_command_evals.py --lint` exit 0.
+  - **The 2-round allowance for this run is spent (rounds 3 and 4), so the round-4 fixes are
+    not Codex-verified.** That, and nothing else, is what the human gate is being asked to
+    accept.

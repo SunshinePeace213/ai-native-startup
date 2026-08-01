@@ -43,7 +43,7 @@ green.
 | AC11 | The states matrix counts cells against the signed inventory and cannot pass empty | `test_studio_checks.py` (9 node ids) | 9 passed |
 | AC12 | Contrast and tap targets are computed, with one ratio hand-pinned | `test_studio_checks.py` (7 node ids) | 7 passed |
 | AC13 | The revision count is arithmetic over a signed brief, counted rounds and per-order capacity | `test_studio_checks.py` (17 node ids) | 17 passed |
-| AC14 | The whole suite stays green | `uv run pytest` · `ruff check` · `ruff format --check` | 1039 passed, 2 skipped · clean · 71 formatted |
+| AC14 | The whole suite stays green | `uv run pytest` · `ruff check` · `ruff format --check` | 1040 passed, 2 skipped · clean · 71 formatted |
 | AC15 | Design QA blocks handoff as a mechanism, and no role spawns subagents | `test_check_gate_signoff.py` (3 node ids) + `ac3-role-agents.sh` | 3 passed · exit 0 |
 | AC16 | Both non-deterministic surfaces carry evals a runner actually executes | `run_command_evals.py --lint` · `ac16-evals-are-runnable.sh` · runner contract tests | exit 0 · exit 0 · 11 passed |
 | AC16 | …and those evals clear their bar | `manual:` commands eval, 3 repeats | **`eval-0` 1.0 · `eval-1` 1.0 · runner exit 0** |

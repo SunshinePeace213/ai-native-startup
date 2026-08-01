@@ -98,12 +98,12 @@ one level deep, a question-bank skill, four check scripts, a sign-off Stop hook 
 command-eval runner. Client work lives in a gitignored <code>clients/&lt;client&gt;/&lt;project&gt;/</code>.</p>
 
 <dl class="facts">
-  <div class="fact"><dt>Tests</dt><dd>1030 <small>+2 skipped, from 875 at build start</small></dd></div>
+  <div class="fact"><dt>Tests</dt><dd>1040 <small>+2 skipped, from 875 at build start</small></dd></div>
   <div class="fact"><dt>Plan-local checks</dt><dd>7 / 7 <small>all exit 0</small></dd></div>
   <div class="fact"><dt>Codex findings</dt><dd>27 <small>17 blocking, 10 advisory</small></dd></div>
   <div class="fact"><dt>Blocking fixed</dt><dd>17 / 17 <small>none disputed</small></dd></div>
   <div class="fact"><dt>Security</dt><dd>0 <small>survived verification, of 46 candidates</small></dd></div>
-  <div class="fact"><dt>Criteria closed</dt><dd>15 / 16 <small>AC16 evidence outstanding</small></dd></div>
+  <div class="fact"><dt>Criteria closed</dt><dd>16 / 16 <small>all with recorded evidence</small></dd></div>
 </dl>
 
 <p>The layer's whole point is that design claims stop being assertions. Four hard gates
@@ -115,8 +115,8 @@ claim fails a check script or a test rather than passing on someone's say-so.</p
 <p class="sub">The observed result, not "passes". Filter to see what is closed and what is not.</p>
 <div class="controls" role="group" aria-label="Filter criteria">
   <button data-ac="all" aria-pressed="true">All 16</button>
-  <button data-ac="closed" aria-pressed="false">Closed (15)</button>
-  <button data-ac="open" aria-pressed="false">Outstanding (1)</button>
+  <button data-ac="closed" aria-pressed="false">Closed (16)</button>
+  <button data-ac="open" aria-pressed="false">Outstanding (0)</button>
 </div>
 <div class="scroll">
 <table id="actable">
@@ -124,7 +124,7 @@ claim fails a check script or a test rather than passing on someone's say-so.</p
   <tbody>
     <tr data-k="closed"><td>AC1</td><td>clients/ is a tracked contract whose contents are ignored</td><td><code>ac1-client-data-home.sh</code></td><td class="ok">exit 0</td></tr>
     <tr data-k="closed"><td>AC2</td><td>Roster and agent stamps are load-bearing, both directions</td><td><code>test_studio_roster_drift.py</code> ×6</td><td class="ok">6 passed</td></tr>
-    <tr data-k="closed"><td>AC3</td><td>Nine role agents, function-named, <code>disallowedTools: Agent</code></td><td><code>ac3-role-agents.sh</code></td><td class="ok">exit 0</td></tr>
+    <tr data-k="closed"><td>AC3</td><td>Nine role agents, function-named, none able to spawn a subagent</td><td><code>ac3-role-agents.sh</code></td><td class="ok">exit 0</td></tr>
     <tr data-k="closed"><td>AC4</td><td>The client-artifact rule forks rather than copies</td><td><code>ac4-client-artifacts.sh</code></td><td class="ok">exit 0</td></tr>
     <tr data-k="closed"><td>AC5</td><td>Every studio rule is path-scoped</td><td><code>ac5-rules-path-scoped.sh</code></td><td class="ok">exit 0</td></tr>
     <tr data-k="closed"><td>AC6</td><td>Coverage is re-derived from the skill, not re-copied</td><td><code>test_studio_checks.py</code> ×3</td><td class="ok">3 passed</td></tr>
@@ -135,7 +135,7 @@ claim fails a check script or a test rather than passing on someone's say-so.</p
     <tr data-k="closed"><td>AC11</td><td>States matrix counts against the signed inventory</td><td><code>test_studio_checks.py</code> ×9</td><td class="ok">9 passed</td></tr>
     <tr data-k="closed"><td>AC12</td><td>Contrast computed, one ratio hand-pinned</td><td><code>test_studio_checks.py</code> ×7</td><td class="ok">7 passed</td></tr>
     <tr data-k="closed"><td>AC13</td><td>Revision count is arithmetic over a signed brief</td><td><code>test_studio_checks.py</code> ×17</td><td class="ok">17 passed</td></tr>
-    <tr data-k="closed"><td>AC14</td><td>The whole suite stays green</td><td><code>uv run pytest</code> · ruff ×2</td><td class="ok">1039 passed · clean</td></tr>
+    <tr data-k="closed"><td>AC14</td><td>The whole suite stays green</td><td><code>uv run pytest</code> · ruff ×2</td><td class="ok">1040 passed · clean</td></tr>
     <tr data-k="closed"><td>AC15</td><td>Design QA blocks handoff as a mechanism</td><td><code>test_check_gate_signoff.py</code> ×3</td><td class="ok">3 passed</td></tr>
     <tr data-k="closed"><td>AC16</td><td>Both eval suites are runnable — <em>and clear their bar</em></td><td><code>run_command_evals.py</code>, 3 repeats</td><td class="ok">1.0 · 1.0 · exit 0</td></tr>
   </tbody>
