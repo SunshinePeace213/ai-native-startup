@@ -19,22 +19,30 @@ round 1 — fix gaps here, before review, not after.
    script path, never a described procedure. Each `manual:` check has its output
    recorded in `implementation-notes.md`. A criterion with no passing check is a
    promise, not evidence.
-3. **Verification honesty** — every hand-off entry in `implementation-notes.md`
+3. **Faithful harness** — a check is evidence only if the environment it runs in
+   reproduces the one the change depends on. A harness that stages a scratch copy
+   must carry whatever the code resolves against — the git repository, the env
+   vars, the referenced files — or a green result measures the harness, not the
+   change. When a fix changes what the code resolves against, re-check that the
+   harness still supplies it, and pin that with a test.
+4. **Verification honesty** — every hand-off entry in `implementation-notes.md`
    records the exact commands run and their observed results. A claim with no
-   recorded evidence fails.
-4. **Harness file quality** — changed files under `.claude/` read as fluent, KISS
+   recorded evidence fails. Judge a command by its own exit status: a pipe into
+   `tail`, `grep` or `head` reports the pipe's status, and a trailing `echo`
+   replaces it.
+5. **Harness file quality** — changed files under `.claude/` read as fluent, KISS
    prose: instructions not rationale, no stray cross-refs, no guidance duplicated
    from a rule that already loads.
-5. **Grounding** — under the `kb-grounded` profile, every harness-behavior claim
+6. **Grounding** — under the `kb-grounded` profile, every harness-behavior claim
    the diff relies on (frontmatter fields, hook events, model aliases, command
    resolution) traces to a `## KB References` doc, never memory.
-6. **Scope hygiene** — no orphaned imports, variables, or functions the change
+7. **Scope hygiene** — no orphaned imports, variables, or functions the change
    made unused; no drive-by refactors or unrequested features. Every changed line
    traces to a task.
-7. **Convention compliance** — commits follow git-workflow.md (emoji + type
+8. **Convention compliance** — commits follow git-workflow.md (emoji + type
    subject, `Refs #N` footer); the PR body matches pr-process.md (stage table,
    task manifest, `Closes #N`).
-8. **Test intent** — a bug fix carries the failing test that reproduces it; no
+9. **Test intent** — a bug fix carries the failing test that reproduces it; no
    test or check hard-codes values or special-cases inputs to pass.
 
 When a gate finding exposes a standard this list is missing or states unclearly,

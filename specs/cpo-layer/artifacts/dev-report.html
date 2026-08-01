@@ -1,0 +1,329 @@
+<title>studio-layer — Development report</title>
+<style>
+  :root{
+    --bg:#FAF8F5; --surface:#F0EDE5; --border:#D4CFC7;
+    --text:#2C2825; --accent:#B8602A; --muted:#8A837A;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:70rem;margin:0 auto;padding:3rem 1.25rem 5rem}
+  header{border-bottom:2px solid var(--border);padding-bottom:1.75rem;margin-bottom:2.5rem}
+  .eyebrow{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:650}
+  h1{font-size:clamp(1.7rem,4vw,2.5rem);line-height:1.15;margin:.5rem 0 .75rem;letter-spacing:-.02em}
+  .lede{font-size:1.1rem;color:var(--text);max-width:62ch;margin:0}
+  .status{display:inline-flex;align-items:center;gap:.5rem;margin-top:1.25rem;
+    background:#fff;border:1px solid var(--border);border-left:4px solid var(--accent);
+    border-radius:.4rem;padding:.6rem .9rem;font-size:.92rem}
+  .status b{color:var(--accent)}
+  h2{font-size:1.3rem;margin:2.75rem 0 .5rem;letter-spacing:-.01em}
+  h2 .n{color:var(--muted);font-weight:400;font-size:.8em;margin-right:.5rem}
+  .sub{color:var(--muted);font-size:.92rem;margin:0 0 1.25rem;max-width:66ch}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));gap:.75rem;margin:1.5rem 0}
+  .fact{background:var(--surface);border:1px solid var(--border);border-radius:.5rem;padding:.85rem .95rem}
+  .fact dt{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:650}
+  .fact dd{margin:.3rem 0 0;font-size:1.35rem;font-weight:650;letter-spacing:-.02em}
+  .fact dd small{display:block;font-size:.78rem;font-weight:400;color:var(--muted);letter-spacing:0;margin-top:.15rem}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:.5rem;background:#fff}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:44rem}
+  th,td{text-align:left;padding:.6rem .8rem;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:var(--surface);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);position:sticky;top:0}
+  tr:last-child td{border-bottom:0}
+  code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em;
+    background:var(--surface);border:1px solid var(--border);border-radius:.25rem;padding:.05rem .3rem}
+  td code{white-space:nowrap}
+  .ok{color:#2f6f3e;font-weight:650}
+  .bad{color:#a33;font-weight:650}
+  .controls{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.25rem 0}
+  button{font:inherit;font-size:.86rem;cursor:pointer;background:#fff;color:var(--text);
+    border:1px solid var(--border);border-radius:2rem;padding:.4rem .9rem;transition:.15s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  .cards{display:grid;gap:.75rem}
+  .card{background:#fff;border:1px solid var(--border);border-left:4px solid var(--muted);
+    border-radius:.5rem;padding:.9rem 1rem}
+  .card.sev-major{border-left-color:var(--accent)}
+  .card.sev-minor{border-left-color:#c9a227}
+  .card.sev-info{border-left-color:var(--muted)}
+  .card h3{margin:0 0 .3rem;font-size:.98rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:baseline}
+  .tag{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+    border-radius:.25rem;padding:.1rem .4rem;border:1px solid var(--border);background:var(--surface);color:var(--muted)}
+  .tag.b{background:var(--accent);border-color:var(--accent);color:#fff}
+  .tag.id{font-family:ui-monospace,monospace;letter-spacing:0}
+  .card p{margin:.4rem 0 0;font-size:.9rem}
+  .card .fix{color:var(--muted);font-size:.86rem}
+  .note{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);
+    border-radius:.5rem;padding:1rem 1.1rem;margin:1.5rem 0}
+  .note p{margin:.4rem 0 0}
+  .note p:first-child{margin:0}
+  ul{padding-left:1.15rem}
+  li{margin:.35rem 0}
+  .prompt{margin-top:.75rem}
+  textarea{width:100%;min-height:11rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:.82rem;line-height:1.55;color:var(--text);background:#fff;
+    border:1px solid var(--border);border-radius:.5rem;padding:.85rem;resize:vertical}
+  footer{margin-top:3.5rem;padding-top:1.25rem;border-top:1px solid var(--border);
+    color:var(--muted);font-size:.85rem}
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#1B1917;--surface:#242120;--border:#3B3633;--text:#EDE8E2;--accent:#E08A4C;--muted:#9A928A}
+    .card,.scroll,textarea,button,.status{background:#211E1C}
+    th{background:var(--surface)}
+  }
+  :root[data-theme="dark"]{--bg:#1B1917;--surface:#242120;--border:#3B3633;--text:#EDE8E2;--accent:#E08A4C;--muted:#9A928A}
+  :root[data-theme="dark"] .card,:root[data-theme="dark"] .scroll,
+  :root[data-theme="dark"] textarea,:root[data-theme="dark"] button,
+  :root[data-theme="dark"] .status{background:#211E1C}
+  :root[data-theme="light"]{--bg:#FAF8F5;--surface:#F0EDE5;--border:#D4CFC7;--text:#2C2825;--accent:#B8602A;--muted:#8A837A}
+  :root[data-theme="light"] .card,:root[data-theme="light"] .scroll,
+  :root[data-theme="light"] textarea,:root[data-theme="light"] button,
+  :root[data-theme="light"] .status{background:#fff}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Development report · /harness-layer:harness-review</div>
+  <h1>studio-layer — design delivery through signed handoff</h1>
+  <p class="lede">Two Codex rounds and a full security scan over a 66-file build. Every
+  blocking finding is fixed; one piece of evidence could not be regenerated, and that is
+  what keeps the PR in draft.</p>
+  <div class="status">⚠️ <span><b>PR #81 left draft.</b> AC16 has no valid recorded rate —
+  the behavioral eval returned the account session limit on all six invocations.</span></div>
+</header>
+
+<h2><span class="n">01</span>What shipped</h2>
+<p class="sub">Eight phase commands driven by the main session as principal, nine role agents
+one level deep, a question-bank skill, four check scripts, a sign-off Stop hook and a
+command-eval runner. Client work lives in a gitignored <code>clients/&lt;client&gt;/&lt;project&gt;/</code>.</p>
+
+<dl class="facts">
+  <div class="fact"><dt>Tests</dt><dd>1030 <small>+2 skipped, from 875 at build start</small></dd></div>
+  <div class="fact"><dt>Plan-local checks</dt><dd>7 / 7 <small>all exit 0</small></dd></div>
+  <div class="fact"><dt>Codex findings</dt><dd>27 <small>17 blocking, 10 advisory</small></dd></div>
+  <div class="fact"><dt>Blocking fixed</dt><dd>17 / 17 <small>none disputed</small></dd></div>
+  <div class="fact"><dt>Security</dt><dd>0 <small>survived verification, of 46 candidates</small></dd></div>
+  <div class="fact"><dt>Criteria closed</dt><dd>15 / 16 <small>AC16 evidence outstanding</small></dd></div>
+</dl>
+
+<p>The layer's whole point is that design claims stop being assertions. Four hard gates
+(P2, P3, P4, P6) refuse to close until the client has signed that phase's <em>named</em>
+deliverables, each verified by SHA-256 against the file it approves, and every countable
+claim fails a check script or a test rather than passing on someone's say-so.</p>
+
+<h2><span class="n">02</span>Acceptance criteria → evidence</h2>
+<p class="sub">The observed result, not "passes". Filter to see what is closed and what is not.</p>
+<div class="controls" role="group" aria-label="Filter criteria">
+  <button data-ac="all" aria-pressed="true">All 16</button>
+  <button data-ac="closed" aria-pressed="false">Closed (15)</button>
+  <button data-ac="open" aria-pressed="false">Outstanding (1)</button>
+</div>
+<div class="scroll">
+<table id="actable">
+  <thead><tr><th>AC</th><th>What it proves</th><th>Command</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr data-k="closed"><td>AC1</td><td>clients/ is a tracked contract whose contents are ignored</td><td><code>ac1-client-data-home.sh</code></td><td class="ok">exit 0</td></tr>
+    <tr data-k="closed"><td>AC2</td><td>Roster and agent stamps are load-bearing, both directions</td><td><code>test_studio_roster_drift.py</code> ×6</td><td class="ok">6 passed</td></tr>
+    <tr data-k="closed"><td>AC3</td><td>Nine role agents, function-named, <code>disallowedTools: Agent</code></td><td><code>ac3-role-agents.sh</code></td><td class="ok">exit 0</td></tr>
+    <tr data-k="closed"><td>AC4</td><td>The client-artifact rule forks rather than copies</td><td><code>ac4-client-artifacts.sh</code></td><td class="ok">exit 0</td></tr>
+    <tr data-k="closed"><td>AC5</td><td>Every studio rule is path-scoped</td><td><code>ac5-rules-path-scoped.sh</code></td><td class="ok">exit 0</td></tr>
+    <tr data-k="closed"><td>AC6</td><td>Coverage is re-derived from the skill, not re-copied</td><td><code>test_studio_checks.py</code> ×3</td><td class="ok">3 passed</td></tr>
+    <tr data-k="closed"><td>AC7</td><td>Exactly p2/p3/p4/p6 register the gate, each with its phase</td><td><code>ac7-phase-commands.sh</code></td><td class="ok">exit 0</td></tr>
+    <tr data-k="closed"><td>AC8</td><td>Gate blocks correctly, incl. path containment and required artifacts</td><td><code>test_check_gate_signoff.py</code> ×26</td><td class="ok">26 passed</td></tr>
+    <tr data-k="closed"><td>AC9</td><td>Triage gates p2; QA report and re-hashed inventory gate p6</td><td><code>test_check_gate_signoff.py</code> ×12</td><td class="ok">12 passed</td></tr>
+    <tr data-k="closed"><td>AC10</td><td>The hook is registered, cataloged and dispositioned</td><td><code>test_wiring.py</code> ×5</td><td class="ok">5 passed</td></tr>
+    <tr data-k="closed"><td>AC11</td><td>States matrix counts against the signed inventory</td><td><code>test_studio_checks.py</code> ×9</td><td class="ok">9 passed</td></tr>
+    <tr data-k="closed"><td>AC12</td><td>Contrast computed, one ratio hand-pinned</td><td><code>test_studio_checks.py</code> ×7</td><td class="ok">7 passed</td></tr>
+    <tr data-k="closed"><td>AC13</td><td>Revision count is arithmetic over a signed brief</td><td><code>test_studio_checks.py</code> ×17</td><td class="ok">17 passed</td></tr>
+    <tr data-k="closed"><td>AC14</td><td>The whole suite stays green</td><td><code>uv run pytest</code> · ruff ×2</td><td class="ok">1030 passed · clean</td></tr>
+    <tr data-k="closed"><td>AC15</td><td>Design QA blocks handoff as a mechanism</td><td><code>test_check_gate_signoff.py</code> ×3</td><td class="ok">3 passed</td></tr>
+    <tr data-k="open"><td>AC16</td><td>Both eval suites are runnable — <em>and clear their bar</em></td><td><code>run_command_evals.py … -k 3 --yes</code></td><td class="bad">no valid rate</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <p><b>Why AC16 is the one left open.</b> It began the review as a disclosed gap: the
+  commands suite scored 0.8889 against a required 1.0, and the build deliberately did not
+  paper over it.</p>
+  <p>Three separate causes were untangled rather than lumped together. <code>a3</code>
+  demanded one literal phrasing the documented contract never requires. <code>b4</code> was
+  <em>unfalsifiable</em> — it asked a judge to confirm a process from artifacts that record
+  no process. <code>a5</code> was a fair assertion the command genuinely failed, so the
+  command was fixed and the assertion left alone. The suite then reached 1.0.</p>
+  <p><b>Then round 2 invalidated that 1.0.</b> The eval staged its scratch project as a
+  plain directory, not a git repository — while the commands had just been re-anchored on
+  <code>$(git rev-parse --show-toplevel)</code>. So the graded agent had been using relative
+  paths and the anchoring was never exercised. The runner now <code>git init</code>s each
+  staged root, but the replacement rate could not be measured: all six invocations returned
+  <em>"You've hit your session limit"</em>. The 0.0 that produced is an artifact of the
+  limit, not a defect — every deterministic check in those runs still exited 0.</p>
+</div>
+
+<h2><span class="n">03</span>The review journey</h2>
+<p class="sub">27 findings across two Codex rounds plus a full security pass. Filter by
+severity or by how each was dispositioned.</p>
+<div class="controls" role="group" aria-label="Filter findings">
+  <button data-f="all" aria-pressed="true">All</button>
+  <button data-f="blocking" aria-pressed="false">Blocking</button>
+  <button data-f="advisory" aria-pressed="false">Advisory</button>
+  <button data-f="regression" aria-pressed="false">Fix-introduced</button>
+</div>
+<div class="cards" id="cards">
+  <div class="card sev-major" data-f="blocking"><h3><span class="tag id">I1-F3</span><span class="tag b">blocking</span> The hard gates accepted any one signed artifact</h3>
+    <p>The tests signed a single <code>docs/&lt;phase&gt;-approved.md</code>, so P2 could close with no brief or sitemap and P6 with no handoff pack.</p>
+    <p class="fix">Fixed — each gated phase names the rows its sign-off must list, hash-verified like any other. P2's set is brief + sitemap, matching the spec's own Gate column; the creative brief was deliberately excluded rather than making the hook demand what no command tells the principal to sign.</p></div>
+
+  <div class="card sev-major" data-f="blocking"><h3><span class="tag id">I1-F5</span><span class="tag b">blocking</span> The revision counter never counted</h3>
+    <p>Rows all numbered <code>1</code> never exceeded the allowance — verified against the pre-fix script, where three such rows against an allowance of 2 exited 0.</p>
+    <p class="fix">Fixed — round numbers must be positive, unique and contiguous from 1; anything else exits 2, because the count itself is meaningless.</p></div>
+
+  <div class="card sev-major" data-f="blocking"><h3><span class="tag id">I1-F4</span><span class="tag b">blocking</span> The allowance came from an unsigned brief</h3>
+    <p>Editing <code>2</code> to <code>3</code> silently bought a round. The existing test asserted that mutation as an <em>allow</em> path.</p>
+    <p class="fix">Fixed — the brief is refused unless <code>sign-off/p2.md</code> lists it and its SHA-256 still matches. The test was removed and split into one that proves re-derivation and one that proves post-signature mutation exits 2.</p></div>
+
+  <div class="card sev-major" data-f="blocking"><h3><span class="tag id">I1-F6</span><span class="tag b">blocking</span> One change order bought unlimited rounds</h3>
+    <p><code>Cost — rounds: 0</code> passed, and a single order could be referenced by any number of excess rounds.</p>
+    <p class="fix">Fixed — cost must be ≥ 1, and each order covers at most the rounds it declares. A 2-round order legitimately covering two rounds still passes, so this is capacity arithmetic rather than a ban on reuse.</p></div>
+
+  <div class="card sev-major" data-f="blocking"><h3><span class="tag id">I1-F9</span><span class="tag b">blocking</span> Sign-off artifact paths were unconstrained</h3>
+    <p>An absolute path, a <code>..</code> segment or an escaping symlink could satisfy a client signature with a file elsewhere on disk.</p>
+    <p class="fix">Fixed — <code>contained()</code> requires the resolved target, symlinks followed, to sit beneath the resolved project root.</p></div>
+
+  <div class="card sev-major" data-f="blocking"><h3><span class="tag id">I1-F10</span><span class="tag b">blocking</span> QA rows fell open</h3>
+    <p>Only the exact pair <code>blocking</code>/<code>open</code> blocked, so <code>blocking | TBD</code> or a blank status handed over an engagement QA had not cleared.</p>
+    <p class="fix">Fixed — both cells are validated against their enums; a row the gate cannot read blocks rather than reading as resolved.</p></div>
+
+  <div class="card sev-major" data-f="blocking"><h3><span class="tag id">I1-F7 · I1-F8</span><span class="tag b">blocking</span> Command paths and arguments</h3>
+    <p>The four gate commands told multi-project users to run from inside <code>PROJECT_DIR</code>, where every repo-relative path in the same file misresolves; and <code>PROJECT</code> was unvalidated.</p>
+    <p class="fix">Fixed — bodies anchor on <code>$(git rev-parse --show-toplevel)</code>, <code>PROJECT</code> must be two safe segments. See the lesson below: the first attempt used the wrong variable.</p></div>
+
+  <div class="card sev-major" data-f="blocking regression"><h3><span class="tag id">I2-F1</span><span class="tag b">blocking</span> The eval environment was not the real one</h3>
+    <p>A regression the round-1 fix introduced. The scratch project was not a git repository, so the freshly-anchored paths could not resolve — yet the suite scored 1.0, because the agent used relative paths instead. Confirmed directly: <code>git rev-parse --show-toplevel</code> returned <em>fatal: not a git repository</em>.</p>
+    <p class="fix">Fixed — the runner initializes each staged root hermetically, and a test expands the command's literal <code>PROJECT_DIR:</code> line inside it. That test is what would have caught this.</p></div>
+
+  <div class="card sev-major" data-f="blocking regression"><h3><span class="tag id">I2-F2</span><span class="tag b">blocking</span> The replacement <code>b4</code> was too permissive</h3>
+    <p>It accepted three arbitrary headings, a sitemap copy one character different, and a single matching word from one triage row.</p>
+    <p class="fix">Fixed — a real structural difference (≥3 sections the plan names and the sitemap does not) plus traceability across at least half the triage rows. Proven against nine fixtures; the old check false-passed three of them.</p></div>
+
+  <div class="card sev-major" data-f="blocking regression"><h3><span class="tag id">I2-F3</span><span class="tag b">blocking</span> Five criteria recorded two different results</h3>
+    <p><b>The review lead's own error.</b> The edit that rewrote each AC block's node ids inserted the new evidence paragraph without removing the old one, leaving 26/14, 12/9, 9/6, 7/6 and 17/7 side by side.</p>
+    <p class="fix">Fixed — stale paragraphs removed, then every AC command re-run and its claimed count compared against the observed one. All ten now agree.</p></div>
+
+  <div class="card sev-major" data-f="blocking regression"><h3><span class="tag id">I2-F4</span><span class="tag b">blocking</span> The spec drifted behind the counter</h3>
+    <p>The hardened counter demanded a hash-matching sign-off, contiguous rounds and per-order capacity while spec.md still said an existing change order sufficed.</p>
+    <p class="fix">Fixed — the contract now states what the code enforces, written as specification rather than changelog.</p></div>
+
+  <div class="card sev-minor" data-f="advisory"><h3><span class="tag id">I1-F14…F18 · I2-F5</span><span class="tag">advisory</span> Robustness, folded into the same files</h3>
+    <p>Loose allowance regex, <code>IndexError</code> on short rows, duplicate matrix rows hiding a blank one, stale workspace output, and ids that differ only in type.</p>
+    <p class="fix">Below the blocking bar, but fixed anyway — each sat in a file already being rewritten.</p></div>
+
+  <div class="card sev-info" data-f="advisory"><h3><span class="tag id">I1-F19 · I1-F20 · I1-F21 · I1-F22</span><span class="tag">advisory</span> Recorded, not fixed</h3>
+    <p>The routed glob lesson grew the always-loaded rules 254→257 (the pipeline's own mandated memory step, and AC5's budget is 280); AC5's substring grep accepts <code>clients/**bogus</code>; P6's gate does not itself run the states and contrast checks; two module headers carry rationale.</p>
+    <p class="fix">Carried to the PR's Follow-ups rather than redesigned mid-review.</p></div>
+
+  <div class="card sev-info" data-f="advisory"><h3><span class="tag">security</span> 0 of 46 candidates survived</h3>
+    <p>19 researchers → 46 candidates → 29 deduped → 13 through a three-lens adversarial panel (39 votes). Four TRUE votes, spread across four candidates; none reached the 2-of-3 quorum.</p>
+    <p class="fix">The verifiers converged on one fact: this is local, single-principal developer tooling where the would-be attacker either <em>is</em> the operator or already needs repository write access. Two caveats kept rather than smoothed: 16 candidates were never paneled (five are fixed anyway), and the tree was dirty while the scan ran.</p></div>
+</div>
+
+<h2><span class="n">04</span>What was learned</h2>
+<p class="sub">Amendments and routed lessons — each lands where it will load again.</p>
+<ul>
+  <li><b>A check is evidence only if its harness reproduces the runtime environment</b> →
+  new standard 3 in <code>impl-standards.md</code>. Born directly from <code>I2-F1</code>:
+  a 1.0 that measured the harness rather than the change.</li>
+  <li><b>Judge a command by its own exit status</b> → standard 4. A pipe into <code>tail</code>
+  reports the pipe's status; a trailing <code>echo</code> replaces it. The build hit the first
+  form, this review hit the second.</li>
+  <li><b><code>CLAUDE_PROJECT_DIR</code> is hook-scoped</b> → <code>hooks.md</code>, beside the
+  registration idiom that uses it. It resolves in a hook, an stdio MCP server and a plugin LSP
+  server only. A fixer proposed it for command bodies and flagged its own doubt; the doubt was
+  right — it is empty there, and the anchored path would have become <code>/clients/…</code>
+  at the filesystem root.</li>
+  <li><b>The <code>paths:</code> glob form is <code>&lt;dir&gt;/**/*</code></b> →
+  <code>memory-series.md</code>, routed by the build and retained here for traceability.</li>
+</ul>
+
+<h2><span class="n">05</span>Hand this on</h2>
+<p class="sub">Pick what you want to act on; the prompt below is assembled from your choices.</p>
+<div class="controls" role="group" aria-label="Choose follow-ups">
+  <button data-p="ac16" aria-pressed="true">Re-establish AC16</button>
+  <button data-p="envelope" aria-pressed="false">run_error "success"</button>
+  <button data-p="tools" aria-pressed="false">Research-analyst tools</button>
+  <button data-p="retro" aria-pressed="false">p7 write waiver</button>
+  <button data-p="sec" aria-pressed="false">16 unpaneled candidates</button>
+  <button data-p="guard" aria-pressed="false">destructive-guard</button>
+</div>
+<div class="prompt">
+  <textarea id="out" readonly aria-label="Copyable prompt"></textarea>
+  <div class="controls"><button id="copy">Copy prompt</button></div>
+</div>
+
+<footer>
+  Plan <code>specs/cpo-layer/</code> · issue #80 · PR #81 · reviewed heads
+  <code>339b2c5</code> then <code>88530d1</code> · rounds
+  <code>reviews/codex-impl-round-{1,2}.md</code> · ledger
+  <code>reviews/findings-ledger.md</code>
+</footer>
+</div>
+
+<script>
+(function(){
+  function group(sel, attr, onPick, multi){
+    var btns = Array.prototype.slice.call(document.querySelectorAll(sel));
+    btns.forEach(function(b){
+      b.addEventListener('click', function(){
+        if(multi){ b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')==='true'?'false':'true'); }
+        else { btns.forEach(function(o){ o.setAttribute('aria-pressed', String(o===b)); }); }
+        onPick(btns);
+      });
+    });
+    return btns;
+  }
+
+  group('[data-ac]','data-ac',function(btns){
+    var on = btns.filter(function(b){return b.getAttribute('aria-pressed')==='true';})[0];
+    var k = on ? on.getAttribute('data-ac') : 'all';
+    document.querySelectorAll('#actable tbody tr').forEach(function(tr){
+      tr.style.display = (k==='all' || tr.getAttribute('data-k')===k) ? '' : 'none';
+    });
+  });
+
+  group('[data-f]','data-f',function(btns){
+    var on = btns.filter(function(b){return b.getAttribute('aria-pressed')==='true';})[0];
+    var k = on ? on.getAttribute('data-f') : 'all';
+    document.querySelectorAll('#cards .card').forEach(function(c){
+      var v = c.getAttribute('data-f')||'';
+      c.style.display = (k==='all' || v.indexOf(k)>-1) ? '' : 'none';
+    });
+  });
+
+  var TEXT = {
+    ac16: "Re-establish AC16's rate for the studio-layer plan (specs/cpo-layer, PR #81). The behavioural eval could not run — all six `claude -p` invocations returned the account session limit, so the recorded 0.0 is an artefact, not a defect. Re-run `uv run --script .claude/scripts/studio-layer/run_command_evals.py .claude/commands/studio-layer -k 3 --yes` from the worktree, judge it by the runner's own exit status rather than through a pipe, record the per-case rates in implementation-notes.md, and only then flip the PR out of draft. Note the previous 1.0 is void: it was measured before the scratch project was a git repository, so it never exercised the commands' `$(git rev-parse --show-toplevel)` anchor.",
+    envelope: "In .claude/scripts/studio-layer/run_command_evals.py, the failed-run diagnostic reads `run errored (success)` — the envelope field the runner treats as an error carries the literal string `success`. Zeroing a failed run's expectations is correct behaviour, but confirm which field actually signals failure by inspecting a genuinely clean `claude -p` envelope, and make the check key on that. A run that succeeds must not be zeroed.",
+    tools: "`.claude/agents/studio-layer/studio-research-analyst.md` denies only the `Agent` tool, so the one role instructed to audit client-named third-party sites inherits every other tool. This was the security scan's closest call (1 of 3 verifier votes to keep). Consider a `tools:` allowlist scoped to what a research pass actually needs.",
+    retro: "`.claude/commands/studio-layer/p7-retro.md` is the only phase that waives the write-only-under-PROJECT_DIR rule, routing engagement-derived lessons into `.claude/` prompt files that auto-load in later sessions. Security voted it down 1-of-3 on the grounds that `.claude/` edits are git-tracked and reviewable. Decide whether the waiver should be narrowed or the routing made explicit.",
+    sec: "The full security scan of PR #81 left 16 of 29 consolidated candidates unpaneled after 13 of 13 were refuted. Five are fixed by the review round anyway. The remainder are listed in specs/cpo-layer/reviews/findings-ledger.md as unreviewed leads — work through them if you want the coverage gap closed.",
+    guard: "The `destructive-guard` Stop hook blocks a legitimate command of the form `… --yes > file`, reading the `--yes` flag followed by a redirect as `yes` streaming into a file (unbounded-fill). It was hit twice during this review and worked around by putting the command in a script file. It touches a guard every session depends on, so it wants its own issue rather than an in-flight fix."
+  };
+  var HEAD = "Follow-ups from the studio-layer review (specs/cpo-layer, issue #80, PR #81 — left draft).\n\n";
+  function render(){
+    var picked = Array.prototype.slice.call(document.querySelectorAll('[data-p]'))
+      .filter(function(b){return b.getAttribute('aria-pressed')==='true';})
+      .map(function(b){return TEXT[b.getAttribute('data-p')];});
+    document.getElementById('out').value = picked.length
+      ? HEAD + picked.map(function(t,i){return (i+1)+'. '+t;}).join('\n\n')
+      : HEAD + "(nothing selected — pick at least one follow-up above)";
+  }
+  group('[data-p]','data-p',render,true);
+  render();
+
+  document.getElementById('copy').addEventListener('click', function(){
+    var ta = document.getElementById('out');
+    ta.select();
+    var done = function(){ var b=document.getElementById('copy'); b.textContent='Copied'; setTimeout(function(){b.textContent='Copy prompt';},1400); };
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(ta.value).then(done, done); }
+    else { try{ document.execCommand('copy'); }catch(e){} done(); }
+  });
+})();
+</script>

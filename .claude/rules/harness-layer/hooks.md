@@ -35,6 +35,11 @@ mirrored into `.codex/hooks.json`.
   a new hook joins the existing block's `hooks` array. A hook that must run only
   inside one command registers in that command's frontmatter instead (the
   spec-gate pattern).
+- `"$CLAUDE_PROJECT_DIR"` is the registration idiom and resolves in a hook, an
+  stdio MCP server and a plugin LSP server — nowhere else
+  (`ai-docs/anthropic/hooks.md:494`). It is empty in a command body, where an
+  anchored path silently becomes `/<path>` at the filesystem root; anchor those on
+  `$(git rev-parse --show-toplevel)` instead.
 - Contract: exit 2 only for agent-fixable findings, with diagnostics on stderr;
   everything else — malformed stdin, missing files, plumbing failures — fails
   open with exit 0.
