@@ -686,3 +686,27 @@ the plan folder.
   `run_behavior_eval.py`'s staging path, `HOOK_PATH_RE`'s whitespace boundary, `run_hook`'s
   argv-free launch, all seven plan-local checks failing with precise diagnostics on today's
   tree, and the full suite green at 875 passed / 2 skipped.
+
+### Implementation flavor
+
+- **Outcome:** **approved at the human gate by override.** Four implementation rounds against
+  `gpt-5.6-sol` — rounds 1–2 (`high`) in the build/review run, rounds 3–4 (`high`, then
+  `medium`) in this follow-up run. Every blocking finding across all four is fixed; none was
+  disputed. The full record is in [reviews/findings-ledger.md](./reviews/findings-ledger.md).
+- **What was overridden:** this run's 2-round allowance was spent on rounds 3 and 4, so the
+  round-4 fixes (`I4-F1` the b4 heading rule, `I4-F2` the report's headline counters, `I4-F3`
+  the report's AC3 row) were not re-reviewed by a fifth round. The user was shown that every
+  fix round in this run introduced new blocking defects — round 3's fixes carried two of round
+  4's three findings — and chose to ship rather than run another round.
+- **The finding that most justified the extra rounds:** `I3-F2`, a path-containment hole in
+  `check_revision_count.py` that let one engagement's excess revision rounds be paid for by
+  another client's signed change order. Confirmed by exploiting it before fixing. It was missed
+  by this run's own independent security pass (`S-F3`), which read the line and cleared it after
+  checking only that `.resolve()` merges duplicate references.
+- **Deviation from the gate:** the implementation flavor assigns fixes to fixer subagents. A
+  standing session constraint barred spawning agents, so the orchestrator made all seven fixes
+  directly.
+- **Verified by running, not asserted:** the traversal exploit (exit 0 before the fix, exit 1
+  after), the b4 counterexamples across seven fixtures and three versions of the check, every
+  new test confirmed failing against its pre-fix code, `node --check` on the report's inline
+  script, all seven plan-local checks at exit 0, and the full suite at 1040 passed / 2 skipped.

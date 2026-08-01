@@ -250,3 +250,23 @@ re-verified by a further Codex round.** That is what the human gate is being ask
 | I4-F1 | major | 98 | The `I3-F1` fix discards the first level-1 heading unconditionally, so a titleless plan whose three sections *are* `#` headings keeps only two and falsely fails the three-novel-sections bar | fixed | **A regression my own fix introduced, and a fair catch.** The rule is now conditional: a level-1 heading is a document title only when something else supplies the inventory — a deeper heading, or a list. A plan whose sections are level-1 headings has no title to discard and keeps all of them. Verified across seven fixtures, three checks: the pre-`I3-F1` check scores 5/7 (false-passing both metadata cases), the round-3 check 6/7 (this regression), the corrected check 7/7. `test_b4_keeps_level_one_headings_when_they_are_the_sections` added as the H1-only regression Codex asked for |
 | I4-F2 | major | 100 | `I3-F3` is not fully fixed: `dev-report.html` still shows `1030` tests, `15 / 16` criteria, "AC16 evidence outstanding", "Closed (15)" and "Outstanding (1)", contradicting the 1039/all-closed evidence in the same page | fixed | Correct — the round-3 pass updated the AC table rows and the narrative but missed the headline `<dl class="facts">` block and the criteria filter buttons, so the page contradicted itself. All four regenerated. Verified by grep: zero occurrences of any stale counter and zero `data-k="open"` rows remain. The count landed at **1040** after this round's H1 test — it moved four times across the run (1030 → 1032 → 1039 → 1040), so every quoting document was re-derived from the final run rather than incremented |
 | I4-F3 | minor | 100 | `I3-F4`'s false universal survives in `dev-report.html`: the AC3 row still claims all nine roles use `disallowedTools: Agent` | fixed | Advisory by severity, fixed anyway since it is the same one-line correction applied to the other six files. The row now states the enforced property — nine role agents, none able to spawn a subagent — which is what `ac3-role-agents.sh` actually asserts |
+
+### Terminal — approved at the human gate by override
+
+The implementation flavor's 2-round allowance for this run was spent on rounds 3 and 4, so
+round 4's fixes were never re-reviewed. The gate presented that, together with the run's own
+base rate — **every fix round in this run introduced new blocking defects**: round 3's fixes
+carried two of round 4's three findings, and `I4-F1` was a regression in the `I3-F1` fix — and
+recommended a fifth round. The user chose **ship as-is**.
+
+| Item | Disposition | Reason |
+| --- | --- | --- |
+| `I4-F1`, `I4-F2`, `I4-F3` fixes unverified by a fifth Codex round | overridden | User chose "ship as-is" at the human gate, having been shown the fix-round defect rate and the recommendation to run round 5 |
+
+Nothing else is outstanding. Every blocking finding across implementation rounds 1–4 is
+`fixed`, none is `disputed`, AC16 carries a measured rate, and the suite is green at 1040
+passed / 2 skipped with all seven plan-local checks at exit 0.
+
+**The merge itself was not run by the review session** — that is `/harness-layer:harness-ship`,
+which merges with `gh pr merge --squash --match-head-commit <approved-sha>`. The approved SHA
+is **`7e5fe38`**.

@@ -5,7 +5,7 @@
 > its terminal step, from the implementation notes and the findings ledger. Outcome,
 > not intent — if the build diverged from the plan, this file records what was built.
 
-**Issue** #80 · **PR** #81 · **Status** ready for review
+**Issue** #80 · **PR** #81 · **Status** approved (override) — ready to merge
 
 ## What Shipped
 
