@@ -7,6 +7,7 @@ under tmp_path so the suite stays parallel-safe.
 """
 
 import hashlib
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -514,6 +515,43 @@ def test_one_change_order_cannot_buy_two_rounds(tmp_path):
     assert "which buys 1" in result.stdout
 
 
+def test_change_order_reached_by_traversal_fails(tmp_path):
+    """A `..` reference lets one engagement's excess rounds be paid for by another client's
+    order — the counter would read a real, complete, signed document and never notice it
+    belongs to someone else."""
+    project = revisions(
+        tmp_path,
+        rounds=[(1, "-"), (2, "-"), (3, "`../../globex/shop/change-orders/1.md`")],
+    )
+    write(tmp_path / "clients" / "globex" / "shop" / "change-orders" / "1.md", CHANGE_ORDER)
+    result = run_check("check_revision_count.py", project)
+    assert result.returncode == 1, result.stdout
+    assert "resolves outside the project" in result.stdout
+
+
+def test_absolute_change_order_reference_fails(tmp_path):
+    """`project / "/abs/path"` discards the project entirely, so an absolute reference reads
+    a file anywhere on disk that happens to carry the four required fields."""
+    outside = write(tmp_path / "elsewhere" / "1.md", CHANGE_ORDER)
+    project = revisions(tmp_path, rounds=[(1, "-"), (2, "-"), (3, f"`{outside}`")])
+    result = run_check("check_revision_count.py", project)
+    assert result.returncode == 1, result.stdout
+    assert "resolves outside the project" in result.stdout
+
+
+def test_change_order_symlinked_out_of_the_project_fails(tmp_path):
+    """The reference is project-relative and carries no `..`, so only resolving the symlink
+    shows it leaves the tree — which is why containment is checked after resolution."""
+    outside = write(tmp_path / "elsewhere" / "1.md", CHANGE_ORDER)
+    project = revisions(tmp_path, rounds=[(1, "-"), (2, "-"), (3, "`change-orders/1.md`")])
+    link = project / "change-orders" / "1.md"
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(outside)
+    result = run_check("check_revision_count.py", project)
+    assert result.returncode == 1, result.stdout
+    assert "resolves outside the project" in result.stdout
+
+
 def test_change_order_buying_two_rounds_covers_both(tmp_path):
     """The counter arithmetic, not a ban on reuse: the same two rounds pass once the order
     the client approved is priced for two."""
@@ -606,3 +644,89 @@ def test_malformed_allowance_line_exits_2(tmp_path):
     result = run_check("check_revision_count.py", project)
     assert result.returncode == 2, result.stdout
     assert "Revision rounds" in result.stdout
+
+
+# --- AC16: the b4 eval assertion grades an independent plan, not a shaped file ---------
+
+COMMANDS_EVALS = REPO_ROOT / ".claude" / "commands" / "studio-layer" / "evals" / "evals.json"
+SIGNED_SITEMAP = "# Sitemap\n\n## Home\n## Treatments\n## Team\n## Contact\n"
+TRACEABLE_TRIAGE = """\
+| Section | Cold designer produced | Signed sitemap says | Disposition |
+| --- | --- | --- | --- |
+| Pricing | three tiers | absent | brief unclear — amended |
+| Emergency care | its own page | folded into Treatments | acceptable variance — scope |
+| Referrals | a page | absent | acceptable variance — later phase |
+"""
+
+
+def b4_check() -> str:
+    """The committed b4 assertion body, read from the suite the runner grades."""
+    suite = json.loads(COMMANDS_EVALS.read_text(encoding="utf-8"))
+    checks = [
+        a["check"]
+        for case in suite["evals"]
+        for a in case["assertions"]
+        if a["id"] == "b4" and a.get("check")
+    ]
+    assert len(checks) == 1, f"expected exactly one b4 check, found {len(checks)}"
+    return checks[0]
+
+
+def grade_b4(tmp_path: Path, plan: str, triage: str, sitemap: str = SIGNED_SITEMAP) -> int:
+    definition = tmp_path / "clients" / "northgate-clinic" / "site" / "definition"
+    write(definition / "cold-designer-plan.md", plan)
+    write(definition / "sitemap.md", sitemap)
+    write(definition / "cold-designer-triage.md", triage)
+    return subprocess.run(
+        ["bash", "-c", b4_check()], cwd=tmp_path, capture_output=True, text=True, timeout=120
+    ).returncode
+
+
+def test_b4_refuses_a_title_and_metadata_bullets_as_a_section_plan(tmp_path):
+    """The regression I3-F1 found: a document title is not a section and neither is a
+    metadata bullet, so `# Cold Designer Plan` plus `- Audience` and `- Constraints` once
+    counted as three sections the sitemap lacked and awarded a pass with no plan at all."""
+    assert (
+        grade_b4(
+            tmp_path,
+            "# Cold Designer Plan\n\n- Audience\n- Constraints\n",
+            "| Section | Difference | Disposition |\n| --- | --- | --- |\n"
+            "| Audience | differs | brief unclear — amended |\n"
+            "| Constraints | differs | brief unclear — amended |\n",
+        )
+        == 1
+    )
+
+
+def test_b4_refuses_metadata_bullets_padding_a_thin_heading_plan(tmp_path):
+    """The same defect one step along: a plan with real headings must be judged on those
+    headings, or three preamble bullets top up a two-section restatement of the sitemap."""
+    assert (
+        grade_b4(
+            tmp_path,
+            "# Cold Designer Plan\n\n- Audience\n- Constraints\n- Tone\n\n## Home\n## Treatments\n",
+            "| Section | Difference | Disposition |\n| --- | --- | --- |\n"
+            "| Home | none | acceptable variance — same |\n"
+            "| Treatments | none | acceptable variance — same |\n",
+        )
+        == 1
+    )
+
+
+def test_b4_still_passes_a_genuinely_independent_plan(tmp_path):
+    """The check has to keep admitting what it exists to admit: a real section-level plan
+    that diverges from the signed sitemap, with triage rows tracing back to its sections."""
+    plan = (
+        "# Cold Designer Plan\n\n"
+        "## Home\n## Treatments\n## Pricing\n## Emergency care\n## Referrals\n"
+    )
+    assert grade_b4(tmp_path, plan, TRACEABLE_TRIAGE) == 0
+
+
+def test_b4_still_passes_a_bulleted_plan_that_diverges(tmp_path):
+    """A cold designer writes prose, not a schema. With no headings below the title the
+    bullets are the section inventory, so a bulleted plan that genuinely diverges passes."""
+    plan = (
+        "# Cold Designer Plan\n\n- Home\n- Treatments\n- Pricing\n- Emergency care\n- Referrals\n"
+    )
+    assert grade_b4(tmp_path, plan, TRACEABLE_TRIAGE) == 0

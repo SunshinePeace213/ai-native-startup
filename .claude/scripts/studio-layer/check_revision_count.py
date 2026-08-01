@@ -115,6 +115,23 @@ def signed_hash(project: Path, artifact: str) -> tuple[int, str]:
     raise ParseError(f"{path}: no approved-artifact table with 'Artifact' and 'SHA-256' columns")
 
 
+def contained(project: Path, reference: str) -> Path | None:
+    """Where a change-order reference resolves, or None when it leaves the project.
+
+    A change order buys rounds for the one engagement whose client approved it, so a
+    reference may only name a file inside that project. An absolute path, a `..` segment,
+    or a symlink out of the tree would otherwise let another client's order -- or any file
+    on disk carrying the right four fields -- pay for these rounds. Same rule, and the same
+    shape, as check_gate_signoff.py's artifact containment.
+    """
+    path = Path(reference)
+    if path.is_absolute() or ".." in path.parts:
+        return None
+    root = project.resolve()
+    target = (project / path).resolve()
+    return target if root in target.parents else None
+
+
 def allowance(project: Path) -> int:
     """The signed allowance, refused unless the brief still hashes to what P2 approved."""
     path = project / BRIEF
@@ -260,8 +277,15 @@ def main(argv: list[str]) -> int:
                 "and names no change order"
             )
             continue
-        order = project / reference
-        _display, uses = excess.setdefault(order.resolve(), (order, []))
+        target = contained(project, reference)
+        if target is None:
+            failures.append(
+                f"{log_path}:{line_no}: round {number} names the change order {reference}, "
+                "which resolves outside the project -- an order buys rounds only for the "
+                "engagement whose client approved it"
+            )
+            continue
+        _display, uses = excess.setdefault(target, (project / reference, []))
         uses.append((line_no, number))
 
     for order, uses in excess.values():
