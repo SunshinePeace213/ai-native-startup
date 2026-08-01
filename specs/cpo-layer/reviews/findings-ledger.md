@@ -270,8 +270,11 @@ passed / 2 skipped with all seven plan-local checks at exit 0.
 **The merge itself was not run by the review session** — that is `/harness-layer:harness-ship`,
 which merges with `gh pr merge --squash --match-head-commit <approved-sha>`.
 
-- **SHA to merge: `510e536`** — the current head. `--match-head-commit` aborts on any
-  mismatch, so this must be the head at merge time; re-read it if anything lands after this.
+- **The SHA to merge lives in the PR's `## Build Status` Ready row**, not here. Any commit
+  that records the head changes the head, so a SHA written into this file is stale the moment
+  it lands. The PR body is editable without moving the branch, which is why `pr-process.md`
+  puts it there.
 - **Last Codex-reviewed head: `00771ca`** (round 4). Everything after it — `16617a2` and
-  `7e5fe38`, the round-4 fixes, plus `510e536` recording this override — is what the override
-  covers. The two values differ on purpose, and conflating them is what the override is.
+  `7e5fe38` carrying the round-4 fixes, plus the commits recording this override — is what the
+  override covers. That gap between "last reviewed" and "head at merge" *is* the override, and
+  conflating the two would hide it.
