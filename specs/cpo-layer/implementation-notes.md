@@ -355,3 +355,55 @@
     draft.
   - After the round-2 fixes: `uv run pytest` → `1030 passed, 2 skipped`; both ruff commands
     clean; all seven plan-local checks exit 0; `run_command_evals.py --lint` exit 0.
+- **2026-08-01 · review follow-ups · AC16 rate re-established, five follow-ups closed** — run by
+  the review lead, after the account session limit cleared.
+  - **AC16 now has a valid rate.** The runner was invoked on `.claude/commands/studio-layer` at
+    `-k 3`, executing, with an empty `--workspace` — from a script file, with `EVAL_EXIT=$?`
+    captured on the line straight after it, never through a pipe and with no trailing command to
+    replace the status. → **exit 0**. 2 cases × 3 repeats = 6 `claude -p` invocations.
+    - **`eval-0 p1-writes-discovery-notes-that-pass-the-coverage-check`: PASS, 1.0 (needs 1.0)**
+      — per-run 1.0, 1.0, 1.0.
+    - **`eval-1 p2-triages-every-cold-designer-row`: PASS, 1.0 (needs 1.0)** — per-run 1.0, 1.0,
+      1.0.
+    - Every run scored 6 of 6 expectations with `run_error: null`, so no rate came from the
+      errored-run zeroing path.
+  - **This rate exercises the anchor the void one did not.** The previous 1.0 was measured
+    before `init_git_repo()` existed, in a scratch project that was not a git repository, so
+    `$(git rev-parse --show-toplevel)` collapsed and the graded agent used relative paths
+    (`I2-F1`). This run's outputs land under the scratch project's own
+    `clients/<client>/<project>/` — `eval-1/run-3/outputs/clients/harlow-dental/site/definition/`
+    holds all eight P2 artifacts — which is only reachable if the anchor resolved inside the
+    staged repository. The recorded 0.0 from the session-limit run is void for the same reason
+    the 1.0 was: neither measured the commands.
+  - **`E-F1` — the `run errored (success)` diagnostic.** A clean `claude -p --output-format json`
+    envelope was captured and read before changing anything: it carries `is_error: false`
+    beside `subtype: "success"`, `api_error_status: null`, `terminal_reason: "completed"`. So
+    **`is_error` is the field that signals failure and the runner already keyed the zeroing on
+    it** — a successful run was never zeroed, and the reported symptom was a labelling defect
+    alone. `subtype` records how the turn ended rather than whether it worked, and stays
+    `"success"` through a session-limit abort. `claude_headless` now labels from
+    `api_error_status` then `result`. Two contract tests over recorded envelopes; the
+    aborted-run one was confirmed to fail against the pre-fix code with
+    `assert 'success' == "You've hit your session limit · resets 6:10am (Asia/Singapore)"`,
+    reproducing the reported string exactly.
+  - **`S-F1` — `studio-research-analyst` tool scope.** `disallowedTools: Agent` replaced with
+    `tools: Read, Grep, Glob, Write, Edit, WebFetch, WebSearch`. `Bash` is the capability
+    actually removed, on the one seat that ingests untrusted third-party content.
+    `ac3-role-agents.sh` already accepted the allowlist form and still exits 0; `roster.md`
+    records the exception so it is not normalized back to match its eight siblings.
+  - **`S-F2` — the P7 write waiver.** It was wider than the routing it existed for: the
+    instruction read "edits to files under `.claude/`" while step 2 only ever routes to three
+    `studio-layer` directories. Narrowed to exactly those three, and a second instruction keeps
+    client-supplied text out of files that auto-load in later sessions.
+  - **`S-F3` — the 16 unpaneled candidates.** The scan run's candidate list was not preserved,
+    so they could not be resumed row by row; an independent pass over the same surface was run
+    instead and found no new blocking issue. Method and lenses are in the ledger, recorded as a
+    fresh pass rather than a resumption.
+  - **`destructive-guard` false positive → issue #82**, not fixed here. `_common.py:369` matches
+    a `--yes` flag because `\b` holds between the dash and the word. Reproduced directly against
+    the hook; it also blocked the `gh issue create` writing the issue body, and this very notes
+    entry, because both texts carry the flag near a redirect.
+  - After the follow-ups: `uv run pytest` → **`1032 passed, 2 skipped`** (up from 1030 — the two
+    new envelope tests); `uv run ruff check .` → `All checks passed!`;
+    `uv run ruff format --check .` → `71 files already formatted`; all seven plan-local checks
+    exit 0.
