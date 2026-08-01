@@ -17,7 +17,8 @@ invocable as `/<namespace>:<name>` from `.claude/commands/`.
 
 Per run it stages the whole namespace -- `.claude/{commands,agents,skills,rules,scripts}/
 <namespace>/` plus every file outside it that the namespace reaches (`STAGED_FILES`) --
-into a throwaway project outside this repo, so the command resolves, the roles it spawns
+into a throwaway git repository outside this repo, so the command resolves, the paths it
+anchors on `git rev-parse --show-toplevel` land inside that project, the roles it spawns
 exist, the check scripts it calls are on disk, the four hard-gate commands find the hook
 their frontmatter registers, and the staged rules' outbound links resolve, while the
 repo's own rules never contaminate the run. The case's prompt is invoked verbatim as a
@@ -44,6 +45,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 STAGED_NAMESPACE_DIRS = ("commands", "agents", "skills", "rules", "scripts")
+# Directories the run never produced: the namespace we staged, and the git metadata of the
+# scratch repository the phase commands anchor their paths on.
+UNPRODUCED_DIRS = (".claude", ".git")
 # Files outside the namespace that the staged files reference by path, relative to
 # `.claude/`. Each is load-bearing: the hard-gate commands register the hook, and the two
 # staged studio rules link out to these rules, so omitting one stages a broken dependency.
@@ -104,6 +108,22 @@ def scalar_id(value: object) -> bool:
     return isinstance(value, (str, int)) and not isinstance(value, bool)
 
 
+def canonical_id(value: object) -> str:
+    """The one form every consumer sees. A run directory is named from an id, a rate map is
+    keyed by one, and the judge returns every id as a string -- so `0` and `"0"` would name
+    the same directory while passing the duplicate check, and an integer assertion id would
+    match no verdict the judge ever returns."""
+    return str(value)
+
+
+def canonicalize_ids(cases: list[dict]) -> None:
+    """Apply `canonical_id` once, in place, before anything reads an id."""
+    for case in cases:
+        case["id"] = canonical_id(case["id"])
+        for assertion in case.get("assertions", []):
+            assertion["id"] = canonical_id(assertion["id"])
+
+
 def validate(suite: object, path: Path) -> list[str]:
     """Every way the suite can be unrunnable, reported at once rather than one per run."""
     if not isinstance(suite, dict):
@@ -118,7 +138,7 @@ def validate(suite: object, path: Path) -> list[str]:
         problems.append(f"{path} has no 'evals' array")
         return problems
 
-    seen_cases: set[object] = set()
+    seen_cases: set[str] = set()
     for case in evals:
         if not isinstance(case, dict):
             problems.append(f"{path} has a case that is not an object")
@@ -133,13 +153,13 @@ def validate(suite: object, path: Path) -> list[str]:
                 f"{path} case {label!r} records a non-scalar id -- it cannot name a run "
                 "directory or key a pass rate"
             )
-        elif case_id in seen_cases:
+        elif canonical_id(case_id) in seen_cases:
             problems.append(
                 f"{path} reuses case id {case_id!r} -- the two would share run directories "
                 "and one pass rate would overwrite the other"
             )
         elif case_id not in (None, ""):
-            seen_cases.add(case_id)
+            seen_cases.add(canonical_id(case_id))
         prompt = case.get("prompt")
         # The runner invokes the prompt verbatim; one that is not a slash command
         # evaluates the model's general behavior rather than the command under test.
@@ -156,7 +176,7 @@ def validate(suite: object, path: Path) -> list[str]:
         if not isinstance(assertions, list) or not assertions:
             problems.append(f"{path} case {label!r} has no assertions -- it grades nothing")
             continue
-        seen = set()
+        seen: set[str] = set()
         for assertion in assertions:
             if not isinstance(assertion, dict) or not assertion.get("id"):
                 problems.append(f"{path} case {label!r} has an assertion with no id")
@@ -169,17 +189,41 @@ def validate(suite: object, path: Path) -> list[str]:
                 continue
             if not assertion.get("text"):
                 problems.append(f"{path} case {label!r} assertion {assertion['id']!r} has no text")
-            if assertion["id"] in seen:
+            if canonical_id(assertion["id"]) in seen:
                 problems.append(
                     f"{path} case {label!r} reuses assertion id {assertion['id']!r} -- "
                     "one verdict would overwrite the other"
                 )
-            seen.add(assertion["id"])
+            seen.add(canonical_id(assertion["id"]))
             if "check" in assertion and not str(assertion["check"]).strip():
                 problems.append(
                     f"{path} case {label!r} assertion {assertion['id']!r} has an empty check"
                 )
     return problems
+
+
+def init_git_repo(root: Path) -> None:
+    """Make `root` its own git top level, which is what the commands' paths are anchored on.
+
+    Every phase command writes to `$(git rev-parse --show-toplevel)/clients/<project>/`. In a
+    directory that is no repository that command substitution fails and the anchor collapses
+    to `/clients/...` at the filesystem root, so the run would be graded on paths it could
+    never write. The init is hermetic -- no commit, no network, and an identity written into
+    the repository's own config so nothing depends on the host's global git settings.
+    """
+    env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull}
+    commands = (
+        ["git", "init", "--quiet", "--initial-branch", "main"],
+        ["git", "config", "--local", "user.name", "studio command evals"],
+        ["git", "config", "--local", "user.email", "studio-evals@example.invalid"],
+    )
+    for cmd in commands:
+        proc = subprocess.run(cmd, cwd=root, env=env, capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise SuiteError(
+                f"could not make {root} a git repository ({' '.join(cmd)} exited "
+                f"{proc.returncode}): {proc.stderr.strip()}"
+            )
 
 
 def stage_project(commands_dir: Path, root: Path) -> None:
@@ -204,6 +248,7 @@ def stage_project(commands_dir: Path, root: Path) -> None:
             raise SuiteError(f"{src} is missing -- the staged project would be incomplete")
         (dest / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dest / rel)
+    init_git_repo(root)
 
 
 def claude_headless(
@@ -261,12 +306,12 @@ def claude_headless(
 
 
 def collect_outputs(root: Path, outputs_dir: Path) -> list[Path]:
-    """Copy what the run wrote into the scratch project, minus the staged namespace."""
+    """Copy what the run wrote into the scratch project, minus what staging put there."""
     outputs_dir.mkdir(parents=True, exist_ok=True)
-    staged = root / ".claude"
+    unproduced = [root / name for name in UNPRODUCED_DIRS]
     produced = []
     for item in sorted(root.rglob("*")):
-        if not item.is_file() or staged == item or staged in item.parents:
+        if not item.is_file() or any(d == item or d in item.parents for d in unproduced):
             continue
         rel = item.relative_to(root)
         target = outputs_dir / rel
@@ -450,6 +495,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     cases = suite["evals"]
+    canonicalize_ids(cases)
     if args.lint:
         print(f"{suite_path}: {len(cases)} case(s), schema valid")
         return 0
@@ -510,7 +556,7 @@ def main(argv: list[str] | None = None) -> int:
         for k in range(1, args.repeats + 1)
     ]
 
-    rates: dict[object, list[float]] = {case["id"]: [] for case in cases}
+    rates: dict[str, list[float]] = {case["id"]: [] for case in cases}
     done = 0
     with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
         futures = {pool.submit(run_one, s): s for s in specs}

@@ -1,0 +1,9 @@
+[S:major] [C:99] .claude/scripts/studio-layer/run_command_evals.py::run_one — Scratch projects are not Git repositories, but every fixed command now depends on `git rev-parse --show-toplevel`; the recorded AC16 runs therefore do not exercise the commands in a valid environment, reopening I1-F1/I1-F7 — fix: initialize each scratch root as a Git repository and add a test proving `rev-parse` resolves to that root.
+
+[S:major] [C:99] .claude/commands/studio-layer/evals/evals.json::b4 — The replacement check accepts three arbitrary headings, a sitemap copy with one extra character, and only one matching word from one triage row, so it can still award I1-F1 a false pass — fix: validate every substantive triage claim against the saved plan and reject normalized near-copies, or leave semantic independence to the file-grounded judge.
+
+[S:major] [C:100] specs/cpo-layer/acceptance-criteria.md::AC8–AC13 — The fix added current pass counts without removing stale counts, leaving the same commands simultaneously recorded as 26/14, 12/9, 9/6, 7/6, and 17/7 passed; this violates verification honesty — fix: remove the five stale evidence blocks.
+
+[S:major] [C:98] specs/cpo-layer/spec.md::Revision allowance/log/change order — The fixed counter now requires a hash-matching P2 sign-off, positive unique contiguous rounds, and per-order capacity, while the current contract still says an existing change order is sufficient and omits the new exit-2 cases — fix: update the schema, CLI exits, and edge cases to match the implemented rules.
+
+[S:minor] [C:100] .claude/scripts/studio-layer/run_command_evals.py::validate/judge_outputs — IDs may be strings or integers, so case IDs `0` and `"0"` pass lint but share `eval-0`, while integer judge assertion IDs are stringified and then looked up as integers, forcing valid verdicts to fail — fix: require non-empty string IDs or canonicalize IDs once before duplicate checks, path construction, and verdict lookup.

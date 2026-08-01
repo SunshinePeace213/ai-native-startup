@@ -10,6 +10,7 @@ is free. Fixtures live under tmp_path so the suite stays parallel-safe.
 import importlib.util
 import json
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -54,14 +55,14 @@ def fake_namespace(tmp_path: Path) -> Path:
     return claude / "commands" / "studio-layer"
 
 
-def stub_claude(produce: str | None = "produced.md", verdict: bool = True):
+def stub_claude(produce: str | None = "produced.md", verdict: bool = True, judged: object = "a2"):
     """Stand in for `claude -p`: writes one file, then answers as the judge."""
 
     def _stub(prompt, cwd, timeout, model, permission_mode):
         if "Grade each assertion" in prompt:
             return {
                 "result": json.dumps(
-                    {"verdicts": [{"id": "a2", "passed": verdict, "evidence": "stubbed"}]}
+                    {"verdicts": [{"id": judged, "passed": verdict, "evidence": "stubbed"}]}
                 )
             }
         if produce:
@@ -143,6 +144,66 @@ def test_every_relative_link_in_the_staged_namespace_resolves_inside_the_scratch
         resolved = (source.parent / target.split("#")[0]).resolve()
         assert resolved.is_file(), f"{source.name} links to {target}, which is not staged"
         assert resolved.is_relative_to(root.resolve()), f"{target} resolved outside the project"
+
+
+def test_the_staged_project_is_the_git_top_level_the_commands_anchor_on(tmp_path):
+    """Every phase command writes to `$(git rev-parse --show-toplevel)/clients/<project>/`.
+    In a plain directory that substitution fails and the anchor collapses to `/clients/...`
+    at the filesystem root, so the run is graded on paths it could never have written --
+    and a suite that scored well anyway only proved the graded agent ignored the anchor."""
+    root = tmp_path / "scratch"
+    root.mkdir()
+    runner.stage_project(COMMANDS_DIR, root)
+    nested = root / "clients" / "acme" / "site"
+    nested.mkdir(parents=True)
+
+    toplevel = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=nested,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+
+    assert Path(toplevel).resolve() == root.resolve()
+
+
+def test_the_staged_repository_carries_its_own_identity(tmp_path):
+    """The init has to hold on a machine with no global git config -- a run that depends on
+    the host's `user.name` would pass here and fail in CI or on another developer's box."""
+    root = tmp_path / "scratch"
+    root.mkdir()
+    runner.stage_project(COMMANDS_DIR, root)
+
+    local = (root / ".git" / "config").read_text(encoding="utf-8")
+
+    assert "name = studio command evals" in local
+    assert "email = studio-evals@example.invalid" in local
+
+
+def test_a_commands_anchored_project_dir_resolves_inside_the_scratch_project(tmp_path):
+    """The same proof as P2's hook registration, for the anchor every command shares:
+    expand the literal `PROJECT_DIR` a command declares against the staged project and
+    it must land inside it, not at the filesystem root."""
+    root = tmp_path / "scratch"
+    root.mkdir()
+    runner.stage_project(COMMANDS_DIR, root)
+
+    declared = re.search(
+        r"^PROJECT_DIR: `(.+)`$",
+        (COMMANDS_DIR / "p1-discovery.md").read_text(encoding="utf-8"),
+        re.MULTILINE,
+    ).group(1)
+    expanded = subprocess.run(
+        ["bash", "-c", f'printf "%s" "{declared.replace("$1", "acme/site")}"'],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+
+    assert expanded, f"{declared} expanded to nothing in the scratch project"
+    assert Path(expanded).resolve() == (root / "clients" / "acme" / "site").resolve()
 
 
 def test_staging_refuses_a_namespace_missing_a_directory(tmp_path):
@@ -346,6 +407,44 @@ def test_lint_rejects_two_cases_sharing_an_id(tmp_path):
 
     assert any("reuses case id" in problem for problem in problems), problems
     assert runner.main([str(commands_dir), "--lint"]) == 2
+
+
+def test_lint_rejects_two_cases_whose_ids_differ_only_in_type(tmp_path):
+    """`0` and `"0"` name the same `eval-0` directory, so JSON's two spellings of one id
+    collide exactly as a literal duplicate does -- and a type-sensitive check waves it
+    through, which is worse than the duplicate it was written to catch."""
+    commands_dir = fake_namespace(tmp_path)
+    write_suite(commands_dir, [CASE, {**CASE, "id": "0", "name": "the-same-id-as-a-string"}])
+
+    problems = runner.validate(
+        json.loads((commands_dir / "evals" / "evals.json").read_text()),
+        commands_dir / "evals" / "evals.json",
+    )
+
+    assert any("reuses case id" in problem for problem in problems), problems
+    assert runner.main([str(commands_dir), "--lint"]) == 2
+
+
+def test_an_integer_assertion_id_matches_the_verdict_the_judge_returns(tmp_path, monkeypatch):
+    """The judge answers in JSON and its ids are read back as strings, so an integer id in
+    the suite would match no verdict and the assertion would be recorded as ungraded --
+    a silent failure for an assertion the judge actually passed."""
+    commands_dir = fake_namespace(tmp_path)
+    case = {
+        **CASE,
+        "assertions": [
+            {"id": 1, "text": "the note exists", "check": "test -f produced.md"},
+            {"id": 2, "text": "the note reads as a written statement"},
+        ],
+    }
+    write_suite(commands_dir, [case])
+    monkeypatch.setattr(runner, "claude_headless", stub_claude(judged=2))
+
+    code = runner.main([str(commands_dir), "-k", "1", "--yes", "--workspace", str(tmp_path / "ws")])
+
+    assert code == 0
+    grading = json.loads((tmp_path / "ws" / "eval-0" / "run-1" / "grading.json").read_text())
+    assert [e["evidence"] for e in grading["expectations"]][1] == "stubbed"
 
 
 @pytest.mark.parametrize(

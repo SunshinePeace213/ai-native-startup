@@ -303,11 +303,22 @@ diff row; `Disposition` must be `brief unclear — amended` or begin `acceptable
 ```
 
 **Revision allowance** — declared once in the signed project brief as a line matching
-`- **Revision rounds:** <integer> (plus polish)`. Its absence is a missing baseline, not a
-zero allowance.
+`- **Revision rounds:** <integer> (plus polish)`, in exactly that form. Its absence is a
+missing baseline, not a zero allowance. The number counts only from a brief the client
+actually signed: `definition/project-brief.md` must appear in the P2 sign-off's
+approved-artifact table, that row's SHA must be 64 hex characters, and the brief's current
+SHA-256 must still equal it. A missing P2 sign-off, a sign-off with no `Artifact`/`SHA-256`
+table, a table that does not list the brief, a malformed SHA, and a hash mismatch each exit
+2 — raising the number after the client signed buys no rounds.
 
-**Revision log** — `clients/<c>/<p>/prototype/revision-log.md`. One row per round; a round
-whose number exceeds the allowance must name a change-order file that exists.
+**Revision log** — `clients/<c>/<p>/prototype/revision-log.md`. The first table carrying a
+`Round` column is the log; one row per round. Round numbers are counted rather than trusted:
+each must parse as an integer, and across the log they must be positive, unique, and
+contiguous from 1. A non-numeric, zero, negative, repeated, or skipped number exits 2 — a log
+numbered 1, 1, 1 stays inside any allowance forever and one that jumps 1, 2, 7 hides whatever
+happened in between, so neither yields a round count to compare against the allowance. A round
+whose number exceeds the allowance must name a project-relative change-order file that exists
+and still has capacity for it.
 
 ```markdown
 | Round | Date | Requested | Change order |
@@ -327,9 +338,12 @@ counter parses them, so an unsigned or costless change order does not buy a roun
 - **Approved by:** Jordan Reyes · 2026-08-14
 ```
 
-`Requested`, `Cost — rounds` (an integer), `Cost — time`, and `Approved by` (a name and a
-date) must each be present and non-empty. Referenced by the revision log; the signed brief is
-amended by reference and never re-signed, so the P2 sign-off hashes stay valid.
+`Requested`, `Cost — rounds` (an integer ≥ 1), `Cost — time`, and `Approved by` (a name and a
+date) must each be present and non-empty. An order buys exactly the rounds its `Cost — rounds`
+declares: one declaring N covers at most N rounds past the allowance, and the N+1st round
+naming it fails. Presence is not payment — a single complete change order does not license
+unlimited excess rounds. Referenced by the revision log; the signed brief is amended by
+reference and never re-signed, so the P2 sign-off hashes stay valid.
 
 **Component inventory** — `clients/<c>/<p>/structure/inventory.md`. The authoritative list of
 what the handoff must cover. Without it the states matrix and contrast checks would quantify
@@ -414,9 +428,11 @@ uv run --script .claude/scripts/studio-layer/check_revision_count.py <project-di
 
 Exit 0 = pass. Exit 1 = a countable failure, with `file:line` diagnostics on stdout naming
 each failing cell, pair, dimension, or round. Exit 2 = the check could not run its
-arithmetic: a missing or unreadable argument, an unparseable table, a malformed hex value, or
-a missing revision allowance. The distinction is what makes exit 1 trustworthy — a typo must
-never be reported as a contrast failure a designer would chase.
+arithmetic: a missing or unreadable argument, an unparseable table, a malformed hex value, a
+missing revision allowance, a project brief the P2 sign-off does not cover or whose hash no
+longer matches, or a revision log whose round numbers are not positive, unique, and contiguous
+from 1. The distinction is what makes exit 1 trustworthy — a typo must never be reported as a
+contrast failure a designer would chase.
 
 The scripts are plain CLIs, not hooks: given a target that does not exist they exit 2. Only
 the Stop hook has the fail-open-when-there-is-no-client behavior, because only the hook runs
@@ -570,10 +586,17 @@ Existing call sites pass no `args` and are unaffected.
 - **The inventory is complete but the design drifts below it** — the matrix and contrast checks
   fail naming each missing pair. Over-declaring in the inventory costs work rather than hiding
   it, which is the direction the incentive should point.
-- **Revision round past the allowance with a change order present** — passes. Without one —
-  fails, naming the round and the expected change-order path.
+- **Revision round past the allowance naming a change order that still has capacity** —
+  passes. Naming none, naming one that is missing or incomplete, or being the N+1st round
+  against an order that bought N — fails, naming the round and the change-order path.
 - **The signed brief declares no revision allowance** — the counter exits 2: the baseline is
   missing, which is a different defect from exceeding it.
+- **The brief was never signed at P2, or was edited after it was** — the counter exits 2
+  rather than reading the number it now carries. An allowance no client approved is not a
+  baseline, and re-signing is what makes a new one countable.
+- **The revision log repeats, skips, or zeroes a round number** — the counter exits 2. The log
+  yields no round count, so an overrun reported from it would be arithmetic on a number the
+  log does not contain.
 - **Re-running any check or the hook on unchanged inputs** — same exit code, no writes. All
   five are read-only and idempotent.
 - **A role's agent file is deleted but its roster row remains** — the drift test fails naming

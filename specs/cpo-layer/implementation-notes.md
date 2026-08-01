@@ -332,3 +332,26 @@
     notification for the wrapper reported exit 0 while the eval had actually returned 1,
     because a trailing `echo` supplied the compound's status — the same masking the build hit
     with `tail`. The rate in this entry comes from the runner's own recorded exit code.
+- **2026-08-01 · review · codex implementation round 2 (delta on `339b2c5..88530d1`)** —
+  `gpt-5.6-sol` at `high`. 5 findings: 4 blocking, 1 advisory. Every round-1 disposition held.
+  Two findings were regressions the round-1 fixes introduced and one was the review lead's own
+  editing error; all three are recorded as such.
+  - **`I2-F3` was mine.** The edit that rewrote each AC block's node ids inserted the new
+    evidence paragraph without removing the old one, so five blocks recorded the same command
+    as two different results (26/14, 12/9, 9/6, 7/6, 17/7). Removed, then every AC command was
+    re-run and its claimed count compared against the observed one — all ten now agree, and
+    AC2's `pass: green` is correct by design because that file is parametrized.
+  - **`I2-F1` is the one that matters.** The eval scratch project was not a git repository,
+    while every command now anchors on `$(git rev-parse --show-toplevel)`. Confirmed directly:
+    `cd /tmp/studio-command-evals-*/eval-1/run-3 && git rev-parse --show-toplevel` →
+    `fatal: not a git repository`. The suite had still scored 1.0, which means the graded agent
+    ignored the literal anchor and used relative paths — so **the 1.0 measured the commands'
+    output but never exercised the anchoring**. The runner now `git init`s each staged root.
+  - **AC16 has no valid rate as of this run.** The re-run needed to replace that 1.0 could not
+    be produced: all six `claude -p` invocations returned `You've hit your session limit ·
+    resets 6:10am (Asia/Singapore)`. The runner marked every run errored and scored 0.0, which
+    is correct behavior on a failed run and **not** evidence of a defect — every deterministic
+    `check` in those runs still exited 0. The rate must be re-established before the PR leaves
+    draft.
+  - After the round-2 fixes: `uv run pytest` → `1030 passed, 2 skipped`; both ruff commands
+    clean; all seven plan-local checks exit 0; `run_command_evals.py --lint` exit 0.

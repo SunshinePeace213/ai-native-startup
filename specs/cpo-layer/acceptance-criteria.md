@@ -189,8 +189,6 @@ and exit 0 on pass.
   brand-new project is gated rather than defined away as "no projects"; the three path cases
   prove a signature cannot approve a file outside the engagement it signs; and the nine
   required-artifact cases prove a gate cannot close on a signature over some unrelated file.
-  pass: 14 passed. `test_project_without_signoff_dir_still_blocks` is the one that proves a
-  brand-new project is gated rather than defined away as "no projects".
 
 ### AC9 — the cold-designer triage gates p2, and the QA report gates p6
 
@@ -200,10 +198,6 @@ and exit 0 on pass.
   `test_p6_inventory_mutated_after_p3_signoff_blocks` proves the signature is re-checked at P6
   rather than trusted from three phases back, and the last three prove a QA row the gate cannot
   read blocks rather than reading as resolved.
-  pass: 9 passed. The diff itself never gates; only the triage document does. The three p3
-  cases are what make the P6 denominator client-approved rather than self-declared, and
-  `test_p6_inventory_mutated_after_p3_signoff_blocks` is the one that proves the signature is
-  re-checked at P6 rather than trusted from three phases back.
 
 ### AC10 — the new hook is registered, cataloged, and dispositioned
 
@@ -217,7 +211,6 @@ and exit 0 on pass.
   pass: 9 passed. Three of them stop a vacuous pass; the duplicate-row case stops a filled row
   hiding an earlier blank one, and the short-row cases prove a malformed table exits 2 rather
   than reporting a design failure a designer would chase.
-  pass: 6 passed. The last three are what stop a vacuous pass.
 
 ### AC12 — contrast and tap targets are computed, not asserted
 
@@ -225,8 +218,6 @@ and exit 0 on pass.
   pass: 7 passed. The first pins the arithmetic against a hand-computed value; `test_malformed_hex_exits_2`
   proves a typo is never reported as a contrast failure; and the last proves a token merely
   mentioned in `Used for` is not counted as covered.
-  pass: 6 passed. The first pins the arithmetic against a hand-computed value; the last
-  proves a typo is never reported as a contrast failure.
 
 ### AC13 — the revision count is arithmetic
 
@@ -236,8 +227,6 @@ and exit 0 on pass.
   from the brief rather than hard-coded, while `test_brief_edited_after_signature_exits_2` proves
   editing it after the client signed buys nothing; and the four misnumbered cases prove the
   rounds are counted rather than taken on trust.
-  pass: 7 passed. The two middle cases stop an empty file from buying a round; the
-  allowance-change case proves the number is re-derived from the brief rather than hard-coded.
 
 ### AC15 — design QA blocks handoff, and no role spawns subagents
 
@@ -265,12 +254,13 @@ and exit 0 on pass.
   pass: every case clears its recorded pass rate over the 3 runs; the rates are recorded in
   `implementation-notes.md`. This is the runner that makes the commands suite executable
   rather than prose — the meta-skills runner cannot reach a command directory.
-- `uv run pytest "tests/harness-layer/studio-layer/test_run_command_evals.py::test_every_relative_link_in_the_staged_namespace_resolves_inside_the_scratch_project" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_an_errored_run_scores_zero_whatever_its_partial_files_satisfy" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_a_workspace_holding_an_earlier_run_exits_two" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_lint_rejects_two_cases_sharing_an_id" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_lint_rejects_an_id_that_could_not_name_a_run_or_key_a_verdict"` —
-  pass: 6 passed — the last id is parametrized over two malformed shapes. These pin the
-  runner's own contract: the staged scratch project has no
-  dangling rule link, a run the CLI reported as errored scores zero however many partial
-  files it left behind, a reused workspace is refused rather than graded against stale
-  output, and an id that could not name a run directory is rejected at lint time.
+- `uv run pytest "tests/harness-layer/studio-layer/test_run_command_evals.py::test_every_relative_link_in_the_staged_namespace_resolves_inside_the_scratch_project" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_an_errored_run_scores_zero_whatever_its_partial_files_satisfy" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_a_workspace_holding_an_earlier_run_exits_two" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_lint_rejects_two_cases_sharing_an_id" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_lint_rejects_an_id_that_could_not_name_a_run_or_key_a_verdict" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_the_staged_project_is_the_git_top_level_the_commands_anchor_on" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_the_staged_repository_carries_its_own_identity" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_a_commands_anchored_project_dir_resolves_inside_the_scratch_project" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_lint_rejects_two_cases_whose_ids_differ_only_in_type" "tests/harness-layer/studio-layer/test_run_command_evals.py::test_an_integer_assertion_id_matches_the_verdict_the_judge_returns"` —
+  pass: 11 passed — one id is parametrized over two malformed shapes. These pin the runner's
+  own contract: the staged scratch project is a git repository whose top level is what the
+  commands' `$(git rev-parse --show-toplevel)` anchor resolves to, it has no dangling rule
+  link, a run the CLI reported as errored scores zero however many partial files it left
+  behind, a reused workspace is refused rather than graded against stale output, and an id
+  that could not name a run directory or key a verdict is rejected at lint time.
 - `bash specs/cpo-layer/checks/ac16-evals-are-runnable.sh` — pass: exit 0. Asserts the eval
   files exist in the harness's `evals/evals.json` schema (a `skill_name`, an `evals` array,
   and every entry carrying `id`, `name`, `prompt`, and a non-empty `assertions` list), so the

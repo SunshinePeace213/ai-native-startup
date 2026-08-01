@@ -157,3 +157,44 @@ Two caveats recorded rather than smoothed over:
 Closest calls, both voted down 1-of-3 and carried to follow-ups: `studio-research-analyst.md`
 grants every inherited tool to the one role that audits client-named third-party sites, and
 `p7-retro.md` is the only phase waiving the write-only-under-`PROJECT_DIR` rule.
+
+### Implementation round 2 — delta on `339b2c5..88530d1`
+
+`gpt-5.6-sol` at `high` (one effort step down from round 1, per the gate). 5 findings:
+4 blocking, 1 advisory. **Every round-1 disposition held; nothing was reopened without new
+evidence.** Two findings are regressions the round-1 fixes introduced, and one is the review
+lead's own editing error — all three are recorded as such rather than attributed elsewhere.
+
+| ID | Sev | Conf | Finding | Disposition | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| I2-F1 | major | 99 | The eval scratch project is not a git repository, but every command now anchors on `git rev-parse --show-toplevel`, so the recorded AC16 runs never exercised the commands in a valid environment — reopening `I1-F1` and `I1-F7` | fixed | `init_git_repo()` makes each staged scratch root a real git repository — hermetic (`GIT_CONFIG_GLOBAL`/`GIT_CONFIG_SYSTEM` → devnull, local identity), so nothing depends on the host's git config — and `collect_outputs` excludes `.git` and `.claude` so the new tree is not handed to the judge as "files the run produced". Three guards added, the sharpest being `test_a_commands_anchored_project_dir_resolves_inside_the_scratch_project`, which parses the literal `PROJECT_DIR:` line out of `p1-discovery.md` and expands it in the staged root; with the init removed it fails with the reported symptom, `PosixPath('/clients/acme/site')` |
+| I2-F2 | major | 99 | The replacement `b4` check accepts three arbitrary headings, a sitemap copy one character long, and a single matching word from one triage row, so it can still award a false pass | fixed | `b4` rebuilt around two discriminating tests: a normalized section set from the plan and the sitemap requiring ≥ 3 sections the plan names and the sitemap does not (so byte-inequality no longer helps), and a traceability test requiring *every* significant word of a triage row's Section cell to appear in the plan, for at least half the rows and no fewer than 2. A missing `sitemap.md` now fails loudly instead of silently skipping. Proven against nine fixtures: the old check false-passed a one-character-different sitemap copy, three arbitrary headings sharing one word with a row, and a triage with one incidentally-matching row; the new one rejects all three and still passes a genuine plan against a prose sitemap |
+| I2-F3 | major | 100 | Five AC blocks carry both the new and the stale pass counts (26/14, 12/9, 9/6, 7/6, 17/7), so the same command is recorded as two different results | fixed | **The review lead's own error** — the edit that rewrote each block's node ids inserted the new evidence paragraph without removing the old one. Both were verified present, the five stale paragraphs were removed, and every AC command was re-run to confirm the surviving count is the true one |
+| I2-F4 | major | 98 | The counter now demands a hash-matching P2 sign-off, contiguous round numbers and per-order capacity, while spec.md still says an existing change order suffices and omits the new exit-2 cases | fixed | spec.md's revision contract rewritten to match what `check_revision_count.py` enforces — the signed-and-hash-verified brief, positive/unique/contiguous round numbers, `Cost — rounds` ≥ 1, per-order capacity, the exact allowance line, the enlarged exit-2 set, and two new edge-case rows. Written as specification rather than changelog |
+| I2-F5 | minor | 100 | Case ids `0` and `"0"` both lint but collide on one run directory, and integer judge-assertion ids are written as strings then looked up as integers | advisory | Below the blocking bar; folded into the `I2-F1` fix since the same validation path was being rewritten |
+
+`I2-F1` is the consequential one and it was confirmed directly rather than taken on report:
+`cd /tmp/studio-command-evals-ybuu5ny6/eval-1/run-3 && git rev-parse --show-toplevel` returns
+`fatal: not a git repository`. The suite nonetheless scored 1.0, which means the graded agent
+used relative paths rather than the literal anchor — so the 1.0 was real as a measure of the
+commands' *output* but did not validate the anchoring. The anchor itself stays correct for a
+real session, where the worktree is a git repository; the eval environment was the unfaithful
+part, so the runner is fixed rather than the commands.
+
+**The round-2 fixes were not re-verified by a further Codex round** — this run's 2-round
+allowance is spent. That is one of the two things the human gate is being asked to accept.
+
+**The other is AC16's evidence.** `I2-F1` was fixed, and fixing it *invalidated the 1.0 that
+closed `I1-F1`*: that rate was measured in a scratch project which was not a git repository, so
+the graded agent used relative paths rather than the anchor the commands now carry. A re-run is
+required for the rate of record, and it could not be produced — all six `claude -p` invocations
+returned `You've hit your session limit · resets 6:10am (Asia/Singapore)`, scoring 0.0 with the
+runner correctly marking every run errored. That 0.0 is an artifact of the account limit, not a
+regression: every deterministic `check` in those runs still exited 0. **So AC16 currently has no
+valid recorded rate — neither the 1.0 nor the 0.0 stands** — and the PR is left draft for that
+reason.
+
+One follow-up the failed run surfaced: the runner's diagnostic reads `run errored (success)`,
+because the envelope field it treats as an error carries the literal string `success`. The
+zeroing behavior was right here, but the field it keys on wants checking against a genuinely
+clean run before the next eval is trusted.
