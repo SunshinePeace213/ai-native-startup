@@ -11,7 +11,7 @@
 - **Branch:** feat/80-cpo-layer
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/cpo-layer
 - **Review profile:** kb-grounded
-- **PR:** #81 (draft) — <https://github.com/SunshinePeace213/ai-native-startup/pull/81>
+- **PR:** #81 (ready for review) — <https://github.com/SunshinePeace213/ai-native-startup/pull/81>
 - **Hand-off SHA:** `1aa2497f85ae89c828987117cd434c71ad037c9a` — the last implementation push
 - **Build brief:** <https://claude.ai/code/artifact/78008e56-694c-4a2d-b233-774912a08bb6>
 - **Known gap for review:** AC16's commands-suite `manual:` eval does not meet its bar —
