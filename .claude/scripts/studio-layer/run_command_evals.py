@@ -300,8 +300,15 @@ def claude_headless(
         envelope = payload
 
     envelope.setdefault("duration_ms", elapsed_ms)
+    # `is_error` is the only field that separates a failed run from a clean one. `subtype`
+    # records how the turn ended, not whether it worked: it reads "success" on a clean run
+    # and on a run the CLI aborted alike -- a session limit keeps that same subtype and
+    # flips `is_error` -- so keying on it would either zero every run that worked or label
+    # a failure `run errored (success)`. The flag decides; the reason comes from the fields
+    # that carry one.
     if envelope.get("is_error"):
-        envelope["error"] = envelope.get("subtype") or "claude reported an error"
+        reason = envelope.get("api_error_status") or envelope.get("result") or ""
+        envelope["error"] = str(reason).strip()[:200] or "claude reported an error"
     return envelope
 
 

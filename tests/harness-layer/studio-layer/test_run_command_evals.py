@@ -327,6 +327,57 @@ def test_an_errored_run_scores_zero_whatever_its_partial_files_satisfy(tmp_path,
     assert not any(e["passed"] for e in grading["expectations"])
 
 
+def canned_cli(monkeypatch, *messages):
+    """Drive `claude_headless` against a recorded CLI envelope, spending nothing."""
+
+    def fake_run(cmd, **kwargs):
+        return subprocess.CompletedProcess(cmd, 0, json.dumps(list(messages)), "")
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+
+def test_a_clean_envelope_is_never_treated_as_an_errored_run(tmp_path, monkeypatch):
+    """The envelope a working `claude -p` returns, recorded from the CLI: `is_error` false
+    beside `subtype: "success"`. Reading failure off the subtype would zero every run that
+    worked, and a zeroed clean run is indistinguishable from a command that never ran."""
+    canned_cli(
+        monkeypatch,
+        {"type": "system", "subtype": "init"},
+        {
+            "type": "result",
+            "subtype": "success",
+            "is_error": False,
+            "api_error_status": None,
+            "result": "ok",
+        },
+    )
+
+    envelope = runner.claude_headless("hi", tmp_path, 60, None, "bypassPermissions")
+
+    assert "error" not in envelope
+    assert envelope["result"] == "ok"
+
+
+def test_an_aborted_run_is_labelled_with_why_rather_than_its_subtype(tmp_path, monkeypatch):
+    """The session-limit envelope that voided AC16's first rate: `is_error` true while
+    `subtype` still reads "success". Labelling from the subtype printed `run errored
+    (success)`, which hides the one thing the diagnostic exists to report."""
+    canned_cli(
+        monkeypatch,
+        {
+            "type": "result",
+            "subtype": "success",
+            "is_error": True,
+            "api_error_status": None,
+            "result": "You've hit your session limit · resets 6:10am (Asia/Singapore)",
+        },
+    )
+
+    envelope = runner.claude_headless("hi", tmp_path, 60, None, "bypassPermissions")
+
+    assert envelope["error"] == "You've hit your session limit · resets 6:10am (Asia/Singapore)"
+
+
 def test_a_workspace_holding_an_earlier_run_exits_two(tmp_path, monkeypatch):
     """Run directories are named from the case id, so a second run into the same workspace
     collects its outputs beside the first run's files -- and the checks and the judge both
