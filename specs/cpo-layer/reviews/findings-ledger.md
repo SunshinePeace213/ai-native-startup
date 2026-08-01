@@ -268,5 +268,10 @@ Nothing else is outstanding. Every blocking finding across implementation rounds
 passed / 2 skipped with all seven plan-local checks at exit 0.
 
 **The merge itself was not run by the review session** — that is `/harness-layer:harness-ship`,
-which merges with `gh pr merge --squash --match-head-commit <approved-sha>`. The approved SHA
-is **`7e5fe38`**.
+which merges with `gh pr merge --squash --match-head-commit <approved-sha>`.
+
+- **SHA to merge: `510e536`** — the current head. `--match-head-commit` aborts on any
+  mismatch, so this must be the head at merge time; re-read it if anything lands after this.
+- **Last Codex-reviewed head: `00771ca`** (round 4). Everything after it — `16617a2` and
+  `7e5fe38`, the round-4 fixes, plus `510e536` recording this override — is what the override
+  covers. The two values differ on purpose, and conflating them is what the override is.
