@@ -198,3 +198,11 @@ openai/codex:
     file: openai/codex/cloud-internet-access.md
     topic: "Codex Cloud — internet access: enabling network, domain allowlists, risks"
     fetched: null
+playbooks:
+  - url: null
+    kind: pdf
+    local: playbooks/graph-engineering/Graph-Engineering-Andrew-Ng-Playbook.pdf
+    dir: playbooks/graph-engineering/
+    file: playbooks/graph-engineering/index.md
+    topic: Graph engineering for multi-agent systems — Ng's four patterns, Anthropic's five workflows, loops to graphs
+    fetched: null
