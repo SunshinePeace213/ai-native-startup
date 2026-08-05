@@ -51,6 +51,38 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
 
+  plan-lints:
+    name: plan-lints
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked
+      # Backstop for the in-session lint steps: spec-lint any plan folder whose
+      # plan files this PR touches, impl-lint any whose implementation notes it
+      # touches (i.e. build PRs). Deleted folders and _templates are skipped.
+      - name: Lint changed plan folders
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          changed=$(git diff --name-only "$base"..HEAD -- specs/)
+          plans=$(echo "$changed" | grep -E '^specs/[^/]+/((spec|tasks|acceptance-criteria|decisions)\.md|checks/)' | cut -d/ -f1-2 | sort -u | grep -v '^specs/_templates$' || true)
+          built=$(echo "$changed" | grep -E '^specs/[^/]+/implementation-notes\.md$' | cut -d/ -f1-2 | sort -u || true)
+          for f in $plans; do
+            [ -f "$f/spec.md" ] || continue
+            uv run scripts/spec_lint.py "$f"
+          done
+          for f in $built; do
+            [ -f "$f/spec.md" ] || continue
+            uv run scripts/impl_lint.py "$f" --base "$base"
+          done
+
   commits:
     name: commits
     if: github.event_name == 'pull_request'

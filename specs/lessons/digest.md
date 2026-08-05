@@ -16,7 +16,7 @@ amendment lands, then `amended (<file>)` or `lint added (<script>)`.
 | Surface | Category | Seen | Plans | Disposition |
 | --- | --- | --- | --- | --- |
 | specs/checks | false-passing-validator — a check that passes without proving its criterion (extra rows, substring matches, vacuous quantifiers) | 10× | #80 | watching |
-| specs | unrunnable-validation-command — a named runner cannot reach, collect, or grade its target | 3× | #80 | watching |
+| specs | unrunnable-validation-command — a named runner cannot reach, collect, or grade its target | 3× | #80 | lint added (`scripts/spec_lint.py` command-runnable) |
 | specs/checks | path-containment-missing — a validator joins caller-supplied paths without containment, so traversal or symlinks escape the project root | 3× | #80 | watching |
 | outcome docs | stale-counts — summary, dev report, or spec carrying counts and statuses that contradict the ledger they summarize | 5× | #80 | watching |
 | fix rounds | regression-in-fix — a fix commit introducing new blocking defects the delta round then finds | 4× | #80 | watching |
