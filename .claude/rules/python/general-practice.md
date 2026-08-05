@@ -24,8 +24,8 @@ common case needs no flags.
 - **Run the suite**: `uv run pytest` from the repo root. That alone runs `tests/` in
   parallel (`-n auto`, pytest-xdist), with pytest-sugar output and a 60s per-test timeout
   (pytest-timeout). Reach for a flag only when a case below calls for one.
-- **Foucs one feature**: Do not run full suite during development. 
-  Focus on requirements of the task. Run the full suite before hand off. 
+- **Focus one feature**: Do not run full suite during development.
+  Focus on requirements of the task. Run the full suite before hand off.
 - **Debug one test**: `uv run pytest <file>::<test> -n 0` — `-n 0` disables workers so
   `-s`, breakpoints, and ordered output work.
 - **Coverage**: `uv run pytest --cov=<path> --cov-report=term-missing` (pytest-cov) —
