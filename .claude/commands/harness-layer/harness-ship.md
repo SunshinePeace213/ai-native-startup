@@ -2,7 +2,7 @@
 description: Squash-merges a finished build's PR into main, then removes the worktree and deletes its branches. Final pipeline step after /harness-layer:harness-review flips the PR ready — verifies the PR is ready, green, and at the approved head before merging. Pass a branch or worktree name (no arg infers from the current worktree).
 argument-hint: [branch | worktree-name]
 disable-model-invocation: true
-allowed-tools: Read, Bash(git *), Bash(gh *)
+allowed-tools: Read, Edit, Bash(git *), Bash(gh *)
 model: sonnet
 effort: medium
 ---
@@ -42,10 +42,16 @@ TARGET: $ARGUMENTS — the branch or worktree name to ship. Empty → infer from
    → ABORT.
 4. **Confirm.** `gh pr view <PR> --json state,mergedAt` until it reports `MERGED` — at
    most 5 attempts; still unmerged → report the current state and stop.
-5. **Cleanup.** Only after MERGED, from the primary checkout on `main` (a worktree can't
-   be removed from inside itself): `git worktree remove <path>` →
-   `git branch -D <local_branch>` → `git push origin --delete <remote_branch>` →
-   `git worktree prune`.
+5. **Lessons (light pass).** Only after MERGED, from the primary checkout on `main`
+   (pull first): read the shipped plan's `summary.md` `## Metrics` block and
+   `reviews/findings-ledger.md`; append the plan's row to
+   `specs/lessons/digest.md` `## Metrics log`, and update `## Categories` —
+   bump `Seen`/`Plans` where a recorded class recurred, add a `watching` row for
+   a class seen 2+ times across ledgers. Commit
+   `📝 docs(lessons): fold <slug> into the digest` with `Refs #N`, push to main.
+6. **Cleanup.** From the same checkout (a worktree can't be removed from inside
+   itself): `git worktree remove <path>` → `git branch -D <local_branch>` →
+   `git push origin --delete <remote_branch>` → `git worktree prune`.
 
 ## Report
 
@@ -54,6 +60,7 @@ End the run with exactly one of:
 ```text
 ✅ Shipped
 PR: #<M> — squash-merged, <merge sha> on main
+Lessons: digest metrics row appended <· categories updated: <class> | — none recurring>
 Cleanup: worktree removed, local + remote branch deleted, pruned
 ```
 

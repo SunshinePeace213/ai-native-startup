@@ -13,6 +13,9 @@ variables in changed Python), and notes-evidence presence. Semantic judgment
 belongs to the review lenses, not here.
 
 Usage: impl_lint.py specs/<name>/ [--base <ref>]   (run from the repo root)
+       impl_lint.py --direct [--base <ref>]        (direct lane: commit-format
+                                                    + orphan scan only — no
+                                                    plan folder exists)
 The range is merge-base(<base>, HEAD)..HEAD; <base> defaults to origin/main,
 falling back to main. Commits subject-scoped `docs(discovery)` are exempt from
 the Refs-footer requirement (discovery predates the issue).
@@ -127,23 +130,30 @@ def main() -> int:
         i = args.index("--base")
         base = args[i + 1]
         del args[i : i + 2]
-    if len(args) != 1:
+    direct = "--direct" in args
+    if direct:
+        args.remove("--direct")
+    if len(args) != (0 if direct else 1):
         print(__doc__, file=sys.stderr)
         return 2
-    folder = Path(args[0])
+    folder = None if direct else Path(args[0])
     root = Path.cwd()
 
     rev_range = resolve_range(base)
     failures = 0
     checks = [
-        ("validation-commands", lambda: check_validation_commands(folder, root)),
         (
             "commit-format",
             lambda: check_commits(rev_range) if rev_range else ["no base ref resolves"],
         ),
         ("orphans", lambda: check_orphans(rev_range, root) if rev_range else []),
-        ("notes-evidence", lambda: check_notes(folder)),
     ]
+    if not direct:
+        checks = [
+            ("validation-commands", lambda: check_validation_commands(folder, root)),
+            *checks,
+            ("notes-evidence", lambda: check_notes(folder)),
+        ]
     passed_detail = {
         "validation-commands": "every command passes from the repo root",
         "commit-format": f"range {rev_range} conforms to git-workflow.md",

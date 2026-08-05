@@ -145,6 +145,45 @@ def test_missing_notes_evidence_is_red(tmp_path: Path):
     assert "FAIL notes-evidence" in result.stdout
 
 
+def make_direct_repo(tmp_path: Path, build_message: str) -> Path:
+    """A scratch repo with no plan folder at all — the direct lane's shape."""
+    (tmp_path / "note.md").write_text("seed\n")
+    git(tmp_path, "init", "-q", "-b", "main")
+    commit_all(tmp_path, "🔧 chore(demo): seed\n\nRefs #9")
+    git(tmp_path, "checkout", "-q", "-b", "work")
+    (tmp_path / "note.md").write_text("changed\n")
+    commit_all(tmp_path, build_message)
+    return tmp_path
+
+
+def run_direct(root: Path) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(IMPL_LINT), "--direct"],
+        cwd=root,
+        env=hermetic_env(),
+        capture_output=True,
+        text=True,
+        timeout=110,
+    )
+
+
+def test_direct_mode_runs_only_commit_and_orphan_checks(tmp_path: Path):
+    """The direct lane has no spec folder; --direct must lint without one and
+    must not demand validation commands or notes."""
+    result = run_direct(make_direct_repo(tmp_path, "📝 docs(demo): tweak note\n\nRefs #9"))
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "commit-format" in result.stdout and "orphans" in result.stdout
+    assert "validation-commands" not in result.stdout
+    assert "notes-evidence" not in result.stdout
+
+
+def test_direct_mode_bad_commit_is_red(tmp_path: Path):
+    """--direct still enforces the commit contract — the lane's whole point."""
+    result = run_direct(make_direct_repo(tmp_path, "tweaked the note"))
+    assert result.returncode == 1
+    assert "FAIL commit-format" in result.stdout
+
+
 def test_manual_command_needs_recorded_output(tmp_path: Path):
     """A `manual:` entry passes only when its output shows up in the notes."""
     commands = (
