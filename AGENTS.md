@@ -45,3 +45,10 @@
   - `/harness-layer:harness-interview` — lock every open decision, round by round.
 - **KB** — the domain-expert layer auto-engages when work touches the harness, grounding plan claims in the KB per `## Knowledge Base`; keep it fresh with `/harness-layer:kb`.
 - **Artifacts** — pipeline stages publish interactive pages committed under `specs/<name>/artifacts/`; crafting rules: [artifacts.md](.claude/rules/harness-layer/artifacts.md).
+
+## Studio Layer
+
+The design-delivery studio for client work, under `clients/**`: roster
+([roster.md](.claude/rules/studio-layer/roster.md)), artifact craft
+([client-artifacts.md](.claude/rules/studio-layer/client-artifacts.md)), and the
+Soriza brand ([studio-identity.md](.claude/rules/studio-layer/studio-identity.md)).

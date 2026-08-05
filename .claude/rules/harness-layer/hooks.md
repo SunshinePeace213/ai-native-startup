@@ -25,6 +25,7 @@ mirrored into `.codex/hooks.json`.
 | `security-scan/` | PostToolUse(+Failure) `Write\|Edit\|MultiEdit`/`Bash`, SessionStart, Stop/SubagentStop | Tracks agent-touched files, scans them for secrets (blocking) and vuln patterns (warn-only); a `security-scan: allow` comment suppresses a line | mirrored |
 | `sensitive-files/` | PreToolUse `Read\|Grep\|Edit\|Write\|MultiEdit` + `Bash` | Denies agent access to secret-bearing files by name/path | mirrored (write surface only) |
 | `check_spec_completeness.py` | Stop (command-scoped) | Blocks `/harness-layer:harness-plan` from ending on an incomplete `specs/` folder | not-applicable |
+| `check_gate_signoff.py` | Stop (command-scoped) | Blocks a studio hard gate — phase from `argv[1]` — from closing until the client sign-off, its hashed artifacts, and that phase's extra document all check out | not-applicable |
 | `worktree/` | WorktreeCreate / WorktreeRemove | Creates dep-installed worktrees (`bun install` + `uv sync`); removes worktree + branch | not-applicable |
 
 ## Development
@@ -34,6 +35,11 @@ mirrored into `.codex/hooks.json`.
   a new hook joins the existing block's `hooks` array. A hook that must run only
   inside one command registers in that command's frontmatter instead (the
   spec-gate pattern).
+- `"$CLAUDE_PROJECT_DIR"` is the registration idiom and resolves in a hook, an
+  stdio MCP server and a plugin LSP server — nowhere else
+  (`ai-docs/anthropic/hooks.md:494`). It is empty in a command body, where an
+  anchored path silently becomes `/<path>` at the filesystem root; anchor those on
+  `$(git rev-parse --show-toplevel)` instead.
 - Contract: exit 2 only for agent-fixable findings, with diagnostics on stderr;
   everything else — malformed stdin, missing files, plumbing failures — fails
   open with exit 0.

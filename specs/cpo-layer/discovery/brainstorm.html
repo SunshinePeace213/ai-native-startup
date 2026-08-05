@@ -1,0 +1,1082 @@
+<title>Studio Layer — Intervention Ladder</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --serif: "Iowan Old Style", Charter, Georgia, serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 56px 28px 120px; }
+
+  /* ---------------- masthead ---------------- */
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(34px, 5.4vw, 52px);
+    line-height: 1.08;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin: 0 0 20px;
+    max-width: 20ch;
+  }
+
+  .standfirst {
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.62;
+    max-width: 68ch;
+    margin: 0 0 30px;
+  }
+
+  .standfirst b { font-weight: 600; }
+
+  .masthead-rule {
+    height: 1px;
+    background: var(--border);
+    margin: 34px 0 0;
+  }
+
+  /* ---------------- commitment meter ---------------- */
+
+  .meter-block {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--bg);
+    padding: 18px 0 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+
+  .meter-top {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .meter-count {
+    font-family: var(--serif);
+    font-size: 27px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .meter-count span { color: var(--muted); font-weight: 400; }
+
+  .meter-read {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    padding: 3px 9px;
+  }
+
+  .meter-hint {
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  .meter-bar {
+    display: flex;
+    height: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .meter-seg { transition: flex-grow 0.28s ease; flex-grow: 0; flex-basis: 0; }
+  .meter-seg[data-tier="S"]  { background: #D9B79A; }
+  .meter-seg[data-tier="M"]  { background: #C98F5E; }
+  .meter-seg[data-tier="L"]  { background: #B8602A; }
+  .meter-seg[data-tier="XL"] { background: #7E3D18; }
+
+  .meter-legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .meter-legend b { color: var(--text); font-weight: 600; }
+
+  /* ---------------- controls ---------------- */
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 34px;
+  }
+
+  .control-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-right: 2px;
+  }
+
+  button.chip {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.14s ease;
+  }
+
+  button.chip:hover { border-color: var(--accent); color: var(--accent); }
+  button.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.chip[aria-pressed="true"] {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--bg);
+  }
+
+  .spacer { flex: 1 1 auto; }
+
+  /* ---------------- the ladder ---------------- */
+
+  .stratum { margin-bottom: 4px; }
+
+  .stratum-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 26px 0 14px;
+  }
+
+  .stratum-letter {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--bg);
+    background: var(--accent);
+    width: 34px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: 2px;
+    flex: none;
+  }
+
+  .stratum[data-tier="S"]  .stratum-letter { background: #D9B79A; color: #2C2825; }
+  .stratum[data-tier="M"]  .stratum-letter { background: #C98F5E; color: #2C2825; }
+  .stratum[data-tier="L"]  .stratum-letter { background: #B8602A; }
+  .stratum[data-tier="XL"] .stratum-letter { background: #7E3D18; }
+
+  .stratum-name {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 600;
+  }
+
+  .stratum-cost {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  .stratum-line { height: 1px; background: var(--border); }
+
+  /* stepped indent encodes the climb */
+  .stratum[data-tier="S"]  .cards { padding-left: 0; }
+  .stratum[data-tier="M"]  .cards { padding-left: 16px; }
+  .stratum[data-tier="L"]  .cards { padding-left: 32px; }
+  .stratum[data-tier="XL"] .cards { padding-left: 48px; }
+
+  .cards { display: flex; flex-direction: column; gap: 14px; padding-top: 18px; }
+
+  .card {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: 2px;
+    background: var(--surface);
+    padding: 20px 22px 18px;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  }
+
+  .card.picked {
+    border-color: var(--accent);
+    border-left-color: var(--accent);
+    box-shadow: 0 1px 0 rgba(184, 96, 42, 0.18);
+  }
+
+  .card.hidden { display: none; }
+
+  .card-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .card-n {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    flex: none;
+  }
+
+  .card-title {
+    font-family: var(--serif);
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1.24;
+    letter-spacing: -0.005em;
+    margin: 0;
+    flex: 1 1 340px;
+  }
+
+  .card-badge {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    padding: 2px 7px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--muted);
+    flex: none;
+  }
+
+  .row { margin-bottom: 13px; }
+
+  .row-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .row p { margin: 0; max-width: 78ch; }
+
+  .row .adds { font-family: var(--serif); font-size: 16.5px; }
+
+  ul.pointers {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.85;
+    color: var(--muted);
+  }
+
+  ul.pointers li { word-break: break-word; }
+  ul.pointers b { color: var(--text); font-weight: 500; }
+
+  .impact {
+    border-left: 2px solid var(--accent);
+    padding-left: 13px;
+    font-size: 14.5px;
+  }
+
+  .card-foot {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  button.resonate {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    padding: 7px 15px;
+    border: 1px solid var(--muted);
+    background: transparent;
+    color: var(--text);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.14s ease;
+    flex: none;
+  }
+
+  button.resonate:hover { border-color: var(--accent); color: var(--accent); }
+  button.resonate:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card.picked button.resonate {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #FFF;
+  }
+
+  .card-open {
+    font-size: 13px;
+    color: var(--muted);
+    flex: 1 1 320px;
+  }
+
+  .card-open b {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ---------------- open decisions ---------------- */
+
+  h2 {
+    font-family: var(--serif);
+    font-size: 27px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 68px 0 8px;
+  }
+
+  .section-note { color: var(--muted); max-width: 72ch; margin: 0 0 24px; }
+
+  .decisions { display: flex; flex-direction: column; gap: 12px; }
+
+  .decision {
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 18px 20px;
+    background: var(--bg);
+  }
+
+  .decision h3 {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+
+  .decision p { margin: 0 0 8px; max-width: 78ch; }
+  .decision p:last-child { margin-bottom: 0; }
+
+  .said {
+    font-size: 14px;
+    border-left: 2px solid var(--accent);
+    padding-left: 13px;
+    color: var(--muted);
+  }
+
+  .said b { color: var(--text); font-weight: 600; }
+
+  /* ---------------- prompt ---------------- */
+
+  .prompt-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  button.copy {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    padding: 9px 20px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #FFF;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: opacity 0.14s ease;
+  }
+
+  button.copy:hover { opacity: 0.86; }
+  button.copy:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+  .copied {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .copied.show { opacity: 1; }
+
+  pre.prompt {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 22px 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 460px;
+    overflow-y: auto;
+    margin: 0;
+  }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+
+  @media (max-width: 720px) {
+    .wrap { padding: 40px 18px 90px; }
+    .stratum[data-tier="M"]  .cards,
+    .stratum[data-tier="L"]  .cards,
+    .stratum[data-tier="XL"] .cards { padding-left: 0; }
+    .meter-hint { margin-left: 0; flex-basis: 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Discovery · brainstorm pass · cpo-layer</p>
+  <h1>Twelve places to build the studio, cheapest first</h1>
+  <p class="standfirst">
+    The unknowns pass settled <b>what</b> you are building: a design-delivery studio layer that
+    stops at a signed layout handoff. This pass is about <b>where to cut into this repo</b> to get
+    it. Every intervention below is anchored to a file that already exists here — a pattern to
+    fork, a guard that already ignores your new directory, a test that will pin your roster the
+    day you write it. Ordered by what it costs, not by what it is worth.
+  </p>
+  <div class="masthead-rule"></div>
+
+  <div class="meter-block">
+    <div class="meter-top">
+      <div class="meter-count" id="count">0 <span>of 12 picked</span></div>
+      <div class="meter-read" id="read">nothing picked</div>
+      <div class="meter-hint">Pick what resonates — the prompt at the bottom narrows to your picks.</div>
+    </div>
+    <div class="meter-bar" id="bar">
+      <div class="meter-seg" data-tier="S"></div>
+      <div class="meter-seg" data-tier="M"></div>
+      <div class="meter-seg" data-tier="L"></div>
+      <div class="meter-seg" data-tier="XL"></div>
+    </div>
+    <div class="meter-legend" id="legend"></div>
+  </div>
+
+  <div class="controls">
+    <span class="control-label">Show</span>
+    <button class="chip" data-filter="all" aria-pressed="true">All</button>
+    <button class="chip" data-filter="S" aria-pressed="false">S</button>
+    <button class="chip" data-filter="M" aria-pressed="false">M</button>
+    <button class="chip" data-filter="L" aria-pressed="false">L</button>
+    <button class="chip" data-filter="XL" aria-pressed="false">XL</button>
+    <button class="chip" data-filter="picked" aria-pressed="false">Picked only</button>
+    <span class="spacer"></span>
+    <span class="control-label">Preset</span>
+    <button class="chip" data-preset="afternoon">Afternoon</button>
+    <button class="chip" data-preset="first">First engagement</button>
+    <button class="chip" data-preset="holds">A studio that holds</button>
+    <button class="chip" data-preset="all">Everything</button>
+    <button class="chip" data-preset="none">Clear</button>
+  </div>
+
+  <div id="ladder"></div>
+
+  <h2>Still open — the four this pass will not decide</h2>
+  <p class="section-note">
+    You flagged three of these yourself and asked to settle a fourth before any agent or command
+    file gets written. They ride into the refined prompt whatever you pick above, because the plan
+    cannot be drafted around them.
+  </p>
+  <div class="decisions" id="decisions"></div>
+
+  <h2>Refined prompt</h2>
+  <p class="section-note">
+    Carries the unknowns pass's locked framing, the eight phases, the roster and the acceptance
+    criteria forward — narrowed to the interventions you picked. Paste it into the next pass.
+  </p>
+  <div class="prompt-head">
+    <button class="copy" id="copy">Copy prompt</button>
+    <span class="copied" id="copied">Copied</span>
+  </div>
+  <pre class="prompt" id="prompt"></pre>
+
+  <footer>specs/cpo-layer/discovery/brainstorm.html · discovery only · nothing pushed</footer>
+
+</div>
+
+<script>
+/* ============================== DATA ============================== */
+
+const STRATA = [
+  { tier: "S",  name: "Ship this afternoon",       cost: "Under a day each" },
+  { tier: "M",  name: "The pipeline skeleton",     cost: "Days each" },
+  { tier: "L",  name: "Mechanisms that can fail",  cost: "A week each" },
+  { tier: "XL", name: "The bets",                  cost: "Weeks to a quarter" }
+];
+
+const CARDS = [
+  {
+    n: "01", tier: "S",
+    title: "Claim the namespace and the client-data home",
+    pointers: [
+      "<b>.claude/commands/harness-layer/</b> — the only command namespace here, nine commands",
+      "<b>specs/index.md:11</b> — a catalog of harness plans, nothing else",
+      "<b>.claude/hooks/check_spec_completeness.py:105</b> — scans <code>specs/</code> and <code>.claude/worktrees/*/specs</code> only"
+    ],
+    adds: "Create <code>.claude/commands/studio-layer/</code> for the phase commands and <code>clients/&lt;client&gt;/&lt;project&gt;/</code> for the project data, each with one paragraph stating the boundary. Nothing else.",
+    impact: "The spec-completeness Stop hook never sees a client folder because it only walks specs/ — so the two catalogs cannot mix, for the price of two directories.",
+    open: "The layer's name, and whether client work is git-tracked in this repo at all or in a sibling one."
+  },
+  {
+    n: "02", tier: "S",
+    title: "Cast the roster from the model table, in one document",
+    pointers: [
+      "<b>tests/harness-layer/test_model_drift.py:111</b> — <code>_claude_declarations()</code> already sweeps every <code>model:</code> and <code>effort:</code> across <code>.claude/{agents,commands,skills}/**/*.md</code>",
+      "<b>.claude/rules/model-selection.md</b> — taste ≥ 7 for anything client-facing; <code>fable</code> orchestrator-only; verification sits at <code>high</code>",
+      "<b>.claude/agents/kb-fetcher.md:1-15</b> — the house frontmatter style"
+    ],
+    adds: "One <code>.claude/rules/studio-layer/roster.md</code>, path-scoped to <code>clients/**</code>: function name, person, model, effort, and whether the role may escalate. Function in <code>name:</code>, person in the body, per meta-agent.",
+    impact: "The day the first agent file lands with model: opus, the existing drift suite pins the cast. No new test code, and a retired alias breaks CI instead of silently falling back.",
+    open: "Hybrid names (art-director-elena-ferraro) or plain function names with the persona only in the body."
+  },
+  {
+    n: "03", tier: "S",
+    title: "Fork the coverage ledger into a client-discovery dimension list",
+    pointers: [
+      "<b>.claude/commands/harness-layer/harness-interview.md:32</b> — the Coverage Ledger, thirteen harness dimensions",
+      "<b>harness-interview.md:36-42</b> — the Round Loop: one round at a time, biggest blast radius first, bounded rounds that stop when a round resolves nothing new",
+      "<b>.claude/skills/grilling/SKILL.md</b> — the lightweight one-question-at-a-time version"
+    ],
+    adds: "The same round mechanics with client dimensions: the job the site does, the audience and their situation, brand voice, references loved and hated, the content that actually exists, hard constraints (existing brand, CMS, deadline), budget, and what success looks like at six months.",
+    impact: "P1 Discovery runs on day one on a loop whose stop condition is already written and tested, instead of an interview engine invented from scratch.",
+    open: "You said the harness interview is for harness work — so does the studio fork that file, or write a fresh loop that only borrows the ledger idea?"
+  },
+  {
+    n: "04", tier: "M",
+    title: "A client-artifact rule that unlocks the palette and names a page pattern per phase",
+    pointers: [
+      "<b>.claude/rules/harness-layer/artifacts.md:2-4</b> — every page rule is scoped to <code>specs/**/*</code>",
+      "<b>artifacts.md:27-39</b> — the Warm Neutral palette lock, correct for pipeline pages and fatal for client work",
+      "<b>artifacts.md:15-25</b> — the craft rules worth keeping: self-contained HTML, copy-as-prompt, publish best-effort",
+      "<b>artifacts.md:62 and :73-81</b> — design-directions, the ordering board, disposition cards, inline document suggestions"
+    ],
+    adds: "A sibling rule at <code>.claude/rules/studio-layer/client-artifacts.md</code>, <code>paths: clients/**</code>, that inherits craft and publish, drops the palette lock, and carries a four-row table: brief review → inline suggestions, sitemap → the ordering board, art direction → design-directions, feedback triage → disposition cards, each with what its copy-as-prompt returns.",
+    impact: "A client mockup can be in the client's brand instead of ours, and the artifact spec for the whole pipeline is one table rather than four invented page designs.",
+    open: "You said v1 borrows these templates and tailors later — so does v1 ship the borrowed Warm Neutral look, or is the palette an input from P4 on the first project?"
+  },
+  {
+    n: "05", tier: "M",
+    title: "Eight phase commands, shaped like the harness eight",
+    pointers: [
+      "<b>.claude/commands/harness-layer/</b> — nine commands, 44 to 151 lines; the eight pipeline ones all carry <code>disable-model-invocation: true</code>",
+      "<b>harness-plan.md:19-71</b> — the section skeleton every command follows: Variables, Instructions, Workflow, Output, Report",
+      "<b>harness-plan.md:4-5</b> — model and effort stamped in frontmatter, which is what the drift test reads"
+    ],
+    adds: "<code>/studio-layer:p0-intake</code> through <code>/studio-layer:p7-retro</code>, same skeleton, each naming its documents, its gate, and the roles the principal spawns for it.",
+    impact: "A phase runs the way a harness stage runs — one command, one gate, one report — so the pipeline is legible to anyone who has used the harness side.",
+    open: "Eight commands, or one /studio-layer:project taking the phase as an argument."
+  },
+  {
+    n: "06", tier: "M",
+    title: "The cold-designer test, using the harness's own amnesia",
+    pointers: [
+      "<b>.claude/rules/orchestration.md</b> — \"Teammates load CLAUDE.md/AGENTS.md but <b>not</b> your conversation history — put every task-specific detail in the spawn prompt\"",
+      "<b>.claude/rules/harness-layer/spec-standards.md</b> — standard 2, Testability: a criterion needs a command that fails when the change is reverted",
+      "<b>.claude/settings.json:3</b> — teams enabled, so a teammate can actually be spawned"
+    ],
+    adds: "A P2 gate step: spawn one teammate carrying only the signed project brief and creative brief, ask it to produce the section-level plan, and diff its output against the signed sitemap. Every gap is a defect in the brief, not in the designer.",
+    impact: "\"A designer who never met the client can execute it\" becomes a run with a diff instead of a sentence in a prompt — and the limitation that makes teammates awkward is the exact property the test needs.",
+    open: "Does the diff block the phase, or produce an advisory list the principal triages?"
+  },
+  {
+    n: "07", tier: "L",
+    title: "Sign-off as a Stop hook, cloned from the spec gate",
+    pointers: [
+      "<b>.claude/hooks/check_spec_completeness.py</b> — the whole pattern: required sections, empty-section detection, and <code>PLACEHOLDER_RE</code> catching leftover template slots",
+      "<b>harness-plan.md:8-12</b> — a Stop hook registered in one command's frontmatter, so it fires for that command only",
+      "<b>.claude/rules/harness-layer/hooks.md</b> — the contract: exit 2 for agent-fixable findings, fail open on everything else; tests cover block and allow paths"
+    ],
+    adds: "<code>check_gate_signoff.py</code>, registered in each hard-gate command's frontmatter, blocking the phase from ending unless <code>clients/&lt;client&gt;/&lt;project&gt;/sign-off/&lt;phase&gt;.md</code> exists with a filled approver, date, and the SHA of the artifact approved.",
+    impact: "\"Sign-off is a document, not a nod\" stops being a promise. The same hook that refuses to let a spec folder ship half-written refuses to let a phase close unsigned.",
+    open: "Three hard gates plus final delivery — one hook parameterized by phase, or one per gate."
+  },
+  {
+    n: "08", tier: "L",
+    title: "Design QA as a verifier agent with a states matrix that can fail",
+    pointers: [
+      "<b>.claude/skills/meta-agent/SKILL.md:46</b> — \"Guarantees are harness, not prose... reach for a hook, a permission rule, or a separate verifier agent\"",
+      "<b>.claude/rules/model-selection.md</b> — Effort table: verification-shaped work sits at <code>high</code> by default",
+      "<b>specs/&lt;name&gt;/checks/</b> — the existing home for one executable script per acceptance criterion"
+    ],
+    adds: "A <code>design-qa</code> agent on opus at high effort, plus a handoff states matrix — every component crossed with hover, focus, disabled, loading, empty and error, at each breakpoint — and a check script that parses the handoff document and exits non-zero on any unfilled cell.",
+    impact: "The handoff fails on a missing empty state instead of shipping a poster. The agent judges the design; the script counts the cells, so neither has to be trusted for the other's job.",
+    open: "Whether contrast, focus visibility and tap targets are computed from the tokens or asserted by the agent."
+  },
+  {
+    n: "09", tier: "L",
+    title: "Count the revision rounds somewhere the count can fail",
+    pointers: [
+      "<b>tests/harness-layer/test_pr_templates.py</b> — pins eight templates against one source by re-deriving, never by a second hard-coded copy",
+      "<b>.claude/rules/harness-layer/test-tiers.md</b> — the drift tier and its rule: re-derive the expectation from the source of truth",
+      "<b>.claude/hooks/check_spec_completeness.py:59-84</b> — <code>section_body()</code>, the parser that reads a required section out of a markdown document"
+    ],
+    adds: "A revision log with one row per round, and a check that re-derives the allowed count from the signed brief. A round past the count with no matching change-order document fails.",
+    impact: "\"Two rounds plus polish\" becomes arithmetic instead of memory, and \"one more small thing\" produces a document rather than an argument.",
+    open: "Whether a change order is a client-facing document or an internal note plus a re-signed brief."
+  },
+  {
+    n: "10", tier: "XL",
+    title: "A retro that graduates repeated lessons into skills",
+    pointers: [
+      "<b>.claude/rules/memory-series.md:23</b> — a lesson routes immediately to where it loads when relevant, and \"No flat lesson log\"",
+      "<b>memory-series.md:28-37</b> — <code>paths:</code> scoping, and the ~250-line budget on always-loaded rules",
+      "<b>.claude/skills/meta-skills</b> — the authoring workflow a graduated lesson would go through"
+    ],
+    adds: "P7 routes each lesson to exactly one home — a path-scoped craft rule, the studio command it corrects, or that project's own notes. When the same lesson routes for the third time it graduates into <code>.claude/skills/studio-layer/&lt;topic&gt;/SKILL.md</code>, authored through meta-skills. A drift test asserts no new unscoped rule and that the budget still holds.",
+    impact: "This is your \"convert our experiences into repeatable skills\" with a threshold attached, so the layer compounds without any file growing without bound.",
+    open: "The graduation threshold, and whether a client-specific lesson ever leaves that project's folder."
+  },
+  {
+    n: "11", tier: "XL",
+    title: "Put the design domain in the KB so QA cites a spec",
+    pointers: [
+      "<b>ai-docs/sources.yaml</b> — 46 sources, every one an Anthropic or OpenAI harness doc",
+      "<b>ai-docs/index.md</b> — the catalog, harness-only today",
+      "<b>harness-plan.md:39</b> — the expert layer fires for \"a domain that has an ai-docs/index.md entry\", so a studio domain inherits the whole grounding machinery",
+      "<b>.claude/agents/kb-fetcher.md</b> — one mirror per page, already built"
+    ],
+    adds: "Mirror the design domain through kb-fetcher: WCAG 2.2, the ARIA Authoring Practices Guide, the platform accessibility guidelines, and the docs for whichever prototype tool P5 drives.",
+    impact: "The accessibility check cites a contrast ratio from a specification instead of from memory, and every studio command gets the kb-grounded review profile for free.",
+    open: "Which prototype tool P5 commits to — its docs are the one mirror that will date fastest."
+  },
+  {
+    n: "12", tier: "XL",
+    title: "Run the flat studio end to end on one real project",
+    pointers: [
+      "<b>.claude/rules/orchestration.md</b> — no nested teams, teammates cannot run background subagents, /resume does not restore them, and <code>completed</code> is not proof",
+      "<b>orchestration.md</b> — start with 3–5 teammates, each given a disjoint set of files",
+      "<b>.claude/settings.json:3</b> — <code>CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1</code>, already on"
+    ],
+    adds: "The principal — main session, fable at xhigh, never a spawned teammate — runs all eight phases on one real brief, spawning each role directly, one level deep, with P5 driving a prototype tool from the prompt packs.",
+    impact: "The only way to find out which of the eight acceptance criteria have real mechanisms and which are still sentences. Everything above this card is scaffolding for this run.",
+    open: "Which project goes first, and whether run one is a paying client or a dry run on an internal brief."
+  }
+];
+
+const DECISIONS = [
+  {
+    q: "The client-interview cookbook",
+    body: "The repo already has a round loop with a coverage ledger, but it is scoped to harness work. What the studio needs is the question set — how to ask so a client's vague wants become written statements, and so every essential element is collected before discovery closes.",
+    said: "Your note: the harness layer develops harness things, not client interviews. The studio needs its own cookbook for asking questions correctly and collecting what clients actually want."
+  },
+  {
+    q: "What \"self-learning\" means here",
+    body: "memory-series.md forbids a flat lesson log outright, and caps the always-loaded rules. Any learning mechanism has to route rather than accumulate.",
+    said: "Your note: convert working experience into repeatable skills or domain knowledge related to development, so the layer keeps learning. Card 10 is the shape that fits the rule — what is missing is the threshold."
+  },
+  {
+    q: "Where client deliverables live, and what colour they are",
+    body: "artifacts.md scopes every page rule to specs/ and locks one palette. Client pages need the craft rules and not the palette, which means a sibling rule and a directory outside specs/.",
+    said: "Your note: client deliverables get their own workable-products page, not these artifacts. Early on you may share using these templates, then tailor the design per client."
+  },
+  {
+    q: "The directory layout, before any file is written",
+    body: "You asked to confirm the client-artifact home and the layer's directory layout before any agent or command file gets authored. Card 01 proposes clients/&lt;client&gt;/&lt;project&gt;/ plus .claude/commands/studio-layer/ — that proposal is the thing to accept or replace.",
+    said: "Your instruction: stop and confirm after naming the client-artifact home and the layer's directory layout, before writing any agent or command files."
+  }
+];
+
+const WEIGHT = { S: 1, M: 3, L: 8, XL: 20 };
+
+const PRESETS = {
+  afternoon: c => c.tier === "S",
+  first:     c => c.tier === "S" || c.tier === "M",
+  holds:     c => c.tier !== "XL",
+  all:       () => true,
+  none:      () => false
+};
+
+/* ============================== STATE ============================== */
+
+const state = {
+  picked: new Set(),
+  filter: "all"
+};
+
+/* ============================== RENDER: LADDER ============================== */
+
+const ladderEl = document.getElementById("ladder");
+
+function buildLadder() {
+  for (const s of STRATA) {
+    const wrap = document.createElement("section");
+    wrap.className = "stratum";
+    wrap.dataset.tier = s.tier;
+    wrap.innerHTML =
+      '<div class="stratum-head">' +
+        '<span class="stratum-letter">' + s.tier + '</span>' +
+        '<span class="stratum-name">' + s.name + '</span>' +
+        '<span class="stratum-cost">' + s.cost + '</span>' +
+      '</div>' +
+      '<div class="stratum-line"></div>' +
+      '<div class="cards"></div>';
+    const holder = wrap.querySelector(".cards");
+
+    for (const c of CARDS.filter(c => c.tier === s.tier)) {
+      const el = document.createElement("article");
+      el.className = "card";
+      el.dataset.n = c.n;
+      el.dataset.tier = c.tier;
+      el.innerHTML =
+        '<div class="card-head">' +
+          '<span class="card-n">' + c.n + '</span>' +
+          '<h3 class="card-title">' + c.title + '</h3>' +
+          '<span class="card-badge">' + c.tier + '</span>' +
+        '</div>' +
+        '<div class="row">' +
+          '<span class="row-label">What exists today</span>' +
+          '<ul class="pointers">' + c.pointers.map(p => '<li>' + p + '</li>').join("") + '</ul>' +
+        '</div>' +
+        '<div class="row">' +
+          '<span class="row-label">What this adds</span>' +
+          '<p class="adds">' + c.adds + '</p>' +
+        '</div>' +
+        '<div class="row impact">' +
+          '<span class="row-label">Impact</span>' +
+          '<p>' + c.impact + '</p>' +
+        '</div>' +
+        '<div class="card-foot">' +
+          '<button class="resonate" type="button" aria-pressed="false">This resonates</button>' +
+          '<span class="card-open"><b>Still needs decided</b> — ' + c.open + '</span>' +
+        '</div>';
+
+      el.querySelector(".resonate").addEventListener("click", () => toggle(c.n));
+      holder.appendChild(el);
+    }
+    ladderEl.appendChild(wrap);
+  }
+}
+
+function toggle(n) {
+  if (state.picked.has(n)) state.picked.delete(n);
+  else state.picked.add(n);
+  updateAll();
+}
+
+/* ============================== RENDER: DECISIONS ============================== */
+
+function buildDecisions() {
+  const el = document.getElementById("decisions");
+  el.innerHTML = DECISIONS.map(d =>
+    '<article class="decision">' +
+      '<h3>' + d.q + '</h3>' +
+      '<p>' + d.body + '</p>' +
+      '<p class="said">' + d.said + '</p>' +
+    '</article>'
+  ).join("");
+}
+
+/* ============================== UPDATE ============================== */
+
+function updateAll() {
+  renderCards();
+  renderMeter();
+  renderPrompt();
+}
+
+function renderCards() {
+  for (const el of document.querySelectorAll(".card")) {
+    const picked = state.picked.has(el.dataset.n);
+    el.classList.toggle("picked", picked);
+    el.querySelector(".resonate").setAttribute("aria-pressed", String(picked));
+    el.querySelector(".resonate").textContent = picked ? "Resonates ✓" : "This resonates";
+
+    let show = true;
+    if (state.filter === "picked") show = picked;
+    else if (state.filter !== "all") show = el.dataset.tier === state.filter;
+    el.classList.toggle("hidden", !show);
+  }
+  for (const s of document.querySelectorAll(".stratum")) {
+    const any = [...s.querySelectorAll(".card")].some(c => !c.classList.contains("hidden"));
+    s.style.display = any ? "" : "none";
+  }
+}
+
+function readFor(weight) {
+  if (weight === 0) return "nothing picked";
+  if (weight <= 4)  return "an afternoon";
+  if (weight <= 12) return "a few days";
+  if (weight <= 30) return "a couple of weeks";
+  if (weight <= 60) return "most of a month";
+  return "a quarter";
+}
+
+function renderMeter() {
+  const picks = CARDS.filter(c => state.picked.has(c.n));
+  const weight = picks.reduce((sum, c) => sum + WEIGHT[c.tier], 0);
+
+  document.getElementById("count").innerHTML =
+    picks.length + ' <span>of ' + CARDS.length + ' picked</span>';
+  document.getElementById("read").textContent = readFor(weight);
+
+  const byTier = {};
+  for (const t of Object.keys(WEIGHT)) {
+    byTier[t] = picks.filter(c => c.tier === t).reduce((s, c) => s + WEIGHT[c.tier], 0);
+  }
+  for (const seg of document.querySelectorAll(".meter-seg")) {
+    seg.style.flexGrow = byTier[seg.dataset.tier];
+  }
+  document.getElementById("legend").innerHTML = Object.keys(WEIGHT).map(t => {
+    const count = picks.filter(c => c.tier === t).length;
+    const total = CARDS.filter(c => c.tier === t).length;
+    return '<span><b>' + t + '</b> ' + count + '/' + total + '</span>';
+  }).join("");
+}
+
+/* ============================== PROMPT ============================== */
+
+const FRAMING = [
+  "Build a design-delivery studio layer for this repo — the layer that owns what to build and",
+  "what it should look like, stopping at a signed layout handoff with no development work (no",
+  "building, deploying or infrastructure). \"CPO\" is the principal role inside that studio, not",
+  "the shape of the layer.",
+  "",
+  "LOCKED BY THE UNKNOWNS PASS — carry these forward, do not re-derive them:",
+  "- Name the existing page patterns rather than inventing new ones: brief review uses",
+  "  document-critique, sitemap uses the ordering board, art direction uses design-directions,",
+  "  feedback triage uses the disposition cards. The plan states which pattern each phase uses",
+  "  and what its copy-as-prompt returns — that is the whole artifact spec.",
+  "- Agent frontmatter carries the function in name: and the person in the body (art-director",
+  "  with a body opening \"You are Elena Ferraro, art director\", or the hybrid",
+  "  art-director-elena-ferraro). One roster document holds who is who. Personas are for the",
+  "  client-facing voice and must never be load-bearing for routing.",
+  "- The org chart cannot nest. The main session is the principal and spawns every role",
+  "  directly; a \"design director\" is a phase the principal runs, not a middle manager. Where",
+  "  depth is genuinely needed, run the deeper level as a separate later phase. Write every",
+  "  spawn prompt as if the teammate has never heard of the project, because it hasn't.",
+  "- Stamp the roster from .claude/rules/model-selection.md, not by vibes: design and copy on",
+  "  opus or sonnet (taste >= 7), the adversarial QA role on opus at high effort, research and",
+  "  scheduling utilities on sonnet, haiku only for eligibility checks and counting. One model",
+  "  + effort stamp per role, plus a line naming which roles may escalate.",
+  "- Build the layer through the normal harness pipeline (plan → build → review → ship) since",
+  "  it is prompt files and the drift and eval tiers apply — but keep client project data out",
+  "  of specs/ entirely so the two catalogs never mix.",
+  "",
+  "PHASES — each produces its documents and closes at its gate:",
+  "- P0 Intake and qualification — intake form, qualification note; gate: soft, internal go/no-go.",
+  "- P1 Discovery — discovery notes, glossary (ubiquitous language), competitive audit,",
+  "  reference audit; gate: soft, discovery notes reviewed with the client.",
+  "- P2 Definition — project brief, creative brief, sitemap, section briefs, user flows;",
+  "  gate: HARD, brief and sitemap signed.",
+  "- P3 Structure — lo-fi wireframes (annotated), content model, copy outline;",
+  "  gate: HARD, wireframes signed.",
+  "- P4 Art direction — moodboard, style tile, 2–3 design directions, direction rationale;",
+  "  gate: HARD, one direction picked.",
+  "- P5 Prototype — prompt pack for Claude Design / Lovable, hi-fi prototype link, revision log;",
+  "  gate: 2 revision rounds plus polish.",
+  "- P6 Design QA and handoff — design QA report, accessibility check, handoff pack (tokens,",
+  "  states, breakpoints, copy deck, assets), sign-off document; gate: HARD, final sign-off.",
+  "- P7 Retro and lesson routing — project retro, routed lessons; gate: soft, lessons committed.",
+  "",
+  "ROSTER — functional name in frontmatter, person in the body:",
+  "- Maya Lindqvist, Principal / CPO (main session · fable or opus · xhigh) — owns what gets",
+  "  built and what gets refused, runs the gates, arbitrates scope, the only one who talks to",
+  "  the client about money and dates. Orchestrator only; fable is never a spawned teammate.",
+  "- Daniel Osei, Client Partner (sonnet · medium) — intake, qualification, the relationship,",
+  "  the scope boundary; turns \"one more small thing\" into a change order.",
+  "- Priya Raghavan, Discovery Lead (opus · high) — the interview, until vague wants are written",
+  "  statements. Owns the glossary.",
+  "- Tomas Vieira, UX Architect (opus · high) — IA, sitemap, user flows, annotated lo-fi",
+  "  wireframes. Decides what exists and where it sits before anything gets styled.",
+  "- Elena Ferraro, Art Director (opus · high) — moodboard, style tile, two to three genuinely",
+  "  different directions with their reasoning and a recommendation. Client-facing, taste >= 7.",
+  "- Hana Okabe, Content Strategist (opus · high) — content model, section briefs, copy deck,",
+  "  the voice. Client-facing, taste >= 7.",
+  "- Marcus Bramley, Prototype Engineer (sonnet · high) — the prompt packs, the clickable",
+  "  prototype, the revision log.",
+  "- Yusuf Demir, Design QA (opus · high) — adversarial; checks the finished design against the",
+  "  signed brief, hunts missing states, contrast, focus order, tap targets. Blocks handoff.",
+  "  A separate verifier agent — a guarantee needs a harness, not a prompt line.",
+  "- Clara Nyberg, Research Analyst (sonnet · medium) — competitive audit, reference sweep,",
+  "  market and audience evidence.",
+  "- Ravi Chandran, Retro Scribe (sonnet · medium) — runs the retro, routes every lesson to the",
+  "  file where it will load again.",
+  "",
+  "ACCEPTANCE CRITERIA — each needs a mechanism (a gate, a checklist artifact, or a verifier",
+  "agent), not a sentence in a prompt:",
+  "- A brief is good only if a designer who never met the client can execute it. That is the",
+  "  acceptance test for the definition phase — not whether it reads well.",
+  "- Every design decision traces to a stated constraint or goal. \"I liked it\" is not a",
+  "  rationale a client can approve or reject.",
+  "- Directions, not versions. Options must be genuinely different bets, each with its reasoning",
+  "  and a recommendation.",
+  "- Nothing climbs to hi-fi before IA and content are settled.",
+  "- Real content, real data, real lengths. No lorem ipsum.",
+  "- Revision rounds are counted and written down. Two plus polish; anything outside the signed",
+  "  brief is a change order.",
+  "- Sign-off is a document, not a nod. Each hard gate produces a recorded approval.",
+  "- Every state is specced — hover, focus, disabled, loading, empty, error — plus contrast,",
+  "  focus visibility and tap targets, checked before handoff."
+];
+
+const OPEN_BLOCK = [
+  "OPEN — settle these before the spec is drafted; do not assume an answer:",
+  "- The client-interview cookbook. The harness layer develops harness things, not client",
+  "  interviews. The studio needs its own cookbook: how to ask questions correctly so a",
+  "  client's vague wants become written statements, and so every essential element is",
+  "  collected before discovery closes. Fork the existing round mechanics, or write fresh?",
+  "- What \"self-learning\" means here. Not a feedback store — convert working experience into",
+  "  repeatable skills or domain knowledge so the layer keeps learning. memory-series.md",
+  "  forbids a flat lesson log and caps the always-loaded rules, so learning has to route.",
+  "  The threshold for graduating a repeated lesson into a skill is unset.",
+  "- Client deliverables and the palette. Client deliverables get their own workable-products",
+  "  page, not the pipeline artifacts. Early on they may be shared using these templates, then",
+  "  tailored per client. Undecided: whether v1 ships the borrowed Warm Neutral look or takes",
+  "  the palette as an input from P4.",
+  "- The directory layout. Confirm the client-artifact home and the layer's directory layout",
+  "  before any agent or command file is written."
+];
+
+function renderPrompt() {
+  const picks = CARDS.filter(c => state.picked.has(c.n));
+  const lines = [];
+
+  lines.push(...FRAMING);
+  lines.push("");
+
+  if (picks.length === 0) {
+    lines.push("INTERVENTIONS — none picked yet. Open");
+    lines.push("specs/cpo-layer/discovery/brainstorm.html and mark what resonates; the twelve");
+    lines.push("candidates run from claiming a directory to running the whole studio on a real");
+    lines.push("project, each anchored to a file that already exists in this repo.");
+  } else {
+    const weight = picks.reduce((s, c) => s + WEIGHT[c.tier], 0);
+    lines.push("INTERVENTIONS THAT RESONATE — " + picks.length + " of 12, roughly " +
+               readFor(weight) + " of work. Build these, in this order:");
+    lines.push("");
+    for (const c of picks) {
+      lines.push(c.n + " [" + c.tier + "] " + c.title);
+      lines.push("    Anchored to: " + c.pointers.map(stripTags).join(" · "));
+      lines.push("    Adds: " + stripTags(c.adds));
+      lines.push("    Why: " + stripTags(c.impact));
+      lines.push("    Still needs decided: " + stripTags(c.open));
+      lines.push("");
+    }
+    const skipped = CARDS.filter(c => !state.picked.has(c.n));
+    if (skipped.length) {
+      lines.push("NOT PICKED (deliberately out of scope for now): " +
+                 skipped.map(c => c.n + " " + c.title).join("; ") + ".");
+      lines.push("");
+    }
+  }
+
+  lines.push("");
+  lines.push(...OPEN_BLOCK);
+  lines.push("");
+  lines.push("Worktree: .claude/worktrees/cpo-layer");
+
+  document.getElementById("prompt").textContent = lines.join("\n");
+}
+
+function stripTags(html) {
+  const d = document.createElement("div");
+  d.innerHTML = html;
+  return d.textContent.replace(/\s+/g, " ").trim();
+}
+
+/* ============================== CONTROLS ============================== */
+
+for (const b of document.querySelectorAll("[data-filter]")) {
+  b.addEventListener("click", () => {
+    state.filter = b.dataset.filter;
+    for (const other of document.querySelectorAll("[data-filter]")) {
+      other.setAttribute("aria-pressed", String(other === b));
+    }
+    updateAll();
+  });
+}
+
+for (const b of document.querySelectorAll("[data-preset]")) {
+  b.addEventListener("click", () => {
+    const test = PRESETS[b.dataset.preset];
+    state.picked = new Set(CARDS.filter(test).map(c => c.n));
+    updateAll();
+  });
+}
+
+document.getElementById("copy").addEventListener("click", async () => {
+  const text = document.getElementById("prompt").textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+  }
+  const flag = document.getElementById("copied");
+  flag.classList.add("show");
+  setTimeout(() => flag.classList.remove("show"), 1600);
+});
+
+/* ============================== BOOT ============================== */
+
+buildLadder();
+buildDecisions();
+updateAll();
+</script>

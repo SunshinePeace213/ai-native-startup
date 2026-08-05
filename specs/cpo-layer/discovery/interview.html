@@ -1,0 +1,463 @@
+<title>Studio Layer — Interview</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+
+    --display: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --body: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px 230px; }
+
+  header.mast {
+    border-bottom: 1px solid var(--border);
+    padding: 52px 0 28px;
+    margin-bottom: 34px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(34px, 5vw, 52px);
+    line-height: 1.04;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin: 0 0 16px;
+    max-width: 18ch;
+  }
+
+  .standfirst { max-width: 62ch; color: var(--muted); font-size: 16px; margin: 0; }
+  .standfirst strong { color: var(--text); font-weight: 600; }
+
+  .cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 46px;
+    align-items: start;
+  }
+
+  .master {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    margin-bottom: 30px;
+  }
+
+  .master p { margin: 0; flex: 1 1 240px; font-size: 13.5px; color: var(--muted); }
+
+  button {
+    font-family: var(--body);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 16px;
+    border: 1px solid var(--text);
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+    transition: opacity 0.14s ease;
+  }
+
+  button:hover { opacity: 0.82; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.ghost { background: transparent; color: var(--text); border-color: var(--border); }
+
+  h2.group {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin: 38px 0 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h2.group:first-child { margin-top: 0; }
+
+  .dec {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    gap: 0 14px;
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(212, 207, 199, 0.55);
+    align-items: start;
+  }
+
+  .tick {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--muted);
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    top: 3px;
+    padding: 0;
+    transition: background 0.14s ease, border-color 0.14s ease;
+  }
+
+  .tick[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .tick[aria-pressed="true"]::after {
+    content: "";
+    position: absolute;
+    left: 5px; top: 1px;
+    width: 5px; height: 10px;
+    border: solid var(--bg);
+    border-width: 0 1.6px 1.6px 0;
+    transform: rotate(42deg);
+  }
+
+  .dec .q {
+    font-size: 12.5px;
+    font-family: var(--mono);
+    color: var(--muted);
+    margin: 0 0 4px;
+  }
+
+  .dec .a {
+    font-family: var(--display);
+    font-size: 19px;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+
+  .dec .why { font-size: 13.5px; color: var(--muted); margin: 0; max-width: 68ch; }
+
+  .dec code, .rail code {
+    font-family: var(--mono);
+    font-size: 0.87em;
+    background: var(--surface);
+    padding: 1px 4px;
+    border: 1px solid var(--border);
+  }
+
+  .dec.flagged { background: rgba(184, 96, 42, 0.045); }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 1px 5px;
+    margin-left: 8px;
+    vertical-align: 2px;
+  }
+
+  textarea {
+    margin-top: 26px;
+    width: 100%;
+    min-height: 70px;
+    resize: vertical;
+    font-family: var(--body);
+    font-size: 13.5px;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 11px 13px;
+  }
+
+  textarea::placeholder { color: var(--muted); }
+  textarea:focus { outline: none; border-color: var(--accent); }
+
+  aside { position: sticky; top: 28px; }
+  .rail { margin-bottom: 32px; }
+
+  .rail h3 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin: 0 0 4px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .meter { height: 3px; background: var(--border); margin: 14px 0 10px; }
+  .meter span { display: block; height: 100%; background: var(--accent); width: 0; transition: width 0.3s ease; }
+  .meter-label { font-family: var(--mono); font-size: 11px; color: var(--muted); margin: 0 0 6px; }
+
+  .rail ul { list-style: none; margin: 0; padding: 0; }
+
+  .rail li {
+    font-size: 12.5px;
+    color: var(--muted);
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(212, 207, 199, 0.5);
+    line-height: 1.45;
+  }
+
+  .rail li b { color: var(--text); font-weight: 600; }
+
+  .dock { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 20; }
+  .dock-inner { max-width: 1180px; margin: 0 auto; padding: 14px 28px 18px; }
+  .dock-head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+
+  .dock-head h3 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+  }
+
+  pre.prompt {
+    margin: 0;
+    max-height: 148px;
+    overflow: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  @media (max-width: 900px) {
+    .cols { grid-template-columns: minmax(0, 1fr); }
+    aside { position: static; }
+    .wrap { padding: 0 20px 270px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <p class="eyebrow">Discovery · interview pass · final round · sign-off</p>
+    <h1>Fifteen decisions, replayed for sign-off</h1>
+    <p class="standfirst">
+      The ledger is clear — every dimension resolved or explicitly out of scope. Untick
+      anything you want to reopen and say why in the box at the bottom; leave it all ticked
+      and the plan drafts from this without asking again.
+      <strong>Two are marked <em>from the code</em></strong> — I took them rather than asking,
+      and they're the two most worth a second look.
+    </p>
+  </header>
+
+  <div class="cols">
+    <main>
+      <div class="master">
+        <p>Everything starts signed. Untick only what you want to reopen.</p>
+        <button class="ghost" id="untickAll">Untick all</button>
+        <button id="tickAll">Sign off on all fifteen</button>
+      </div>
+
+      <div id="decs"></div>
+
+      <textarea id="corrections" placeholder="Corrections, or anything you want reopened before the plan is drafted —"></textarea>
+    </main>
+
+    <aside>
+      <div class="rail">
+        <h3>Sign-off</h3>
+        <div class="meter"><span id="meterFill"></span></div>
+        <p class="meter-label" id="meterLabel"></p>
+      </div>
+
+      <div class="rail">
+        <h3>Assumptions the build may challenge</h3>
+        <ul id="assumptions"></ul>
+      </div>
+
+      <div class="rail">
+        <h3>Out of scope — follow-on plans</h3>
+        <ul id="oos"></ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="dock">
+  <div class="dock-inner">
+    <div class="dock-head">
+      <h3>Copy this back to close the interview</h3>
+      <button id="copyBtn">Copy prompt</button>
+    </div>
+    <pre class="prompt" id="promptOut"></pre>
+  </div>
+</div>
+
+<script>
+const GROUPS = [
+  { title: "Shape of the layer", items: [
+    { id: "home", q: "Client data home", a: "<code>clients/&lt;client&gt;/&lt;project&gt;/</code> inside this repo, gitignored",
+      why: "A sibling repo puts client files outside <code>CLAUDE_PROJECT_DIR</code>, so no <code>paths: clients/**</code> rule would load and no command-frontmatter hook would see a sign-off file. Gitignoring keeps NDA'd material out of permanent history." },
+    { id: "name", q: "Namespace and brand", a: "<code>studio-layer</code>, plus a Soriza identity document",
+      why: "<code>harness-layer</code> named a function, not an owner. A namespace rename later touches every command path, rule, agent name and test; a brand in a deliverable is free to change. The identity doc carries the studio name, voice, letterhead and sign-off block every client document inherits." },
+    { id: "scope", q: "Plan scope", a: "Brainstorm cards 01–09; cards 10, 11 and 12 become follow-on plans",
+      why: "01–09 is the whole scaffolding in one diff CI can gate. Card 12 is a usage run, not a diff, and card 11's KB mirrors wait on card 12's prototype-tool answer." },
+    { id: "commands", q: "Command surface", a: "Eight commands, <code>p0-intake</code> through <code>p7-retro</code>",
+      why: "A Stop hook scoped to one command registers in that command's frontmatter (<code>hooks.md:36</code>). One parameterized command could only register the sign-off hook for all eight phases at once, firing it on soft gates too." },
+    { id: "roles", q: "Role definitions", a: "Nine agent files under <code>.claude/agents/studio-layer/</code>",
+      why: "Spawning from a subagent type reuses that file's <code>tools</code> and <code>model</code> — the only shape where the roster's stamps run rather than merely document, and the only shape <code>test_model_drift.py</code> can read." },
+    { id: "naming", q: "Agent naming", a: "Plain function names, layer-prefixed — <code>studio-art-director</code>; the person opens the body", flag: "from the code",
+      why: "Claude routes off <code>name</code> + <code>description</code> (<code>frontmatter.md:100</code>), and your unknowns pass locked personas out of routing. A hybrid <code>art-director-elena-ferraro</code> puts the persona back into the routing document. The prefix satisfies tree-wide uniqueness." }
+  ]},
+
+  { title: "Discovery and definition", items: [
+    { id: "fork", q: "Interview cookbook", a: "Fork <code>harness-interview.md</code>'s round mechanics into P1",
+      why: "The ledger, one-round-at-a-time, and the bounded stop condition live at <code>harness-interview.md:32-42</code>. The <code>grilling</code> skill is ten lines and has none of it. The two dimension lists share no rows, so the fork can't drift meaningfully." },
+    { id: "bank", q: "Question bank", a: "A skill the roles <em>invoke</em>, plus a check script that re-derives its dimension list", flag: "changed",
+      why: "You picked the skill; preloading it wouldn't have worked. <code>frontmatter.md:88</code> — <code>skills:</code> frontmatter is not applied to teammates, so a preloaded bank would silently no-op. Invocation works for both spawn shapes, and the script is what turns the bank from prose into something a phase can fail on." },
+    { id: "rounds", q: "How P1 runs", a: "Page-first — each round publishes an interactive artifact the client reacts to",
+      why: "Your call, and it also routes around a hard limit: <code>AskUserQuestion</code> never works in a subagent (<code>frontmatter.md:18</code>) and a teammate can't prompt you either. Only the principal's session can drive a round — so the principal conducts, and Priya prepares the question set and analyzes the answers." },
+    { id: "prd", q: "Brief vs PRD", a: "The brief is the client agreement; the P6 handoff pack is the build input",
+      why: "This repo already owns the converter — <code>/harness-layer:harness-plan</code> turns intent into <code>spec.md</code>. A studio PRD would duplicate that spec with nothing keeping the two in sync." }
+  ]},
+
+  { title: "The mechanisms", items: [
+    { id: "hook", q: "Sign-off gate", a: "One <code>check_gate_signoff.py</code>, phase passed as an argument per registration",
+      why: "The spec hook infers its target from the newest-modified folder — safe there, wrong here, because a project holds all eight phase folders at once. Four registrations (P2, P3, P4, P6), one script, one test file." },
+    { id: "colddiff", q: "Cold-designer test", a: "Advisory diff; the <em>triage document</em> is what the P2 gate requires",
+      why: "Two competent designers given one brief produce different section plans — a zero-diff gate would never open. Gating the triage document instead makes it real: every row is either \"brief unclear, amend it\" or \"acceptable variance, because…\"." },
+    { id: "palette", q: "Client palette", a: "Soriza's default through P3; the picked direction's tokens from P4 on",
+      why: "The reason to fork <code>artifacts.md</code> is that a client mockup shouldn't wear our pipeline colors. The rule names the palette's source per phase rather than locking a hex table." },
+    { id: "contrast", q: "Accessibility checks", a: "Contrast and tap targets computed from tokens; the agent judges the rest",
+      why: "Arithmetic on hex values is the least reliable thing a model does; judging whether an empty state earns its copy is the least reliable thing a script does. Neither is trusted for the other's job." },
+    { id: "changeorder", q: "Change orders", a: "A client-facing document that amends the brief by reference",
+      why: "The P2 sign-off records the hash of what was approved, and the revision count re-derives its allowance from that brief. Re-signing per request would invalidate the hash and destroy the count's baseline." }
+  ]}
+];
+
+const ASSUMPTIONS = [
+  ["Sign-off SHA is a content hash", "not a git SHA — <code>clients/</code> is gitignored, so no commit object exists."],
+  ["Roles are subagents by default", "teammates only where a phase parallelizes over disjoint files. Every role body restates what it needs rather than depending on a preloaded skill, so either shape works."],
+  ["The bank skill stays model-invocable", "<code>disable-model-invocation: true</code> would put it out of reach of the roles meant to invoke it."],
+  ["Card 02's \"no new test code\" is wrong", "<code>_claude_declarations()</code> never opens <code>.claude/rules/</code>. A new drift test must re-derive each role's stamp from roster.md and compare it to the agent file."],
+  ["\"Self-improving\" means between projects", "a loaded skill is static for its run. Write-back is card 10's retro graduation — deferred."]
+];
+
+const OOS = [
+  ["Card 10", "the lesson-graduation threshold, and whether a client-specific lesson ever leaves its project folder."],
+  ["Card 11", "mirroring WCAG 2.2, the ARIA Authoring Practices Guide and the platform accessibility guidelines."],
+  ["Card 12", "which project runs first, and whether run one is a paying client or a dry run."],
+  ["P5 tool", "which prototype tool P5 commits to — its docs date fastest, so card 11 waits on it."]
+];
+
+const ALL = GROUPS.flatMap(g => g.items);
+const signed = new Set(ALL.map(d => d.id));
+
+const decsEl = document.getElementById("decs");
+decsEl.innerHTML = GROUPS.map(g => `
+  <h2 class="group">${g.title}</h2>
+  ${g.items.map(d => `
+    <div class="dec${d.flag ? " flagged" : ""}" data-id="${d.id}">
+      <button class="tick" aria-pressed="true" aria-label="Sign off: ${d.q}"></button>
+      <div>
+        <p class="q">${d.q}${d.flag ? `<span class="tag">${d.flag}</span>` : ""}</p>
+        <p class="a">${d.a}</p>
+        <p class="why">${d.why}</p>
+      </div>
+    </div>`).join("")}`).join("");
+
+document.getElementById("assumptions").innerHTML =
+  ASSUMPTIONS.map(([b, t]) => `<li><b>${b}</b> — ${t}</li>`).join("");
+document.getElementById("oos").innerHTML =
+  OOS.map(([b, t]) => `<li><b>${b}</b> — ${t}</li>`).join("");
+
+decsEl.addEventListener("click", e => {
+  const tick = e.target.closest(".tick");
+  if (!tick) return;
+  const id = tick.closest(".dec").dataset.id;
+  if (signed.has(id)) signed.delete(id); else signed.add(id);
+  tick.setAttribute("aria-pressed", signed.has(id) ? "true" : "false");
+  render();
+});
+
+document.getElementById("tickAll").addEventListener("click", () => {
+  ALL.forEach(d => signed.add(d.id));
+  syncTicks(); render();
+});
+
+document.getElementById("untickAll").addEventListener("click", () => {
+  signed.clear();
+  syncTicks(); render();
+});
+
+document.getElementById("corrections").addEventListener("input", render);
+
+document.getElementById("copyBtn").addEventListener("click", async e => {
+  await navigator.clipboard.writeText(document.getElementById("promptOut").textContent);
+  const b = e.currentTarget;
+  b.textContent = "Copied";
+  setTimeout(() => { b.textContent = "Copy prompt"; }, 1400);
+});
+
+function syncTicks() {
+  decsEl.querySelectorAll(".dec").forEach(el => {
+    el.querySelector(".tick").setAttribute("aria-pressed", signed.has(el.dataset.id) ? "true" : "false");
+  });
+}
+
+function render() {
+  const n = signed.size, total = ALL.length;
+  document.getElementById("meterFill").style.width = Math.round((n / total) * 100) + "%";
+  document.getElementById("meterLabel").textContent =
+    n === total ? `all ${total} signed` : `${n} of ${total} signed · ${total - n} reopened`;
+
+  const reopened = ALL.filter(d => !signed.has(d.id));
+  const note = document.getElementById("corrections").value.trim();
+  const lines = [];
+
+  if (!reopened.length) {
+    lines.push("Signed off on all fifteen decisions. Write the ledger and close the interview.");
+  } else if (!signed.size) {
+    lines.push("Reopening the whole ledger — none of the fifteen are signed.");
+  } else {
+    lines.push(`Signed off on ${signed.size} of ${ALL.length}. Reopen these before writing the ledger:`);
+    lines.push("");
+    reopened.forEach(d => lines.push(`- ${d.q}`));
+  }
+
+  if (note) { lines.push("", note); }
+  document.getElementById("promptOut").textContent = lines.join("\n");
+}
+
+render();
+</script>

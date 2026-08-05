@@ -1,0 +1,3 @@
+[S:major] [C:99] specs/cpo-layer/spec.md / Component inventory — R3-F2 remains open: only the P3 gate validates the inventory’s signed SHA; P6 reads the current file, so it can be shrunk after P3 and become an unsigned denominator without any gate detecting the mismatch — fix: make the P6 gate revalidate `structure/inventory.md` against the P3 sign-off SHA and test post-P3 mutation.
+
+[S:major] [C:97] specs/cpo-layer/spec.md / Command-eval runner — the runner stages commands, agents, skills, rules, and scripts but omits `.claude/hooks/check_gate_signoff.py`, which the evaluated P2 command registers and invokes — fix: stage the sign-off hook and add a runner test proving the P2 Stop hook resolves and executes in the scratch project.

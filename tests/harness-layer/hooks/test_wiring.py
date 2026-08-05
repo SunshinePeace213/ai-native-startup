@@ -70,9 +70,10 @@ EXPECTED_BINDINGS = Counter(
 )
 
 # Where each entrypoint stands on Codex parity. Values: "mirrored",
-# "not-applicable", or "blocked-<reason>". The three not-applicable hooks are
-# Claude-only surfaces: the spec gate rides a Claude slash-command, and the
-# worktree pair answers Claude-only WorktreeCreate/WorktreeRemove events.
+# "not-applicable", or "blocked-<reason>". The four not-applicable hooks are
+# Claude-only surfaces: the spec and studio sign-off gates ride Claude
+# slash-commands, and the worktree pair answers Claude-only
+# WorktreeCreate/WorktreeRemove events.
 CODEX_DISPOSITIONS = {
     "block_attribution.py": "mirrored",
     "destructive-guard/block_destructive.py": "mirrored",
@@ -87,6 +88,7 @@ CODEX_DISPOSITIONS = {
     "sensitive-files/bash_guard.py": "mirrored",
     "sensitive-files/file_guard.py": "mirrored",
     "check_spec_completeness.py": "not-applicable",
+    "check_gate_signoff.py": "not-applicable",
     "worktree/worktree_create.py": "not-applicable",
     "worktree/worktree_remove.py": "not-applicable",
 }

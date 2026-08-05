@@ -1,0 +1,313 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.12"
+# dependencies = []
+# ///
+"""Count prototype revision rounds against the allowance the signed brief declares.
+
+Usage: check_revision_count.py <project-dir>
+
+The allowance is re-derived from definition/project-brief.md on every run -- the line
+'- **Revision rounds:** <integer> (plus polish)' -- never hard-coded, and the brief is
+trusted only while sign-off/p2.md lists it and its SHA-256 still matches, so editing the
+number after the client signed buys no rounds. Round numbers are counted rather than
+taken on trust: positive, unique, and contiguous from 1, or the log is unparseable. Each
+round in prototype/revision-log.md past the allowance must name a change order that
+exists and carries all four required fields, and a change order buys only as many rounds
+as its 'Cost - rounds' declares, so neither an empty document nor one reused order can
+cover unlimited rounds. Exit 0 pass; 1 with file:line diagnostics naming each unbought
+round; 2 when the check cannot run its arithmetic -- a missing project directory, brief,
+P2 sign-off or revision log, a brief that no longer matches its recorded hash, a
+misnumbered or otherwise unparseable log, or a brief that declares no allowance at all,
+which is a missing baseline rather than a zero allowance.
+"""
+
+import hashlib
+import re
+import sys
+from pathlib import Path
+
+BRIEF = "definition/project-brief.md"
+SIGNOFF = "sign-off/p2.md"
+ALLOWANCE_RE = re.compile(
+    r"^\s*-\s+\*\*Revision rounds:\*\*\s+(\d+)\s+\(plus polish\)\s*$", re.MULTILINE
+)
+FIELD_RE = re.compile(r"^\s*-\s*\*\*(?P<name>[^*]+?):?\*\*\s*(?P<value>.*)$")
+DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+DELIMITER_RE = re.compile(r":?-{2,}:?")
+SHA_RE = re.compile(r"[0-9a-f]{64}")
+UNFILLED = {"", "-", "tbd", "n/a", "none"}
+
+
+class ParseError(Exception):
+    """The check cannot run its arithmetic on this input."""
+
+
+def cells(line: str) -> list[str]:
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
+def is_delimiter(row: list[str]) -> bool:
+    return bool(row) and all(DELIMITER_RE.fullmatch(cell) for cell in row)
+
+
+def tables(lines: list[str]):
+    """(header, rows) per pipe table; rows are (line_no, cells)."""
+    found = []
+    i = 0
+    while i < len(lines):
+        head = lines[i].lstrip()
+        if head.startswith("|") and i + 1 < len(lines) and is_delimiter(cells(lines[i + 1])):
+            header = cells(lines[i])
+            rows = []
+            j = i + 2
+            while j < len(lines) and lines[j].lstrip().startswith("|"):
+                rows.append((j + 1, cells(lines[j])))
+                j += 1
+            found.append((header, rows))
+            i = j
+        else:
+            i += 1
+    return found
+
+
+def read_lines(path: Path, what: str) -> list[str]:
+    try:
+        return path.read_text(encoding="utf-8").splitlines()
+    except OSError as err:
+        raise ParseError(f"cannot read the {what} at {path}: {err}") from err
+
+
+def cell_at(row: list[str], index: int | None) -> str:
+    return row[index] if index is not None and index < len(row) else ""
+
+
+def unwrap(cell: str) -> str:
+    """A sign-off cell with its markdown emphasis and code ticks removed."""
+    return cell.strip().strip("`*_ ").strip()
+
+
+def signed_hash(project: Path, artifact: str) -> tuple[int, str]:
+    """(line_no, SHA-256) the P2 sign-off recorded for a project-relative artifact.
+
+    Parsed on check_gate_signoff.py's schema -- the first table whose header names an
+    Artifact and a SHA column -- so the gate and this counter read one document alike.
+    """
+    path = project / SIGNOFF
+    if not path.is_file():
+        raise ParseError(
+            f"{path}: the P2 sign-off is missing, so the revision allowance rests on a brief "
+            "no client has approved"
+        )
+    for header, rows in tables(read_lines(path, "P2 sign-off")):
+        names = [name.casefold() for name in header]
+        path_at = next((i for i, name in enumerate(names) if "artifact" in name), None)
+        sha_at = next((i for i, name in enumerate(names) if "sha" in name), None)
+        if path_at is None or sha_at is None:
+            continue
+        for line_no, row in rows:
+            if unwrap(cell_at(row, path_at)).removeprefix("./") == artifact:
+                return line_no, unwrap(cell_at(row, sha_at)).casefold()
+        raise ParseError(
+            f"{path}: the approved-artifact table does not list {artifact}, so the allowance "
+            "it declares was never signed"
+        )
+    raise ParseError(f"{path}: no approved-artifact table with 'Artifact' and 'SHA-256' columns")
+
+
+def contained(project: Path, reference: str) -> Path | None:
+    """Where a change-order reference resolves, or None when it leaves the project.
+
+    A change order buys rounds for the one engagement whose client approved it, so a
+    reference may only name a file inside that project. An absolute path, a `..` segment,
+    or a symlink out of the tree would otherwise let another client's order -- or any file
+    on disk carrying the right four fields -- pay for these rounds. Same rule, and the same
+    shape, as check_gate_signoff.py's artifact containment.
+    """
+    path = Path(reference)
+    if path.is_absolute() or ".." in path.parts:
+        return None
+    root = project.resolve()
+    target = (project / path).resolve()
+    return target if root in target.parents else None
+
+
+def allowance(project: Path) -> int:
+    """The signed allowance, refused unless the brief still hashes to what P2 approved."""
+    path = project / BRIEF
+    line_no, signed = signed_hash(project, BRIEF)
+    if not SHA_RE.fullmatch(signed):
+        raise ParseError(f"{project / SIGNOFF}:{line_no}: {BRIEF} carries no 64-hex SHA-256")
+    try:
+        current = hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError as err:
+        raise ParseError(f"cannot read the signed project brief at {path}: {err}") from err
+    if current != signed:
+        raise ParseError(
+            f"{path}:1: the brief changed since the P2 sign-off (signed {signed}, current "
+            f"{current}) -- editing the allowance buys rounds no change order paid for"
+        )
+    match = ALLOWANCE_RE.search("\n".join(read_lines(path, "signed project brief")))
+    if match is None:
+        raise ParseError(
+            f"the signed brief at {path} declares no "
+            "'- **Revision rounds:** <integer> (plus polish)' line -- the baseline is missing, "
+            "which is not the same as an allowance of zero"
+        )
+    return int(match.group(1))
+
+
+def rounds(path: Path) -> list[tuple[int, int, str]]:
+    """(line_no, round number, change-order reference) per revision-log row."""
+    lines = read_lines(path, "revision log")
+    for header, rows in tables(lines):
+        index = {name.casefold(): i for i, name in enumerate(header)}
+        if "round" not in index:
+            continue
+        logged = []
+        for line_no, row in rows:
+            raw = cell_at(row, index["round"]).strip("` ")
+            try:
+                number = int(raw)
+            except ValueError as err:
+                raise ParseError(f"{path}:{line_no}: '{raw}' is not a round number") from err
+            logged.append((line_no, number, cell_at(row, index.get("change order")).strip("` ")))
+        numbered(path, logged)
+        return logged
+    raise ParseError(f"the revision log at {path} carries no table with a Round column")
+
+
+def numbered(path: Path, logged: list[tuple[int, int, str]]) -> None:
+    """Refuse a log whose rounds are not positive, unique and contiguous from 1.
+
+    Counting rows would let a log numbered 1, 1, 1 stay inside any allowance forever,
+    and a log that jumps 1, 2, 7 hides whatever happened in between.
+    """
+    seen: dict[int, int] = {}
+    for line_no, number, _reference in logged:
+        if number < 1:
+            raise ParseError(
+                f"{path}:{line_no}: round number {number} is not positive, so the rounds "
+                "cannot be counted"
+            )
+        if number in seen:
+            raise ParseError(
+                f"{path}:{line_no}: round {number} is already logged at line {seen[number]} -- "
+                "repeating a number hides a round rather than counting it"
+            )
+        seen[number] = line_no
+    missing = sorted(set(range(1, max(seen, default=0) + 1)) - set(seen))
+    if missing:
+        raise ParseError(
+            f"{path}:1: the revision log skips round(s) {', '.join(map(str, missing))} -- "
+            "rounds run contiguously from 1 or the count is not the number of rounds"
+        )
+
+
+def fields(lines: list[str]) -> dict[str, tuple[int, str]]:
+    """{normalised field name: (line_no, value)} for '- **Name:** value' lines."""
+    found = {}
+    for i, line in enumerate(lines):
+        match = FIELD_RE.match(line)
+        if match:
+            name = re.sub(r"[\s–—-]+", " ", match.group("name")).strip().casefold()
+            found[name] = (i + 1, match.group("value").strip())
+    return found
+
+
+def check_change_order(path: Path) -> tuple[int, list[str]]:
+    """(rounds bought, failures) for one change order.
+
+    A change order is absent, missing any of the four required fields, or buys the
+    number of rounds its cost declares -- never more, so one order cannot cover a
+    second round it was not priced for.
+    """
+    if not path.is_file():
+        return 0, [f"{path}:1: the change order this round names does not exist"]
+    declared = fields(read_lines(path, "change order"))
+    failures = []
+    for name, label in (("requested", "Requested"), ("cost time", "Cost - time")):
+        line_no, value = declared.get(name, (1, ""))
+        if not value:
+            failures.append(f"{path}:{line_no}: '{label}' is missing or empty")
+    bought = 0
+    line_no, value = declared.get("cost rounds", (1, ""))
+    if not re.fullmatch(r"\d+", value):
+        failures.append(f"{path}:{line_no}: 'Cost - rounds' is not an integer: '{value}'")
+    elif int(value) < 1:
+        failures.append(
+            f"{path}:{line_no}: 'Cost - rounds' is {value} -- an order that buys no round "
+            "cannot pay for one"
+        )
+    else:
+        bought = int(value)
+    line_no, value = declared.get("approved by", (1, ""))
+    date = DATE_RE.search(value)
+    if date is None:
+        failures.append(f"{path}:{line_no}: 'Approved by' carries no YYYY-MM-DD date")
+    elif not (value[: date.start()] + value[date.end() :]).strip(" ·,.-"):
+        failures.append(f"{path}:{line_no}: 'Approved by' carries a date but no name")
+    return bought, failures
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) != 2:
+        print("usage: check_revision_count.py <project-dir>")
+        return 2
+    project = Path(argv[1])
+    if not project.is_dir():
+        print(f"{project} is not a project directory")
+        return 2
+    log_path = project / "prototype" / "revision-log.md"
+    try:
+        allowed = allowance(project)
+        logged = rounds(log_path)
+    except ParseError as err:
+        print(err)
+        return 2
+
+    failures = []
+    excess: dict[Path, tuple[Path, list[tuple[int, int]]]] = {}
+    for line_no, number, reference in sorted(logged):
+        if number <= allowed:
+            continue
+        if reference.casefold() in UNFILLED:
+            failures.append(
+                f"{log_path}:{line_no}: round {number} is past the {allowed}-round allowance "
+                "and names no change order"
+            )
+            continue
+        target = contained(project, reference)
+        if target is None:
+            failures.append(
+                f"{log_path}:{line_no}: round {number} names the change order {reference}, "
+                "which resolves outside the project -- an order buys rounds only for the "
+                "engagement whose client approved it"
+            )
+            continue
+        _display, uses = excess.setdefault(target, (project / reference, []))
+        uses.append((line_no, number))
+
+    for order, uses in excess.values():
+        bought, order_failures = check_change_order(order)
+        numbers = ", ".join(str(number) for _line_no, number in uses)
+        label = f"round{'s' if len(uses) > 1 else ''} {numbers}"
+        for failure in order_failures:
+            failures.append(f"{failure} ({label}, past the {allowed}-round allowance)")
+        if not order_failures and len(uses) > bought:
+            failures.append(
+                f"{log_path}:{uses[bought][0]}: {len(uses)} rounds past the {allowed}-round "
+                f"allowance name {order}, which buys {bought}"
+            )
+
+    if failures:
+        for failure in failures:
+            print(failure)
+        print(f"{len(failures)} unmet change-order requirements past the {allowed}-round allowance")
+        return 1
+    print(f"{len(logged)} rounds logged against an allowance of {allowed}, all accounted for")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

@@ -3,7 +3,9 @@
 Every hook is a uv script, and `run_hook` is the ONE launcher: it runs the
 script through the REAL uv (absolute path, resolved before any test touches
 PATH) exactly as Claude Code would, addressed RELATIVE to .claude/hooks
-("auto-format/python.py") so no per-feature launcher can drift. The base
+("auto-format/python.py") so no per-feature launcher can drift. A hook whose
+registration passes an argument (check_gate_signoff.py takes its phase) is
+launched with the same `args=` the frontmatter writes. The base
 environment is git-isolated -- the developer's git config is shut out and
 the repo-routing GIT_* variables are scrubbed -- so a hook under test can
 never read or touch the host's git state by accident. Tests express intent
@@ -52,6 +54,7 @@ def run_hook():
         script: str,
         payload: str,
         *,
+        args: tuple = (),
         env_overrides: dict | None = None,
         unset_env: tuple = (),
         cwd: Path = REPO_ROOT,
@@ -61,7 +64,7 @@ def run_hook():
             env.pop(name, None)
         env.update(env_overrides or {})
         return subprocess.run(
-            [UV, "run", "--script", str(HOOKS_ROOT / script)],
+            [UV, "run", "--script", str(HOOKS_ROOT / script), *args],
             input=payload,
             capture_output=True,
             text=True,

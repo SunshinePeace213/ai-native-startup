@@ -1,0 +1,5 @@
+[S:major] [C:98] .claude/commands/studio-layer/evals/evals.json / b4 `sections()` — The fix unconditionally discards the first H1, so a valid titleless plan using three H1 section headings retains only two and falsely fails the three-novel-sections requirement — fix: omit the first H1 only when lower-level headings establish it as a document title, and add an H1-only regression fixture.
+
+[S:major] [C:100] specs/cpo-layer/artifacts/dev-report.html / facts and filters — I3-F3 is not fully fixed: the report still says `1030` tests, `15 / 16` criteria, “AC16 evidence outstanding,” “Closed (15),” and “Outstanding (1),” contradicting its updated 1039/all-closed evidence — fix: regenerate these counters to 1039 tests and 16/16 criteria closed with zero outstanding.
+
+[S:minor] [C:100] specs/cpo-layer/artifacts/dev-report.html / AC3 row — I3-F4’s false universal remains here: AC3 still claims all nine roles use `disallowedTools: Agent`, while the research analyst uses an allowlist — fix: state the enforced property that no role can spawn a subagent, accepting either denial mechanism.

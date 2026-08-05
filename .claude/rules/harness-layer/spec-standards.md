@@ -19,6 +19,11 @@ review, not after.
    shape stated in `## Interfaces & Contracts` is asserted by one of them. A task
    that changes behavior names the test it adds or extends in its **Files**, at the
    tier [test-tiers.md](test-tiers.md) assigns. No "works well" or "feels fast".
+   When a criterion leans on an existing runner, verify at draft time that the
+   runner actually reaches the target — run the exact invocation against an
+   equivalent target that exists today, and record what it proved. Naming a runner
+   is not evidence it can resolve, stage, or grade what you point it at; a suite
+   nothing executes cannot produce a pass rate, however well-formed its file is.
 3. **Feasibility & ordering** — every step can run as written, and prerequisites
    come before their dependents.
 4. **Scope fidelity** — the plan implements the locked decisions exactly: nothing
@@ -27,7 +32,12 @@ review, not after.
    a locked decision.
 6. **Grounding** — under the `kb-grounded` profile, every claim about harness
    behavior (hooks, frontmatter, subagents, skills, commands, MCP, model aliases)
-   cites a cached `ai-docs/` file in decisions.md `## KB References`.
+   cites a source in decisions.md `## KB References`: a cached `ai-docs/` file, or
+   a checked-in authoritative reference under `.claude/skills/meta-skills/references/`
+   (`frontmatter.md`, `command-format.md`, `schemas.md`) where the KB has no mirror
+   for that surface. Cite the file and line; memory is never a source. When neither
+   has it, say so explicitly and name the `/harness-layer:kb add` follow-up rather
+   than asserting the behavior.
 7. **Tracking hygiene** — spec.md `## Tracking` records the change type,
    complexity, Issue `#N`, the convention branch `<type>/<N>-<slug>` carrying the
    same number, the worktree path, and the review profile. No placeholders.

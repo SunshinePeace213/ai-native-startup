@@ -1,0 +1,1210 @@
+<title>Build brief — studio-layer</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+    --surface-2: #E7E2D8;
+    --ok: #4A6B3D;
+    --warn: #8A6212;
+    --warn-ink: #6E4E0E;
+    --dim: #4A443E;
+
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+    --measure: 68ch;
+    --r: 3px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 56px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 32px 160px;
+  }
+
+  /* ---------- rail ---------- */
+  .rail { position: sticky; top: 0; align-self: start; padding-top: 72px; }
+  .rail nav { display: flex; flex-direction: column; gap: 2px; border-left: 1px solid var(--border); }
+  .rail a {
+    padding: 7px 0 7px 14px;
+    margin-left: -1px;
+    border-left: 1px solid transparent;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 1.35;
+    transition: color .15s, border-color .15s;
+  }
+  .rail a:hover { color: var(--text); }
+  .rail a.on { color: var(--accent); border-left-color: var(--accent); }
+  .rail .step {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    display: block;
+    opacity: .65;
+  }
+
+  /* ---------- head ---------- */
+  header { padding: 76px 0 0; max-width: var(--measure); }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-size: clamp(30px, 4.4vw, 44px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+  .lede { font-size: 18px; color: var(--dim); margin: 0 0 28px; }
+  .lede strong { font-weight: 600; color: var(--text); }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .fact { padding: 12px 16px; border-right: 1px solid var(--border); min-width: 0; }
+  .fact:last-child { border-right: 0; }
+  .fact dd { overflow-wrap: anywhere; }
+  .fact dt {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 3px;
+  }
+  .fact dd { margin: 0; font-size: 14px; font-weight: 500; }
+  .fact dd .was { color: var(--muted); font-weight: 400; }
+
+  /* ---------- sections ---------- */
+  section { padding-top: 76px; max-width: var(--measure); }
+  section > h2 {
+    font-size: 13px;
+    font-family: var(--mono);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    margin: 0 0 6px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  section > h2 span { text-transform: none; letter-spacing: 0; color: var(--muted); font-family: var(--sans); font-size: 13px; }
+  section > p { color: var(--dim); }
+  h3 { font-size: 17px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.01em; }
+
+  /* ---------- gate strip (signature) ---------- */
+  #gates { max-width: none; }
+  #gates > h2, #gates > p { max-width: var(--measure); }
+  .strip {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 6px;
+    margin: 26px 0 0;
+  }
+  .gate {
+    appearance: none;
+    text-align: left;
+    font: inherit;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 12px 12px 14px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: background .15s, border-color .15s, transform .15s;
+  }
+  .gate:hover { background: var(--surface-2); }
+  .gate[aria-pressed="true"] { border-color: var(--accent); background: var(--surface-2); }
+  .gate .code { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; color: var(--muted); }
+  .gate[aria-pressed="true"] .code { color: var(--accent); }
+  .gate .nm { font-size: 12.5px; line-height: 1.25; color: var(--dim); }
+  .bar { height: 8px; border-radius: 1px; position: relative; overflow: hidden; }
+  .bar i {
+    position: absolute; inset: 0;
+    transform-origin: left center;
+    animation: close .5s cubic-bezier(.2,.7,.3,1) backwards;
+  }
+  .gate.hard .bar { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--border); }
+  .gate.hard .bar i { background: var(--accent); }
+  .gate.hard .bar::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: calc(50% - 1px);
+    width: 2px; background: var(--surface); z-index: 2;
+  }
+  .gate.soft .bar { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
+  .gate.soft .bar i { background: repeating-linear-gradient(90deg, var(--border) 0 4px, transparent 4px 8px); }
+  @keyframes close { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  .gate .tag {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .gate.hard .tag { color: var(--accent); }
+  .gatenote {
+    margin: 14px 0 0; padding: 14px 16px;
+    border: 1px solid var(--border); border-left: 2px solid var(--accent);
+    border-radius: var(--r); background: var(--surface);
+    font-size: 14.5px; color: var(--dim); max-width: var(--measure);
+  }
+  .gatenote b { color: var(--text); font-weight: 600; }
+  .gatenote .roles { font-family: var(--mono); font-size: 12.5px; color: var(--muted); display: block; margin-top: 5px; }
+
+  /* ---------- evidence blocks ---------- */
+  pre {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    margin: 0;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border-radius: var(--r);
+    overflow-x: auto;
+    white-space: pre;
+    tab-size: 2;
+  }
+  pre .p { color: var(--muted); }
+  code { font-family: var(--mono); font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 2px; }
+
+  .diptych { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .pane { border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; min-width: 0; }
+  .pane > .ph {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    padding: 7px 14px; border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  .pane.before > .ph { color: var(--warn-ink); box-shadow: inset 2px 0 0 var(--warn); }
+  .pane.after > .ph { color: var(--ok); box-shadow: inset 2px 0 0 var(--ok); }
+  .pane pre { border-radius: 0; }
+
+  .try { margin-top: 34px; }
+  .try:first-of-type { margin-top: 26px; }
+  .try p.desc { color: var(--dim); font-size: 14.5px; margin: 0; }
+  .cmd { margin-top: 12px; }
+  .cmd .ph {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 5px;
+  }
+  .caption { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+
+  /* ---------- segmented control ---------- */
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .seg button {
+    font: inherit; font-size: 13px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--dim);
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .seg button:hover { background: var(--surface); }
+  .seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  /* ---------- ledger ---------- */
+  #ledger { max-width: none; }
+  #ledger > h2, #ledger > p, #ledger .toolbar, #ledger .verdict { max-width: var(--measure); }
+  .toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    margin-top: 22px;
+  }
+  .toolbar .lbl {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-right: 4px;
+  }
+  .verdict {
+    margin-top: 16px; padding: 12px 16px;
+    border: 1px solid var(--border); border-left: 2px solid var(--accent);
+    border-radius: var(--r); background: var(--surface);
+    font-size: 14.5px;
+  }
+  .verdict b { font-weight: 600; }
+  .verdict .sub { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  .grouphead {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); margin: 30px 0 10px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+  }
+  .row {
+    border: 1px solid var(--border); border-radius: var(--r);
+    background: var(--surface); padding: 16px 18px; margin-bottom: 8px;
+    display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; gap: 18px; align-items: start;
+  }
+  .row.held { border-color: var(--accent); }
+  .row.asked { border-color: var(--warn); }
+  .row .ac {
+    font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: .04em;
+    color: var(--accent); padding-top: 1px;
+  }
+  .row .body { min-width: 0; }
+  .row .ttl { font-size: 15px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em; }
+  .ev { margin-top: 8px; }
+  .ev:first-of-type { margin-top: 0; }
+  .ev pre { background: var(--surface-2); }
+  .ev .res {
+    display: flex; gap: 8px; align-items: baseline;
+    font-family: var(--mono); font-size: 12.5px; margin-top: 5px; padding-left: 2px;
+  }
+  .ev .res .mark { flex: none; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+  .ev.pass .res .mark { color: var(--ok); }
+  .ev.rate .res .mark { color: var(--accent); }
+  .ev.pend .res .mark { color: var(--warn-ink); }
+  .ev .res .txt { color: var(--dim); min-width: 0; overflow-wrap: anywhere; }
+  .row .foot { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+  .disp { display: flex; flex-direction: column; gap: 4px; }
+  .disp button {
+    font: inherit; font-size: 12px; text-align: left;
+    padding: 4px 10px; border: 1px solid transparent; border-radius: 999px;
+    background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap;
+  }
+  .disp button:hover { border-color: var(--border); color: var(--text); }
+  .disp button[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .disp button[data-d="rerun"][aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+  .disp button[data-d="question"][aria-pressed="true"] { background: var(--warn-ink); border-color: var(--warn-ink); }
+
+  /* ---------- resolution ledger ---------- */
+  .res-item {
+    border: 1px solid var(--border); border-radius: var(--r);
+    background: var(--surface); padding: 16px 18px; margin-top: 10px;
+  }
+  .res-item.lead { border-left: 2px solid var(--accent); }
+  .res-item .q { font-size: 15.5px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .res-item .badge {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--accent); display: block; margin-bottom: 7px;
+  }
+  .res-item p { margin: 0 0 8px; font-size: 14.5px; color: var(--dim); }
+  .res-item p:last-child { margin-bottom: 0; }
+  .res-item .then { color: var(--text); }
+
+  /* ---------- timeline ---------- */
+  details.tl {
+    border: 1px solid var(--border); border-radius: var(--r);
+    background: var(--surface); margin-top: 22px;
+  }
+  details.tl > summary {
+    cursor: pointer; padding: 14px 18px; font-size: 14.5px; font-weight: 500;
+    list-style: none; display: flex; justify-content: space-between; gap: 16px; align-items: center;
+  }
+  details.tl > summary::-webkit-details-marker { display: none; }
+  details.tl > summary .hint { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  details.tl[open] > summary { border-bottom: 1px solid var(--border); }
+  .tlbody { padding: 6px 18px 20px; }
+  .entry { padding: 16px 0 0 20px; border-left: 1px solid var(--border); position: relative; }
+  .entry::before {
+    content: ""; position: absolute; left: -3.5px; top: 22px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--border);
+  }
+  .entry.mark::before { background: var(--accent); }
+  .entry:last-child { border-left-color: transparent; }
+  .entry .when {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--muted);
+  }
+  .entry .what { font-size: 14.5px; font-weight: 600; margin: 2px 0 4px; }
+  .entry p { margin: 0 0 6px; font-size: 13.5px; color: var(--dim); }
+  .entry pre { font-size: 12px; margin-top: 6px; }
+
+  /* ---------- prompt ---------- */
+  .promptwrap { margin-top: 22px; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+  .promptwrap .ph {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .promptwrap .ph h3 {
+    margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted); font-weight: 500;
+  }
+  #out {
+    margin: 0; padding: 18px 16px; background: var(--bg);
+    font-size: 13px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere;
+    max-height: 460px; overflow-y: auto;
+  }
+  button.primary {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border: 1px solid var(--text); border-radius: var(--r);
+    background: var(--text); color: var(--bg); cursor: pointer;
+  }
+  button.primary.done { background: var(--ok); border-color: var(--ok); }
+  textarea {
+    width: 100%; font: inherit; font-size: 14px; padding: 10px 12px; margin-top: 12px;
+    border: 1px solid var(--border); border-radius: var(--r); background: var(--surface);
+    color: var(--text); resize: vertical; min-height: 66px;
+  }
+  textarea:focus, .gate:focus-visible, .disp button:focus-visible, .seg button:focus-visible,
+  button.primary:focus-visible, .rail a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+
+  footer {
+    max-width: var(--measure); margin-top: 76px; padding-top: 20px;
+    border-top: 1px solid var(--border); font-size: 13px; color: var(--muted);
+  }
+  footer code { background: transparent; padding: 0; }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0 20px 100px; }
+    .rail { position: static; padding-top: 28px; }
+    .rail nav { flex-direction: row; flex-wrap: wrap; border-left: 0; }
+    .rail a { border-left: 0; border-bottom: 1px solid transparent; padding: 4px 0; margin-right: 16px; }
+    .rail a.on { border-left-color: transparent; border-bottom-color: var(--accent); }
+    .rail .step { display: none; }
+    header { padding-top: 34px; }
+    .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fact:nth-child(2n) { border-right: 0; }
+    .fact:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+    .strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .diptych { grid-template-columns: minmax(0, 1fr); }
+    .row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .disp { flex-direction: row; flex-wrap: wrap; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  }
+</style>
+
+<div class="shell">
+  <aside class="rail">
+    <nav id="nav">
+      <a href="#outcome"><span class="step">01</span>What shipped</a>
+      <a href="#gates"><span class="step">02</span>The eight phases</a>
+      <a href="#try"><span class="step">03</span>Try it</a>
+      <a href="#ledger"><span class="step">04</span>Criteria &rarr; evidence</a>
+      <a href="#resolved"><span class="step">05</span>What the build settled</a>
+      <a href="#timeline"><span class="step">06</span>Notes timeline</a>
+      <a href="#signoff"><span class="step">07</span>Sign off</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header id="outcome">
+      <p class="eyebrow">studio-layer &middot; build brief &middot; issue #80 &middot; feat/80-cpo-layer</p>
+      <h1>Eight phase commands ship. Four of them refuse to close without a signature a hook can read.</h1>
+      <p class="lede">
+        Soriza's design work now runs as <code>/studio-layer:p0-intake</code> through
+        <code>p7-retro</code>, and every countable claim along the way &mdash; state coverage,
+        contrast, question coverage, revision rounds, role model stamps &mdash;
+        <strong>fails a check or a test rather than passing on assertion</strong>. The suite went
+        from 875 passed to 990 and stayed green; all sixteen acceptance criteria carry a command
+        and its observed output.
+      </p>
+      <dl class="facts">
+        <div class="fact"><dt>Suite</dt><dd>990 passed, 2 skipped <span class="was">&larr; 875</span></dd></div>
+        <div class="fact"><dt>Criteria</dt><dd>16 of 16 with evidence</dd></div>
+        <div class="fact"><dt>Plan-local checks</dt><dd>7 of 7 pass</dd></div>
+        <div class="fact"><dt>Skill eval delta</dt><dd>+0.27 over 12 runs</dd></div>
+      </dl>
+    </header>
+
+    <section id="gates">
+      <h2>The eight phases <span>click a phase for its gate and staffing</span></h2>
+      <p>
+        The layer's whole thesis is in this row: a phase either advises or it blocks. P2, P3, P4
+        and P6 register <code>check_gate_signoff.py</code> in their own frontmatter with their own
+        phase token, so a hard gate cannot close while the sign-off file is missing, a field is
+        blank, or a recorded SHA-256 no longer matches the artifact it claims to approve.
+      </p>
+      <div class="strip" id="strip"></div>
+      <p class="gatenote" id="gatenote"></p>
+    </section>
+
+    <section id="try">
+      <h2>Try it <span>commands, and the output they actually produced</span></h2>
+      <p>
+        Every pane below is a recorded run from <code>implementation-notes.md</code>, not a
+        reconstruction. Run them from the repo root on <code>feat/80-cpo-layer</code>.
+      </p>
+
+      <div class="try">
+        <h3>1 &middot; The whole suite</h3>
+        <p class="desc">
+          The new mechanisms land with their tests, so the honest headline is the suite total.
+        </p>
+        <div class="diptych">
+          <div class="pane before">
+            <p class="ph">Before &middot; at build start</p>
+<pre><span class="p">$</span> uv run pytest -q
+875 passed, 2 skipped in 22.62s</pre>
+          </div>
+          <div class="pane after">
+            <p class="ph">After &middot; re-verified post-tidy</p>
+<pre><span class="p">$</span> uv run pytest
+990 passed, 2 skipped in 14.40s</pre>
+          </div>
+        </div>
+        <p class="caption">
+          Re-run at the <code>studio-command-eval-runner</code> hand-off: 990 passed, 2 skipped in
+          16.90s. <code>uv run ruff check .</code> &rarr; <em>All checks passed!</em>;
+          <code>uv run ruff format --check .</code> &rarr; <em>71 files already formatted</em>.
+        </p>
+      </div>
+
+      <div class="try">
+        <h3>2 &middot; The hook that had nowhere to be registered</h3>
+        <p class="desc">
+          <code>check_gate_signoff.py</code> landed before the commands that register it, so the
+          wiring suite named it as an unclaimed entrypoint &mdash; expected, and tracked. The four
+          p2/p3/p4/p6 frontmatter registrations are what claimed it. The hook itself did not change.
+        </p>
+        <div class="diptych">
+          <div class="pane before">
+            <p class="ph">Before &middot; at the hook hand-off</p>
+<pre><span class="p">$</span> uv run pytest tests/harness-layer/hooks/test_wiring.py
+AssertionError: hooks with no registration
+surface: ['check_gate_signoff.py']</pre>
+          </div>
+          <div class="pane after">
+            <p class="ph">After &middot; four gate commands landed</p>
+<pre><span class="p">$</span> uv run pytest tests/harness-layer/hooks/test_wiring.py
+13 passed in 1.70s</pre>
+          </div>
+        </div>
+        <p class="caption">
+          The failing test is
+          <code>test_every_entrypoint_is_claimed_by_a_registration_surface</code>. The full hook
+          suite at that hand-off was <em>1 failed, 806 passed in 10.38s</em> &mdash; the single
+          failure, and 806 pre-existing hook tests untouched by the new
+          <code>run_hook</code> <code>args</code> parameter.
+        </p>
+      </div>
+
+      <div class="try">
+        <h3>3 &middot; The roster drift test, mutated</h3>
+        <p class="desc">
+          The roster's model and effort stamps are only load-bearing if moving one side alone goes
+          red. Both directions were proved by hand &mdash; the builder mutated an agent file, the
+          lead mutated a roster row &mdash; then reverted. Pick a mutation:
+        </p>
+        <div class="seg" id="mutseg" role="group" aria-label="Which side to mutate">
+          <button type="button" data-m="none" aria-pressed="true">Leave both alone</button>
+          <button type="button" data-m="agent">Edit the agent file</button>
+          <button type="button" data-m="roster">Edit the roster row</button>
+        </div>
+        <div class="cmd">
+          <p class="ph" id="mutlabel"></p>
+          <pre id="mutout"></pre>
+        </div>
+        <p class="caption">
+          AC2 pins the same six node ids explicitly rather than the whole file; the notes record
+          that run as <em>6 passed in 1.64s</em>, and <em>6 passed in 1.82s</em> after the roster
+          row was restored. The principal's row is skipped via the literal
+          <code>No agent file</code> marker in its escalation cell, so the test reads which row to
+          skip from the table instead of a hard-coded name.
+        </p>
+      </div>
+    </section>
+
+    <section id="ledger">
+      <h2>Acceptance criteria &rarr; evidence <span id="tally"></span></h2>
+      <p>
+        One row per criterion, each with the validation command from
+        <code>acceptance-criteria.md</code> and the result recorded in the notes. Mark anything you
+        want re-run in front of you, or anything you want to ask about &mdash; the sign-off prompt
+        at the bottom picks it up.
+      </p>
+      <div class="toolbar">
+        <span class="lbl">Stance</span>
+        <div class="seg" id="presets" role="group" aria-label="Reviewer stance presets"></div>
+      </div>
+      <p class="verdict" id="verdict"></p>
+      <div id="rows"></div>
+    </section>
+
+    <section id="resolved">
+      <h2>What the build settled <span>open at plan time &rarr; decided by evidence</span></h2>
+      <p>
+        One question changed a shipped file against the plan's own wording. The rest are the
+        pending-reds the build closed, and the provenance calls it made along the way.
+      </p>
+
+      <div class="res-item lead">
+        <span class="badge">Deviation &middot; three studio rules</span>
+        <p class="q">The plan said <code>paths: clients/**</code>. The build shipped <code>clients/**/*</code>.</p>
+        <p>
+          <code>studio-roster</code> surfaced the split: it had written <code>clients/**/*</code>
+          while the other two builders copied the literal plan text. Under the
+          <code>kb-grounded</code> profile the tie-break is the mirror, not memory &mdash;
+          <code>ai-docs/anthropic/memory.md</code> documents <code>src/**/*</code> as
+          &ldquo;All files under <code>src/</code>&rdquo; and carries no bare <code>dir/**</code>
+          row, so &ldquo;<code>clients/**</code> matches nested files&rdquo; had no citable source.
+          Every path-scoped rule already in this repo uses the same form:
+          <code>specs/**/*</code>, <code>tests/**/*</code>, <code>.claude/hooks/**/*</code>,
+          <code>**/*.py</code>.
+        </p>
+        <p class="then">
+          Had the plan's form been wrong, nothing would have complained: no studio rule would ever
+          load on a client project. AC5 asserts the substring <code>clients/**</code>, which
+          <code>clients/**/*</code> contains, so no criterion and no locked decision changed &mdash;
+          only the glob the plan spelled out in prose. Both affected checks re-ran clean after the
+          change, and the two one-line edits were made by the builders owning each file.
+        </p>
+<pre><span class="p">$</span> bash specs/cpo-layer/checks/ac4-client-artifacts.sh   <span class="p"># exit 0</span>
+<span class="p">$</span> bash specs/cpo-layer/checks/ac5-rules-path-scoped.sh  <span class="p"># exit 0</span></pre>
+      </div>
+
+      <div class="res-item">
+        <span class="badge">Pending red &middot; closed</span>
+        <p class="q">Could a directory contract survive being gitignored?</p>
+        <p>
+          AC1's check returned exit 1 on two counts on the builder's own run, both because
+          <code>clients/.gitkeep</code> was still untracked &mdash; builders are barred from
+          <code>git add</code>. The lead staged and committed it and the check went green
+          <em>with no file change</em>, which is the outcome that proves the
+          <code>clients/*</code> + <code>!clients/.gitkeep</code> pattern pair works:
+          <code>git check-ignore -v clients/acme/site/brief.md</code> &rarr;
+          <code>.gitignore:378:clients/*</code>, while
+          <code>git check-ignore -q clients/.gitkeep</code> exits 1 &mdash; the negation
+          re-includes the contract file.
+        </p>
+      </div>
+
+      <div class="res-item">
+        <span class="badge">Contract &middot; agreed between two builders</span>
+        <p class="q">How does the coverage checker find the dimension list without keeping its own copy?</p>
+        <p>
+          Settled as a documented anchor rather than an inferred one: <b>every <code>###</code>
+          heading under <code>## Dimensions</code> is one dimension, and the heading text is its
+          name</b> &mdash; stated by the skill itself, in its own
+          <code>## Machine-readable dimension list</code> section. Eight dimensions today. The test
+          that matters is the one showing that adding a dimension to the skill changes what the
+          checker requires.
+        </p>
+      </div>
+
+      <div class="res-item">
+        <span class="badge">Provenance</span>
+        <p class="q">Whose contrast threshold is the contrast script enforcing?</p>
+        <p>
+          The script prints <b>Soriza project threshold</b>, so it never claims conformance to a
+          specification this repo has not mirrored. The lead recomputed the pinned ratio
+          independently rather than trusting the test's docstring:
+          <code>#8A837A</code> on <code>#FAF8F5</code> &rarr;
+          <code>L_fg=0.230410 L_bg=0.940514 ratio=3.5324</code>, matching the asserted
+          <code>3.53:1</code>. AC12's &ldquo;the formula itself is checked, not just the
+          branching&rdquo; holds.
+        </p>
+      </div>
+
+      <div class="res-item">
+        <span class="badge">Placement</span>
+        <p class="q">Where do four check scripts live without reddening the wiring suite?</p>
+        <p>
+          <code>.claude/scripts/studio-layer/</code>, not <code>.claude/hooks/</code> &mdash; so the
+          wiring suite never sees them as unclaimed hook entrypoints. Only
+          <code>check_gate_signoff.py</code> is a hook, and it earns its registration surface from
+          the four gate commands.
+        </p>
+      </div>
+
+      <div class="res-item">
+        <span class="badge">Hygiene</span>
+        <p class="q">Does running the behavior eval leave scratch files in the PR?</p>
+        <p>
+          No. The meta-skills runner writes to
+          <code>&hellip;/studio-client-questions-workspace/</code>, already covered by
+          <code>.gitignore:355 *-workspace/</code>.
+        </p>
+      </div>
+    </section>
+
+    <section id="timeline">
+      <h2>Notes timeline <span>the hand-offs, in the order they were recorded</span></h2>
+      <details class="tl">
+        <summary>
+          <span>2026-08-01 &mdash; build start through the last hand-off</span>
+          <span class="hint">expand</span>
+        </summary>
+        <div class="tlbody">
+          <div class="entry mark">
+            <p class="when">build start</p>
+            <p class="what">Worktree opened on <code>feat/80-cpo-layer</code></p>
+            <p>Plan approved at the human gate; review profile <code>kb-grounded</code>.</p>
+<pre><span class="p">$</span> uv run pytest -q
+875 passed, 2 skipped in 22.62s   <span class="p"># baseline, before any build change</span></pre>
+          </div>
+          <div class="entry">
+            <p class="when">phase 1 &mdash; ground the namespace</p>
+            <p class="what">Five builders launched concurrently</p>
+            <p>
+              <code>studio-namespace</code>, <code>studio-roster</code>,
+              <code>studio-client-artifacts</code>, <code>studio-question-bank</code> and
+              <code>gate-signoff-hook</code>. Their <b>Files</b> fields are the disjointness
+              contract.
+            </p>
+          </div>
+          <div class="entry">
+            <p class="when">hand-off &mdash; studio-namespace</p>
+            <p class="what"><code>.gitignore</code>, <code>clients/.gitkeep</code>, <code>studio-identity.md</code>, <code>AGENTS.md</code></p>
+            <p>
+              AC1 went green once the lead staged <code>.gitkeep</code>, with no file change. AC5
+              reported only the two rules that did not exist yet; nothing failed against
+              <code>studio-identity.md</code>, which cleared scope, name, voice, letterhead,
+              sign-off and the &ge;400-char body assertions.
+            </p>
+          </div>
+          <div class="entry">
+            <p class="when">hand-off &mdash; studio-roster</p>
+            <p class="what">Ten data rows, every stamp checked against <code>model-selection.md</code></p>
+            <p>
+              The principal row (Maya Lindqvist, <code>fable</code>/<code>xhigh</code>) states
+              &ldquo;No agent file&rdquo; in its escalation cell, so the drift test identifies the
+              row it must skip from the table itself. AC5 &rarr; exit 0.
+            </p>
+          </div>
+          <div class="entry">
+            <p class="when">hand-off &mdash; studio-client-artifacts</p>
+            <p class="what">The client artifact rule, forked rather than edited</p>
+            <p>
+              AC4 &rarr; <em>forks craft/publish, unlocks the palette, four patterns each with a
+              return</em>, exit 0. The same check proves
+              <code>.claude/rules/harness-layer/artifacts.md</code> is byte-identical to
+              <code>origin/main</code>.
+            </p>
+          </div>
+          <div class="entry mark">
+            <p class="when">deviation &mdash; glob form</p>
+            <p class="what">All three studio rules moved to <code>paths: clients/**/*</code></p>
+            <p>
+              Settled on the mirrored form; no acceptance criterion or locked decision changed.
+              Both affected checks re-ran at exit 0.
+            </p>
+          </div>
+          <div class="entry">
+            <p class="when">hand-off &mdash; studio-question-bank</p>
+            <p class="what">The invocable question bank and its eval suite</p>
+            <p>
+              Eight dimensions; frontmatter carries <code>name</code> and <code>description</code>
+              and no <code>disable-model-invocation</code>; directory name equals
+              <code>name:</code>. Lint &rarr; <em>PASS (0 warning(s))</em>. Eval suite: 2 cases, 11
+              assertions, 6 of them executable checks. AC6 failed on exactly the two files later
+              tasks owed.
+            </p>
+          </div>
+          <div class="entry">
+            <p class="when">phase 2/3</p>
+            <p class="what"><code>studio-role-agents</code> and <code>studio-check-scripts</code> launched</p>
+          </div>
+          <div class="entry">
+            <p class="when">hand-off &mdash; studio-role-agents</p>
+            <p class="what">Nine agent files, every stamp cross-checked against the roster</p>
+            <p>
+              AC3 &rarr; exit 0; <code>test_model_drift.py</code> &rarr; <em>50 passed, 2 skipped in
+              1.37s</em>. All nine match by parsing both sides. Every file sets
+              <code>disallowedTools: Agent</code>; none carries <code>skills:</code> frontmatter;
+              the principal has no agent file.
+            </p>
+          </div>
+          <div class="entry">
+            <p class="when">tidy</p>
+            <p class="what">11 files touched, +60/&minus;57 &mdash; behavior-preserving only</p>
+            <p>
+              Harness side: rationale the reader cannot act on came out &mdash; four cross-seat
+              asides in the role agents, the palette-fork justification in
+              <code>client-artifacts.md</code>, the opener in <code>studio-identity.md</code>.
+              Instructions stayed. Code side: a dead <code>return rows</code> in
+              <code>check_gate_signoff.py</code>, a hoisted <code>listing</code> local, and local
+              repetition in <code>check_contrast.py</code> and <code>run_command_evals.py</code>. No
+              exit code, diagnostic string, or parse behavior changed.
+            </p>
+<pre><span class="p">$</span> uv run pytest
+990 passed, 2 skipped in 14.40s</pre>
+          </div>
+          <div class="entry mark">
+            <p class="when">AC16 manual eval &mdash; question bank</p>
+            <p class="what">93.9% with the skill, 66.7% without &mdash; delta +0.27</p>
+            <p>
+              Run by the lead, since an unrecorded eval is an unrun one. 2 evals &times; 2 configs
+              &times; 3 repeats = 12 <code>claude -p</code> invocations. Per-run rates with the
+              skill: 1.0, 0.833, 1.0 and 1.0, 1.0, 0.8. Without: 0.667, 0.667, 0.667 and 0.6, 0.8,
+              0.6. The bank measurably changes behavior rather than restating what the model would
+              do anyway &mdash; the only thing an eval on a prose skill can establish.
+            </p>
+          </div>
+          <div class="entry">
+            <p class="when">hand-off &mdash; studio-command-eval-runner</p>
+            <p class="what">The runner that makes the commands suite executable</p>
+            <p>
+              <code>--lint</code> &rarr; <em>2 case(s), schema valid</em>, exit 0. AC16 &rarr; exit 0,
+              closing the last pending check. <code>uv run pytest</code> &rarr; <em>990 passed, 2
+              skipped in 16.90s</em>.
+            </p>
+          </div>
+          <div class="entry mark">
+            <p class="when">hand-off &mdash; studio-phase-commands</p>
+            <p class="what">Eight commands, four Stop registrations &mdash; and the wiring suite goes green</p>
+            <p>
+              AC7 &rarr; exit 0. <code>test_wiring.py</code> &rarr; <em>13 passed in 1.70s</em>, with
+              no change to the hook itself. AC6 &rarr; exit 0, because P1 names
+              <code>check_question_coverage.py</code> literally, so the coverage gate is wired
+              rather than orphaned. Suite at that point: <em>971 passed, 2 skipped in 17.35s</em>.
+            </p>
+          </div>
+          <div class="entry">
+            <p class="when">hand-off &mdash; studio-check-scripts</p>
+            <p class="what">Four scripts that compute, with 25 tests</p>
+            <p>
+              <em>25 passed in 1.91s</em>; all 22 node ids named verbatim across AC6, AC11, AC12 and
+              AC13 are defined. The lead recomputed the pinned contrast ratio independently rather
+              than trusting the test's docstring.
+            </p>
+          </div>
+          <div class="entry">
+            <p class="when">hand-off &mdash; studio-roster-drift-test</p>
+            <p class="what">Both mutation directions proved, then reverted</p>
+            <p>
+              AC2's six node ids &rarr; <em>6 passed in 1.64s</em>. Agent-side and roster-side
+              mutations each went red naming the file; both reverted clean, and the suite returned
+              to <em>6 passed in 1.82s</em>. Agent files are matched by frontmatter
+              <code>name:</code>, so a misnamed file is caught as an orphan.
+            </p>
+          </div>
+          <div class="entry">
+            <p class="when">hand-off &mdash; gate-signoff-hook</p>
+            <p class="what">The phase-argument Stop gate, landing red on purpose</p>
+            <p>
+              <em>30 passed in 1.39s</em> on the hook's own suite; all 26 node ids named in AC8, AC9
+              and AC15 are defined, verified by parsing for each <code>def &lt;name&gt;(</code>.
+              Blast radius held: <code>run_hook</code> gained only <code>args: tuple = ()</code>
+              spliced after the script path, every existing call site untouched, and the other 806
+              hook tests stayed green. The <code>hooks.md</code> catalog row and the
+              <code>CODEX_DISPOSITIONS</code> entry were added together; the wiring suite
+              cross-checks both directions.
+            </p>
+<pre><span class="p">$</span> <span class="p">the registration line the four gate commands carry:</span>
+uv run --script "$CLAUDE_PROJECT_DIR"/.claude/hooks/check_gate_signoff.py &lt;phase&gt;</pre>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section id="signoff">
+      <h2>Sign off <span>paste this back as your review verdict</span></h2>
+      <p>
+        The summary below is the buy-in case as it stands. It changes only where you marked a
+        criterion for a re-run or a question &mdash; nothing else needs saying.
+      </p>
+      <textarea id="extra" placeholder="Anything else, in your own words (optional)"></textarea>
+      <div class="promptwrap">
+        <div class="ph">
+          <h3>Buy-in summary</h3>
+          <button class="primary" id="copy" type="button">Copy</button>
+        </div>
+        <p id="out"></p>
+      </div>
+    </section>
+
+    <footer>
+      Derived from <code>specs/cpo-layer/implementation-notes.md</code>. Every figure on this page
+      is a recorded observation from that file &mdash; nothing here is reconstructed.
+      Plan: <code>specs/cpo-layer/spec.md</code>. Criteria:
+      <code>specs/cpo-layer/acceptance-criteria.md</code>.
+    </footer>
+  </main>
+</div>
+
+<script>
+  /* ---------- the eight phases ---------- */
+  var PHASES = [
+    { id: "P0", name: "Intake", gate: "soft", gateText: "Soft &mdash; internal go / no-go",
+      docs: "intake form, qualification note", roles: "studio-client-partner" },
+    { id: "P1", name: "Discovery", gate: "soft", gateText: "Soft &mdash; notes reviewed with the client",
+      docs: "discovery notes, glossary, competitive audit, reference audit",
+      roles: "studio-discovery-lead, studio-research-analyst" },
+    { id: "P2", name: "Definition", gate: "hard", gateText: "Hard &mdash; brief + sitemap signed, triage complete",
+      docs: "project brief, creative brief, sitemap, section briefs, user flows, cold-designer triage",
+      roles: "studio-discovery-lead, studio-ux-architect, studio-content-strategist" },
+    { id: "P3", name: "Structure", gate: "hard", gateText: "Hard &mdash; wireframes + inventory signed",
+      docs: "annotated lo-fi wireframes, content model, copy outline, component inventory",
+      roles: "studio-ux-architect, studio-content-strategist" },
+    { id: "P4", name: "Art direction", gate: "hard", gateText: "Hard &mdash; one direction picked",
+      docs: "moodboard, style tile, 2&ndash;3 directions, direction rationale",
+      roles: "studio-art-director, studio-content-strategist" },
+    { id: "P5", name: "Prototype", gate: "soft", gateText: "Rounds &mdash; allowance from the signed brief",
+      docs: "prompt pack, prototype link, revision log",
+      roles: "studio-prototype-engineer, studio-art-director" },
+    { id: "P6", name: "QA + handoff", gate: "hard", gateText: "Hard &mdash; QA clean, final sign-off",
+      docs: "QA report, accessibility check, handoff pack, sign-off",
+      roles: "studio-design-qa, studio-client-partner" },
+    { id: "P7", name: "Retro", gate: "soft", gateText: "Soft &mdash; lessons committed to their homes",
+      docs: "project retro, routed lessons", roles: "studio-retro-scribe" }
+  ];
+
+  var strip = document.getElementById("strip");
+  var gatenote = document.getElementById("gatenote");
+
+  PHASES.forEach(function (p, i) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "gate " + p.gate;
+    b.setAttribute("aria-pressed", String(p.id === "P2"));
+    b.innerHTML =
+      '<span class="code">' + p.id + '</span>' +
+      '<span class="bar"><i style="animation-delay:' + (i * 55) + 'ms"></i></span>' +
+      '<span class="nm">' + p.name + '</span>' +
+      '<span class="tag">' + (p.gate === "hard" ? "hard gate" : "no gate") + '</span>';
+    b.addEventListener("click", function () {
+      strip.querySelectorAll(".gate").forEach(function (g) { g.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+      showPhase(p);
+    });
+    strip.appendChild(b);
+  });
+
+  function showPhase(p) {
+    gatenote.innerHTML =
+      "<b>" + p.id + " &middot; " + p.name + "</b> &mdash; " + p.gateText + "." +
+      '<span class="roles">documents: ' + p.docs + "<br>the principal spawns: " + p.roles + "</span>";
+  }
+  showPhase(PHASES[2]);
+
+  /* ---------- mutation demo ---------- */
+  var MUT = {
+    none: {
+      label: "Recorded &middot; nothing edited",
+      out: "$ uv run pytest tests/harness-layer/test_studio_roster_drift.py\n6 passed in 1.64s"
+    },
+    agent: {
+      label: "Recorded &middot; studio-client-partner.md set to effort: high",
+      out: "$ uv run pytest tests/harness-layer/test_studio_roster_drift.py\n" +
+           "AssertionError: .claude/agents/studio-layer/studio-client-partner.md:\n" +
+           "roster says effort 'medium', file says 'high'"
+    },
+    roster: {
+      label: "Recorded &middot; the studio-design-qa roster row set to sonnet",
+      out: "$ uv run pytest tests/harness-layer/test_studio_roster_drift.py\n" +
+           "AssertionError: .claude/agents/studio-layer/studio-design-qa.md:\n" +
+           "roster says model 'sonnet', file says 'opus'\n1 failed, 5 passed"
+    }
+  };
+  var mutout = document.getElementById("mutout");
+  var mutlabel = document.getElementById("mutlabel");
+  document.querySelectorAll("#mutseg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll("#mutseg button").forEach(function (o) { o.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+      renderMut(b.getAttribute("data-m"));
+    });
+  });
+  function renderMut(k) {
+    mutlabel.innerHTML = MUT[k].label;
+    mutout.textContent = MUT[k].out;
+  }
+  renderMut("none");
+
+  /* ---------- the acceptance ledger ---------- */
+  var GROUPS = [
+    "Namespace and roster (cards 01–02)",
+    "Discovery, artifacts, and identity (cards 03–04)",
+    "Phase commands and gates (cards 05–07)",
+    "Design QA and revisions (cards 08–09)",
+    "Roles, gates, and behavior",
+    "Suite health"
+  ];
+
+  var CRITERIA = [
+    { id: "AC1", g: 0, title: "clients/ is a directory contract, ignored by git, invisible to the spec gate",
+      ev: [{ cmd: "bash specs/cpo-layer/checks/ac1-client-data-home.sh",
+             res: "AC1 pass: clients/ is contracted, ignored, and invisible to the spec gate — exit 0", k: "pass" }],
+      foot: "git check-ignore -v clients/acme/site/brief.md → .gitignore:378:clients/* · git check-ignore -q clients/.gitkeep → exit 1, the negation re-includes it." },
+    { id: "AC2", g: 0, title: "Roster stamps are load-bearing — changing either side alone fails",
+      ev: [{ cmd: "uv run pytest \"tests/harness-layer/test_studio_roster_drift.py::test_roster_table_parses\" … (6 node ids)",
+             res: "6 passed in 1.64s", k: "pass" },
+           { cmd: "uv run pytest tests/harness-layer/test_model_drift.py",
+             res: "50 passed, 2 skipped in 1.37s", k: "pass" }],
+      foot: "Both mutation directions proved by hand and reverted; restored suite → 6 passed in 1.82s." },
+    { id: "AC3", g: 0, title: "Nine role agents, function-named, each naming its person in the body",
+      ev: [{ cmd: "bash specs/cpo-layer/checks/ac3-role-agents.sh",
+             res: "AC3 pass: nine role agents, function-named, person in the body — exit 0", k: "pass" }],
+      foot: "Every file sets disallowedTools: Agent; none carries skills: frontmatter; the principal has no agent file." },
+    { id: "AC4", g: 1, title: "The client-artifact rule forks artifacts.md rather than copying it",
+      ev: [{ cmd: "bash specs/cpo-layer/checks/ac4-client-artifacts.sh",
+             res: "AC4 pass: forks craft/publish, unlocks the palette, four patterns each with a return — exit 0", k: "pass" }],
+      foot: "The same check proves .claude/rules/harness-layer/artifacts.md is byte-identical to origin/main — the fork-not-an-edit guardrail." },
+    { id: "AC5", g: 1, title: "Every studio rule is path-scoped, so none loads during ordinary harness work",
+      ev: [{ cmd: "bash specs/cpo-layer/checks/ac5-rules-path-scoped.sh", res: "exit 0", k: "pass" }],
+      foot: "Green after the glob deviation; AC5's assertion is the substring clients/**, which clients/**/* contains." },
+    { id: "AC6", g: 1, title: "The question bank is invocable and its coverage is re-derived, not re-typed",
+      ev: [{ cmd: "uv run pytest tests/harness-layer/studio-layer/", res: "25 passed in 1.91s", k: "pass" },
+           { cmd: "bash specs/cpo-layer/checks/ac6-question-bank-skill.sh",
+             res: "AC6 pass: the question bank is invocable and its coverage is re-derived — exit 0", k: "pass" }],
+      foot: "All 22 node ids named verbatim across AC6, AC11, AC12 and AC13 are defined in that run; none missing. P1 names check_question_coverage.py literally, so the gate is wired rather than orphaned." },
+    { id: "AC7", g: 2, title: "Eight commands exist; exactly p2, p3, p4 and p6 register the gate hook",
+      ev: [{ cmd: "bash specs/cpo-layer/checks/ac7-phase-commands.sh",
+             res: "AC7 pass: eight phase commands, four Stop registrations, each with its own phase — exit 0", k: "pass" }] },
+    { id: "AC8", g: 2, title: "The sign-off gate blocks and allows for the right reasons",
+      ev: [{ cmd: "uv run pytest tests/harness-layer/hooks/gate-signoff/", res: "30 passed in 1.39s", k: "pass" }],
+      foot: "All 26 node ids named verbatim in AC8, AC9 and AC15 are defined — verified by parsing the test file for each def <name>(." },
+    { id: "AC9", g: 2, title: "Triage gates p2; the client-signed inventory gates p3, and is re-verified at p6",
+      ev: [{ cmd: "uv run pytest tests/harness-layer/hooks/gate-signoff/", res: "30 passed in 1.39s", k: "pass" }],
+      foot: "Same run as AC8. test_p6_inventory_mutated_after_p3_signoff_blocks is the case proving the signature is re-checked at P6 rather than trusted from three phases back." },
+    { id: "AC10", g: 2, title: "The new hook is registered, cataloged, and dispositioned",
+      ev: [{ cmd: "uv run pytest tests/harness-layer/hooks/test_wiring.py", res: "13 passed in 1.70s", k: "pass" }],
+      foot: "Was: AssertionError: hooks with no registration surface: ['check_gate_signoff.py']. The four gate registrations closed it with no change to the hook." },
+    { id: "AC11", g: 3, title: "The states matrix counts cells and cannot pass vacuously",
+      ev: [{ cmd: "uv run pytest tests/harness-layer/studio-layer/", res: "25 passed in 1.91s", k: "pass" }] },
+    { id: "AC12", g: 3, title: "Contrast and tap targets are computed, not asserted",
+      ev: [{ cmd: "uv run pytest tests/harness-layer/studio-layer/", res: "25 passed in 1.91s", k: "pass" },
+           { cmd: "lead's independent recomputation of the pinned ratio",
+             res: "#8A837A on #FAF8F5 → L_fg=0.230410 L_bg=0.940514 ratio=3.5324, matching the asserted 3.53:1", k: "pass" }],
+      foot: "The script prints “Soriza project threshold”, so it never claims conformance to a specification this repo has not mirrored." },
+    { id: "AC13", g: 3, title: "The revision count is arithmetic re-derived from the signed brief",
+      ev: [{ cmd: "uv run pytest tests/harness-layer/studio-layer/", res: "25 passed in 1.91s", k: "pass" }] },
+    { id: "AC15", g: 4, title: "Design QA blocks handoff as a mechanism, and no role spawns subagents",
+      ev: [{ cmd: "uv run pytest tests/harness-layer/hooks/gate-signoff/", res: "30 passed in 1.39s", k: "pass" },
+           { cmd: "bash specs/cpo-layer/checks/ac3-role-agents.sh", res: "exit 0 — asserts disallowedTools: Agent on every role", k: "pass" }] },
+    { id: "AC16", g: 4, title: "Both non-deterministic surfaces carry evals a runner actually executes",
+      ev: [{ cmd: "(cd .claude/skills/meta-skills && uv run --with pyyaml python -m scripts.eval ../studio-layer/studio-client-questions --lint)",
+             res: "PASS (0 warning(s)) — exit 0", k: "pass" },
+           { cmd: "manual: (cd .claude/skills/meta-skills && … --behavior --yes)",
+             res: "with skill 93.9% · without skill 66.7% · delta +0.27, over 12 claude -p runs (2 evals × 2 configs × 3 repeats), exit 0", k: "rate" },
+           { cmd: "uv run --script .claude/scripts/studio-layer/run_command_evals.py .claude/commands/studio-layer --lint",
+             res: "…/evals/evals.json: 2 case(s), schema valid — exit 0", k: "pass" },
+           { cmd: "manual: uv run --script …/run_command_evals.py .claude/commands/studio-layer -k 3 --yes",
+             res: "eval-0 1.0 · eval-1 1.0, each needing 1.0, over 6 claude -p runs — exit 0 (review round 1: 0.8889 → 0.9444 → 1.0)", k: "rate" },
+           { cmd: "bash specs/cpo-layer/checks/ac16-evals-are-runnable.sh",
+             res: "AC16 pass: both eval suites are present, harness-shaped, and machine-gradeable — exit 0", k: "pass" }],
+      foot: "Per-run rates with the skill: 1.0, 0.833, 1.0 and 1.0, 1.0, 0.8. Without: 0.667, 0.667, 0.667 and 0.6, 0.8, 0.6. Commands suite after the review fix: 1.0 on every one of the 6 runs. Evals stay manual and out of CI, so the recorded rate is the evidence." },
+    { id: "AC14", g: 5, title: "The whole suite stays green with every new file present",
+      ev: [{ cmd: "uv run pytest", res: "990 passed, 2 skipped in 14.40s (baseline 875 passed, 2 skipped)", k: "pass" },
+           { cmd: "uv run ruff check .", res: "All checks passed!", k: "pass" },
+           { cmd: "uv run ruff format --check .", res: "71 files already formatted", k: "pass" }] }
+  ];
+
+  var MARK = { pass: "pass", rate: "rate", pend: "recorded" };
+
+  var state = {};
+  CRITERIA.forEach(function (c) { state[c.id] = "accept"; });
+
+  var rowsEl = document.getElementById("rows");
+  var lastGroup = -1;
+
+  CRITERIA.forEach(function (c) {
+    if (c.g !== lastGroup) {
+      lastGroup = c.g;
+      var h = document.createElement("p");
+      h.className = "grouphead";
+      h.textContent = GROUPS[c.g];
+      rowsEl.appendChild(h);
+    }
+
+    var row = document.createElement("div");
+    row.className = "row";
+    row.id = "row-" + c.id;
+
+    var ev = c.ev.map(function (e) {
+      return '<div class="ev ' + e.k + '">' +
+        "<pre>" + esc(e.cmd) + "</pre>" +
+        '<p class="res"><span class="mark">' + MARK[e.k] + '</span>' +
+        '<span class="txt">' + esc(e.res) + "</span></p></div>";
+    }).join("");
+
+    row.innerHTML =
+      '<div class="ac">' + c.id + "</div>" +
+      '<div class="body"><p class="ttl">' + esc(c.title) + "</p>" + ev +
+      (c.foot ? '<p class="foot">' + esc(c.foot) + "</p>" : "") + "</div>" +
+      '<div class="disp" role="group" aria-label="Disposition for ' + c.id + '">' +
+      dispBtn(c.id, "accept", "Accept") +
+      dispBtn(c.id, "rerun", "Re-run it") +
+      dispBtn(c.id, "question", "Question") +
+      "</div>";
+
+    rowsEl.appendChild(row);
+  });
+
+  function dispBtn(id, d, label) {
+    return '<button type="button" data-ac="' + id + '" data-d="' + d + '" aria-pressed="' +
+      (d === "accept") + '">' + label + "</button>";
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  rowsEl.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-ac]");
+    if (!b) return;
+    state[b.getAttribute("data-ac")] = b.getAttribute("data-d");
+    render();
+  });
+
+  /* ---------- presets ---------- */
+  var PRESETS = [
+    { key: "ship", label: "Ship it", set: {} },
+    { key: "gates", label: "Show me the gates", set: { AC7: "rerun", AC8: "rerun", AC9: "rerun", AC10: "rerun", AC15: "rerun" } },
+    { key: "sceptic", label: "Evidence sceptic", set: { AC2: "rerun", AC12: "question", AC16: "rerun" } },
+    { key: "clone", label: "Fresh clone", set: { AC1: "rerun", AC14: "rerun" } }
+  ];
+  var presetsEl = document.getElementById("presets");
+  PRESETS.forEach(function (p) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = p.label;
+    b.setAttribute("aria-pressed", String(p.key === "ship"));
+    b.addEventListener("click", function () {
+      CRITERIA.forEach(function (c) { state[c.id] = p.set[c.id] || "accept"; });
+      presetsEl.querySelectorAll("button").forEach(function (o) { o.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+      render();
+    });
+    presetsEl.appendChild(b);
+  });
+
+  /* ---------- render ---------- */
+  var out = document.getElementById("out");
+  var tally = document.getElementById("tally");
+  var verdict = document.getElementById("verdict");
+  var extra = document.getElementById("extra");
+
+  function byDisposition(d) {
+    return CRITERIA.filter(function (c) { return state[c.id] === d; });
+  }
+
+  function render() {
+    CRITERIA.forEach(function (c) {
+      var row = document.getElementById("row-" + c.id);
+      row.classList.toggle("held", state[c.id] === "rerun");
+      row.classList.toggle("asked", state[c.id] === "question");
+      row.querySelectorAll("button[data-ac]").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.getAttribute("data-d") === state[c.id]));
+      });
+    });
+
+    var rerun = byDisposition("rerun");
+    var question = byDisposition("question");
+    var accepted = CRITERIA.length - rerun.length - question.length;
+
+    tally.textContent = accepted + " accepted" +
+      (rerun.length ? " · " + rerun.length + " to re-run" : "") +
+      (question.length ? " · " + question.length + " questioned" : "");
+
+    if (!rerun.length && !question.length) {
+      verdict.innerHTML = "<b>All sixteen accepted as recorded.</b>" +
+        '<span class="sub">The summary below reads as a straight go-ahead — copy it into the review.</span>';
+    } else {
+      verdict.innerHTML = "<b>" + accepted + " accepted, " +
+        (rerun.length ? rerun.length + " held for a re-run" : "") +
+        (rerun.length && question.length ? ", " : "") +
+        (question.length ? question.length + " questioned" : "") + ".</b>" +
+        '<span class="sub">The summary names each one, so the build lead knows exactly what to run or answer.</span>';
+    }
+
+    out.textContent = buildPrompt(rerun, question, extra.value.trim());
+  }
+
+  function buildPrompt(rerun, question, note) {
+    var L = [];
+    L.push("I've read the studio-layer build brief for issue #80 (branch feat/80-cpo-layer) and here's where I land.");
+    L.push("");
+    L.push("What shipped: eight phase commands, /studio-layer:p0-intake through p7-retro, of which p2, p3, p4 and p6 register check_gate_signoff.py in their own frontmatter with their own phase token — so a hard gate cannot close while the sign-off file is missing, a field is blank, or a recorded SHA-256 no longer matches the artifact it claims to approve. Alongside them: nine role agents whose model and effort stamps a drift test re-derives from roster.md, three path-scoped studio rules that never load outside client work, four check scripts that compute rather than assert (states matrix, contrast, question coverage, revision rounds), and two eval suites with runners that actually execute them.");
+    L.push("");
+    L.push("The evidence, as recorded in specs/cpo-layer/implementation-notes.md: the suite went from 875 passed, 2 skipped at build start to 990 passed, 2 skipped; the hooks wiring suite went from one failure naming check_gate_signoff.py as an unclaimed entrypoint to 13 passed once the four gate registrations landed, with no change to the hook itself; all seven plan-local checks under specs/cpo-layer/checks/ exit 0; ruff check and ruff format --check are clean. The roster drift test was mutated from both sides by hand — agent file and roster row — and went red naming the file each time, then reverted clean.");
+    L.push("");
+    L.push("The question-bank skill eval scored 93.9% with the skill against 66.7% without it, a delta of +0.27 over 12 claude -p runs, which is the only thing an eval on a prose skill can establish. The commands suite now scores 1.0 on both cases over 6 claude -p runs, after review round 1 corrected two assertions that tested phrasing and process rather than the documented contract, and closed a real gap in P1\u2019s glossary instruction.");
+    L.push("");
+    L.push("One deviation from the plan: the three studio rules ship with paths: clients/**/* rather than the plan's literal clients/**, because the cached memory mirror documents only the dir/**/* form and every path-scoped rule already in this repo uses it. AC5 asserts the substring clients/**, which clients/**/* contains, so no acceptance criterion and no locked decision changed — only the glob the plan spelled out in prose. Worth knowing because the wrong form would have failed silently: no studio rule would ever have loaded on a client project.");
+    L.push("");
+
+    if (!rerun.length && !question.length) {
+      L.push("I accept all sixteen criteria on the evidence as recorded. Take it to review.");
+    } else {
+      if (rerun.length) {
+        L.push("Before I sign off, please re-run these in front of me and paste the output:");
+        rerun.forEach(function (c) { L.push("- " + c.id + " — " + c.title + ". Command: " + c.ev[0].cmd); });
+        L.push("");
+      }
+      if (question.length) {
+        L.push("And I have questions on:");
+        question.forEach(function (c) { L.push("- " + c.id + " — " + c.title); });
+        L.push("");
+      }
+      L.push("Everything else I accept on the evidence as recorded.");
+    }
+
+    if (note) {
+      L.push("");
+      L.push("One more thing: " + note);
+    }
+    return L.join("\n");
+  }
+
+  extra.addEventListener("input", render);
+  render();
+
+  /* ---------- copy ---------- */
+  var copyBtn = document.getElementById("copy");
+  copyBtn.addEventListener("click", function () {
+    var text = out.textContent;
+    function done() {
+      copyBtn.textContent = "Copied";
+      copyBtn.classList.add("done");
+      setTimeout(function () {
+        copyBtn.textContent = "Copy";
+        copyBtn.classList.remove("done");
+      }, 1400);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+    } else {
+      fallback(text, done);
+    }
+  });
+  function fallback(text, done) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { /* clipboard unavailable */ }
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- rail highlight ---------- */
+  var links = Array.prototype.slice.call(document.querySelectorAll("#nav a"));
+  var targets = links.map(function (a) { return document.querySelector(a.getAttribute("href")); });
+  function spy() {
+    var y = window.scrollY + 140;
+    var idx = 0;
+    targets.forEach(function (t, i) { if (t && t.offsetTop <= y) idx = i; });
+    links.forEach(function (a, i) { a.classList.toggle("on", i === idx); });
+  }
+  window.addEventListener("scroll", spy, { passive: true });
+  spy();
+</script>

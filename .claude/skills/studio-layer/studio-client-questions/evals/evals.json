@@ -1,0 +1,69 @@
+{
+  "skill_name": "studio-client-questions",
+  "evals": [
+    {
+      "id": 0,
+      "name": "turns-a-kickoff-call-into-discovery-notes",
+      "prompt": "We just came off the kickoff call for a new client website and I need our discovery notes written up. Roughly what they said: they are a two-person structural engineering practice that launched last month; the site has to get commercial architects to send a project enquiry instead of ringing around their old contacts; the people they want are practice architects in their forties who will look them up on a laptop between meetings and have never heard of them; they want to read as precise and unfussy, never salesy, and they cannot stand consultancy language; they pointed at Fieldwork Architects and Studio Bark as sites they admire, for the calm and the case-study layout, and said anything with a stock photo of a handshake is out; they have no written copy and no photography at all, because they have not completed a project yet; they own the domain, have no brand guidelines and no CMS preference, but it has to be live before a tender deadline on 30 September; the two founders sign everything off between them, and they have set aside a fixed fee they will confirm in writing this week; six months in they want five qualified enquiries a month, counted from the contact form, against zero today. Write our discovery notes for this project and save them as notes.md in this directory.",
+      "assertions": [
+        {
+          "id": "a1",
+          "text": "notes.md exists",
+          "check": "test -f notes.md"
+        },
+        {
+          "id": "a2",
+          "text": "notes.md carries a '## ' section for every dimension the bank declares, matching the heading text verbatim",
+          "check": "dims=$(awk '/^## Dimensions[[:space:]]*$/{d=1;next} d&&/^## /{d=0} d&&/^### /{sub(/^### /,\"\");print}' \"$SKILL_DIR/SKILL.md\"); [ \"$(echo \"$dims\" | grep -c .)\" -ge 8 ] || { echo 'fewer than 8 dimensions parsed from SKILL.md'; exit 1; }; while IFS= read -r d; do grep -qxF \"## $d\" notes.md || { echo \"notes.md has no section for: $d\"; exit 1; }; done <<< \"$dims\""
+        },
+        {
+          "id": "a3",
+          "text": "The dimension the call could not answer is recorded with the explicit 'N/A, because' opener rather than left blank",
+          "check": "grep -q 'N/A, because' notes.md"
+        },
+        {
+          "id": "a4",
+          "text": "The content section records that nothing exists yet, rather than inventing copy, photography, or a logo the call said they do not have"
+        },
+        {
+          "id": "a5",
+          "text": "Each section is a written statement of what is true for this client, not a transcript of the call or a list of the questions that were asked"
+        },
+        {
+          "id": "a6",
+          "text": "The success section carries the client's own measure — five qualified enquiries a month from the contact form, against a baseline of zero"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "names-the-dimensions-the-notes-still-miss",
+      "prompt": "Here are our discovery notes so far for the Harlow Dental site.\n\n## The job the site does\nGet patients to book online instead of phoning reception, which loses roughly a third of callers at peak.\n\n## The audience and their situation\nMostly people searching for an emergency appointment on a phone, plus parents registering a family.\n\n## Brand voice\nCalm and local. Never clinical, never jokey. They say 'the practice', not 'we'.\n\n## References loved and hated\nThey admire Bupa Dental for the booking flow and dislike anything that looks like a hospital website.\n\n## The content that actually exists\nProfessional photography of two of the three clinics, no written copy they trust, logo files in EPS.\n\n## Hard constraints\nStaying on their existing WordPress install, and live before the September school term.\n\nWe have another thirty minutes with them on Thursday. What should we ask? Save the question set as round-2-questions.md in this directory.",
+      "assertions": [
+        {
+          "id": "b1",
+          "text": "round-2-questions.md exists",
+          "check": "test -f round-2-questions.md"
+        },
+        {
+          "id": "b2",
+          "text": "The round asks about budget, which the notes never covered",
+          "check": "grep -qi budget round-2-questions.md"
+        },
+        {
+          "id": "b3",
+          "text": "The round asks what success looks like at six months, which the notes never covered",
+          "check": "grep -qiE 'six months|success' round-2-questions.md"
+        },
+        {
+          "id": "b4",
+          "text": "The round targets only the dimensions the notes leave open, rather than re-asking the six already written up"
+        },
+        {
+          "id": "b5",
+          "text": "The questions name this client's own situation — the three clinics, the WordPress constraint, the September date — rather than reading as a generic checklist"
+        }
+      ]
+    }
+  ]
+}
