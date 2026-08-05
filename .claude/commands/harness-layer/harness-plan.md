@@ -27,12 +27,11 @@ STALE_AFTER: `30` days — a KB doc older than this is stale
 
 - **PLANNING ONLY** — draft the spec; do not build, write code, or deploy builder agents. Allowed subagents: the `claude-code-guide` KB cross-check, `kb-fetcher` for KB mirrors (never write mirror content yourself), and the `opus` page author. You write the spec files and any plan-local check scripts yourself — they are one coupled artifact and splitting authorship breaks traceability.
 - If no `USER_PROMPT` is provided, stop and ask the user for it.
+- **Route first.** When the request passes every direct-lane check — ≤2 files and roughly ≤80 changed lines; docs/chore/style/fix with an obvious local cause; no executable surface (`.claude/hooks/`, `settings.json`, `checks/`, `scripts/`, `.github/workflows/`) and no security boundary; no new command, skill, agent, or rule — stop and recommend `/harness-layer:harness-direct "<request>"`. When in doubt, keep the full lane.
 - Determine the task type (feat|fix|docs|style|refactor|perf|test|chore) and complexity (simple|medium|complex).
-- Understand the codebase directly — application code and any existing harness patterns under `.claude/`.
 - If `ORCHESTRATION_PROMPT` is provided, let it guide team composition, task granularity, dependency structure, and parallel/sequential decisions.
-- **Draft to the bar.** `spec-standards.md` (auto-loaded on `specs/**`) is the same checklist the Codex gate judges against — self-check the draft against every standard before pushing, so review rounds fix the exceptional, not the expected.
+- **Draft to the bar.** `spec-standards.md` (auto-loaded on `specs/**`) is the same checklist the Codex gate judges against — self-check the draft against every standard before pushing.
 - **Ground harness-layer claims.** When the expert layer is active, statements about hooks, frontmatter, subagents, skills, commands, MCP, or model aliases must trace to a KB doc; record what you consulted in decisions.md's `## KB References`.
-- Ensure the spec is detailed enough that another developer could follow it, covering edge cases, error handling, and scalability.
 
 ## Domain Knowledge
 
@@ -62,12 +61,13 @@ IMPORTANT: **PLANNING ONLY** — do not execute, build, or deploy builder agents
 
 1. Enter Worktree — `Worktree:` line in the prompt → `EnterWorktree(path: ...)`; otherwise `EnterWorktree(name: "<slug>")` (see `Worktree & Handoff`). An existing `specs/<slug>/spec.md` switches the run to `Revision Mode`.
 2. Readiness Gate — transcribe any discovery ledger, assess coverage, and fill only genuinely-open gaps.
-3. Understand Codebase & Set Review Profile — read the relevant code; apply the `Domain Knowledge` trigger and set `kb-grounded` or `standard`.
-4. Design & Draft — technical approach, edge cases, error handling, and scalability, grounded in the KB when the expert layer is active. Define the team and tasks from the available agent types (default `general-purpose`) — IDs, dependencies, assignments, each task's model + effort stamped per the model-selection rule; mark any task whose outcome must be recorded to memory. Write the spec folder (see `Output`), including one executable check script per acceptance criterion, then self-check every file against `spec-standards.md`.
+3. Understand Codebase & Set Review Profile — read the relevant code and the `specs/lessons/digest.md` rows matching the touched surface (fold their pitfalls into the draft); apply the `Domain Knowledge` trigger and set `kb-grounded` or `standard`.
+4. Design & Draft — the technical approach, grounded in the KB when the expert layer is active. Define the team and tasks from the available agent types (default `general-purpose`) — IDs, dependencies, assignments, each task's model + effort stamped per the model-selection rule; mark any task whose outcome must be recorded to memory. Write the spec folder (see `Output`), including one executable check script per acceptance criterion, then self-check every file against `spec-standards.md`.
 5. Name, Issue & Push — reuse the chain `<slug>` (rename with `git mv` only if actively wrong) or generate a descriptive kebab-case name; pick the change `<type>`; first cycle only, create and link the issue; commit and push per `Worktree & Handoff`.
-6. Implementation-Plan Page — spawn the page author now, in the background (see `Plan Artifacts`), so the user reviews while the gate runs.
-7. Codex Gate — invoke the `codex-gate` skill and follow it to its human gate: rounds, ledger, classification, dispute handling, the user's decision, and the self-improve step all live there.
-8. Report — commit and push anything still uncommitted (the page, ledger, standards amendments), then summarize (see `Report`).
+6. Spec Lint — `uv run scripts/spec_lint.py specs/<name-of-plan>/` from the worktree root; fix every FAIL yourself, re-run to green, and commit+push the fixes (`Refs #N`). The gate re-runs this lint first.
+7. Implementation-Plan Page — spawn the page author now, in the background (see `Plan Artifacts`), so the user reviews while the gate runs.
+8. Codex Gate — invoke the `codex-gate` skill and follow it to its human gate: the lint, lens panel, ledger, classification, dispute handling, the user's decision, and the self-improve step all live there.
+9. Report — commit and push anything still uncommitted (the page, ledger, standards amendments), then summarize (see `Report`).
 
 ## Output: Spec Folder
 
@@ -128,8 +128,9 @@ Issue: #N <url>
 Branch: <type>/<N>-<slug> — pushed to origin
 Worktree: <absolute worktree path>
 Review profile: <kb-grounded | standard>
+Spec Lint: <clean | N catches fixed pre-gate>
 Codex Gate: <approved at round N | user chose <proceed|revise|park> — <open blockers | dispute | codex-unavailable>>
-Ledger: <X blocking fixed, Y advisory recorded, Z disputed>
+Ledger: <X blocking fixed, Y advisory recorded, Z disputed — lens substitutions: <none | list>>
 Checks: <N validation commands — M plan-local scripts under checks/>
 KB Grounding: <N docs consulted, M gap-filled — or "none (standard profile)">
 Assumptions: <count recorded in decisions.md, or "none">

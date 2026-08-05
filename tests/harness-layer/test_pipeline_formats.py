@@ -88,3 +88,37 @@ def test_ledger_format_carries_std_and_lens_columns():
     assert LEDGER_HEADER in GATE_SKILL.read_text(encoding="utf-8"), (
         f"codex-gate SKILL.md must define the ledger header exactly as: {LEDGER_HEADER}"
     )
+
+
+STANDARDS = {
+    "S": REPO_ROOT / ".claude" / "rules" / "harness-layer" / "spec-standards.md",
+    "I": REPO_ROOT / ".claude" / "rules" / "harness-layer" / "impl-standards.md",
+}
+
+
+def _stamped_ids(prefix: str) -> set[str]:
+    """The stable IDs a standards file actually declares (`**S1 · Name**` rows)."""
+    text = STANDARDS[prefix].read_text(encoding="utf-8")
+    ids = set(re.findall(rf"\*\*({prefix}\d+) ·", text))
+    assert ids, f"no stamped {prefix}<n> IDs parsed from {STANDARDS[prefix].name}"
+    return ids
+
+
+def _cluster_ids(prefix: str) -> set[str]:
+    """Every standard ID the gate's lens-cluster table assigns to a lens or the lint."""
+    section = _section(GATE_SKILL.read_text(encoding="utf-8"), "Lens clusters")
+    ids = set(re.findall(rf"\b({prefix}\d+)\b", section))
+    assert ids, f"no {prefix}<n> IDs parsed from the Lens clusters table"
+    return ids
+
+
+@pytest.mark.parametrize("prefix", ["S", "I"])
+def test_lens_clusters_cover_every_stamped_standard(prefix: str):
+    """Coverage is the panel's whole point: a standard no lens or lint owns is
+    silently unreviewed, and a lens citing a phantom ID reviews against nothing.
+    Both sides re-derive, so adding S9 without assigning it a lens fails here."""
+    stamped, clustered = _stamped_ids(prefix), _cluster_ids(prefix)
+    assert stamped == clustered, (
+        f"unassigned standards: {sorted(stamped - clustered)}; "
+        f"phantom cluster IDs: {sorted(clustered - stamped)}"
+    )

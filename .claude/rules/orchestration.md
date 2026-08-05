@@ -48,8 +48,9 @@ completion notification instead. Fetch full schemas with `ToolSearch` when neede
 
 ## In this pipeline
 
-- **Builders and fixers**: `/harness-layer:harness-build`'s implement stage and
-  the review fix stage run background subagents on file-disjoint tasks, each
-  stamped per `model-selection.md`.
+- **Builders**: `/harness-layer:harness-build`'s implement stage runs background
+  subagents on file-disjoint tasks, each stamped per `model-selection.md`.
+- **The review fixer**: one full-context `opus` subagent per gate cycle — the
+  whole blocking set travels together, never split across fixers.
 - **Helpers**: plan's `claude-code-guide` and `kb-fetcher`, the plan and build
   `opus` page authors, `/kb` fan-out, and the tidy simplifiers.

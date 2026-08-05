@@ -6,36 +6,41 @@ paths:
 # Implementation Standards
 
 The bar every implementation diff must clear before its PR leaves draft. Builders
-and the build lead self-check the diff against it before opening the PR; the Codex
-gate judges against the same list. A build that meets every standard passes review
-round 1 — fix gaps here, before review, not after.
+and the build lead self-check the diff against it before opening the PR; the
+Codex gate judges against the same list, and findings cite these IDs
+(`[STD:I<n>]`) — a finding citing no standard is advisory.
+`scripts/impl_lint.py` owns the mechanical halves (I7, I2's run-and-pass half,
+the orphan scan) and runs before any lens; the panel judges the rest.
 
-1. **Plan fidelity** — the diff implements the plan's tasks exactly: every task's
-   change present, nothing beyond the locked decisions, non-goals untouched. An
-   undocumented divergence from the plan is a defect.
-2. **Acceptance evidence** — every command in acceptance-criteria.md
+1. **I1 · Plan fidelity** — the diff implements the plan's tasks exactly: every
+   task's change present, nothing beyond the locked decisions, non-goals
+   untouched. An undocumented divergence from the plan is a defect.
+2. **I2 · Acceptance evidence** — every command in acceptance-criteria.md
    `## Validation Commands` passes from the repo root and names a runnable
    identifier: a pytest node id (`tests/…::test_name`) or a `specs/<name>/checks/`
    script path, never a described procedure. Each `manual:` check has its output
    recorded in `implementation-notes.md`. A criterion with no passing check is a
-   promise, not evidence.
-3. **Verification honesty** — every hand-off entry in `implementation-notes.md`
-   records the exact commands run and their observed results. A claim with no
-   recorded evidence fails.
-4. **Harness file quality** — changed files under `.claude/` read as fluent, KISS
-   prose: instructions not rationale, no stray cross-refs, no guidance duplicated
-   from a rule that already loads.
-5. **Grounding** — under the `kb-grounded` profile, every harness-behavior claim
-   the diff relies on (frontmatter fields, hook events, model aliases, command
-   resolution) traces to a `## KB References` doc, never memory.
-6. **Scope hygiene** — no orphaned imports, variables, or functions the change
-   made unused; no drive-by refactors or unrequested features. Every changed line
-   traces to a task.
-7. **Convention compliance** — commits follow git-workflow.md (emoji + type
+   promise, not evidence. (That commands run and pass is lint-owned; whether the
+   evidence proves the criterion is the lens's.)
+3. **I3 · Verification honesty** — every hand-off entry in
+   `implementation-notes.md` records the exact commands run and their observed
+   results. A claim with no recorded evidence fails.
+4. **I4 · Harness file quality** — changed files under `.claude/` read as fluent,
+   KISS prose: instructions not rationale, no stray cross-refs, no guidance
+   duplicated from a rule that already loads.
+5. **I5 · Grounding** — under the `kb-grounded` profile, every harness-behavior
+   claim the diff relies on (frontmatter fields, hook events, model aliases,
+   command resolution) traces to a `## KB References` doc, never memory.
+6. **I6 · Scope hygiene** — no orphaned imports, variables, or functions the
+   change made unused; no drive-by refactors or unrequested features. Every
+   changed line traces to a task. (The unused-import/variable scan is
+   lint-owned; drive-by scope judgment is the lens's.)
+7. **I7 · Convention compliance** — commits follow git-workflow.md (emoji + type
    subject, `Refs #N` footer); the PR body matches pr-process.md (stage table,
-   task manifest, `Closes #N`).
-8. **Test intent** — a bug fix carries the failing test that reproduces it; no
-   test or check hard-codes values or special-cases inputs to pass.
+   task manifest, `Closes #N`). (Commit format is lint-owned.)
+8. **I8 · Test intent** — a bug fix carries the failing test that reproduces it;
+   no test or check hard-codes values or special-cases inputs to pass.
 
-When a gate finding exposes a standard this list is missing or states unclearly,
-amend this file in the same run — that is the self-improve step.
+IDs are stable: never renumber an existing standard — a new one takes the next
+free ID. When a gate finding exposes a standard this list is missing or states
+unclearly, amend this file in the same run — that is the self-improve step.
