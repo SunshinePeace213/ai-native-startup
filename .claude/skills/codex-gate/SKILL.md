@@ -59,6 +59,8 @@ codex exec -C "<worktree root>" -s read-only \
   "<lens prompt>" > "<worktree root>/specs/<name>/reviews/<report-file>.log" 2>&1
 ```
 
+- Write each lens prompt to its file in a separate prior step — a heredoc
+  bundled into the launch command leaves codex reading stdin forever.
 - **Dead lens** — codex exits non-zero or its report file is missing/empty:
   re-run that lens once. Still dead → run that lens's rubric yourself, inline,
   reading only its cluster's standards; write its report file and record the
@@ -79,7 +81,7 @@ One line per finding:
 <id> is exactly one standard from the list above, e.g. [STD:S2]. A finding that
 cites no standard will be recorded as advisory.
 If nothing is found, reply exactly: no findings.
-Do not edit files. Do not run git or gh.
+Do not edit files. Git is read-only for you — diff/log/show only. Never run gh.
 ```
 
 **Lens prompt (round 1).** The flavor head, then the lens block, then the

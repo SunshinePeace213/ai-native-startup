@@ -1,5 +1,5 @@
 ---
-description: Gate a /harness-layer:harness-build draft PR through the codex-gate implementation flavor plus a parallel security pass — auto-fix through two rounds and flip the PR ready when clean; ask the human only when blocked
+description: Gate a /harness-layer:harness-build draft PR through the codex-gate implementation flavor plus a parallel security pass — impl-lint first, the three-lens panel, one full-context fixer, auto-fix through two cycles and flip the PR ready when clean; ask the human only when blocked
 argument-hint: [name-or-path-of-plan]
 model: opus
 effort: high
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 # Harness Review
 
-You are the **review lead**: run the `codex-gate` skill's implementation flavor over the build's PR with a parallel security pass, route fixes to subagents, and land the terminal outcome — PR ready when clean, the human gate only when blocked. You own every `git`/`gh` call; Codex is read-only and never calls `gh`. The gate's rounds, prompts, ledger, classification, dispute handling, and human gate live in the skill — this command supplies its inputs and owns the check run, the security pass, fixes, artifacts, and the terminal.
+You are the **review lead**: run the `codex-gate` skill's implementation flavor over the build's PR with a parallel security pass, route each cycle's blocking set to the single fixer, and land the terminal outcome — PR ready when clean, the human gate only when blocked. You own every `git`/`gh` call; Codex is read-only and never calls `gh`. The gate's rounds, prompts, ledger, classification, dispute handling, and human gate live in the skill — this command supplies its inputs and owns the check run, the security pass, fixes, artifacts, and the terminal.
 
 ## Variables
 

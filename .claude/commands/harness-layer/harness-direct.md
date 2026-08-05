@@ -58,7 +58,7 @@ recommend `/harness-layer:harness-plan "<request>"`:
    Prompt: `You are the single cross-model reviewer of a small direct-lane
    change. Read .claude/rules/harness-layer/impl-standards.md, then review
    git diff origin/main..HEAD.` plus the codex-gate skill's finding-contract
-   block. Dead run → retry once; still dead → review the diff against the
+   block (its git-read-only line is what permits the diff). Dead run → retry once; still dead → review the diff against the
    standards yourself and note the substitution in the metrics row. Classify
    per the gate: blocking = cited standard + critical/major + confidence ≥ 80;
    uncited → advisory. Fix blocking findings yourself, commit, and re-run the
