@@ -118,8 +118,11 @@ Codex never issues a verdict — you derive it:
   row per finding, IDs stable across rounds and flavors:
 
 ```markdown
-| ID | Sev | Conf | Finding | Disposition | Evidence |
+| ID | STD | Lens | Sev | Conf | Finding | Disposition | Evidence |
 ```
+
+`STD` is the standard the finding cites (`S<n>`/`I<n>`, `—` when uncited); `Lens`
+is which reviewer surfaced it.
 
 Dispositions: `open` → `fixed` (with the fixing commit) | `disputed` (you hold
 it's already fixed or wrong — cite why) | `advisory` | `overridden` (human gate

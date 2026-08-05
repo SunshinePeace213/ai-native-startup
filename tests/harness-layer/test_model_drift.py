@@ -196,6 +196,8 @@ def test_no_dated_claude_model_id_outside_the_allowlist():
             if not path.is_file() or path.suffix not in {".md", ".py", ".toml", ".json"}:
                 continue
             relative = path.relative_to(REPO_ROOT)
+            if relative.parts[:2] == (".claude", "worktrees"):
+                continue  # mounted worktrees are other branches' trees, not this one's
             if relative in DATED_ID_ALLOWLIST:
                 continue
             for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):

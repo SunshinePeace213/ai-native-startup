@@ -48,8 +48,6 @@ jobs:
           python-version: "3.13"
           enable-cache: true
       - run: uv sync --locked
-      # pyproject excludes the vendored code-review skill; everything else is
-      # ours and is expected to stay clean.
       - run: uv run ruff check .
       - run: uv run ruff format --check .
 
