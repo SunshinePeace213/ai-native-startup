@@ -48,3 +48,17 @@
      later reader can trace a convention back to the run that created it. -->
 
 -
+
+## Metrics
+
+<!-- The run's process telemetry, read by the lessons pass and mirrored into
+     specs/lessons/digest.md at ship time. Every number comes from the findings
+     ledger, the lint output, and the round reports — never memory. Keep the
+     labels exactly as written. -->
+
+- **Lane:** <full | direct>
+- **Spec gate:** <N> cycles (<X> blocking, <Y> advisory) · **Impl gate:** <N> cycles (<X> blocking, <Y> advisory)
+- **Findings by standard:** <`S1×1 I2×2 …`, or "none">
+- **Uncited→advisory:** <count of findings recorded advisory for citing no standard>
+- **Fix commits:** <count> · **Unverified tail:** <yes | no> · **Disputed:** <count> · **Overridden:** <count>
+- **Lint catches (pre-Codex):** spec <count>, impl <count>

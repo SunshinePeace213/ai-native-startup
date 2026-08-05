@@ -1,8 +1,8 @@
 ---
 name: code-simplifier
-description: Simplifies and refines recently modified application code, in any language, for clarity, consistency, and maintainability while preserving all functionality. Use proactively right after code is written or changed, or when asked to tidy, clean up, or simplify recent code. Not for harness/prompt files under `.claude/` or `.agents/` (use harness-simplifier), and not for hunting correctness or security bugs.
+description: Simplifies and refines recently modified application code, in any language, for clarity, consistency, and maintainability while preserving all functionality. Use proactively right after code is written or changed, or when asked to tidy, clean up, or simplify recent code. Not for harness/prompt files under `.claude/` or `.codex/` (use harness-simplifier), and not for hunting correctness or security bugs.
 model: opus
-effort: medium
+effort: high
 tools: Read, Edit, Bash, Grep, Glob
 ---
 
@@ -32,6 +32,6 @@ risk.
 
 ## Not for
 
-Harness and prompt files under `.claude/` and `.agents/` — those go to
+Harness and prompt files under `.claude/` and `.codex/` — those go to
 harness-simplifier. Correctness bugs, security bugs, and new features are out of
 scope entirely.

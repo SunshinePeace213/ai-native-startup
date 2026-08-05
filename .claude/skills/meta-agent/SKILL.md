@@ -55,7 +55,7 @@ Three rules carry the rest:
 | `references/frontmatter.md` | Choosing and validating Claude frontmatter; tool resolution; the load-bearing gotchas; writing the `description` |
 | `references/body-contract.md` | Writing the body: the minimal contract, what to add only on trigger, the universal anti-patterns |
 | `references/model-tuning.md` | After the model is stamped — the lines to add and delete for that specific model |
-| `references/codex-agents.md` | Building a Codex agent (`.agents/skills/*/SKILL.md`, `codex exec`) instead |
+| `references/codex-agents.md` | Building a Codex agent (`.codex/agents/*.toml`) instead |
 | `examples/claude-subagent.md`, `examples/codex-subagent.md` | A full worked agent in each ecosystem |
 
 Validate a **Claude** agent file (frontmatter and body; not for Codex):
@@ -86,7 +86,7 @@ exposes a gap.
 5. **Subtract** — read `references/model-tuning.md` for the model you stamped.
    Delete what that model already does; add only its named deltas.
 6. **Write the file** — `.claude/agents/<name>.md` (Claude) or
-   `.agents/skills/<name>/SKILL.md` (Codex). Frontmatter is real YAML between
+   `.codex/agents/<name>.toml` (Codex). Claude frontmatter is real YAML between
    `---` markers at the top — never fenced in a code block.
 7. **Validate** (Claude only) — run `scripts/validate_agent.py`; fix every
    `FAIL`, sanity-check the `WARN`s.

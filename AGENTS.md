@@ -9,6 +9,7 @@
 - `ai-docs/` is the shared KB — cached official docs on any domain, plus project notes; catalog: `ai-docs/index.md`, manifest: `ai-docs/sources.yaml`.
 - Start every task by checking `ai-docs/index.md` for topics matching the work; skim a matching doc's `> **In here:**` line before committing to a full read. Nothing relevant → move on.
 - Consulted an official page the KB lacks → register and mirror it with `/harness-layer:kb add <url>`.
+- Durability rule: only pages a future, unrelated plan would cite belong in the KB — official pages get mirrored via `kb-fetcher` and registered in `sources.yaml`; plan-scoped synthesis stays in that plan's `discovery/research.md`; raw search results go nowhere.
 - Mirrors are read-only: fix wrong or stale content by refetching through `kb-fetcher` (or `/harness-layer:kb`), never by hand-editing. If the official page itself is wrong, record a project note in `ai-docs/` instead.
 
 ## Harness Development
@@ -37,11 +38,23 @@
 
 ## Harness-Layer Pipeline
 
-- **Core** — every task, app code or harness work: `/harness-layer:harness-plan` → `/harness-layer:harness-build` → `/harness-layer:harness-review` → `/harness-layer:harness-ship`.
+- **Router** — at intake, a request passing every direct-lane check (≤2 files, ~≤80 lines, docs/chore/style/fix, no executable surface, nothing new) ships via `/harness-layer:harness-direct`; anything else — and any doubt — takes the full lane.
+- **Core (full lane)** — every other task, app code or harness work: `/harness-layer:harness-plan` → `/harness-layer:harness-build` → `/harness-layer:harness-review` → `/harness-layer:harness-ship`.
 - **Discovery (optional, pre-plan)** — run when the problem is still fuzzy; each pass hands its successor an improved prompt and commits its pages to `specs/<slug>/discovery/` for the plan to draft from:
   - `/harness-layer:harness-unknowns` — surface unknown unknowns in unfamiliar code or domains.
   - `/harness-layer:harness-brainstorm` — rough problem → intervention options, cheapest to most ambitious.
   - `/harness-layer:harness-prototypes` — throwaway mocks and design directions to react to.
+  - `/harness-layer:harness-research` — vague mission → focused questions → a provenance-tiered claims ledger (quick/standard/deep tiers).
   - `/harness-layer:harness-interview` — lock every open decision, round by round.
+- **Questioning the user** — when unknowns need the user's answers outside the passes above (an ad-hoc design discussion, a mid-task ambiguity), invoke the `grilling` skill instead of improvising questions.
 - **KB** — the domain-expert layer auto-engages when work touches the harness, grounding plan claims in the KB per `## Knowledge Base`; keep it fresh with `/harness-layer:kb`.
+- **Lessons** — ship folds each plan's ledger + metrics into `specs/lessons/digest.md`; `/harness-layer:harness-lessons` runs the deep pass monthly, landing amendments through the direct lane; plan reads the digest for the touched surface before drafting.
 - **Artifacts** — pipeline stages publish interactive pages committed under `specs/<name>/artifacts/`; crafting rules: [artifacts.md](.claude/rules/harness-layer/artifacts.md).
+
+## Designing a New Layer
+
+A new layer (cpo, studio, …) is a full-lane plan whose product is another
+pipeline. It ships four things: its KB group in `ai-docs/sources.yaml`, its own
+standards file, its lane fit (which of its work takes direct vs full), and its
+metrics targets — and names which archetypes (Prototyper / Builder / Sweeper /
+Grower / Maintainer) staff it at its stage.
