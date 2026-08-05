@@ -31,3 +31,4 @@ block — the trailing-5 window the production-ready targets are measured over.
 | Plan | Lane | Spec cycles (blk/adv) | Impl cycles (blk/adv) | By standard | Uncited→adv | Fix commits | Unverified tail | Disputed | Overridden | Lint catches |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | cpo-layer (#80, backfilled) | full | 4 (32/20) | 4 (23/11) | — | — | 10 | yes | 0 | 1 | — |
+| focus-typo (#85) | direct | — | 1 (0/0) | none | 0 | 0 | no | 0 | 0 | spec —, impl 0 |
