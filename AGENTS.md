@@ -46,6 +46,7 @@
   - `/harness-layer:harness-prototypes` — throwaway mocks and design directions to react to.
   - `/harness-layer:harness-research` — vague mission → focused questions → a provenance-tiered claims ledger (quick/standard/deep tiers).
   - `/harness-layer:harness-interview` — lock every open decision, round by round.
+- **Questioning the user** — when unknowns need the user's answers outside the passes above (an ad-hoc design discussion, a mid-task ambiguity), invoke the `grilling` skill instead of improvising questions.
 - **KB** — the domain-expert layer auto-engages when work touches the harness, grounding plan claims in the KB per `## Knowledge Base`; keep it fresh with `/harness-layer:kb`.
 - **Lessons** — ship folds each plan's ledger + metrics into `specs/lessons/digest.md`; `/harness-layer:harness-lessons` runs the deep pass monthly, landing amendments through the direct lane; plan reads the digest for the touched surface before drafting.
 - **Artifacts** — pipeline stages publish interactive pages committed under `specs/<name>/artifacts/`; crafting rules: [artifacts.md](.claude/rules/harness-layer/artifacts.md).
