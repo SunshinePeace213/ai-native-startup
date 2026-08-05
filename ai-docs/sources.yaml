@@ -134,6 +134,10 @@ anthropic/blog:
     file: anthropic/blog/verification-loops-with-skills.md
     topic: Verification loops with skills — closing the check-your-work loop in Claude Code
     fetched: null
+  - url: https://claude.com/blog/a-harness-for-every-task-dynamic-workflows-in-claude-code
+    file: anthropic/blog/dynamic-workflows.md
+    topic: Dynamic workflows — a harness for every task, composing workflows in Claude Code
+    fetched: null
   - url: https://claude.com/blog/the-founders-playbook
     kind: pdf
     dir: anthropic/blog/founders-playbook/
@@ -148,6 +152,10 @@ openai:
   - url: https://developers.openai.com/cookbook/examples/codex/code_modernization
     file: openai/code-modernization.md
     topic: Code modernization — five-phase legacy-upgrade patterns with Codex CLI (cookbook)
+    fetched: null
+  - url: https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf
+    file: openai/practical-guide-building-ai-agents.md
+    topic: Practical guide to building AI agents — when to build, orchestration patterns, guardrails
     fetched: null
 openai/codex:
   - url: https://learn.chatgpt.com/docs/models
@@ -205,4 +213,17 @@ graph-engineering-andrew-ng-playbook:
     dir: graph-engineering-andrew-ng-playbook/
     file: graph-engineering-andrew-ng-playbook/index.md
     topic: Graph engineering for multi-agent systems — Ng's four patterns, Anthropic's five workflows, loops to graphs
+    fetched: null
+langchain:
+  - url: https://www.langchain.com/blog/the-anatomy-of-an-agent-harness
+    file: langchain/anatomy-of-an-agent-harness.md
+    topic: Anatomy of an agent harness — the layers around the model loop
+    fetched: null
+  - url: https://www.langchain.com/blog/the-art-of-loop-engineering
+    file: langchain/art-of-loop-engineering.md
+    topic: Loop engineering — designing the agent's run loop, termination, and feedback
+    fetched: null
+  - url: https://www.langchain.com/blog/how-to-build-a-custom-agent-harness
+    file: langchain/custom-agent-harness.md
+    topic: Building a custom agent harness — assembling the loop, tools, and control surfaces
     fetched: null

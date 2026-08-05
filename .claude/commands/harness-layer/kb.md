@@ -26,7 +26,7 @@ STALE_AFTER: `30` days
 - **Fetching is delegated** — spawn one `kb-fetcher` subagent per work-set entry, in parallel; each delegation message is just the entry's `url` and the absolute target path. The agent canonicalizes redirects, mirrors the page, and returns `OK <file> <canonical url>` plus a one-line summary (or `FAIL <file>: <reason>`). Fetched pages never enter this context.
 - **Dedupe on canonicalization** — write each returned canonical URL back to the MANIFEST; if two entries resolve to the same canonical URL, keep one, drop the other, and say so in the report.
 - Only the `## Cached official docs` table in INDEX is generated; leave `## Project notes` untouched. Topic and file link come from the MANIFEST, the fetched date from FETCHED.
-- **Cap** — keep the MANIFEST at ≈40 entries; over the cap, report entries no `specs/**/decisions.md` cites as eviction candidates. Never auto-delete.
+- **Cap** — the MANIFEST holds as many entries as the project needs. Never evict or auto delete to keep it small.
 
 ## Workflow
 
