@@ -3,7 +3,12 @@
 Round 1 (spec panel, gpt-5.6-sol/high, reviewed head `fcc015b`): 31 raw findings
 across three lenses; evidence#8 and simplicity#5 merged into R1-F6 (same defect
 class, same target). No lens substitutions. Verdict: changes-requested
-(19 blocking, 10 advisory).
+(19 blocking, 10 advisory). All 19 fixed in commit `b613a24`.
+
+Round 2 (delta, gpt-5.6-sol/medium, range `fcc015b..b613a24`): all round-1
+dispositions verified; 8 new findings inside the fix diff — 6 blocking, 2
+advisory. The 6 blocking fixed in the cycle-2 fix commit — **Codex-unverified**
+(cycle cap reached); the deterministic floor (spec lint) re-ran green.
 
 | ID | STD | Lens | Sev | Conf | Finding | Disposition | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -25,7 +30,7 @@ class, same target). No lens substitutions. Verdict: changes-requested
 | R1-F16 | S2 | evidence | major | 100 | ac5 script uses global markers; no section scoping, no line-budget assertion | fixed — ac5 asserts section-scoped ordering/obligations, all four command pointers, size budget | checks/ac5-memory-amendments.py |
 | R1-F17 | S2 | evidence | major | 96 | Drift test derives its expected set from the directory under test — vacuous boundary | fixed — expected set re-derived from AGENTS.md registration; roster parsed from model-selection.md; non-empty required | tasks.md §6 |
 | R1-F18 | S3 | simplicity | major | 99 | Personal-domain page/op titles leak into tracked shared index.md/log.md | fixed — personal keeps local-only personal/index.md + personal/log.md; shared index holds only a pointer (spec seed shapes, tasks §1–3, rule contract) | spec.md seed shapes vs privacy decision |
-| R1-F19 | S3 | simplicity | major | 96 | Log vocabulary permits `query\|status` entries while query is strictly read-only | fixed — log vocabulary restricted to ingest|lint; query/status never write (spec seed shapes, tasks §4) | spec.md seed shapes vs tasks.md §4 |
+| R1-F19 | S3 | simplicity | major | 96 | Log vocabulary permits `query\|status` entries while query is strictly read-only | fixed — log vocabulary restricted to ingest\|lint; query/status never write (spec seed shapes, tasks §4) | spec.md seed shapes vs tasks.md §4 |
 | R1-F20 | S3 | simplicity | major | 97 | Status must report a backlog no state tracks (no source inventory or processed-state mapping) | fixed — triggers redefined over derivable state: sources.yaml vs page sources, lint-log flags (tasks.md §4) | tasks.md §4 |
 | R1-F21 | S3 | simplicity | major | 94 | Duplicate-ingest idempotency lacks a stable source identity (title-only log key) | fixed — identity = canonical source path in page sources: and log entries (spec Edge Cases, tasks §3) | spec.md Edge Cases |
 | R1-F22 | S3 | simplicity | minor | 90 | Empty-wiki pilot demands a wikilink its fixture can't guarantee | advisory — resolved by R1-F6's two-fixture design | AC7 |
@@ -36,3 +41,11 @@ class, same target). No lens substitutions. Verdict: changes-requested
 | R1-F27 | S8 | simplicity | minor | 96 | New AGENTS.md section repeats what the rewritten KB bullets establish | advisory | spec.md AGENTS amendments |
 | R1-F28 | S8 | simplicity | minor | 96 | Dataview/Marp made normative + test-required though no v1 behavior needs them | advisory | tasks.md §2, AC4 |
 | R1-F29 | S8 | simplicity | minor | 93 | Fixed retrieval numbers (3–8 pages, 2 hops) add policy without improving the objective | advisory | tasks.md §4 |
+| R2-F1 | S2 | delta | major | 99 | ac2 Personal section allowed extra content beyond the pointer; partial regex matches | fixed (unverified) — Personal body asserted to be exactly one pointer line; exact table header + separator rows; complete writer-op set asserted | checks/ac2-seed.py |
+| R2-F2 | S2 | delta | major | 99 | Drift test asserted roster membership, not each command's exact model/effort | fixed (unverified) — operations table added to the standards rule as source of truth; test compares command frontmatter to it exactly, plus legality vs model-selection.md | tasks.md §2, §6 |
+| R2-F3 | S2 | delta | major | 99 | test_standards_rule omitted most AC4 obligations | fixed (unverified) — §6 enumerates section-scoped assertions for every AC4 obligation | tasks.md §6 |
+| R2-F4 | S2 | delta | major | 100 | ac5 budget measured only the Wiki Layer section, not the ≤14-line total | fixed (unverified) — ac5 asserts the exact prescribed fragments (replacements net 0) and computes the full added-line budget | checks/ac5-memory-amendments.py |
+| R2-F5 | S3 | delta | major | 98 | Status consumed lint-log fields no contract defined | fixed (unverified) — log contract defines the lint entry form + payload line; lint writes it, status reads it | spec.md seed shapes, tasks.md §3–4 |
+| R2-F6 | S2 | delta | critical | 100 | Single pilot run claimed the eval tier; test-tiers requires a pass rate over repeated runs | fixed (unverified) — AC7 is three fresh-session runs, 3/3 rubric pass rate, per-run evidence | tasks.md §7, AC7, pilot-rubric.md |
+| R2-F7 | S5 | delta | minor | 100 | spec.md Objective still says "five plan-local checks" (three remain) | advisory | spec.md Objective |
+| R2-F8 | S5 | delta | minor | 100 | spec.md still calls sources.yaml untouched / routines a KB gap after the gap-fill | advisory | spec.md Relevant Files, Notes |

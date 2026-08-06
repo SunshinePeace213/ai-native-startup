@@ -146,8 +146,11 @@ sit behind recorded triggers. Full interview: `discovery/decisions-draft.md`.
 - Domain folders other than `personal/` are created by the first ingest that needs
   them (farzaa: don't pre-create); `personal/` is created lazily on the user's
   machine only.
-- Test tier: drift (new registrations/frontmatter) per test-tiers.md; command prose
-  quality is covered by the manual pilot (AC7), not an eval harness, in v1.
+- Test tier: drift (new registrations/frontmatter) per test-tiers.md; command
+  behavior is covered at the eval tier by the AC7 fixture eval — a rubric scored
+  over three repeated fresh-session runs (3/3 required). Full meta-skills eval
+  automation is deferred; invalidated if command regressions slip past the
+  three-run rubric.
 
 ## KB References
 

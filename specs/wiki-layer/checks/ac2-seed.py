@@ -7,7 +7,10 @@ import sys
 from pathlib import Path
 
 SHARED_DOMAINS = ("engineering", "business", "development", "books", "articles")
-TABLE_HEADER = re.compile(r"^\|\s*Page\s*\|\s*Type\s*\|\s*Status\s*\|\s*Updated\s*\|", re.MULTILINE)
+TABLE_HEADER = re.compile(
+    r"^\|\s*Page\s*\|\s*Type\s*\|\s*Status\s*\|\s*Updated\s*\|\s*$", re.MULTILINE
+)
+TABLE_SEPARATOR = re.compile(r"^\|(\s*-+\s*\|){4}\s*$", re.MULTILINE)
 
 FAILURES: list[str] = []
 
@@ -35,18 +38,26 @@ def check_index() -> None:
         fail("wiki index.md has no top-level heading")
     sections = sections_of(text)
     for domain in SHARED_DOMAINS:
-        if domain not in sections:
+        body = sections.get(domain)
+        if body is None:
             fail(f"wiki index.md has no '## {domain.title()}' section")
-        elif not TABLE_HEADER.search(sections[domain]):
-            fail(f"'## {domain.title()}' section lacks the Page|Type|Status|Updated table")
+            continue
+        if not TABLE_HEADER.search(body):
+            fail(
+                f"'## {domain.title()}' lacks the exact '| Page | Type | Status | Updated |' header"
+            )
+        if not TABLE_SEPARATOR.search(body):
+            fail(f"'## {domain.title()}' table has no separator row")
     personal = sections.get("personal")
     if personal is None:
         fail("wiki index.md has no '## Personal' section")
     else:
-        if "local-only" not in personal.lower() or "personal/index.md" not in personal:
-            fail("Personal section is not the local-only pointer to wiki/personal/index.md")
-        if TABLE_HEADER.search(personal):
-            fail("Personal section must hold only the pointer — no catalog table (privacy leak)")
+        lines = [line for line in personal.strip().splitlines() if line.strip()]
+        if len(lines) != 1:
+            fail(f"Personal section must be exactly the pointer line; found {len(lines)} lines")
+        pointer = lines[0] if lines else ""
+        if "local-only" not in pointer.lower() or "personal/index.md" not in pointer:
+            fail("Personal pointer must state local-only and name wiki/personal/index.md")
 
 
 def check_log() -> None:
@@ -55,13 +66,26 @@ def check_log() -> None:
         fail("ai-docs/wiki/log.md missing")
         return
     text = log.read_text(encoding="utf-8")
-    contract = re.search(r"##\s*\[YYYY-MM-DD\]\s*<op>\s*\|\s*<title>\s*\|\s*<source-path>", text)
-    if not contract:
-        fail("log.md does not document '## [YYYY-MM-DD] <op> | <title> | <source-path>'")
-    if not re.search(r"ingest\s*\|\s*lint", text):
-        fail("log.md does not restrict <op> to ingest|lint")
-    if re.search(r"query\s*\|\s*status", text):
-        fail("log.md still permits query/status entries — read-only ops must never write")
+    ingest_form = re.search(
+        r"##\s*\[YYYY-MM-DD\]\s*ingest\s*\|\s*<title>\s*\|\s*<source-path>", text
+    )
+    if not ingest_form:
+        fail("log.md does not document '## [YYYY-MM-DD] ingest | <title> | <source-path>'")
+    lint_form = re.search(r"##\s*\[YYYY-MM-DD\]\s*lint\s*\|\s*<scope>\s*\|\s*<summary>", text)
+    if not lint_form:
+        fail("log.md does not document '## [YYYY-MM-DD] lint | <scope> | <summary>'")
+    payload = re.search(r"missing-pages:.*mechanical-fixes:", text)
+    if not payload:
+        fail("log.md does not document the lint payload line (missing-pages … mechanical-fixes)")
+    # The complete allowed writer set is exactly {ingest, lint}.
+    op_forms = set(re.findall(r"##\s*\[YYYY-MM-DD\]\s*([a-z]+)\s*\|", text))
+    if op_forms and op_forms != {"ingest", "lint"}:
+        fail(f"log.md documents writer ops {sorted(op_forms)}; allowed set is exactly ingest, lint")
+    if re.search(r"\bquery\b[^\n]*\bwrit", text.lower()):
+        pass  # prose may explain read-only ops; entry forms above are the contract
+    for forbidden in ("[YYYY-MM-DD] query", "[YYYY-MM-DD] status"):
+        if forbidden in text:
+            fail(f"log.md documents a '{forbidden}' entry — read-only ops must never write")
 
 
 def check_obsidian() -> None:

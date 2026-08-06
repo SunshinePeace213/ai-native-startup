@@ -76,7 +76,11 @@ Tasks: `pilot-eval`, `validate-all`.
   `wiki/personal/assets/`, and secret/PII stripping applies to every ingest;
   Obsidian (vault root `ai-docs/`, supported plugins Web Clipper / Dataview /
   Marp — recommended, never required); layer requirements (lane fit, the four
-  metrics targets, archetype staffing) as agreed in decisions.md.
+  metrics targets, archetype staffing) as agreed in decisions.md — including an
+  **operations table** mapping each command to its model/effort stamp
+  (ingest: opus/high · query: sonnet/high · lint: opus/high · status:
+  haiku/medium), which the drift test treats as the source of truth for command
+  frontmatter.
 
 ### 3. Commands: ingest + lint
 
@@ -106,7 +110,10 @@ Tasks: `pilot-eval`, `validate-all`.
   missing-mirror citations (report "run `/harness-layer:kb`", never a broken
   citation), personal pages referencing files outside `personal/`,
   cramming/thinning signals; fixes mechanical findings itself, reports judgment
-  findings; appends a log entry; documents the weekly-routine prompt (created
+  findings; appends its log entry in the lint form —
+  `## [date] lint | scope | summary` plus the payload line
+  `missing-pages: page-a, page-b (or none) · mechanical-fixes: N` — which is the
+  state status later consumes; documents the weekly-routine prompt (created
   once via `/schedule`: weekly cron, fresh clone, runs `/wiki:lint`, lands fixes
   as a `claude/`-branch PR) and notes personal/ is local-lint only.
 
@@ -132,9 +139,11 @@ Tasks: `pilot-eval`, `validate-all`.
   domain and type, orphan and disputed counts, last lint date from log.md, and
   the three expansion triggers **derived from tracked state**: absorb — count of
   `sources.yaml` entries whose mirror is cited by no wiki page's `sources:`
-  (backlog >10 fires); breakdown — the same missing-page flag appearing in ≥3
-  consecutive lint log entries; cleanup — lint's mechanical-fix count reported in
-  its log entries trending up across the last 3 passes.
+  (backlog >10 fires); breakdown — the same page name appearing in the
+  `missing-pages:` payload of ≥3 consecutive lint log entries; cleanup — the
+  `mechanical-fixes:` payload trending up across the last 3 lint entries. Both
+  payload fields are defined by the log contract and written by lint before
+  status ever reads them.
 
 ### 5. AGENTS.md Amendments
 
@@ -168,16 +177,21 @@ Tasks: `pilot-eval`, `validate-all`.
     Wiki Layer section (the registration), require the set non-empty, and compare
     exactly — no missing commands, no unplanned files under
     `.claude/commands/wiki/`.
-  - `test_command_frontmatter`: YAML-parse each command's frontmatter; assert
-    non-empty `description`; `model` and `effort` values ∈ the roster and effort
-    table parsed from `.claude/rules/model-selection.md`; `argument-hint` present
-    for ingest and query; query's body declares itself read-only.
+  - `test_command_frontmatter`: YAML-parse each command's frontmatter; assert the
+    exact key set per command (description/model/effort, plus `argument-hint` for
+    ingest and query — no extra keys); assert each command's exact model/effort
+    equals the operations table parsed from the wiki-standards rule (the declared
+    source of truth), and that those values are legal per
+    `.claude/rules/model-selection.md`; query's body declares itself read-only.
   - `test_standards_rule`: YAML-parse the rule's frontmatter (`paths` covers
-    `ai-docs/wiki/**`); parse its `##` headings and assert sections exist for
-    schema, writing standards, domains, privacy, Obsidian, and layer
-    requirements; assert all seven core fields and the three status values appear
-    as code spans within the schema section; assert the shared-index exclusion of
-    personal content is stated.
+    `ai-docs/wiki/**`); parse its `##` headings and assert, section-scoped, every
+    AC4 obligation: all seven core fields and three status values as code spans in
+    the schema section; the every-claim-cites-≥1-source rule; the writing
+    standards (anti-cramming, anti-thinning, theme-over-chronology markers); all
+    six domains; the privacy obligations (personal-only index/log, personal
+    assets under `wiki/personal/assets/`, secret/PII stripping); the plugin set
+    (Web Clipper, Dataview, Marp); the operations table; the lane-fit statement;
+    all four metrics targets; the archetype staffing.
   - Match the style of the existing drift tests in `tests/harness-layer/`.
 
 ### 7. Pilot Eval (pre-ship)
@@ -194,13 +208,17 @@ Tasks: `pilot-eval`, `validate-all`.
 - **Verify:** every pass condition in
   `specs/wiki-layer/checks/fixtures/pilot-rubric.md` observed and recorded in
   implementation-notes.md.
-- In a real session: run `/wiki:ingest specs/wiki-layer/checks/fixtures/article-a-llm-wiki-pattern.md`,
+- Eval tier per test-tiers.md: a pass rate over repeated runs — a single green
+  run proves nothing. Run the fixture flow **three times, each in a fresh
+  session**: `/wiki:ingest specs/wiki-layer/checks/fixtures/article-a-llm-wiki-pattern.md`,
   then the same for `article-b-obsidian-vaults.md` (two related articles, so a
-  legitimate `[[wikilink]]` between their pages exists); then `/wiki:query` with a
-  question spanning both; then `/wiki:lint`.
-- Record in implementation-notes.md: the exact commands, the resulting page
-  paths, the index/log entries created, the query answer's citations, and lint's
-  output — judged against the rubric.
+  legitimate `[[wikilink]]` between their pages exists); then `/wiki:query` with
+  a question spanning both; then `/wiki:lint`. Run 1 starts from the seed; runs
+  2–3 re-run against the existing pages, exercising the idempotency condition.
+- Score every run against `checks/fixtures/pilot-rubric.md`; required pass rate
+  is 3/3 on every condition. Record in implementation-notes.md per run: the
+  exact commands, resulting page paths, index/log entries, the query answer's
+  citations, and lint's output.
 
 ### 8. Validate Everything
 

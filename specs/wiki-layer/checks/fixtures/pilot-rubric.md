@@ -1,9 +1,12 @@
 # Pilot Rubric — AC7 (pre-ship fixture eval)
 
-Run in a real session, in order: `/wiki:ingest` on fixture A, `/wiki:ingest` on
-fixture B, `/wiki:query` with one question spanning both (e.g. "why does the wiki
-pattern pair well with Obsidian?"), then `/wiki:lint`. Every condition below must
-be observed; record commands, page paths, and outputs in implementation-notes.md.
+Eval tier: the flow runs **three times, each in a fresh session** — run 1 from the
+seed, runs 2–3 against the existing pages (idempotency). In order per run:
+`/wiki:ingest` on fixture A, `/wiki:ingest` on fixture B, `/wiki:query` with one
+question spanning both (e.g. "why does the wiki pattern pair well with
+Obsidian?"), then `/wiki:lint`. Required pass rate: 3/3 runs meeting every
+condition below; record per-run commands, page paths, and outputs in
+implementation-notes.md.
 
 ## Pass conditions
 

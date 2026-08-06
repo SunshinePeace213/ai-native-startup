@@ -49,12 +49,13 @@
 - **AC6** — The full drift suite `tests/harness-layer/test_wiki_layer.py` passes,
   with expectations re-derived from AGENTS.md, model-selection.md, and the rule
   file itself — never from the directory under test.
-- **AC7** — Pre-ship fixture pilot, run by the build lead in a real session:
-  ingesting the two committed fixture articles produces pages passing every
-  condition in `specs/wiki-layer/checks/fixtures/pilot-rubric.md` (valid
-  frontmatter with source paths, a legitimate `[[wikilink]]` between the two
-  pages, shared index + log entries carrying source paths, a `/wiki:query` answer
-  across both with citations, `/wiki:lint` clean), with the evidence recorded in
+- **AC7** — Pre-ship fixture eval at the repo's eval tier: the fixture flow runs
+  **three times in fresh sessions** (run 1 from the seed; runs 2–3 exercising
+  idempotency against existing pages), and every run passes every condition in
+  `specs/wiki-layer/checks/fixtures/pilot-rubric.md` (valid frontmatter with
+  source paths, a legitimate `[[wikilink]]` between the two pages, shared index +
+  log entries carrying source paths, a `/wiki:query` answer across both with
+  citations, `/wiki:lint` clean) — pass rate 3/3, per-run evidence recorded in
   implementation-notes.md. The user's fresh-article migration stays a post-ship
   follow-up on issue #88, outside this definition of done.
 
@@ -90,9 +91,10 @@
 
 - `uv run pytest tests/harness-layer/test_wiki_layer.py -q` — pass: green.
 
-### AC7 — fixture pilot (pre-ship)
+### AC7 — fixture eval (pre-ship, repeated runs)
 
-- `manual: build lead runs /wiki:ingest on checks/fixtures/article-a-llm-wiki-pattern.md,
-  then on article-b-obsidian-vaults.md, then /wiki:query with a question spanning
-  both, then /wiki:lint` — pass: every pilot-rubric.md condition observed; commands,
-  page paths, and outputs recorded in implementation-notes.md.
+- `manual: build lead runs the fixture flow three times in fresh sessions —
+  /wiki:ingest on checks/fixtures/article-a-llm-wiki-pattern.md, then on
+  article-b-obsidian-vaults.md, then /wiki:query spanning both, then /wiki:lint` —
+  pass: 3/3 runs meet every pilot-rubric.md condition; per-run commands, page
+  paths, and outputs recorded in implementation-notes.md.

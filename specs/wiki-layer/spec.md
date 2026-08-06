@@ -199,8 +199,11 @@ domain (engineering, business, development, books, articles) each holding an emp
 `Page | Type | Status | Updated` table, a `## Personal` section holding only the
 pointer line "local-only — cataloged in `wiki/personal/index.md`, never tracked",
 and a footer noting ingest maintains the file. `ai-docs/wiki/log.md`: H1 plus the
-entry contract `## [YYYY-MM-DD] <op> | <title> | <source-path>` with `<op>` ∈
-`ingest|lint` — query and status never write; crystallizing an answer is an ingest.
+two entry contracts — ingest: `## [YYYY-MM-DD] ingest | <title> | <source-path>`;
+lint: `## [YYYY-MM-DD] lint | <scope> | <summary>` followed by the payload line
+`missing-pages: <comma-list or none> · mechanical-fixes: <N>` (the fields status
+derives its breakdown and cleanup triggers from). Only `ingest` and `lint` write —
+query and status never do; crystallizing an answer is an ingest.
 The personal domain keeps its own local-only `personal/index.md` and
 `personal/log.md`, created lazily with the domain; personal ingests update only
 those two files, never the shared index or log.
