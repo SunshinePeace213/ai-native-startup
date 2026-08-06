@@ -33,6 +33,10 @@ anthropic:
     file: anthropic/skills.md
     topic: Skills — author, configure, and share to extend Claude
     fetched: null
+  - url: https://code.claude.com/docs/en/routines
+    file: anthropic/routines.md
+    topic: Routines — cloud-scheduled Claude Code runs, triggers, fresh-clone repos, branch/PR delivery
+    fetched: null
   - url: https://code.claude.com/docs/en/artifacts
     file: anthropic/artifacts.md
     topic: Artifacts — publish pages with versioning, team sharing, org controls
