@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interview — Wiki Layer Redesign</title>
+<style>
+  :root {
+    --bg: #FAF8F5; --surface: #F0EDE5; --border: #D4CFC7; --ink: #2C2825;
+    --accent: #B8602A; --muted: #8A837A;
+    --accent-soft: #F3E2D5;
+    --serif: 'Charter', 'Bitstream Charter', Cambria, Georgia, serif;
+    --sans: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15.5px/1.6 var(--sans); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 2.2rem 1.2rem 4rem; }
+  header { margin-bottom: 1.6rem; }
+  .eyebrow { font: 600 0.7rem var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+  h1 { font: 700 2rem/1.15 var(--serif); margin: 0.4rem 0 0.5rem; letter-spacing: -0.01em; }
+  .dek { color: var(--muted); max-width: 62ch; margin: 0; }
+  .masterbar { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; margin: 1.4rem 0 1.8rem; padding: 0.8rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+  .masterbar button { font: 600 0.85rem var(--sans); padding: 0.5rem 0.95rem; border-radius: 5px; border: 1px solid var(--accent); background: var(--accent); color: #FFF; cursor: pointer; }
+  .masterbar button.ghost { background: transparent; color: var(--accent); }
+  .masterbar span { font-size: 0.82rem; color: var(--muted); }
+  .cols { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 1.6rem; align-items: start; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } .ledger { position: static; } }
+
+  .card { background: #FFFFFF; border: 1px solid var(--border); border-radius: 6px; padding: 1.1rem 1.2rem 1rem; margin-bottom: 1.1rem; }
+  .card .qnum { font: 600 0.68rem var(--mono); letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; }
+  .card h2 { font: 700 1.18rem/1.3 var(--serif); margin: 0.25rem 0 0.3rem; }
+  .card .why { font-size: 0.85rem; color: var(--muted); margin: 0 0 0.8rem; }
+  .chips { display: flex; flex-direction: column; gap: 0.5rem; }
+  .chip { display: block; width: 100%; text-align: left; border: 1.5px solid var(--border); background: var(--bg); border-radius: 6px; padding: 0.6rem 0.8rem; cursor: pointer; font: inherit; color: inherit; }
+  .chip:hover { border-color: var(--accent); }
+  .chip.sel { border-color: var(--accent); background: var(--accent-soft); }
+  .chip .t { font-weight: 650; font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .chip .d { font-size: 0.82rem; color: var(--muted); margin-top: 0.15rem; }
+  .chip.sel .d { color: #6B5546; }
+  .badge { font: 700 0.6rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: #FFF; background: var(--accent); border-radius: 3px; padding: 0.1rem 0.35rem; }
+  .free { margin-top: 0.7rem; }
+  .free input { width: 100%; font: 400 0.86rem var(--sans); padding: 0.5rem 0.7rem; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--ink); }
+  .free input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .ledger { position: sticky; top: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.05rem; }
+  .ledger h3 { font: 700 0.95rem var(--serif); margin: 0 0 0.2rem; }
+  .ledger .sub { font-size: 0.74rem; color: var(--muted); margin: 0 0 0.75rem; }
+  .ledger h4 { font: 600 0.66rem var(--mono); letter-spacing: 0.12em; text-transform: uppercase; margin: 0.9rem 0 0.4rem; color: var(--muted); }
+  .ledger ul { list-style: none; margin: 0; padding: 0; }
+  .ledger li { font-size: 0.8rem; padding: 0.22rem 0 0.22rem 1.1rem; position: relative; line-height: 1.4; }
+  .ledger li::before { content: ""; position: absolute; left: 0; top: 0.52rem; width: 0.55rem; height: 0.55rem; border-radius: 50%; }
+  .ledger li.done::before { background: #7A9471; }
+  .ledger li.now::before { background: var(--accent); }
+  .ledger li.later::before { background: transparent; border: 1.5px solid var(--muted); }
+  .ledger li small { color: var(--muted); }
+
+  .promptbox { margin-top: 1.8rem; background: #FFFFFF; border: 1px solid var(--border); border-radius: 6px; }
+  .promptbox .bar { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); }
+  .promptbox .bar b { font: 600 0.72rem var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .promptbox button { font: 600 0.8rem var(--sans); padding: 0.4rem 0.9rem; border-radius: 5px; border: 1px solid var(--accent); background: var(--accent); color: #FFF; cursor: pointer; }
+  .promptbox pre { margin: 0; padding: 0.9rem 1rem; font: 400 0.8rem/1.55 var(--mono); white-space: pre-wrap; word-break: break-word; color: var(--ink); }
+  button:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: no-preference) { .chip { transition: border-color 120ms, background 120ms; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Harness Interview · Round 2 of 2 · Schema &amp; mechanics</div>
+    <h1>Wiki Layer Redesign</h1>
+    <p class="dek">Round 1 locked the foundations (see the ledger). This round settles the details your answers opened — privacy for the personal domain, taxonomy, naming, and the mechanics — and answers the three questions you flagged "no idea" on. Recommendations pre-selected; adjust, then copy the prompt back to Claude.</p>
+  </header>
+
+  <div class="masterbar">
+    <button id="acceptAll">Accept all recommendations</button>
+    <button id="reset" class="ghost">Reset</button>
+    <span>Free text on any card overrides its chips.</span>
+  </div>
+
+  <div class="cols">
+    <main id="cards"></main>
+
+    <aside class="ledger" aria-label="Coverage ledger">
+      <h3>Coverage ledger</h3>
+      <p class="sub">Green = locked in round 1 · Orange = this round · Hollow = handled at plan time.</p>
+      <h4>Locked — round 1</h4>
+      <ul>
+        <li class="done">Home: <code>ai-docs/wiki/</code> <small>(naming refined this round)</small></li>
+        <li class="done">Scope: multi-domain incl. personal <small>(privacy opened below)</small></li>
+        <li class="done">Surface: new /wiki:* family <small>(skill-vs-command answered below)</small></li>
+        <li class="done">v1 ops: ingest · query · lint · status <small>(expansion below)</small></li>
+        <li class="done">Crystallization: file-back via quality gate</li>
+        <li class="done">Reference: fresh authoring; farzaa studied, not ported</li>
+      </ul>
+      <h4>Open — this round</h4>
+      <ul>
+        <li class="now">Privacy boundary for personal content</li>
+        <li class="now">Domain taxonomy structure</li>
+        <li class="now">Folder naming</li>
+        <li class="now">Skill vs command (confirm rationale)</li>
+        <li class="now">Operation expansion triggers</li>
+        <li class="now">Linking style</li>
+        <li class="now">Frontmatter &amp; status vocabulary</li>
+        <li class="now">Lint schedule</li>
+        <li class="now">Obsidian config &amp; plugins</li>
+        <li class="now">Pilot resource + acceptance criteria</li>
+        <li class="now">Metrics targets &amp; archetypes</li>
+      </ul>
+      <h4>Plan-time</h4>
+      <ul>
+        <li class="later">Test tier per test-tiers.md</li>
+        <li class="later">Model/effort stamps per model-selection.md</li>
+        <li class="later">Standards-file draft for the layer</li>
+      </ul>
+    </aside>
+  </div>
+
+  <div class="promptbox">
+    <div class="bar"><b>Copy as prompt — paste back to Claude</b><button id="copy">Copy</button></div>
+    <pre id="prompt"></pre>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    id: 'privacy', num: 'Q1 · opened by your scope override', title: 'Personal content is in scope — where does private data live?',
+    why: 'This repo pushes to GitHub. Journals, health notes, and personal reflections need a boundary decided before any schema exists.',
+    options: [
+      { key: 'gitignored private domain', rec: true, t: 'Gitignored private domain in the same vault', d: 'ai-docs/wiki/personal/ exists locally but never commits; shared domains stay tracked. One vault, one schema, zero personal data on the remote. Secret/PII stripping applies to every ingest regardless of domain.' },
+      { key: 'separate personal vault', t: 'Separate personal vault/repo', d: 'Personal gets its own repo with the same schema; this repo stays engineering + business + books. Cleanest boundary, two vaults to maintain.' },
+      { key: 'all tracked', t: 'Everything committed', d: 'Simplest, but personal content lands on GitHub — not recommended.' }
+    ]
+  },
+  {
+    id: 'domains', num: 'Q2', title: 'How do domains structure the wiki?',
+    why: 'You listed personal, engineering, business, development, books, articles — each with domain-specific needs.',
+    options: [
+      { key: 'domain folders + shared core schema', rec: true, t: 'Domain folders, one shared core schema', d: 'ai-docs/wiki/<domain>/… Every page shares the same core frontmatter; each domain adds its own page types (engineering: topic/decision/comparison; personal & books seed from farzaa’s taxonomy). Index groups by domain.' },
+      { key: 'flat with domain field', t: 'Flat folder, domain in frontmatter', d: 'One directory, domain as metadata. Simpler tree now, messier browsing and lint scoping at scale.' },
+      { key: 'fully emergent', t: 'Fully emergent (farzaa-style)', d: 'No pre-declared structure; folders appear as content demands. Most flexible, weakest consistency for agents reading the schema.' }
+    ]
+  },
+  {
+    id: 'name', num: 'Q3 · your naming question', title: 'Best name for the synthesis folder?',
+    why: 'You asked whether something beats ai-docs/wiki.',
+    options: [
+      { key: 'ai-docs/wiki/', rec: true, t: 'ai-docs/wiki/', d: 'Matches the vocabulary of all five KB docs — every reference an agent reads calls this layer "the wiki". Boring is correct here.' },
+      { key: 'ai-docs/synthesis/', t: 'ai-docs/synthesis/', d: 'Describes the layer’s function, but diverges from the pattern vocabulary agents will encounter in the KB.' },
+      { key: 'ai-docs/garden/', t: 'ai-docs/garden/', d: 'Digital-garden flavor. Warm, but less precise and unfamiliar to the reference docs.' }
+    ]
+  },
+  {
+    id: 'skillcmd', num: 'Q4 · your "skill or command?" question', title: 'Commands or skill — the answer',
+    why: 'Rule of thumb in this harness: deliberate user-triggered workflows become slash commands; behavior the model should decide to apply on its own becomes a skill.',
+    options: [
+      { key: 'commands + path-scoped rule', rec: true, t: 'Commands for operations + a path-scoped rule for ambient knowledge', d: '/wiki:ingest, /wiki:query, /wiki:lint, /wiki:status are deliberate passes you invoke — commands, like /kb. A rules file scoped to ai-docs/wiki/** teaches any session the schema automatically. If you later find yourself wanting auto-triggering ("file this into the wiki" in plain words), a thin skill gets added then.' },
+      { key: 'skill-first', t: 'Skill-first', d: 'One skill triggering on wiki-ish phrasing. Fewer files, but invocation becomes fuzzy — bad for pipeline steps that must run predictably.' }
+    ]
+  },
+  {
+    id: 'expand', num: 'Q5 · your "when to expand?" question', title: 'When do more operations get added?',
+    why: 'You asked whether to add all six farzaa operations now or start with the Karpathy set.',
+    options: [
+      { key: 'trigger-based expansion', rec: true, t: 'Start lean, expand on triggers', d: 'absorb arrives when the unprocessed-source backlog exceeds ~10; breakdown arrives when lint repeatedly flags the same missing pages; cleanup stays a lint sub-step until its fix list earns its own pass. Each lands as a small direct-lane addition — no big-bang.' },
+      { key: 'all six now', t: 'Ship all six operations now', d: 'Full farzaa surface up front; accept the maintenance cost before the pattern has proven itself here.' }
+    ]
+  },
+  {
+    id: 'links', num: 'Q6', title: 'Linking style inside the wiki?',
+    options: [
+      { key: 'wikilinks in wiki, md links to mirrors', rec: true, t: '[[wikilinks]] between wiki pages, md links to mirrors', d: 'Graph view and backlinks become first-class in Obsidian; citations pointing at ai-docs mirrors stay standard markdown links so GitHub renders them too.' },
+      { key: 'md links everywhere', t: 'Standard markdown links everywhere', d: 'Fully portable and GitHub-native; Obsidian still draws the graph, links are just wordier.' }
+    ]
+  },
+  {
+    id: 'schema', num: 'Q7', title: 'Core frontmatter &amp; status vocabulary',
+    why: 'Dataview tables and lint checks both depend on consistent fields.',
+    options: [
+      { key: 'proposed core set', rec: true, t: 'type · domain · status · created · updated · sources · related', d: 'status: current | superseded | disputed — and it travels: a disputed claim is flagged inline in query answers, never silently dropped. sources holds mirror paths / entry ids so every claim traces back.' },
+      { key: 'leaner set', t: 'Leaner: type · sources · updated', d: 'Add the rest only when lint or Dataview demands them.' }
+    ],
+    freeHint: 'Fields to add or remove?'
+  },
+  {
+    id: 'lint', num: 'Q8', title: 'How does lint run unattended?',
+    why: 'Drift is the #1 reported failure mode across every KB doc — lint must not depend on memory.',
+    options: [
+      { key: 'weekly scheduled routine + on-demand', rec: true, t: 'Weekly scheduled routine + on-demand command', d: 'A scheduled agent runs /wiki:lint weekly: fixes what it can (links, index rows), reports what it can’t (contradictions, staleness). The command also runs any time by hand.' },
+      { key: 'ci on wiki changes', t: 'CI when wiki files change', d: 'Runs on PRs touching the wiki — but misses time-based staleness between changes.' },
+      { key: 'manual only', t: 'Manual only', d: 'The documented failure path. Not recommended.' }
+    ]
+  },
+  {
+    id: 'obsidian', num: 'Q9', title: 'Obsidian vault config in the repo?',
+    options: [
+      { key: 'commit minimal .obsidian + documented plugins', rec: true, t: 'Commit minimal config, document the plugin set', d: 'A minimal .obsidian/ (attachment folder → assets/, sane defaults) commits so every clone opens identically; Web Clipper, Dataview, and Marp are named the supported set in the layer’s standards file. Workspace/cache files gitignored.' },
+      { key: 'gitignore .obsidian', t: 'Gitignore all of .obsidian/', d: 'Everyone configures their own; zero repo footprint, config drift between machines.' }
+    ]
+  },
+  {
+    id: 'pilot', num: 'Q10', title: 'The pilot migration — which resource, what passes?',
+    why: 'You’ll migrate one resource yourself as the acceptance test. Pass criteria ship with the plan: valid frontmatter, ≥1 wiki link + mirror citation, listed in the wiki index, visible in the Obsidian graph, /wiki:query answers a question about it with a citation, lint clean.',
+    options: [
+      { key: 'founders-playbook PDF mirror', rec: true, t: 'The founders-playbook PDF mirror', d: 'PDF + images + multi-asset folder — stresses the hardest ingest paths in one resource.' },
+      { key: 'karpathy knowledge-base set', t: 'The four knowledge-base docs', d: 'Tests cross-linking and contradiction flagging across related sources instead of formats.' },
+      { key: 'fresh web article via Web Clipper', t: 'A fresh article clipped from the web', d: 'Tests the capture path end to end: browser → raw → ingest → wiki.' }
+    ],
+    freeHint: 'Or name the resource you want to migrate.'
+  },
+  {
+    id: 'metrics', num: 'Q11 · layer requirements per AGENTS.md', title: 'Metrics targets &amp; archetype staffing',
+    options: [
+      { key: 'proposed targets', rec: true, t: 'Proposed: 4 targets + Prototyper/Builder staffing', d: '100% of ingests update index + log · lint clean or triaged within 7 days · every wiki claim cites ≥1 source · once seeded, each new plan cites ≥1 wiki page. Staffed by Prototyper + Builder now; Maintainer when lint automation lands.' },
+      { key: 'defer to plan', t: 'Let the plan draft targets', d: 'Plan proposes; you sign off at spec review instead of now.' }
+    ]
+  }
+];
+
+const state = {}; const notes = {};
+QUESTIONS.forEach(q => { state[q.id] = q.options.find(o => o.rec)?.key ?? null; notes[q.id] = ''; });
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text) n.textContent = text;
+  return n;
+}
+
+function renderCards() {
+  const root = document.getElementById('cards'); root.replaceChildren();
+  QUESTIONS.forEach(q => {
+    const card = el('div', 'card');
+    card.appendChild(el('div', 'qnum', q.num));
+    card.appendChild(el('h2', null, q.title.replace(/&amp;/g, '&')));
+    if (q.why) card.appendChild(el('p', 'why', q.why));
+    const chips = el('div', 'chips');
+    q.options.forEach(o => {
+      const b = document.createElement('button'); b.type = 'button';
+      b.className = 'chip' + (state[q.id] === o.key ? ' sel' : '');
+      const t = el('span', 't', o.t + ' ');
+      if (o.rec) t.appendChild(el('span', 'badge', 'Recommended'));
+      b.appendChild(t);
+      b.appendChild(el('span', 'd', o.d));
+      b.onclick = () => { state[q.id] = (state[q.id] === o.key ? null : o.key); updateAll(); };
+      chips.appendChild(b);
+    });
+    card.appendChild(chips);
+    const free = el('div', 'free');
+    const inp = document.createElement('input');
+    inp.placeholder = q.freeHint || 'Optional note — overrides or refines the choice above';
+    inp.value = notes[q.id];
+    inp.oninput = () => { notes[q.id] = inp.value; updatePrompt(); };
+    free.appendChild(inp); card.appendChild(free);
+    root.appendChild(card);
+  });
+}
+
+const LABELS = {
+  privacy: 'Privacy boundary', domains: 'Domain structure', name: 'Folder name',
+  skillcmd: 'Surface mechanics', expand: 'Operation expansion', links: 'Linking',
+  schema: 'Frontmatter', lint: 'Lint schedule', obsidian: 'Obsidian config',
+  pilot: 'Pilot', metrics: 'Metrics & staffing'
+};
+
+function updatePrompt() {
+  const lines = ['Interview round 2 answers — wiki-layer redesign:'];
+  QUESTIONS.forEach(q => {
+    const sel = state[q.id]; const n = notes[q.id].trim();
+    let line = '- ' + LABELS[q.id] + ': ';
+    if (sel) { const o = q.options.find(x => x.key === sel); line += o.key + (o.rec ? ' (as recommended)' : ' (overriding the recommendation)'); }
+    else { line += 'left open'; }
+    if (n) line += '. Note: ' + n;
+    lines.push(line);
+  });
+  lines.push('Round 1 stands as locked. Write the ledger and finish the interview.');
+  document.getElementById('prompt').textContent = lines.join('\n');
+}
+
+function updateAll() { renderCards(); updatePrompt(); }
+
+document.getElementById('acceptAll').onclick = () => {
+  QUESTIONS.forEach(q => { state[q.id] = q.options.find(o => o.rec)?.key ?? state[q.id]; });
+  updateAll();
+};
+document.getElementById('reset').onclick = () => {
+  QUESTIONS.forEach(q => { state[q.id] = null; notes[q.id] = ''; });
+  updateAll();
+};
+document.getElementById('copy').onclick = async () => {
+  const btn = document.getElementById('copy');
+  try { await navigator.clipboard.writeText(document.getElementById('prompt').textContent); }
+  catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById('prompt')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); s.removeAllRanges(); }
+  btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 1400);
+};
+
+updateAll();
+</script>
+</body>
+</html>
