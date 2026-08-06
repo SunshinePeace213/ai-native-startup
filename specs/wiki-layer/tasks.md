@@ -20,9 +20,10 @@ Tasks: `wiki-commands-ingest-lint`, `wiki-commands-query-status` (parallel, disj
 AGENTS.md integration and the drift test over the new surface.
 Tasks: `agents-md-amendments`, `wiki-drift-test`.
 
-### Phase 4: Validation
+### Phase 4: Pilot & validation
 
-Tasks: `validate-all`.
+The pre-ship fixture eval, then full validation.
+Tasks: `pilot-eval`, `validate-all`.
 
 ## Step by Step Tasks
 
@@ -41,15 +42,13 @@ Tasks: `validate-all`.
 - Append the wiki block to `.gitignore` exactly as given in spec.md
   `## Interfaces & Contracts` (negations after the existing `ai-docs/*` rules; do
   not touch the existing mirror rules).
-- Seed `ai-docs/wiki/index.md`: title, one-line purpose, the six domain sections
-  (engineering, business, development, books, articles, personal — personal marked
-  local-only), each with an empty catalog table (`Page | Type | Status | Updated`),
-  and a footer note that ingest maintains this file.
-- Seed `ai-docs/wiki/log.md`: title, the entry-format contract line documenting
-  `## [YYYY-MM-DD] <op> | <title>` with `<op>` ∈ ingest|query|lint|status, and no
-  entries yet.
+- Seed `ai-docs/wiki/index.md` and `ai-docs/wiki/log.md` exactly per spec.md
+  `### Wiki seed shapes`: five shared-domain sections with empty
+  `Page | Type | Status | Updated` tables; a `## Personal` section holding only
+  the local-only pointer line; the log's entry contract
+  `## [YYYY-MM-DD] <op> | <title> | <source-path>` with `<op>` ∈ `ingest|lint`.
 - Write minimal `ai-docs/.obsidian/app.json` (`attachmentFolderPath: "wiki/assets"`,
-  `alwaysUpdateLinks: true`) and `appearance.json` (defaults) per the contract block.
+  `alwaysUpdateLinks: true`) and `appearance.json` per the contract block.
 
 ### 2. Wiki Standards Rule
 
@@ -60,21 +59,24 @@ Tasks: `validate-all`.
 - **Files:** `.claude/rules/wiki-layer/wiki-standards.md`
 - **Parallel:** true
 - **Satisfies:** AC4
-- **Verify:** `uv run specs/wiki-layer/checks/ac4-standards-rule.py` — exit 0.
+- **Verify:** `uv run pytest tests/harness-layer/test_wiki_layer.py::test_standards_rule -q`
+  once the drift test lands; until then self-check against the content contract below.
 - Author the layer's normative rule, path-scoped with `paths: ["ai-docs/wiki/**"]`,
   in fluent KISS prose per the repo's harness style. Content contract (see spec.md
   `## Interfaces & Contracts` for the frontmatter block): page frontmatter (seven
   core fields, status vocabulary and its propagation duty — disputed/superseded is
   flagged inline wherever cited); linking (`[[wikilinks]]` between wiki pages,
-  markdown links to mirrors/repo files; cite ≥1 source per claim-bearing page);
-  writing standards distilled fresh from the farzaa study (theme-over-chronology,
-  anti-cramming, anti-thinning, flat factual tone, quote discipline, length
-  bounds); domain taxonomy (the six domains, per-domain page types, folders created
-  on first need, `personal/` local-only) ; privacy (secret/PII stripping on every
-  ingest; personal attachments under `wiki/personal/assets/`); Obsidian (vault root
-  `ai-docs/`, supported plugins Web Clipper / Dataview / Marp — recommended, never
-  required); layer requirements (lane fit, the four metrics targets, archetype
-  staffing) as agreed in decisions.md.
+  markdown links to mirrors/repo files; **every claim traces to ≥1 source** — not
+  merely one source somewhere on the page); writing standards distilled fresh from
+  the farzaa study (theme-over-chronology, anti-cramming, anti-thinning, flat
+  factual tone, quote discipline, length bounds); domain taxonomy (the six
+  domains, per-domain page types, folders created on first need); privacy —
+  `personal/` is local-only with its own `personal/index.md` + `personal/log.md`
+  (shared index/log never name personal content), personal attachments live under
+  `wiki/personal/assets/`, and secret/PII stripping applies to every ingest;
+  Obsidian (vault root `ai-docs/`, supported plugins Web Clipper / Dataview /
+  Marp — recommended, never required); layer requirements (lane fit, the four
+  metrics targets, archetype staffing) as agreed in decisions.md.
 
 ### 3. Commands: ingest + lint
 
@@ -84,23 +86,29 @@ Tasks: `validate-all`.
 - **Model / Effort:** opus / high
 - **Files:** `.claude/commands/wiki/ingest.md`, `.claude/commands/wiki/lint.md`
 - **Parallel:** true
-- **Satisfies:** AC3 (ingest, lint)
-- **Verify:** `uv run specs/wiki-layer/checks/ac3-commands.py` — no failures naming
-  ingest.md or lint.md.
+- **Satisfies:** AC3, AC7
+- **Verify:** `uv run pytest tests/harness-layer/test_wiki_layer.py -q` (structural,
+  once the drift test lands); behavioral proof is the `pilot-eval` task exercising
+  both commands against `specs/wiki-layer/checks/fixtures/`.
 - Write `/wiki:ingest` per the Interfaces contract: argument = mirror path, local
   file/folder, or plan artifact (external URLs are refused with a pointer to
   `/harness-layer:kb add`); workflow reads the standards rule's schema, the wiki
   index, then the source; integrates across pages (create/update, never
-  append-only), updates index + log, strips secrets/PII; batch input checkpoints
-  every 5 sources; crystallization gate for plan artifacts (cited +
-  non-duplicative, else decline with the reason).
+  append-only), updates the domain's index + log — **shared for shared domains,
+  `personal/index.md` + `personal/log.md` for personal** — recording the canonical
+  source path in both the page's `sources:` frontmatter and the log entry (the
+  idempotency key: a re-run on the same path updates in place, never duplicates);
+  strips secrets/PII; batch input checkpoints every 5 sources; crystallization
+  gate for plan artifacts (cited + non-duplicative, else decline with the reason).
 - Write `/wiki:lint` per the contract: checks orphans, broken `[[links]]`, index ↔
-  page drift, schema violations, stale pages, contradictions
-  (both sides flagged `disputed`), missing-mirror citations (report "run /kb",
-  not broken), cramming/thinning signals; fixes mechanical findings itself,
-  reports judgment findings; appends a log entry; documents the weekly-routine
-  prompt (`/schedule`, weekly, runs `/wiki:lint`, lands fixes as a PR) and notes
-  personal/ is local-lint only.
+  page drift, schema violations, stale pages, contradictions (both sides flagged
+  `disputed`), **secret/PII leakage in page content across every domain**,
+  missing-mirror citations (report "run `/harness-layer:kb`", never a broken
+  citation), personal pages referencing files outside `personal/`,
+  cramming/thinning signals; fixes mechanical findings itself, reports judgment
+  findings; appends a log entry; documents the weekly-routine prompt (created
+  once via `/schedule`: weekly cron, fresh clone, runs `/wiki:lint`, lands fixes
+  as a `claude/`-branch PR) and notes personal/ is local-lint only.
 
 ### 4. Commands: query + status
 
@@ -110,17 +118,23 @@ Tasks: `validate-all`.
 - **Model / Effort:** sonnet / high
 - **Files:** `.claude/commands/wiki/query.md`, `.claude/commands/wiki/status.md`
 - **Parallel:** true
-- **Satisfies:** AC3 (query, status)
-- **Verify:** `uv run specs/wiki-layer/checks/ac3-commands.py` — no failures naming
-  query.md or status.md.
-- Write `/wiki:query` per the contract: strictly read-only on the wiki; index →
-  3–8 pages → links up to 2 hops; synthesize with page citations; flag any
-  non-`current` status inline; when the wiki doesn't cover it, say so — never
-  guess; close by naming crystallization when the answer qualifies (user runs
-  `/wiki:ingest` on it).
-- Write `/wiki:status` per the contract: page counts by domain and type, orphan
-  and disputed counts, last lint date from log.md, and the expansion-trigger
-  readout (unprocessed-source backlog vs the absorb threshold).
+- **Satisfies:** AC3, AC7
+- **Verify:** `uv run pytest tests/harness-layer/test_wiki_layer.py -q` (structural,
+  once the drift test lands); behavioral proof is the `pilot-eval` task exercising
+  both commands against the fixture-built wiki.
+- Write `/wiki:query` per the contract: strictly read-only on the wiki (no page,
+  index, or log writes); index → the smallest relevant page set, following links
+  only while they materially add evidence; synthesize with page citations; flag
+  any non-`current` status inline; when the wiki doesn't cover it, say so — never
+  guess; close by naming crystallization when the answer qualifies (the user runs
+  `/wiki:ingest` on it, which is what gets logged).
+- Write `/wiki:status` per the contract: read-only readout of page counts by
+  domain and type, orphan and disputed counts, last lint date from log.md, and
+  the three expansion triggers **derived from tracked state**: absorb — count of
+  `sources.yaml` entries whose mirror is cited by no wiki page's `sources:`
+  (backlog >10 fires); breakdown — the same missing-page flag appearing in ≥3
+  consecutive lint log entries; cleanup — lint's mechanical-fix count reported in
+  its log entries trending up across the last 3 passes.
 
 ### 5. AGENTS.md Amendments
 
@@ -139,30 +153,65 @@ Tasks: `validate-all`.
 ### 6. Wiki Drift Test
 
 - **Task ID:** `wiki-drift-test`
-- **Depends On:** `wiki-commands-ingest-lint`, `wiki-commands-query-status`, `wiki-standards-rule`
+- **Depends On:** `wiki-commands-ingest-lint`, `wiki-commands-query-status`,
+  `wiki-standards-rule`, `agents-md-amendments`
 - **Agent Type:** `general-purpose`
-- **Model / Effort:** sonnet / medium
+- **Model / Effort:** sonnet / high
 - **Files:** `tests/harness-layer/test_wiki_layer.py`
 - **Parallel:** false
-- **Satisfies:** AC6
+- **Satisfies:** AC3, AC4, AC6
 - **Verify:** `uv run pytest tests/harness-layer/test_wiki_layer.py -q` — green.
-- Drift tier per test-tiers.md: re-derive the expected command set from
-  `.claude/commands/wiki/*.md`; parse each file's frontmatter (structure, not
-  substrings) asserting description present, `model` ∈ the model-selection roster
-  aliases, `effort` ∈ its effort levels, `argument-hint` on ingest/query; parse
-  the standards rule's frontmatter asserting `paths` covers `ai-docs/wiki/**`.
-  Match the style of the existing drift tests in `tests/harness-layer/`.
+- Drift tier per test-tiers.md — the single durable home for the layer's
+  structural assertions (no duplicate plan-local scripts). Expectations re-derive
+  from sources of truth, never from the directory under test:
+  - `test_command_registry`: parse the `/wiki:<name>` pointers from AGENTS.md's
+    Wiki Layer section (the registration), require the set non-empty, and compare
+    exactly — no missing commands, no unplanned files under
+    `.claude/commands/wiki/`.
+  - `test_command_frontmatter`: YAML-parse each command's frontmatter; assert
+    non-empty `description`; `model` and `effort` values ∈ the roster and effort
+    table parsed from `.claude/rules/model-selection.md`; `argument-hint` present
+    for ingest and query; query's body declares itself read-only.
+  - `test_standards_rule`: YAML-parse the rule's frontmatter (`paths` covers
+    `ai-docs/wiki/**`); parse its `##` headings and assert sections exist for
+    schema, writing standards, domains, privacy, Obsidian, and layer
+    requirements; assert all seven core fields and the three status values appear
+    as code spans within the schema section; assert the shared-index exclusion of
+    personal content is stated.
+  - Match the style of the existing drift tests in `tests/harness-layer/`.
 
-### 7. Validate Everything
+### 7. Pilot Eval (pre-ship)
+
+- **Task ID:** `pilot-eval`
+- **Depends On:** `wiki-foundation`, `wiki-commands-ingest-lint`,
+  `wiki-commands-query-status`, `agents-md-amendments`
+- **Agent Type:** run by the build lead in a real session (manual — eval tier)
+- **Model / Effort:** opus / high
+- **Files:** `ai-docs/wiki/` pages produced by the fixture ingest,
+  `specs/wiki-layer/implementation-notes.md` (evidence)
+- **Parallel:** false
+- **Satisfies:** AC7
+- **Verify:** every pass condition in
+  `specs/wiki-layer/checks/fixtures/pilot-rubric.md` observed and recorded in
+  implementation-notes.md.
+- In a real session: run `/wiki:ingest specs/wiki-layer/checks/fixtures/article-a-llm-wiki-pattern.md`,
+  then the same for `article-b-obsidian-vaults.md` (two related articles, so a
+  legitimate `[[wikilink]]` between their pages exists); then `/wiki:query` with a
+  question spanning both; then `/wiki:lint`.
+- Record in implementation-notes.md: the exact commands, the resulting page
+  paths, the index/log entries created, the query answer's citations, and lint's
+  output — judged against the rubric.
+
+### 8. Validate Everything
 
 - **Task ID:** `validate-all`
 - **Depends On:** `wiki-foundation`, `wiki-standards-rule`, `wiki-commands-ingest-lint`,
-  `wiki-commands-query-status`, `agents-md-amendments`, `wiki-drift-test`
-- **Agent Type:** `general-purpose`
+  `wiki-commands-query-status`, `agents-md-amendments`, `wiki-drift-test`, `pilot-eval`
+- **Agent Type:** a validator agent, or `general-purpose`
 - **Model / Effort:** sonnet / high
 - **Files:** none — read-only
 - **Parallel:** false
-- **Satisfies:** every AC (AC7 verified as "pilot procedure documented and
-  runnable"; its execution is the user's post-ship step)
+- **Satisfies:** every AC
 - **Verify:** every command in acceptance-criteria.md `## Validation Commands`
-  passes from the repo root, and each criterion is met.
+  passes from the repo root; AC7's evidence exists in implementation-notes.md and
+  meets the rubric; each criterion is met.

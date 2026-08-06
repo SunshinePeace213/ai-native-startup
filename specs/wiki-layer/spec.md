@@ -194,11 +194,16 @@ Insert a new section after `## Knowledge Base`:
 
 ### Wiki seed shapes
 
-`ai-docs/wiki/index.md`: H1, one-line purpose, one `## <Domain>` section per domain
-(engineering, business, development, books, articles, personal — personal marked
-local-only) each holding an empty `Page | Type | Status | Updated` table, footer
-noting ingest maintains the file. `ai-docs/wiki/log.md`: H1 plus the entry contract
-`## [YYYY-MM-DD] <op> | <title>` with `<op>` ∈ `ingest|query|lint|status`.
+`ai-docs/wiki/index.md`: H1, one-line purpose, one `## <Domain>` section per shared
+domain (engineering, business, development, books, articles) each holding an empty
+`Page | Type | Status | Updated` table, a `## Personal` section holding only the
+pointer line "local-only — cataloged in `wiki/personal/index.md`, never tracked",
+and a footer noting ingest maintains the file. `ai-docs/wiki/log.md`: H1 plus the
+entry contract `## [YYYY-MM-DD] <op> | <title> | <source-path>` with `<op>` ∈
+`ingest|lint` — query and status never write; crystallizing an answer is an ingest.
+The personal domain keeps its own local-only `personal/index.md` and
+`personal/log.md`, created lazily with the domain; personal ingests update only
+those two files, never the shared index or log.
 
 ## Relevant Files
 
@@ -214,7 +219,12 @@ noting ingest maintains the file. `ai-docs/wiki/log.md`: H1 plus the entry contr
 - `ai-docs/.obsidian/app.json`, `ai-docs/.obsidian/appearance.json` — vault config.
 - `.claude/commands/wiki/{ingest,query,lint,status}.md` — the operation surface.
 - `.claude/rules/wiki-layer/wiki-standards.md` — the layer's schema and standards.
-- `tests/harness-layer/test_wiki_layer.py` — drift guard over the new surface.
+- `tests/harness-layer/test_wiki_layer.py` — drift guard over the new surface:
+  expected command set re-derived from the AGENTS.md Wiki Layer registration,
+  exact frontmatter contracts, roster parsed from model-selection.md, standards
+  rule structure (the single durable home for these assertions).
+- `specs/wiki-layer/checks/fixtures/` — two related pilot articles + rubric for
+  the pre-ship fixture eval (AC7).
 
 ## Edge Cases
 
@@ -222,8 +232,14 @@ noting ingest maintains the file. `ai-docs/wiki/log.md`: H1 plus the entry contr
   cited-but-absent mirror as "run `/harness-layer:kb`", never as a broken citation.
 - **External URL passed to ingest**: refused with a pointer to
   `/harness-layer:kb add <url>` — sources become immutable mirrors first.
-- **Duplicate ingest of the same source**: idempotent — log is checked; pages are
-  updated in place, never duplicated; a second identical run changes nothing.
+- **Duplicate ingest of the same source**: idempotent — identity is the canonical
+  source path, checked against page `sources:` frontmatter and the log's
+  `<source-path>` field; pages are updated in place, never duplicated; a second
+  identical run changes nothing.
+- **Personal attachments**: Obsidian's global attachment folder is the tracked
+  `wiki/assets/` — the standards rule requires personal-page attachments to be
+  moved under `wiki/personal/assets/`, and local lint flags any personal page
+  referencing files outside `personal/`.
 - **Contradiction found during ingest**: both claims flagged `disputed` on their
   pages with cross-references; resolution flips the loser to `superseded` — history
   kept, nothing deleted.
@@ -270,7 +286,11 @@ noting ingest maintains the file. `ai-docs/wiki/log.md`: H1 plus the entry contr
   (account-bound; its exact prompt is documented in lint.md). One follow-up KB gap:
   `/harness-layer:kb add https://code.claude.com/docs/en/routines` (kb-fetcher was
   unavailable during planning; claim verified live — see decisions.md).
-- The pilot (AC7) is the user's acceptance test and intentionally runs after ship.
+- The pilot (AC7) is a pre-ship fixture eval: the build lead ingests the two
+  committed fixture articles in a real session and records the evidence. The
+  user's own fresh-article migration via Web Clipper is a post-ship follow-up
+  tracked on issue #88, outside the definition of done (restructured at gate
+  round 1 — reviews/findings-ledger.md R1-F6; surfaced at the spec human gate).
 
 ## Codex Verification
 

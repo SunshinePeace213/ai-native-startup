@@ -131,8 +131,10 @@ sit behind recorded triggers. Full interview: `discovery/decisions-draft.md`.
 
 ## Assumptions
 
-- The wiki keeps `log.md` with grep-able `## [YYYY-MM-DD] <op> | <title>` entry
-  prefixes (Karpathy convention). Invalidated if a structured log becomes necessary.
+- The wiki keeps `log.md` with grep-able entry prefixes (Karpathy convention),
+  extended at gate round 1 to `## [YYYY-MM-DD] <op> | <title> | <source-path>`
+  with `<op>` ∈ `ingest|lint` — see Locked Boundaries. Invalidated if a structured
+  log becomes necessary.
 - Secret/PII stripping is a standards-rule obligation checked by lint, not a hook,
   in v1. Invalidated if lint findings show leaks reaching pages.
 - Single-user writes; farzaa-style re-read-before-edit discipline is sufficient
@@ -156,20 +158,35 @@ sit behind recorded triggers. Full interview: `discovery/decisions-draft.md`.
 | `ai-docs/knowledge-base/lucianfialho-graphwiki-pattern.md` | 2026-08-07 | `status` vocabulary + propagation into answers; drift as dominant failure mode; lint classes |
 | `ai-docs/knowledge-base/rohitg00-llm-wiki.md` | 2026-08-07 | Lifecycle/expansion triggers, session-start hook deferred to automation stage, implementation spectrum |
 | `ai-docs/cerebras/how-we-built-our-knowledge-base.md` | 2026-08-07 | The deferred enterprise-RAG blueprint (grounds the non-goal) |
-| `ai-docs/anthropic/skills.md` | 2026-07-21 | Commands merged into skills; `.claude/commands/` still supported; command naming table; frontmatter keys (`description`, `argument-hint`, `allowed-tools`, `model`, `effort`, `disable-model-invocation`, `paths`) |
+| `ai-docs/anthropic/skills.md` | 2026-08-07 (refreshed this run) | Commands merged into skills; `.claude/commands/` still supported; the frontmatter reference (`description`, `argument-hint`, `allowed-tools`, `model`, `effort`, `disable-model-invocation`, `paths`); the command-naming table incl. nested namespaced invocation (`/apps/web:deploy`) |
+| `ai-docs/anthropic/routines.md` | 2026-08-07 (gap-filled this run) | Weekly-lint mechanism: routines run on Anthropic-managed infrastructure against a fresh clone of the default branch (gitignored files never present), push `claude/`-prefixed branches / open PRs, weekly cron presets with 1-hour minimum interval, account-bound configuration |
 | `ai-docs/anthropic/memory.md` | 2026-07-21 | `.claude/rules/` recursive discovery; `paths:` frontmatter loads on matching reads; no-`paths` loads at session start |
 | `ai-docs/anthropic/scheduled-tasks.md` | 2026-07-21 | `/loop`/cron tasks are session-scoped with 7-day expiry — rules them out for weekly lint |
 
 Cross-check (2026-08-07): the `claude-code-guide` subagent was unavailable in this
-context (Agent tool not enabled), so the cross-check ran as direct WebFetches of the
-official pages. `code.claude.com/docs/en/memory` and `/docs/en/skills` confirmed the
-mirror claims (no conflicts; namespaced `/<dir>:<name>` invocation is additionally
-proven by this repo's working `/harness-layer:*` commands).
-`code.claude.com/docs/en/routines` grounds the weekly-lint mechanism (Anthropic-managed
-runs, fresh clone from the default branch, `claude/`-branch pushes/PRs, weekly cron
-presets, min interval 1 hour) — **the KB lacks a routines mirror and it could not be
-gap-filled this run (kb-fetcher unavailable)**; follow up with
-`/harness-layer:kb add https://code.claude.com/docs/en/routines`.
+context (Agent tool not enabled at that step), so the cross-check ran as direct
+WebFetches of the official pages; `memory` and `skills` confirmed the mirror claims
+with no conflicts, and the stale skills mirror plus the missing routines mirror
+were both fixed at gate round 1 (R1-F8/R1-F9): skills refreshed, routines mirrored
+and registered. Scope note for R1-F10: subdirectory-command invocation as
+`/<dir>:<name>` is grounded by the skills mirror's namespaced-invocation naming
+table together with this repo's own convention (the working `/harness-layer:*`
+command family — a repo artifact, locked as convention in this plan);
+`/harness-layer:kb add` is likewise this repo's own command, whose source of truth
+is its committed command file, not external platform behavior.
+
+## Locked Boundaries
+
+- Gate round 1 (R1-F6/R1-F14): AC7 restructured — the gating pilot is a pre-ship
+  fixture eval (two committed related articles + rubric under `checks/fixtures/`)
+  run by the build lead in a real session; the user's fresh-article Web Clipper
+  migration moved to a post-ship follow-up on issue #88, outside the definition of
+  done. Pending the user's confirmation at the spec human gate.
+- Gate round 1 (R1-F18/R1-F19/R1-F21): personal domain keeps its own local-only
+  `personal/index.md` + `personal/log.md`; the shared index/log never name
+  personal content; log entries carry the canonical source path
+  (`## [date] <op> | <title> | <source-path>`, `<op>` ∈ `ingest|lint`) as the
+  idempotency identity.
 
 ## Open Questions / Out of Scope
 
