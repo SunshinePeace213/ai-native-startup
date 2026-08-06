@@ -11,7 +11,7 @@
 - **Branch:** feat/88-wiki-layer
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/wiki-layer
 - **Review profile:** kb-grounded
-- **PR:** <#M — filled by /harness-layer:harness-build>
+- **PR:** pending — filled by /harness-layer:harness-build
 
 ## Task Description
 
@@ -274,6 +274,5 @@ noting ingest maintains the file. `ai-docs/wiki/log.md`: H1 plus the entry contr
 
 ## Codex Verification
 
-- **Outcome:** <approved at round N | needs-human (blockers | codex-unavailable)>
-- **Rejected findings:** <each Codex finding Claude chose not to act on, with a one-line
-  rationale; "none" if all warranted findings were applied>
+- **Outcome:** pending — recorded after the Codex gate settles
+- **Rejected findings:** pending — recorded after the Codex gate settles

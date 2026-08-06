@@ -89,6 +89,7 @@
 
 ### AC7 — pilot migration
 
-- `manual: user clips one fresh web article, runs /wiki:ingest <path>, then
-  /wiki:query <question about it> and /wiki:lint` — pass: all AC7 conditions
-  observed; transcript + resulting page path recorded in implementation-notes.md.
+- `manual: user clips one fresh web article, runs /wiki:ingest on the clipped file,
+  then /wiki:query with a question about the article, then /wiki:lint` — pass: all
+  AC7 conditions observed; transcript + resulting page path recorded in
+  implementation-notes.md.
