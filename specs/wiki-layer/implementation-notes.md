@@ -218,6 +218,23 @@
   Reverse direction: all seven file-owning tasks show their diff;
   `validate-all` is read-only by design (Files: none). No unmapped files, no
   diff-less tasks — no deviation.
+- **2026-08-07 · AC7 manual validation command, executed** — the
+  acceptance-criteria.md AC7 command reads "manual: build lead runs the fixture
+  flow three times in fresh sessions" — done as recorded in the three
+  pilot-eval run entries above; observed outcome: 3/3 runs met every
+  pilot-rubric.md condition (pages, cross-link, index, log, idempotency, query,
+  lint, privacy).
+- **2026-08-07 · impl lint** — first run: 2 FAILs. (1) the AC7 manual check's
+  probe text was missing from the notes — recorded above (process gap, not a
+  work gap: the runs themselves were already logged). (2) checkpoint commit
+  4aee857's subject was 76 chars (>72) — the build lead's own commit, fixed by
+  `git filter-branch --msg-filter` shortening that one subject
+  ("gitignore negations, seed, vault config" → "gitignore, seed, vault
+  config"); history from that commit rewritten (old→new head SHA mapping:
+  3deffc6 → 6a04ede; earlier SHAs cited in prior entries refer to pre-rewrite
+  history), force-pushed with lease. Both fixes were build-lead-owned (notes
+  file and git are the lead's surfaces — no builder owns them), so neither was
+  routed to a builder.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
