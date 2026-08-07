@@ -39,6 +39,25 @@
     the AC2 parser scopes all content after the last `##` heading to that
     section, so a bare footer would have broken the "Personal holds only the
     pointer line" condition. Spec's footer requirement still met.
+- **2026-08-07 · hand-off `wiki-standards-rule`** — `.claude/rules/wiki-layer/wiki-standards.md` (new)
+  - Drift test doesn't exist yet (lands at task 6); build lead verified by full
+    read against the AC4 content contract: `paths: ["ai-docs/wiki/**"]`
+    frontmatter parses; sections `## Page Schema` (7 fields + 3 status values as
+    code spans, propagation duty), `## Linking and Citations` (per-claim ≥1
+    source), `## Writing Standards` (theme-over-chronology, anti-cramming,
+    anti-thinning, flat tone, quote discipline, length bounds), `## Domains`
+    (all six), `## Privacy` (personal index/log, `wiki/personal/assets/`,
+    secret/PII stripping, re-read-before-edit), `## Obsidian` (Web Clipper /
+    Dataview / Marp, recommended-never-required), `## Operations` (the
+    model/effort source-of-truth table), `## Layer Requirements` (lane fit, 4
+    metrics targets, archetypes) — all present. `bunx markdownlint-cli2` on the
+    file: 0 errors (builder-run).
+  - Deviation (minor, no locked decision touched): the farzaa em-dash ban was
+    dropped when distilling the tone standard — it contradicts this repo's own
+    prose style; decisions.md locks "customize, do not port", so this is within
+    bounds. All other farzaa tone constraints carried over.
+  - Note for task 6: the operations table lives under its own `## Operations`
+    heading; command/model/effort cells are code spans.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
