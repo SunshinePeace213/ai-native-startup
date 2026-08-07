@@ -58,6 +58,20 @@
     bounds. All other farzaa tone constraints carried over.
   - Note for task 6: the operations table lives under its own `## Operations`
     heading; command/model/effort cells are code spans.
+- **2026-08-07 · phase 2 start** — `wiki-commands-ingest-lint` (opus/high) and
+  `wiki-commands-query-status` (sonnet/high) launched concurrently after the
+  standards rule landed; disjoint files under `.claude/commands/wiki/`.
+- **2026-08-07 · hand-off `wiki-commands-query-status`** — `.claude/commands/wiki/query.md`,
+  `.claude/commands/wiki/status.md` (both new)
+  - `uv run --with pyyaml python -c "…split('---')[1]…"` → both frontmatters
+    parse; descriptions byte-match spec.md's blocks; query `sonnet`/`high` +
+    `argument-hint: <question>`, status `haiku`/`medium`, matching the
+    wiki-standards `## Operations` table (re-run by build lead, exit 0)
+  - Build lead full-read: query body declares itself strictly read-only (drift
+    test hook), no-coverage and seed-only degrade paths present; status derives
+    absorb/breakdown/cleanup from `sources.yaml` + the lint log payload fields,
+    with insufficient-history/no-lint-yet cases and personal-domain
+    counts-only handling. Deviations: none.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
