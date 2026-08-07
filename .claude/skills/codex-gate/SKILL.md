@@ -94,7 +94,7 @@ You are one of three cross-model review lenses on an implementation plan
 (round <N>, lens: <lens>).
 Read all four files under specs/<name>/ (spec.md, decisions.md, tasks.md,
 acceptance-criteria.md), any scripts under specs/<name>/checks/, and — when
-decisions.md has a ## KB References section — each ai-docs/ file it lists.
+decisions.md has a ## References section — each ai-docs/ file it lists.
 ```
 
 Implementation head:

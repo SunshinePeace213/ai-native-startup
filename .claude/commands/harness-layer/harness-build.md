@@ -8,20 +8,20 @@ disable-model-invocation: true
 
 # Harness Build
 
-You are the **build lead**: orchestrate builders and never edit implementation files yourself — you own `implementation-notes.md`, `## Tracking`, and the memory-step rule edits, plus every `git`/`gh` call. Implement the plan at `PATH_TO_PLAN` on its worktree, tidy it, publish the build brief, and open a draft PR whose `## Tracking` hand-off block `/harness-layer:harness-review` reads. KB steps run only when `REVIEW_PROFILE` is `kb-grounded`.
+You are the **build lead**: orchestrate builders and never edit implementation files yourself — you own `implementation-notes.md`, `## Tracking`, and the memory-step rule edits, plus every `git`/`gh` call. Implement the plan at `PATH_TO_PLAN` on its worktree, tidy it, publish the build brief, and open a draft PR whose `## Tracking` hand-off block `/harness-layer:harness-review` reads. KB steps run only when `REVIEW_PROFILE` is `grounded`.
 
 ## Variables
 
 PATH_TO_PLAN: $ARGUMENTS — plan name (resolves to `specs/<name>/`) or a path to its spec folder
 ISSUE_NUMBER: the GitHub issue `#N` from `spec.md`'s `## Tracking` — the join key for `Closes #N` and the `Refs #N` footer
 PR_NUMBER: the draft PR `#M` opened here and recorded back into `## Tracking`
-REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — gates the KB-grounding pass
+REVIEW_PROFILE: `grounded` | `standard`, from `## Tracking` — gates the KB-grounding pass
 
 ## Instructions
 
 - No `PATH_TO_PLAN` → STOP and ask the user for it (AskUserQuestion).
 - Every commit carries the `Refs #N` footer; every push uses the explicit refspec per `git-workflow.md` — check its exit status directly.
-- Under `kb-grounded`, check behavior claims (frontmatter fields, hook events, model aliases, command resolution) against the plan's `## KB References` docs — never from memory. Under `standard`, skip the KB checks.
+- Under `grounded`, check behavior claims (frontmatter fields, hook events, model aliases, command resolution) against the plan's `## References` docs — never from memory. Under `standard`, skip the KB checks.
 - **Build to the bar.** `impl-standards.md` (auto-loaded on `specs/**`) is the same checklist the review gate judges the diff against — before opening the PR, self-check the full diff against every standard and fix gaps, so review rounds fix the exceptional, not the expected.
 - Every builder spawn prompt carries the full task, its model/effort stamp, its acceptance criteria, and this scope guard: "Don't add features, refactor, or introduce abstractions beyond what the task requires. Do the simplest thing that works well."
 - Each builder hands off in its final message: task ID, status, changed files, exact verification commands + observed results (the task's **Verify** command at minimum), deviations from the plan ("none" allowed), and notes/blockers. Builders post no PR comments of their own.
@@ -33,7 +33,7 @@ REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — gates the KB-
 
 1. **Resolve the plan** — resolve `PATH_TO_PLAN` to its spec folder; read `spec.md`'s `## Tracking` for the worktree path, `ISSUE_NUMBER`, and `REVIEW_PROFILE`. No Issue `#N` → STOP and tell the user to run `/harness-layer:harness-plan` to file the issue first.
 2. **Enter the worktree** — work in the recorded worktree; if it is gone, restore it from the convention branch. Never build on `main`.
-3. **Read the plan** — read `spec.md`, `tasks.md`, `decisions.md`, `acceptance-criteria.md` in full, plus the `## KB References` docs under `kb-grounded`. Mirrors are device-local: copy any referenced mirror missing from the worktree's `ai-docs/` in from the main checkout before builders launch.
+3. **Read the plan** — read `spec.md`, `tasks.md`, `decisions.md`, `acceptance-criteria.md` in full, plus the `## References` docs under `grounded`.
 4. **Implement** — create `specs/<name>/implementation-notes.md` from `specs/_templates/implementation-notes.md`, then deploy one background subagent per `tasks.md` task per `orchestration.md`, each on the model/effort its task stamps — all unblocked tasks launch concurrently, with each task's **Files** field as the disjointness contract. As each hand-off lands, re-run its **Verify** command, append its notes entry with your observed result, and checkpoint commit+push.
 5. **Tidy & drift check** — deploy `harness-simplifier` for the touched harness/prompt files and `code-simplifier` for the touched app code, concurrently; behavior-preserving auto-fix only. Then append a two-way drift table to `implementation-notes.md`: `BASE=$(git merge-base origin/main HEAD)`; every file in `git diff --name-only $BASE..HEAD` outside `specs/<name>/` maps to the task whose **Files** owns it (or to a tidy/memory entry already in the notes), and every task maps to its present diff. An unmapped file, or a task whose files show no diff, STOPS the build for a deviation entry before the PR opens. Append the tidy entry; commit+push.
 6. **Impl lint** — `uv run scripts/impl_lint.py specs/<name>/` from the worktree root. Route each FAIL to the owning task's builder (a fresh background subagent) and re-run to green; append the entry; commit+push.

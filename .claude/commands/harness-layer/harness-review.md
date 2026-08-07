@@ -15,7 +15,7 @@ You are the **review lead**: run the `codex-gate` skill's implementation flavor 
 PATH_TO_PLAN: $ARGUMENTS — plan name (resolves to `specs/<name>/`) or a path to its spec folder
 ISSUE_NUMBER: the GitHub issue `#N` from `spec.md`'s `## Tracking` — the `Refs #N` commit footer
 PR_NUMBER: the draft PR `#M` from `## Tracking` — the PR this run gates
-REVIEW_PROFILE: `kb-grounded` | `standard`, from `## Tracking` — under `kb-grounded`, fixers check behavior claims against the plan's `## KB References` docs, never memory
+REVIEW_PROFILE: `grounded` | `standard`, from `## Tracking` — under `grounded`, fixers check behavior claims against the plan's `## References` docs, never memory
 
 ## Instructions
 
@@ -65,7 +65,7 @@ Verdict: <approved at cycle N | approved with overridden blockers <IDs> | blocke
 Impl Lint: <clean | N findings entered the ledger>
 Ledger: <X blocking fixed, Y advisory recorded, Z disputed — lens substitutions: <none | list>>
 Security: <light | full> pass — <clean | N findings fixed | report: CLAUDE-SECURITY-<ts>/>
-KB grounding: <checked | n/a — standard profile>
+Grounding: <checked | n/a — standard profile>
 Dev report: <artifacts/dev-report.html + URL | n/a — simple plan>
 Summary: specs/<name>/summary.md — <indexed in specs/index.md | not indexed, left draft>
 Standards: <amended: <one line> | unchanged>

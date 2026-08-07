@@ -55,7 +55,7 @@ TRACKING_FIELDS = {
     "Issue": re.compile(r"#(\d+)"),
     "Branch": re.compile(rf"`?({TYPES})/(\d+)-[a-z0-9-]+`?$"),
     "Worktree": re.compile(r"^`?/"),
-    "Review profile": re.compile(r"^`?(kb-grounded|standard)`?$"),
+    "Review profile": re.compile(r"^`?(grounded|standard)`?$"),
 }
 
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)

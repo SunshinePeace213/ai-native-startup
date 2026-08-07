@@ -52,5 +52,6 @@ completion notification instead. Fetch full schemas with `ToolSearch` when neede
   subagents on file-disjoint tasks, each stamped per `model-selection.md`.
 - **The review fixer**: one full-context `opus` subagent per gate cycle — the
   whole blocking set travels together, never split across fixers.
-- **Helpers**: plan's `claude-code-guide` and `kb-fetcher`, the plan and build
-  `opus` page authors, `/kb` fan-out, and the tidy simplifiers.
+- **Helpers**: plan's `claude-code-guide` and `source-archiver`, the plan and
+  build `opus` page authors, `/wiki:ingest`'s archive fan-out, and the tidy
+  simplifiers.

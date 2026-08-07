@@ -20,28 +20,27 @@ Turn `USER_PROMPT` (ideally the finalized prompt from `/harness-layer:harness-in
 
 USER_PROMPT: $1
 ORCHESTRATION_PROMPT: $2 - (Optional) Guidance for team assembly, task structure, and execution strategy
-KNOWLEDGE_BASE: `ai-docs/` — cached official docs; catalog in `ai-docs/index.md`, manifest in `ai-docs/sources.yaml`
-STALE_AFTER: `30` days — a KB doc older than this is stale
+KNOWLEDGE_BASE: `ai-docs/` — the wiki (catalog: `ai-docs/wiki/index.md`) over the raw-source layer of archived docs
 
 ## Instructions
 
-- **PLANNING ONLY** — draft the spec; do not build, write code, or deploy builder agents. Allowed subagents: the `claude-code-guide` KB cross-check, `kb-fetcher` for KB mirrors (never write mirror content yourself), and the `opus` page author. You write the spec files and any plan-local check scripts yourself — they are one coupled artifact and splitting authorship breaks traceability.
+- **PLANNING ONLY** — draft the spec; do not build, write code, or deploy builder agents. Allowed subagents: the `claude-code-guide` KB cross-check, `source-archiver` for raw-source archives (never write archive content yourself), and the `opus` page author. You write the spec files and any plan-local check scripts yourself — they are one coupled artifact and splitting authorship breaks traceability.
 - If no `USER_PROMPT` is provided, stop and ask the user for it.
 - **Route first.** When the request passes every direct-lane check — ≤2 files and roughly ≤80 changed lines; docs/chore/style/fix with an obvious local cause; no executable surface (`.claude/hooks/`, `settings.json`, `checks/`, `scripts/`, `.github/workflows/`) and no security boundary; no new command, skill, agent, or rule — stop and recommend `/harness-layer:harness-direct "<request>"`. When in doubt, keep the full lane.
 - Determine the task type (feat|fix|docs|style|refactor|perf|test|chore) and complexity (simple|medium|complex).
 - If `ORCHESTRATION_PROMPT` is provided, let it guide team composition, task granularity, dependency structure, and parallel/sequential decisions.
 - **Draft to the bar.** `spec-standards.md` (auto-loaded on `specs/**`) is the same checklist the Codex gate judges against — self-check the draft against every standard before pushing.
-- **Ground harness-layer claims.** When the expert layer is active, statements about hooks, frontmatter, subagents, skills, commands, MCP, or model aliases must trace to a KB doc; record what you consulted in decisions.md's `## KB References`.
+- **Ground harness-layer claims.** When the expert layer is active, statements about hooks, frontmatter, subagents, skills, commands, MCP, or model aliases must trace to a KB doc; record what you consulted in decisions.md's `## References`.
 
 ## Domain Knowledge
 
-Conditional expert layer. Run it only when the task touches the harness surface — any of `.claude/`, `.codex/`, `ai-docs/`, the memory files (CLAUDE.md, AGENTS.md), or a domain that has an `ai-docs/index.md` entry. When no signal fires, state that the expert layer is skipped, read no KB docs, and set the review profile to `standard`. When a signal fires, set the profile to `kb-grounded` and run collect → cross-check → reconcile:
+Conditional expert layer. Run it only when the task touches the harness surface — any of `.claude/`, `.codex/`, `ai-docs/`, the memory files (CLAUDE.md, AGENTS.md), or a domain the wiki covers (`ai-docs/wiki/index.md`). When no signal fires, state that the expert layer is skipped, read no KB docs, and set the review profile to `standard`. When a signal fires, set the profile to `grounded` and run collect → cross-check → reconcile:
 
-1. **Collect.** Read `ai-docs/index.md` and open every cached doc relevant to the request's surface. A doc older than `STALE_AFTER` → continue with the stale copy, note it in decisions.md `## KB References`, and flag it in the Report with a `/harness-layer:kb` suggestion.
+1. **Collect.** Read `ai-docs/wiki/index.md`, open the pages matching the request's surface, and follow their `sources:` into the raw layer whenever a claim needs the source's own words.
 2. **Cross-check.** Deploy a `claude-code-guide` subagent with the specific harness claims the plan depends on, asking it to verify them against current official behavior.
-3. **Reconcile.** Sources agree → continue. They conflict on a claim → refresh that mirror via a `kb-fetcher` subagent (the entry's url + the absolute target path in the worktree), then Read the fresh mirror — it wins; log the conflict + resolution in decisions.md `## KB References`. Fetch fails → prefer the source with the newer verifiable date and mark the claim unverified in the spec. Conflicts reaching beyond the harness surface, or a domain the KB doesn't cover → recommend `/harness-layer:harness-research "<mission>"` before locking decisions on it.
-4. **Gap-fill.** The KB lacks a doc the plan depends on → spawn a `kb-fetcher` subagent with the official URL (ask the claude-code-guide subagent if unsure) and the absolute target path under `ai-docs/` in the worktree, add its `ai-docs/sources.yaml` entry, then Read the fresh mirror — all committed with the spec.
-5. Log every doc you relied on — path, `fetched` date, and the claim it grounds — in decisions.md's `## KB References` table.
+3. **Reconcile.** Sources agree → continue. They conflict on a claim → re-archive that source via a `source-archiver` subagent (the archive's `source:` URL + the absolute target path in the worktree), then Read the fresh archive — it wins; log the conflict + resolution in decisions.md `## References`. Fetch fails → prefer the source with the newer verifiable date and mark the claim unverified in the spec. Conflicts reaching beyond the harness surface, or a domain the KB doesn't cover → recommend `/harness-layer:harness-research "<mission>"` before locking decisions on it.
+4. **Gap-fill.** The KB lacks a doc the plan depends on → spawn a `source-archiver` subagent with the official URL (ask the claude-code-guide subagent if unsure) and the absolute target path under `ai-docs/` in the worktree, then Read the fresh archive — committed with the spec; the plan cites the archive directly and leaves the wiki ingest to a later `/wiki:ingest`.
+5. Log every doc you relied on — path, `fetched` date, and the claim it grounds — in decisions.md's `## References` table.
 
 ## Readiness Gate
 
@@ -61,7 +60,7 @@ IMPORTANT: **PLANNING ONLY** — do not execute, build, or deploy builder agents
 
 1. Enter Worktree — `Worktree:` line in the prompt → `EnterWorktree(path: ...)`; otherwise `EnterWorktree(name: "<slug>")` (see `Worktree & Handoff`). An existing `specs/<slug>/spec.md` switches the run to `Revision Mode`.
 2. Readiness Gate — transcribe any discovery ledger, assess coverage, and fill only genuinely-open gaps.
-3. Understand Codebase & Set Review Profile — read the relevant code and the `specs/lessons/digest.md` rows matching the touched surface (fold their pitfalls into the draft); apply the `Domain Knowledge` trigger and set `kb-grounded` or `standard`.
+3. Understand Codebase & Set Review Profile — read the relevant code and the `specs/lessons/digest.md` rows matching the touched surface (fold their pitfalls into the draft); apply the `Domain Knowledge` trigger and set `grounded` or `standard`.
 4. Design & Draft — the technical approach, grounded in the KB when the expert layer is active. Define the team and tasks from the available agent types (default `general-purpose`) — IDs, dependencies, assignments, each task's model + effort stamped per the model-selection rule; mark any task whose outcome must be recorded to memory. Write the spec folder (see `Output`), including one executable check script per acceptance criterion, then self-check every file against `spec-standards.md`.
 5. Name, Issue & Push — reuse the chain `<slug>` (rename with `git mv` only if actively wrong) or generate a descriptive kebab-case name; pick the change `<type>`; first cycle only, create and link the issue; commit and push per `Worktree & Handoff`.
 6. Spec Lint — `uv run scripts/spec_lint.py specs/<name-of-plan>/` from the worktree root; fix every FAIL yourself, re-run to green, and commit+push the fixes (`Refs #N`). The gate re-runs this lint first.
@@ -78,7 +77,7 @@ specs/<name-of-plan>/
 ├── discovery/             # committed by the pre-plan passes; reference, never copy
 ├── spec.md                # what & why: task, objective, non-goals, locked decisions, tracking, review record
 ├── tasks.md               # how & who: phases, team members, step-by-step tasks
-├── decisions.md           # the interview record (+ ## KB References when the expert layer is active)
+├── decisions.md           # the interview record (+ ## References when the expert layer is active)
 ├── acceptance-criteria.md # done: testable criteria, each mapped to validation commands
 ├── checks/                # plan-local scripts, only where no suite or validator covers an AC — `uv run` for Python, `bun` for JS/TS, bash otherwise; pass = exit 0
 ├── artifacts/             # implementation-plan page (+ reference map when porting semantics)
@@ -87,7 +86,7 @@ specs/<name-of-plan>/
 
 When filling them:
 
-- Include the conditional sections (`## Problem Statement` and `## Solution Approach` in spec.md, `## Implementation Phases` in tasks.md) only when task_type is feature or complexity is medium/complex; `## Interfaces & Contracts` only when the change adds or alters an interface, and `## KB References` in decisions.md only under `kb-grounded`. Delete a section you omit rather than leaving it empty.
+- Include the conditional sections (`## Problem Statement` and `## Solution Approach` in spec.md, `## Implementation Phases` in tasks.md) only when task_type is feature or complexity is medium/complex; `## Interfaces & Contracts` only when the change adds or alters an interface, and `## References` in decisions.md only under `grounded`. Delete a section you omit rather than leaving it empty.
 - Volatile-decisions-first: within spec.md's existing `##` headings (do not rename or reorder them), lead with the decisions most likely to change — data model, type/interface signatures, anything user-facing.
 - Prefer the project's own suite or a checked-in validator over a bespoke script; when a plan-local script is the only option, name it `ac<N>-<slug>.<ext>`, self-contained and runnable from the repo root. Every validation command must fail if the change is reverted.
 
@@ -102,7 +101,7 @@ Every plan gets a GitHub issue and its convention branch before anything is push
 - **Enter the worktree.** The discovery chain usually created it — `EnterWorktree(path: ".claude/worktrees/<slug>")`; without one, `EnterWorktree(name: "<slug>")` branches from `origin/main` into `.claude/worktrees/<slug>`. Write the spec folder there, never on `main`. Discovery commits already on the branch ride along with the first push.
 - **Create the issue** (first cycle only). Pick the skeleton kind from `<type>` — feat→`feature`, fix→`bug`, docs/style/refactor/perf/test/chore→`chore`, `epic` only for a genuine multi-issue initiative. Fill `specs/_templates/issues/<kind>.md` from the interview ledger and Assumptions, write it to a temp file, and create the issue: `gh issue create --title "<emoji> <type>: <plan title>" --body-file <tmp> --label <type> --label priority:P<0-3> --assignee <login>` (gitmoji from the commit table) — exactly one type label, one priority label, and your GitHub login (`gh api user -q .login`). Note the returned issue number `#N`.
 - **Link the branch.** `gh issue develop <N> --base main --name <type>/<N>-<slug>`.
-- **Tracking.** In spec.md's `## Tracking`, record Type and Complexity, Issue `#N`, Branch `<type>/<N>-<slug>`, the absolute worktree path (`git rev-parse --show-toplevel`), and `Review profile: kb-grounded|standard`.
+- **Tracking.** In spec.md's `## Tracking`, record Type and Complexity, Issue `#N`, Branch `<type>/<N>-<slug>`, the absolute worktree path (`git rev-parse --show-toplevel`), and `Review profile: grounded|standard`.
 - **Commit.** Stage the spec folder plus any gap-filled KB docs and make one commit `<emoji> <type>(spec): draft plan for <name-of-plan>` with a `Refs #N` footer.
 - **Push.** `git push -u origin HEAD:refs/heads/<type>/<N>-<slug>` (bare `git push` refuses from the local `worktree-<slug>` branch).
 - **Plan-links comment.** After the first push, upsert one issue comment keyed `<!-- plan-links -->` linking the four spec files as blob URLs on the convention branch — upsert per `pr-process.md` § Idempotent Marker Comments.
@@ -127,12 +126,12 @@ Folder: specs/<name-of-plan>/ (spec.md, tasks.md, decisions.md, acceptance-crite
 Issue: #N <url>
 Branch: <type>/<N>-<slug> — pushed to origin
 Worktree: <absolute worktree path>
-Review profile: <kb-grounded | standard>
+Review profile: <grounded | standard>
 Spec Lint: <clean | N catches fixed pre-gate>
 Codex Gate: <approved at round N | user chose <proceed|revise|park> — <open blockers | dispute | codex-unavailable>>
 Ledger: <X blocking fixed, Y advisory recorded, Z disputed — lens substitutions: <none | list>>
 Checks: <N validation commands — M plan-local scripts under checks/>
-KB Grounding: <N docs consulted, M gap-filled — or "none (standard profile)">
+Grounding: <N docs consulted, M gap-filled — or "none (standard profile)">
 Assumptions: <count recorded in decisions.md, or "none">
 Page: <implementation-plan page URL + committed path, or "none — simple plan">
 Standards: <amended: <one line> | unchanged>

@@ -201,7 +201,9 @@ def test_standards_rule():
     assert isinstance(paths, list) and paths, (
         f"{STANDARDS_DOC.name} frontmatter has no `paths` list"
     )
-    assert "ai-docs/wiki/**" in paths, f"`paths` does not cover ai-docs/wiki/**: {paths}"
+    assert any(p in ("ai-docs/**", "ai-docs/wiki/**") for p in paths), (
+        f"`paths` does not cover the wiki: {paths}"
+    )
 
     doc = STANDARDS_DOC.read_text(encoding="utf-8")
 
@@ -230,9 +232,15 @@ def test_standards_rule():
     assert "anti-thinning" in writing_lower, "writing-standards section has no anti-thinning marker"
 
     domains_section = _section_containing(doc, "Domain")
-    for domain in ("engineering", "business", "development", "books", "articles", "personal"):
-        assert re.search(rf"\b{domain}\b", domains_section, re.I), (
-            f"domains section missing domain '{domain}'"
+    assert "open-ended" in domains_section.lower(), (
+        "domains section does not state that domains are open-ended"
+    )
+    assert "schema.md" in domains_section, (
+        "domains section missing the per-domain schema.md contract"
+    )
+    for context in ("personal", "research", "books", "business", "engineering"):
+        assert re.search(rf"\b{context}\b", domains_section, re.I), (
+            f"domains section missing starter archetype '{context}'"
         )
 
     privacy = _section_containing(doc, "Privacy")

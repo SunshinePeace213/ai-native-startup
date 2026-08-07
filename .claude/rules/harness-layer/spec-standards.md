@@ -30,9 +30,10 @@ panel judges the rest.
    nothing missing, nothing beyond them, nothing marked out-of-scope or non-goal.
 5. **S5 · Consistency** — no two requirements contradict, and no requirement
    contradicts a locked decision.
-6. **S6 · Grounding** — under the `kb-grounded` profile, every claim about
+6. **S6 · Grounding** — under the `grounded` profile, every claim about
    harness behavior (hooks, frontmatter, subagents, skills, commands, MCP, model
-   aliases) cites a cached `ai-docs/` file in decisions.md `## KB References`.
+   aliases) cites an `ai-docs/` file (wiki page or raw-source archive) in
+   decisions.md `## References`.
 7. **S7 · Tracking hygiene** — spec.md `## Tracking` records the change type,
    complexity, Issue `#N`, the convention branch `<type>/<N>-<slug>` carrying the
    same number, the worktree path, and the review profile. No placeholders.

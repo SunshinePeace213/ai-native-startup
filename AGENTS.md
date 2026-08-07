@@ -6,17 +6,17 @@
 
 ## Knowledge Base
 
-- `ai-docs/` is the shared KB — the wiki (`ai-docs/wiki/`, compiled synthesis; catalog: `ai-docs/wiki/index.md`) over cached official docs (mirror catalog: `ai-docs/index.md`, manifest: `ai-docs/sources.yaml`).
-- Start every task wiki-first: check `ai-docs/wiki/index.md` for pages matching the work, then `ai-docs/index.md` for mirrors; skim a match's summary line before a full read. Nothing relevant → move on.
-- Consulted an official page the KB lacks → register and mirror it with `/harness-layer:kb add <url>`.
-- Durability rule: official pages get mirrored via `kb-fetcher` and registered in `sources.yaml`; synthesis that passes the crystallization gate — cited, non-duplicative — files into the wiki via `/wiki:ingest`; synthesis that doesn't stays in that plan's `discovery/research.md`; raw search results go nowhere.
-- Mirrors are read-only: fix wrong or stale content by refetching through `kb-fetcher` (or `/harness-layer:kb`), never by hand-editing. If the official page itself is wrong, record a project note in `ai-docs/` instead.
+- `ai-docs/` is the shared KB — the wiki (`ai-docs/wiki/`, compiled synthesis; catalog: `ai-docs/wiki/index.md`) over the raw-source layer (immutable archives of web pages, PDFs, and files in the other `ai-docs/` folders).
+- Start every task wiki-first: check `ai-docs/wiki/index.md` for pages matching the work, following their `sources:` into the raw layer when the source's own words matter. Nothing relevant → move on.
+- Consulted an official page the KB lacks → archive and ingest it with `/wiki:ingest <url>`.
+- Durability rule: pages worth keeping get archived into the raw layer via `source-archiver`; synthesis that passes the crystallization gate — cited, non-duplicative — files into the wiki via `/wiki:ingest`; synthesis that doesn't stays in that plan's `discovery/research.md`; raw search results go nowhere.
+- Archives are read-only: fix wrong or stale content by re-archiving through `source-archiver`, never by hand-editing. If the source itself is wrong, record a project note in `ai-docs/` instead.
 
 ## Wiki Layer
 
-- `ai-docs/wiki/` — LLM-maintained synthesis over the mirrors; domain folders over one shared schema; `personal/` is gitignored and local-only.
+- `ai-docs/wiki/` — LLM-maintained synthesis over the raw-source layer; open-ended domain folders, each with its own `schema.md` over one shared spine; `personal/` is gitignored and local-only.
 - Operations: `/wiki:ingest`, `/wiki:query`, `/wiki:lint` (weekly routine + on-demand), `/wiki:status`.
-- Standards, schema, lane fit, metrics, archetypes: [wiki-standards.md](.claude/rules/wiki-layer/wiki-standards.md). Mirrors stay immutable; ingest reads, never edits them.
+- Standards, schema, lane fit, metrics, archetypes: [wiki-standards.md](.claude/rules/wiki-layer/wiki-standards.md). Sources stay immutable; ingest reads, never edits them.
 
 ## Harness Development
 
@@ -38,7 +38,7 @@
 ## Project Structure
 
 - `.claude/rules/` — path-scoped project rules
-- `ai-docs/` — cached official docs KB managed by `/kb` (catalog: `ai-docs/index.md`), plus hand-written project notes
+- `ai-docs/` — the wiki + raw-source KB managed by the `/wiki:*` commands (catalog: `ai-docs/wiki/index.md`), plus hand-written project notes
 - `specs/` — planning files (per-plan folders; pre-plan discovery pages live in each plan's `discovery/`)
 - `specs/index.md` — catalog of what has shipped. Check it before concluding a feature does not exist, and read a plan's `summary.md` (outcome) before its `spec.md` (intent).
 
@@ -53,14 +53,14 @@
   - `/harness-layer:harness-research` — vague mission → focused questions → a provenance-tiered claims ledger (quick/standard/deep tiers).
   - `/harness-layer:harness-interview` — lock every open decision, round by round.
 - **Questioning the user** — when unknowns need the user's answers outside the passes above (an ad-hoc design discussion, a mid-task ambiguity), invoke the `grilling` skill instead of improvising questions.
-- **KB** — the domain-expert layer auto-engages when work touches the harness, grounding plan claims in the KB per `## Knowledge Base`; keep it fresh with `/harness-layer:kb`.
+- **KB** — the domain-expert layer auto-engages when work touches the harness, grounding plan claims in the KB per `## Knowledge Base`; grow it with `/wiki:ingest`.
 - **Lessons** — ship folds each plan's ledger + metrics into `specs/lessons/digest.md`; `/harness-layer:harness-lessons` runs the deep pass monthly, landing amendments through the direct lane; plan reads the digest for the touched surface before drafting.
 - **Artifacts** — pipeline stages publish interactive pages committed under `specs/<name>/artifacts/`; crafting rules: [artifacts.md](.claude/rules/harness-layer/artifacts.md).
 
 ## Designing a New Layer
 
 A new layer (cpo, studio, …) is a full-lane plan whose product is another
-pipeline. It ships four things: its KB group in `ai-docs/sources.yaml`, its own
+pipeline. It ships four things: its raw-source group under `ai-docs/`, its own
 standards file, its lane fit (which of its work takes direct vs full), and its
 metrics targets — and names which archetypes (Prototyper / Builder / Sweeper /
 Grower / Maintainer) staff it at its stage.

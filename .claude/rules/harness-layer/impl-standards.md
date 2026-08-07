@@ -28,9 +28,9 @@ the orphan scan) and runs before any lens; the panel judges the rest.
 4. **I4 · Harness file quality** — changed files under `.claude/` read as fluent,
    KISS prose: instructions not rationale, no stray cross-refs, no guidance
    duplicated from a rule that already loads.
-5. **I5 · Grounding** — under the `kb-grounded` profile, every harness-behavior
+5. **I5 · Grounding** — under the `grounded` profile, every harness-behavior
    claim the diff relies on (frontmatter fields, hook events, model aliases,
-   command resolution) traces to a `## KB References` doc, never memory.
+   command resolution) traces to a `## References` doc, never memory.
 6. **I6 · Scope hygiene** — no orphaned imports, variables, or functions the
    change made unused; no drive-by refactors or unrequested features. Every
    changed line traces to a task. (The unused-import/variable scan is

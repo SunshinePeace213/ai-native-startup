@@ -23,7 +23,7 @@
 - **Issue:** <#N — mandatory, filed before the first push>
 - **Branch:** <the convention branch, `type/N-slug`>
 - **Worktree:** <absolute worktree path>
-- **Review profile:** <kb-grounded | standard>
+- **Review profile:** <grounded | standard>
 - **PR:** <#M — filled by /harness-layer:harness-build>
 
 ## Task Description

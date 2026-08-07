@@ -23,14 +23,14 @@
 
 - <assumption — and what would invalidate it>
 
-<!-- ## KB References: required under the `kb-grounded` review profile, omitted under
+<!-- ## References: required under the `grounded` review profile, omitted under
      `standard`. -->
 
-## KB References
+## References
 
-<!-- Every ai-docs/ doc the plan relied on, plus any conflict found during the
-     cross-check and how it was resolved. A harness-behavior claim with no row here is
-     memory, not grounding. -->
+<!-- Every ai-docs/ doc the plan relied on — wiki page or raw-source archive — plus any
+     conflict found during the cross-check and how it was resolved. A harness-behavior
+     claim with no row here is memory, not grounding. -->
 
 | Doc | Fetched | Grounds |
 | --- | --- | --- |
