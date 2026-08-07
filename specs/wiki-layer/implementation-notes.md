@@ -175,6 +175,18 @@
 - **2026-08-07 · AC7 verdict** — pass rate 3/3 on every applicable
   pilot-rubric.md condition (run 1 from seed: conditions 1–4 and 6–8; runs 2–3:
   all 8 incl. idempotency). `pilot-eval` complete.
+- **2026-08-07 · hand-off `validate-all`** — read-only validator (sonnet/high),
+  worktree HEAD 64b3d46
+  - AC1 → "PASS: gitignore semantics correct for wiki layer" exit 0 · AC2 →
+    "PASS: wiki seed structure correct" exit 0 · AC3 → "2 passed" · AC4 →
+    "1 passed" · AC5 → "PASS: AGENTS.md amendments exact and within budget"
+    exit 0 · AC6 → "3 passed" · AC7 → 3/3 corroborated against on-disk state
+    (2 ingest log entries after 3 runs = structural idempotency proof; MD024
+    defect-and-fix trail supports evidence authenticity). Overall: PASS.
+  - Advisory for review (not a failure, not fixed here — the check script is a
+    plan-time artifact outside the build's tasks): ac5-memory-amendments.py
+    computes its ≤14-line budget from a hardcoded list length rather than the
+    real git diff; the real diff (+9/−3) satisfies the budget independently.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
