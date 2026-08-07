@@ -96,6 +96,24 @@
   - `git diff --numstat AGENTS.md` → 9 added / 3 removed, net +6 lines — within
     the ≤14 budget. All three spec amendment blocks applied verbatim; the
     wiki-standards.md link target exists. Deviations: none.
+- **2026-08-07 · phase 3** — `agents-md-amendments` ran alone (Parallel: false),
+  then `wiki-drift-test` (sonnet/high) launched; pilot-eval run 1 started
+  concurrently with the drift test (disjoint files: tests/ vs ai-docs/wiki/).
+- **2026-08-07 · hand-off `wiki-drift-test`** — `tests/harness-layer/test_wiki_layer.py` (new)
+  - `uv run pytest tests/harness-layer/test_wiki_layer.py -q` → "3 passed in
+    1.01s" (re-run by build lead)
+  - `uv run pytest tests/harness-layer/ -q` → "936 passed, 2 skipped in 11.33s"
+    (re-run by build lead)
+  - `uv run ruff check tests/harness-layer/test_wiki_layer.py` → "All checks
+    passed!" (re-run by build lead)
+  - Deviation (spawn-prompt error, builder corrected it): the build lead's
+    prompt claimed pyyaml was available under `uv run pytest`; it is not a
+    project dependency. The builder used a small house-style frontmatter
+    parser (same pattern as test_model_drift.py) instead of adding a
+    dependency — matching the repo convention. Expectations re-derive from
+    AGENTS.md, wiki-standards.md's Operations table, and model-selection.md;
+    the argument-hint key split is the one stated design fact, named with a
+    comment.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
