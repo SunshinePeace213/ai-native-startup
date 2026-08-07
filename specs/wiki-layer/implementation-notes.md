@@ -163,6 +163,18 @@
   scratch-copy proof that a duplicated lint heading no longer fires MD024.
   This absorbs both pilot lint-log lessons — nothing further routes at the
   memory step for them.
+- **2026-08-07 · pilot-eval run 3/3 (AC7, idempotency post-fix)** — fresh
+  opus/high session, same four-command flow. Both ingests were exact no-ops
+  (canonical path matched in page `sources:`, log entry, and index row; page
+  SHA-256 hashes byte-identical to baseline; page count 2 → 2); query answered
+  across both pages with citations and zero writes; lint clean and appended a
+  heading byte-identical to run 2's entry with markdownlint at 0 errors —
+  proving the MD024 fix in the real flow. Build lead verified the final diff:
+  only lint's 4-line log append; no `personal/`, no personal content in the
+  shared index/log. Run 3: PASS on all 8 conditions.
+- **2026-08-07 · AC7 verdict** — pass rate 3/3 on every applicable
+  pilot-rubric.md condition (run 1 from seed: conditions 1–4 and 6–8; runs 2–3:
+  all 8 incl. idempotency). `pilot-eval` complete.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
