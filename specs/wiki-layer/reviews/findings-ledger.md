@@ -49,3 +49,45 @@ advisory. The 6 blocking fixed in the cycle-2 fix commit — **Codex-unverified*
 | R2-F6 | S2 | delta | critical | 100 | Single pilot run claimed the eval tier; test-tiers requires a pass rate over repeated runs | fixed (unverified) — AC7 is three fresh-session runs, 3/3 rubric pass rate, per-run evidence | tasks.md §7, AC7, pilot-rubric.md |
 | R2-F7 | S5 | delta | minor | 100 | spec.md Objective still says "five plan-local checks" (three remain) | advisory | spec.md Objective |
 | R2-F8 | S5 | delta | minor | 100 | spec.md still calls sources.yaml untouched / routines a KB gap after the gap-fill | advisory | spec.md Relevant Files, Notes |
+
+Impl round 1 (panel, gpt-5.6-sol/high, reviewed head `2400a83`, range
+`b62cf9a..2400a83`): impl lint clean (0 findings). 26 raw lens findings; four
+cross-lens merges (fidelity#4+simplicity#2 → I1-F4; fidelity#6+simplicity#3 →
+I1-F6; fidelity#10+evidence#5 → I1-F10). No lens substitutions. Security pass:
+full (claude-security agent over the same range) — its findings join this
+sequence from I1-F24: 1 surviving finding (26 candidates, 24 refuted, 1 below
+the vote threshold), plus two validation-script facts entered as findings —
+both lead-verified (the check-ignore behavior reproduced in a scratch repo).
+The surviving security finding exposed a missing standard; I9 added to
+impl-standards.md this run (self-improve). Verdict: changes-requested
+(13 blocking, 9 advisory, 4 disputed — disputes carry this run to the human
+gate per the gate contract).
+
+| ID | STD | Lens | Sev | Conf | Finding | Disposition | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| I1-F1 | I6 | fidelity | major | 100 | harness-build.md mirror-copy edit flagged as drive-by beyond the wiki-layer boundary | disputed — the edit is the memory step's routing per AGENTS.md ## Lessons / memory-series.md (pipeline-process lesson → the file it corrects), documented in implementation-notes.md's memory-step entry; reverting would break the standing memory contract | notes memory-step entry; AGENTS.md ## Lessons |
+| I1-F2 | I5 | fidelity | major | 96 | Nested `.claude/commands/wiki/` → `/wiki:*` resolution not traced to a cited official doc | disputed — settled at spec gate R1-F10 and approved at the spec human gate: grounded by the skills mirror's namespaced-invocation table plus the repo's own working `/harness-layer:*` convention (decisions.md cross-check scope note); no new evidence | decisions.md ## KB References cross-check |
+| I1-F3 | I5 | fidelity | minor | 98 | `opus`/`sonnet`/`haiku` alias values not enumerated by any cited KB doc (skills.md defers to /model) | advisory | skills.md:269; KB References table |
+| I1-F4 | I1 | fidelity+simplicity | major | 99 | Ingest idempotency branches incoherent: KEY matched against INDEX which never stores source paths; "update in place + bump `updated:`" vs "identical run leaves tree unchanged" undistinguished; workflow step 6 appends the log entry unconditionally | open | ingest.md:22-36,51-59 |
+| I1-F5 | I1 | fidelity | major | 100 | Lint contradiction handling has two outcomes: Checks says flag both sides `disputed`; Fix-or-report lists contradictions as report-only "without rewriting the pages" | open | lint.md:33-34,46-50 |
+| I1-F6 | I1 | fidelity+simplicity | major | 98 | Seed-only lint "report clean and stop" exits before the mandatory Log-the-pass append | open | lint.md:18-20 vs 52-60 |
+| I1-F7 | I1 | fidelity | major | 100 | Status seed-only branch reports "no triggers fired" though absorb (backlog >10, ~53 uncited manifest entries) must fire from tracked state | open | status.md:26,31 |
+| I1-F8 | I1 | fidelity | major | 96 | Orphan defined differently in lint (no index row AND no inbound wikilink) and status (`related:`-based incl. outgoing) | open | lint.md:24 vs status.md:22 |
+| I1-F9 | I1 | fidelity | minor | 100 | Four empty seed domain tables carry a literal `\| --- \|` data row after the delimiter | advisory | ai-docs/wiki/index.md:16,22,28,34 |
+| I1-F10 | I1 | fidelity+evidence | major | 100 | AC7 runs 2–3 recorded without per-run query answer/citation targets or lint output; run 2 says "page count 4 → 4" against a two-page pilot | open | implementation-notes.md:117-177 |
+| I1-F11 | I2 | evidence | major | 99 | AC7 validation command is a `manual:` narrative, not a runnable identifier | disputed — I2 explicitly provides for `manual:` checks with output recorded in implementation-notes.md; AC7 is eval-tier by locked spec design (R2-F6, approved at the spec human gate) and its output is recorded (impl lint notes-evidence PASS) | impl-standards.md I2; test-tiers.md eval row |
+| I1-F12 | I2 | evidence | major | 98 | Drift test never asserts non-empty `description`/`argument-hint` (AC3 requires non-empty description); read-only check is an unanchored substring match | open | test_wiki_layer.py:140-186 |
+| I1-F13 | I2 | evidence | major | 95 | test_standards_rule asserts isolated keywords, omitting flat tone/quote discipline/length bounds | disputed — the test implements exactly the section-scoped assertion set tasks.md §6 enumerates (locked at spec gate R2-F3) and covers every obligation AC4 states; the privacy claim is factually wrong (assertions are section-scoped, four distinct obligations) | tasks.md §6; acceptance-criteria.md AC4 |
+| I1-F14 | I2 | evidence | major | 100 | ac5 budget check measures its own hardcoded list (`added = len(WIKI_SECTION_LINES)`), never the real AGENTS.md diff | open | ac5-memory-amendments.py:96 |
+| I1-F15 | I3 | evidence | major | 100 | Hand-off entries abbreviate commands with ellipses (`python -c "…split('---')[1]…"`); validate-all records label-level results only | open | implementation-notes.md:42-98,178-185 |
+| I1-F16 | I8 | evidence | major | 100 | ac5 check derives its budget result from hard-coded expected data; cannot fail on a 15-line amendment | open — same fix as I1-F14 | ac5-memory-amendments.py:94-98 |
+| I1-F17 | I8 | evidence | major | 99 | MD024 log fix landed with no committed regression assertion (verification was an uncommitted scratch-copy proof) | open | commit 992587f; log.md |
+| I1-F18 | I4 | simplicity | major | 98 | Command bodies restate schema/citation/status/privacy/writing rules wiki-standards.md owns (which loads on any wiki read) | open — trim only genuine restatement; the check classes and workflow content are plan-prescribed (tasks.md §3–4) | ingest.md:29-43, lint.md:28-42, query.md:23, status.md:20,32 |
+| I1-F19 | I4 | simplicity | minor | 100 | lint.md log prose requires a blank line the fenced example omits | advisory | lint.md:54-60 |
+| I1-F20 | I4 | simplicity | minor | 97 | Commands repeat the same procedure across Instructions and Workflow sections | advisory | query.md, status.md, ingest.md |
+| I1-F21 | I4 | simplicity | minor | 96 | Personal lint split-logging expressed colloquially; shared-scope handling under-specified | advisory | lint.md:65-66 |
+| I1-F22 | I4 | simplicity | minor | 94 | Rationale-heavy prose in changed harness text (motivations/history instead of instructions) | advisory | wiki-standards.md, ingest.md, lint.md, harness-build.md |
+| I1-F23 | I4 | simplicity | info | 96 | Non-fluent shorthand ("pages no index row…", "logs that half") | advisory | lint.md:24,65 |
+| I1-F24 | I9 | sec | major | 90 | Ingest has a write-capable agent read third-party source content (mirrors, clipped captures, local files) with no treat-as-data instruction and no write confinement — a poisoned source persistently poisons the wiki every session reads first | open | ingest.md:51; CLAUDE-SECURITY-20260807-050658 F1, 3-verifier unanimous (impact MEDIUM → major: wiki-first reads propagate the poisoning) |
+| I1-F25 | I6 | sec | minor | 100 | ac2-seed.py carries a dead `if … : pass` branch (the writer-op contract is enforced by the surrounding checks) | advisory | ac2-seed.py:84-85 |
+| I1-F26 | I2 | sec | minor | 100 | ac1's four `&& fail` probes on tracked paths are inert — `git check-ignore` exits 1 for tracked files regardless of patterns, so a removed negation can't fire them (untracked-path probes and the personal-domain direction still hold) | advisory | ac1-privacy-gitignore.sh:34,38-41; lead scratch-repo repro |
