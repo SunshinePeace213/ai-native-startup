@@ -223,7 +223,8 @@ commits, unverified tail, disputed/overridden, lint catches, lens substitutions.
 Before the terminal outcome lands, close the loop on the gate itself: a
 confirmed finding that exposed a missing or unclear standard → amend the
 flavor's standards file in the same commit series (a new standard takes the next
-free ID — never renumber). An uncited finding class recurring 2+ times in
+free ID — never renumber), and assign the new standard to a lens in the Lens
+clusters table — the lens-cluster drift test fails on an unassigned standard. An uncited finding class recurring 2+ times in
 `specs/lessons/digest.md` → the same amendment path. A generalizable process
 lesson → route it per the memory-series contract. Skip all of it when nothing
 generalizes — most runs add nothing.

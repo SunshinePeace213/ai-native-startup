@@ -10,6 +10,7 @@ approves a plan, so a plan that never shipped never appears here.
 
 | Plan | PR | Merged | What shipped | Summary |
 | --- | --- | --- | --- | --- |
+| [wiki-layer](./wiki-layer/) | #89 | 2026-08-07 | LLM-maintained synthesis wiki over the ai-docs mirrors | [summary](./wiki-layer/summary.md) |
 | [self-managing-memory-kb](./self-managing-memory-kb/) | #69 | 2026-07-27 | Trimmed and restructured the always-loaded rule set | — |
 | [codex-hooks-sync](./codex-hooks-sync/) | #63 | 2026-07-27 | Mirrored the Claude hook surface into Codex | — |
 | [harness-build-split](./harness-build-split/) | #38 | 2026-07-21 | Split `harness-build` into build + review commands | — |

@@ -1,0 +1,863 @@
+<title>wiki-layer — development report</title>
+
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+
+    --ok: #4A7C59;
+    --crit: #8E2C1B;
+    --dispute: #4C5B6E;
+    --faint: #B5AEA4;
+    --ink-2: #55504A;
+
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+
+    --rule: 1px solid var(--border);
+    --wrap: 1060px;
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light; scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- frontmatter signature ---------- */
+
+  .fm {
+    border-top: 3px solid var(--text);
+    border-bottom: var(--rule);
+    padding: 18px 0 16px;
+    margin-top: 40px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.9;
+    letter-spacing: 0.01em;
+  }
+  .fm .dashes { color: var(--faint); letter-spacing: 0.28em; display: block; }
+  .fm dl { display: grid; grid-template-columns: 92px 1fr; gap: 0 12px; margin: 6px 0; }
+  .fm dt { color: var(--muted); }
+  .fm dd { margin: 0; color: var(--ink-2); overflow-wrap: anywhere; }
+  .fm dd b { font-weight: 600; color: var(--accent); }
+
+  h1 {
+    font-size: clamp(2.4rem, 6vw, 3.9rem);
+    line-height: 1.02;
+    letter-spacing: -0.022em;
+    font-weight: 600;
+    margin: 34px 0 10px;
+  }
+  h1 .sub { display: block; font-size: 0.34em; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); font-family: var(--mono); font-weight: 400; margin-bottom: 16px; }
+  .dek { font-size: 1.2rem; color: var(--ink-2); max-width: 60ch; margin: 0 0 30px; }
+
+  /* ---------- outcome banner ---------- */
+
+  .verdict {
+    border: var(--rule);
+    border-left: 4px solid var(--ok);
+    background: var(--surface);
+    padding: 18px 22px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 28px;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .verdict .stamp {
+    font-family: var(--mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ok);
+    font-weight: 700;
+  }
+  .verdict p { margin: 0; flex: 1 1 380px; min-width: 260px; }
+
+  /* ---------- nav ---------- */
+
+  nav.wikinav { font-family: var(--mono); font-size: 13px; margin: 26px 0 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .wikilink { color: var(--accent); text-decoration: none; border-bottom: 1px dotted var(--accent); }
+  .wikilink:hover, .wikilink:focus-visible { border-bottom-style: solid; background: rgba(184, 96, 42, 0.08); }
+
+  /* ---------- sections ---------- */
+
+  section { padding: 54px 0 8px; }
+  section > .wrap > header { border-top: var(--rule); padding-top: 14px; margin-bottom: 26px; }
+  .eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+  h2 { font-size: clamp(1.6rem, 3.6vw, 2.2rem); font-weight: 600; letter-spacing: -0.014em; margin: 0 0 6px; }
+  h3 { font-size: 1.16rem; font-weight: 600; margin: 34px 0 10px; letter-spacing: -0.008em; }
+  p.lede { color: var(--ink-2); max-width: 68ch; margin-top: 0; }
+
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--surface); border: var(--rule); border-radius: 2px; padding: 0.06em 0.34em; overflow-wrap: anywhere; }
+
+  /* ---------- shipped list ---------- */
+
+  ul.ship { list-style: none; padding: 0; margin: 0; border-top: var(--rule); }
+  ul.ship li { border-bottom: var(--rule); padding: 14px 0 14px 0; display: grid; grid-template-columns: 168px 1fr; gap: 4px 22px; }
+  ul.ship .what { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); padding-top: 4px; }
+  ul.ship .detail { margin: 0; }
+  ul.ship .detail small { display: block; color: var(--muted); font-size: 0.82em; font-family: var(--mono); margin-top: 3px; }
+
+  /* ---------- tables ---------- */
+
+  .tablewrap { overflow-x: auto; border: var(--rule); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 15px; }
+  thead th {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); text-align: left; font-weight: 500;
+    padding: 11px 14px; border-bottom: var(--rule); background: var(--bg);
+  }
+  tbody td { padding: 12px 14px; border-bottom: var(--rule); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:nth-child(even) { background: rgba(250, 248, 245, 0.6); }
+  td.ac { font-family: var(--mono); font-weight: 600; color: var(--accent); white-space: nowrap; }
+  td.cmd { font-family: var(--mono); font-size: 11.6px; line-height: 1.6; color: var(--ink-2); overflow-wrap: anywhere; }
+  td.res { font-size: 14px; }
+  td.res b { font-family: var(--mono); font-size: 11.6px; color: var(--ok); font-weight: 700; }
+
+  /* ---------- headline numbers ---------- */
+
+  .gates { display: grid; grid-template-columns: repeat(auto-fit, minmax(228px, 1fr)); gap: 0; border: var(--rule); background: var(--surface); }
+  .gate { padding: 18px 20px; border-right: var(--rule); }
+  .gate:last-child { border-right: 0; }
+  .gate h4 { margin: 0 0 10px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  .gate .big { font-size: 2rem; line-height: 1; letter-spacing: -0.02em; }
+  .gate .big span { font-size: 0.5em; color: var(--muted); letter-spacing: 0; }
+  .gate ul { list-style: none; margin: 10px 0 0; padding: 0; font-family: var(--mono); font-size: 11.8px; line-height: 1.8; color: var(--ink-2); }
+  .gate ul b { color: var(--text); }
+
+  /* ---------- filters ---------- */
+
+  .filters { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: var(--rule); padding: 12px 0 10px; margin: 30px 0 0; }
+  .frow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .frow .flabel { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); width: 82px; flex: 0 0 82px; }
+  button.chip {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em;
+    background: transparent; color: var(--ink-2); border: var(--rule); border-radius: 2px;
+    padding: 4px 9px; cursor: pointer;
+  }
+  button.chip:hover { border-color: var(--accent); color: var(--accent); }
+  button.chip[aria-pressed="true"] { background: var(--text); border-color: var(--text); color: var(--bg); }
+  button.chip .n { opacity: 0.55; margin-left: 5px; }
+  .readout { font-family: var(--mono); font-size: 11.5px; color: var(--muted); padding-top: 4px; }
+  .readout b { color: var(--text); }
+
+  /* ---------- finding cards ---------- */
+
+  .cards { margin-top: 22px; display: grid; gap: 10px; }
+  .fcard {
+    border: var(--rule); border-left: 4px solid var(--muted);
+    background: var(--surface); padding: 13px 16px; cursor: pointer;
+    animation: rise 0.22s ease both;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .fcard { animation: none; } html { scroll-behavior: auto; } }
+  .fcard.sev-critical { border-left-color: var(--crit); }
+  .fcard.sev-major { border-left-color: var(--accent); }
+  .fcard.sev-minor { border-left-color: var(--muted); }
+  .fcard.sev-info { border-left-color: var(--faint); }
+  .fcard:hover { background: #EDE9E0; }
+  .fhead { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px; }
+  .fid { font-weight: 700; letter-spacing: 0.04em; font-size: 12px; }
+  .tag { border: var(--rule); border-radius: 2px; padding: 1px 6px; color: var(--muted); background: var(--bg); text-transform: uppercase; letter-spacing: 0.08em; }
+  .tag.sev-critical { color: var(--crit); border-color: var(--crit); }
+  .tag.sev-major { color: var(--accent); border-color: var(--accent); }
+  .tag.disp-fixed { color: var(--ok); border-color: var(--ok); }
+  .tag.disp-disputed { color: var(--dispute); border-color: var(--dispute); }
+  .tag.disp-advisory { color: var(--muted); }
+  .tag.sec { color: var(--crit); border-color: var(--crit); background: rgba(142, 44, 27, 0.07); }
+  .conf { color: var(--faint); margin-left: auto; }
+  .fbody { margin: 9px 0 0; }
+  .fbody .claim { margin: 0; font-size: 15.5px; }
+  .fbody .disp { margin: 7px 0 0; font-size: 14.6px; color: var(--ink-2); }
+  .fbody .disp::before { content: "→ "; color: var(--accent); font-family: var(--mono); }
+  .fcard .ev { display: none; margin: 10px 0 0; padding-top: 9px; border-top: 1px dotted var(--border); font-family: var(--mono); font-size: 11.4px; color: var(--muted); overflow-wrap: anywhere; }
+  .fcard.open .ev { display: block; }
+  .carry { margin-left: 8px; display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); cursor: pointer; border: 1px dashed var(--border); padding: 2px 7px; }
+  .carry input { accent-color: var(--accent); margin: 0; }
+  .fcard.carried { border-left-color: var(--accent); }
+  .fcard.carried .carry { color: var(--accent); border-color: var(--accent); border-style: solid; }
+  .empty { border: 1px dashed var(--border); padding: 22px; color: var(--muted); font-family: var(--mono); font-size: 13px; }
+
+  /* ---------- learned trails ---------- */
+
+  .trail { border: var(--rule); background: var(--surface); padding: 20px 22px; margin-bottom: 12px; }
+  .trail h3 { margin: 0 0 4px; }
+  .trail .origin { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+  .trail p { margin: 0 0 10px; }
+  .trail p:last-child { margin-bottom: 0; }
+  ol.steps { list-style: none; counter-reset: s; margin: 12px 0 0; padding: 0; }
+  ol.steps li { counter-increment: s; position: relative; padding: 0 0 12px 34px; border-left: var(--rule); margin-left: 9px; }
+  ol.steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: -9px; top: 2px;
+    width: 18px; height: 18px; border-radius: 50%; background: var(--bg); border: var(--rule);
+    font-family: var(--mono); font-size: 10.5px; line-height: 17px; text-align: center; color: var(--muted);
+  }
+  ol.steps b { font-weight: 600; }
+
+  /* ---------- prompt block ---------- */
+
+  .promptbox { border: var(--rule); border-top: 3px solid var(--accent); background: var(--surface); }
+  .promptbox .ph { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px 18px; border-bottom: var(--rule); }
+  .promptbox .ph h3 { margin: 0; font-size: 1rem; }
+  .promptbox .ph .spacer { flex: 1; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 18px; border-bottom: var(--rule); }
+  .toggles label { font-family: var(--mono); font-size: 11.5px; display: inline-flex; align-items: center; gap: 6px; border: var(--rule); padding: 4px 9px; cursor: pointer; background: var(--bg); }
+  .toggles input { accent-color: var(--accent); margin: 0; }
+  pre#prompt {
+    margin: 0; padding: 18px; font-family: var(--mono); font-size: 12.4px; line-height: 1.72;
+    white-space: pre-wrap; overflow-wrap: anywhere; max-height: 460px; overflow-y: auto; background: var(--bg); color: var(--ink-2);
+  }
+  button.act {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    background: var(--accent); color: #FFFDF9; border: 1px solid var(--accent); border-radius: 2px;
+    padding: 7px 14px; cursor: pointer;
+  }
+  button.act:hover { background: #A0511F; }
+  button.act.ghost { background: transparent; color: var(--ink-2); border-color: var(--border); }
+  button.act.ghost:hover { color: var(--accent); border-color: var(--accent); background: transparent; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  footer { border-top: var(--rule); margin-top: 56px; padding: 22px 0 60px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); line-height: 1.9; }
+  footer b { color: var(--ink-2); font-weight: 500; }
+
+  @media (max-width: 620px) {
+    body { font-size: 16px; }
+    .fm dl { grid-template-columns: 78px 1fr; }
+    ul.ship li { grid-template-columns: 1fr; }
+    .frow .flabel { width: auto; flex: 0 0 100%; }
+    .gate { border-right: 0; border-bottom: var(--rule); }
+  }
+</style>
+
+<div class="wrap">
+  <div class="fm">
+    <span class="dashes">---</span>
+    <dl>
+      <dt>type</dt><dd>dev-report</dd>
+      <dt>plan</dt><dd>specs/wiki-layer/ · issue #88 · PR #89</dd>
+      <dt>status</dt><dd><b>approved via override — ready at the human gate</b></dd>
+      <dt>gates</dt><dd>spec 2 cycles · impl 2 cycles · security full scan · impl lint clean ×2</dd>
+      <dt>sources</dt><dd>implementation-notes.md, reviews/findings-ledger.md, acceptance-criteria.md, spec.md</dd>
+    </dl>
+    <span class="dashes">---</span>
+  </div>
+
+  <h1><span class="sub">Development report</span>The wiki layer, as reviewed</h1>
+  <p class="dek">A synthesis wiki now sits above the immutable <code>ai-docs/</code> mirrors: tracked
+    pages, a local-only personal domain, four operations, and a schema rule that governs all of them.
+    Two gates, four rounds, and one security scan later, here is what shipped, what the review changed,
+    and what the pipeline keeps.</p>
+
+  <div class="verdict">
+    <span class="stamp">approved · override</span>
+    <p>Both Codex gates closed at the two-cycle cap with a disputed tail; the user accepted the lead's
+      rationale on all five disputes at the human gate. PR&nbsp;#89 flips from draft to ready — its head
+      commit is the approved SHA recorded in the PR's <code>## Build Status</code> Ready row.</p>
+  </div>
+
+  <nav class="wikinav">
+    <a class="wikilink" href="#shipped">[[what-shipped]]</a>
+    <a class="wikilink" href="#journey">[[review-journey]]</a>
+    <a class="wikilink" href="#learned">[[what-was-learned]]</a>
+    <a class="wikilink" href="#handoff">[[follow-up-prompt]]</a>
+  </nav>
+</div>
+
+<!-- ================= PART 1 ================= -->
+<section id="shipped">
+  <div class="wrap">
+    <header>
+      <span class="eyebrow">Part one</span>
+      <h2>What shipped</h2>
+      <p class="lede">Eight surfaces, one layer. The wiki is tracked where it should be shared and
+        gitignored where it must not be, and every operation names its own model and effort.</p>
+    </header>
+
+    <ul class="ship">
+      <li><span class="what">storage</span>
+        <p class="detail">Tracked <code>ai-docs/wiki/</code> — five shared domain sections in the index,
+          an append-only <code>log.md</code>, and a <code>personal/</code> domain that is gitignored with
+          its own local index, log, and assets.
+          <small>zero tracked files under ai-docs/wiki/personal/ · ai-docs/.obsidian/workspace* ignored</small></p></li>
+      <li><span class="what">operations</span>
+        <p class="detail">Four commands under <code>.claude/commands/wiki/</code>: <code>/wiki:ingest</code>,
+          <code>/wiki:query</code>, <code>/wiki:lint</code>, <code>/wiki:status</code>.
+          <small>ingest opus/high · query sonnet/high · lint opus/high · status haiku/medium</small></p></li>
+      <li><span class="what">schema</span>
+        <p class="detail">The path-scoped standards rule <code>.claude/rules/wiki-layer/wiki-standards.md</code>
+          — seven-field frontmatter, three status values, per-claim citation, writing standards, the six-domain
+          taxonomy, privacy, Obsidian, and the layer requirements (lane fit, metrics, archetypes).
+          <small>paths: ["ai-docs/wiki/**"] — loads only when a session touches the wiki</small></p></li>
+      <li><span class="what">memory</span>
+        <p class="detail">AGENTS.md routes every task wiki-first (wiki index before the mirror catalog) and
+          routes gate-passing synthesis into the wiki via <code>/wiki:ingest</code>; a Wiki Layer section
+          registers all four commands.
+          <small>net +6 lines (9 added / 3 removed) against a ≤14-line budget</small></p></li>
+      <li><span class="what">verification</span>
+        <p class="detail">Drift suite <code>tests/harness-layer/test_wiki_layer.py</code> — registry,
+          frontmatter, and standards-rule assertions, all re-derived from AGENTS.md, model-selection.md,
+          and the rule file rather than the directory under test.
+          <small>3 passed · full harness suite 936 passed, 2 skipped</small></p></li>
+      <li><span class="what">reading surface</span>
+        <p class="detail">Minimal committed Obsidian vault config — <code>app.json</code>
+          (<code>attachmentFolderPath: wiki/assets</code>, <code>alwaysUpdateLinks: true</code>) and
+          <code>appearance.json</code>; Web Clipper, Dataview, and Marp stay recommended, never required.</p></li>
+      <li><span class="what">eval</span>
+        <p class="detail">A three-run fixture pilot at the repo's eval tier: ingest two fixtures, query
+          across both, lint — from a fresh session each time, run 1 from the seed and runs 2–3 against
+          existing pages.
+          <small>3/3 on every applicable pilot-rubric condition</small></p></li>
+      <li><span class="what">security</span>
+        <p class="detail">Ingest treats third-party source content as data, never as instructions, and
+          confines its writes to <code>ai-docs/wiki/</code>; the matching obligation lives in the standards
+          rule's Privacy section and lint carries a report-not-follow guard.</p></li>
+    </ul>
+
+    <h3>Acceptance criteria → evidence</h3>
+    <p class="lede">Every criterion names a runnable identifier — a pytest node or a
+      <code>specs/wiki-layer/checks/</code> script — except AC7, which is <code>manual:</code> by locked
+      design at the eval tier, with its outcome recorded in implementation-notes.md.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>AC</th><th>Criterion</th><th>Runnable identifier</th><th>Observed</th></tr></thead>
+        <tbody>
+          <tr><td class="ac">AC1</td><td>Privacy boundary holds in git semantics</td>
+            <td class="cmd">bash specs/wiki-layer/checks/ac1-privacy-gitignore.sh</td>
+            <td class="res"><b>PASS</b> gitignore semantics correct for wiki layer; exit 0</td></tr>
+          <tr><td class="ac">AC2</td><td>Wiki seed matches the spec's seed shapes</td>
+            <td class="cmd">uv run specs/wiki-layer/checks/ac2-seed.py</td>
+            <td class="res"><b>PASS</b> wiki seed structure correct; exit 0 — re-run after the fence-aware MD024 rewrite (I2-F3)</td></tr>
+          <tr><td class="ac">AC3</td><td>Command family matches its AGENTS.md registration</td>
+            <td class="cmd">uv run pytest tests/harness-layer/test_wiki_layer.py::test_command_registry tests/harness-layer/test_wiki_layer.py::test_command_frontmatter -q</td>
+            <td class="res"><b>2 passed</b> in 1.06s; exit 0</td></tr>
+          <tr><td class="ac">AC4</td><td>Standards rule is path-scoped and structurally complete</td>
+            <td class="cmd">uv run pytest tests/harness-layer/test_wiki_layer.py::test_standards_rule -q</td>
+            <td class="res"><b>1 passed</b> in 1.04s; exit 0</td></tr>
+          <tr><td class="ac">AC5</td><td>AGENTS.md amendments exact, ≤14 lines</td>
+            <td class="cmd">uv run specs/wiki-layer/checks/ac5-memory-amendments.py</td>
+            <td class="res"><b>PASS</b> amendments exact and within budget; exit 0 — negative cases demonstrated on temp copies (a 15-line section FAILs)</td></tr>
+          <tr><td class="ac">AC6</td><td>Full drift suite green</td>
+            <td class="cmd">uv run pytest tests/harness-layer/test_wiki_layer.py -q</td>
+            <td class="res"><b>3 passed</b> in 1.08s; exit 0</td></tr>
+          <tr><td class="ac">AC7</td><td>Fixture eval, three fresh sessions, 3/3 rubric</td>
+            <td class="cmd">manual: /wiki:ingest fixture A → fixture B → /wiki:query spanning both → /wiki:lint, ×3 fresh sessions</td>
+            <td class="res"><b>3/3</b> conditions met per run. On-disk residue: 2 pages cross-linked both directions, 2 index rows, 2 ingest log entries against 3 lint entries after three runs, no <code>personal/</code>, no personal content in the shared index or log</td></tr>
+          <tr><td class="ac">suite</td><td>Nothing else regressed</td>
+            <td class="cmd">uv run pytest tests/harness-layer/ -q</td>
+            <td class="res"><b>936 passed, 2 skipped</b> in 13.01s; exit 0 — the cycle-1 <code>I9</code> lens-cluster failure no longer fires</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PART 2 ================= -->
+<section id="journey">
+  <div class="wrap">
+    <header>
+      <span class="eyebrow">Part two</span>
+      <h2>The review journey</h2>
+      <p class="lede">Sixty-six findings across four rounds and one security scan. Filter them by round,
+        lens, and disposition; click any card for its citation. Advisories carry a <em>carry</em> toggle that
+        feeds the follow-up prompt at the bottom of the page.</p>
+    </header>
+
+    <div class="gates">
+      <div class="gate">
+        <h4>Spec gate</h4>
+        <div class="big">25 <span>blocking fixed</span></div>
+        <ul>
+          <li><b>2</b> cycles · sol/high then sol/medium</li>
+          <li><b>12</b> advisory</li>
+          <li>R1 31 raw → 29 after merges</li>
+          <li>R2 fixes Codex-unverified at the cap; spec lint floor green</li>
+        </ul>
+      </div>
+      <div class="gate">
+        <h4>Impl gate</h4>
+        <div class="big">15 <span>blocking fixed</span></div>
+        <ul>
+          <li><b>2</b> cycles · <b>13</b> delta-verified</li>
+          <li><b>2</b> unverified at the cycle cap, floor green</li>
+          <li><b>9</b> advisory</li>
+          <li><b>5</b> disputed → all overridden</li>
+        </ul>
+      </div>
+      <div class="gate">
+        <h4>Security pass</h4>
+        <div class="big">1 <span>survivor of 26</span></div>
+        <ul>
+          <li>full claude-security scan over the diff range</li>
+          <li><b>24</b> refuted · <b>1</b> below the vote threshold</li>
+          <li>survivor <b>I1-F24</b> — prompt injection via ingested sources, fixed</li>
+          <li>privacy boundary held; no personal leakage</li>
+        </ul>
+      </div>
+      <div class="gate">
+        <h4>Deterministic floor</h4>
+        <div class="big">0 <span>lint findings</span></div>
+        <ul>
+          <li>impl lint clean on <b>both</b> runs</li>
+          <li>pre-gate lint caught 2 FAILs, both fixed before round 1</li>
+          <li>subject-length fix + AC7 probe text recorded</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="filters" id="filters">
+      <div class="frow" data-group="round">
+        <span class="flabel">Round</span>
+      </div>
+      <div class="frow" data-group="lens">
+        <span class="flabel">Lens</span>
+      </div>
+      <div class="frow" data-group="disp">
+        <span class="flabel">Disposition</span>
+      </div>
+      <div class="readout" id="readout"></div>
+    </div>
+
+    <div class="cards" id="cards"></div>
+  </div>
+</section>
+
+<!-- ================= PART 3 ================= -->
+<section id="learned">
+  <div class="wrap">
+    <header>
+      <span class="eyebrow">Part three</span>
+      <h2>What was learned</h2>
+      <p class="lede">Three lessons left the plan. One became a standard, one corrected the command that
+        caused it, and one is a four-step trail from a pilot defect to a check that can actually fail.</p>
+    </header>
+
+    <div class="trail">
+      <h3>A new standard: I9 · untrusted-content discipline</h3>
+      <p class="origin">from security finding I1-F24 · impl-standards.md · self-improve step</p>
+      <p>The security pass found that ingest had a write-capable agent read third-party source content —
+        mirrors, clipped captures, local files — with no treat-as-data instruction and no write confinement.
+        Because AGENTS.md sends every session to the wiki first, a poisoned source would keep poisoning
+        every read. The fix landed in the diff; the gap it exposed landed in the standards list:</p>
+      <p><strong>I9</strong> — a harness file that has an agent read content the repo does not author tells
+        it to treat that content as data, never as instructions, and confines the resulting writes to the
+        operation's own surface.</p>
+      <p>The standard also needed a judge. <code>I9</code> was assigned to the gate's <strong>fidelity</strong>
+        lens cluster in the codex-gate skill — the cycle-1 suite run had failed
+        <code>test_lens_clusters_cover_every_stamped_standard[I]</code> with <code>unassigned standards: ['I9']</code>
+        precisely because the standard existed with no cluster; by cycle 2 the failure was gone.</p>
+    </div>
+
+    <div class="trail">
+      <h3>A routed lesson: copy the mirrors before the builders launch</h3>
+      <p class="origin">pipeline-process → harness-build.md · per memory-series.md</p>
+      <p>KB mirrors are device-local, and this build started with four of its nine cited mirrors present only
+        in the main checkout — builders would have grounded against files that were not there. The lead copied
+        them in byte-identical, then routed the lesson to the file that caused it: harness-build.md's
+        read-the-plan step now says to copy referenced mirrors missing from the worktree's <code>ai-docs/</code>
+        before builders launch.</p>
+      <p>The fidelity lens read that same edit as a drive-by outside the wiki-layer boundary (I1-F1, major,
+        conf 100) and asked for a revert. The lead disputed it: routing a pipeline-process lesson to the file
+        it corrects <em>is</em> the memory step under AGENTS.md's Lessons contract, and reverting it would break
+        a standing obligation. The user accepted that reading at the human gate.</p>
+    </div>
+
+    <div class="trail">
+      <h3>The MD024 trail: an append-only log versus a lint rule</h3>
+      <p class="origin">pilot defect → seed fix → committed regression → a check that can fail</p>
+      <ol class="steps">
+        <li><b>Pilot run 2 hit it.</b> <code>.markdownlint.jsonc</code> sets MD024
+          <code>siblings_only: true</code>, so appending a lint log heading identical to an earlier same-day
+          pass — the deterministic case for a clean wiki linted twice in one day — was rejected by the
+          auto-format hook. Run 2 landed a truthful distinct summary and the defect was routed to a builder.</li>
+        <li><b>The seed absorbed it.</b> A file-local <code>&lt;!-- markdownlint-disable MD024 --&gt;</code> in
+          <code>ai-docs/wiki/log.md</code> (append-only logs legitimately repeat sibling headings), plus a
+          wording relaxation in lint.md — the payload sits on the next non-blank line, because the formatter
+          inserts a blank line after the heading. Run 3 then appended a heading byte-identical to run 2's with
+          markdownlint at 0 errors.</li>
+        <li><b>The gate wanted it committed.</b> I1-F17 (I8, major): the fix shipped with an uncommitted
+          scratch-copy proof and no regression assertion. <code>ac2-seed.py</code> gained a check that the seed
+          log carries the disable comment.</li>
+        <li><b>The delta round broke that check.</b> I2-F3 (I8, major): the new assertion was a bare substring
+          test, so it passed on a directive inside a code fence — where markdownlint ignores it. It became a
+          fence-aware line scan requiring the comment on its own line, outside any fence, before the first entry
+          heading. Three negative demos FAIL where the old check PASSed.</li>
+      </ol>
+      <p style="margin-top:14px">Plan-local lessons stayed in implementation-notes.md: the pyyaml availability
+        error in a spawn prompt, the AC2 footer-parsing deviation, and the plan-session trailing commit.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PROMPT ================= -->
+<section id="handoff">
+  <div class="wrap">
+    <header>
+      <span class="eyebrow">Hand-off</span>
+      <h2>Carry the tail forward</h2>
+      <p class="lede">Nothing below blocks the merge. Pick what should survive the plan — the advisory
+        toggles above feed this prompt — then copy it into a fresh session.</p>
+    </header>
+
+    <div class="promptbox">
+      <div class="ph">
+        <h3>Follow-up prompt</h3>
+        <span class="spacer"></span>
+        <button class="act ghost" id="carryImpl" type="button">Carry the 9 impl advisories</button>
+        <button class="act ghost" id="carryNone" type="button">Carry none</button>
+        <button class="act" id="copyBtn" type="button">Copy prompt</button>
+      </div>
+      <div class="toggles">
+        <label><input type="checkbox" id="tRoutine" checked> weekly /wiki:lint routine</label>
+        <label><input type="checkbox" id="tPersonal" checked> personal/log.md seed shape</label>
+        <label><input type="checkbox" id="tMigration"> user's article migration (#88)</label>
+        <label><input type="checkbox" id="tContext" checked> full plan context</label>
+      </div>
+      <pre id="prompt"></pre>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <b>Sources</b> — specs/wiki-layer/implementation-notes.md · reviews/findings-ledger.md ·
+    reviews/codex-impl-round-1-{fidelity,evidence,simplicity}.md · reviews/codex-impl-round-2.md ·
+    acceptance-criteria.md · spec.md ## Tracking<br>
+    <b>Rounds</b> — spec R1 head <code>fcc015b</code>, R2 range <code>fcc015b..b613a24</code> ·
+    impl I1 head <code>2400a83</code> range <code>b62cf9a..2400a83</code>, I2 range <code>2400a83..3cb71e4</code><br>
+    <b>Note</b> — history was rewritten once mid-build (a commit-subject length fix), so SHAs cited in early
+    implementation-notes entries predate that rewrite.
+  </div>
+</footer>
+
+<script>
+  // [id, std, lenses, sev, conf, claim, disposition, evidence]
+  const RAW = [
+    ["R1-F1","S4","fidelity","major",98,"Lint's required checks omit the locked secret/PII scan","fixed — the lint task now requires the secret/PII scan across every domain (tasks.md §3)","tasks.md §3 vs decisions.md privacy assumption"],
+    ["R1-F2","S4","fidelity","major",98,"Status implements only the absorb trigger, not all three locked expansion triggers","fixed — status derives all three triggers from tracked state (tasks.md §4)","tasks.md §4 vs decisions.md expansion policy"],
+    ["R1-F3","S4","fidelity","minor",92,"Routine contract wording weakened — fresh-clone and claude/-branch PR not restated in the task","advisory","tasks.md §3 vs decisions.md"],
+    ["R1-F4","S5","fidelity","major",99,"“≥1 source per claim-bearing page” contradicts the locked “every claim cites ≥1 source”","fixed — the standards-rule task states every claim traces to ≥1 source (tasks.md §2)","tasks.md §2 vs decisions.md metrics"],
+    ["R1-F5","S5","fidelity","minor",100,"Lint task says “run /kb”; the command is /harness-layer:kb","advisory","tasks.md §3 vs spec.md Edge Cases"],
+    ["R1-F6","S5","fidelity+evidence+simplicity","critical",100,"AC7 completion semantics broken: a manual post-ship pilot counted as done pre-ship, and validate-all claims coverage it cannot perform","fixed — AC7 became a pre-ship fixture eval (checks/fixtures/ + rubric); the user migration moved to a post-ship follow-up; validate-all reads recorded evidence","AC7 vs tasks.md §7 — merged evidence#8 and simplicity#5"],
+    ["R1-F7","S5","fidelity","critical",78,"The Obsidian global attachment path routes personal attachments into tracked wiki/assets","advisory (confidence <80) — resolved by R1-F18's fix","spec.md Obsidian config"],
+    ["R1-F8","S6","fidelity","major",100,"Routine claims rely on an uncached page — the routines mirror is absent from the KB","fixed — routines mirrored to ai-docs/anthropic/routines.md, registered in sources.yaml, cited in KB References","decisions.md KB References note"],
+    ["R1-F9","S6","fidelity","major",99,"The cached skills mirror does not document argument-hint/model/effort; the Grounds column over-claims","fixed — skills mirror refreshed 2026-08-07 (it now contains the frontmatter reference); Grounds corrected","verified: the pre-refresh mirror lacks the frontmatter reference"],
+    ["R1-F10","S6","fidelity","major",97,"Namespaced /<dir>:<name> resolution and /harness-layer:kb add are grounded by observation, not cached docs","fixed — grounding reworded to the skills naming table plus a repo-convention scope note in decisions.md","decisions.md cross-check note"],
+    ["R1-F11","S2","evidence","major",99,"The ac1 script samples hypothetical paths, offers no git ls-files proof that the personal namespace has zero tracked files, and misses domains","fixed — ac1 adds the git ls-files zero-tracked proof, all six domains, workspace variants, and the personal index/log/assets","checks/ac1-privacy-gitignore.sh"],
+    ["R1-F12","S2","evidence","major",100,"The ac2 script reduces compound shapes to unscoped substrings, so malformed seeds pass","fixed — ac2 parses sections and tables, the personal pointer, the log contract including the source path, and both app.json keys","checks/ac2-seed.py"],
+    ["R1-F13","S2","evidence","major",99,"The ac3 script does not assert exact per-command contracts, so unplanned commands pass","fixed — exact contracts consolidated into test_wiki_layer.py (registry + frontmatter vs the roster; unplanned files rejected); the ac3 script was dropped","checks/ac3-commands.py"],
+    ["R1-F14","S2","evidence","critical",100,"No eval-tier proof for the command bodies — all four operations could pass with nonfunctional prose","fixed — an eval-tier pilot: committed fixtures + rubric, a pre-ship pilot-eval task, evidence in implementation-notes.md","tasks.md §3–4 vs test-tiers.md"],
+    ["R1-F15","S2","evidence","major",100,"The ac4 script's keyword presence proves nothing about the rule's normative content","fixed — structured assertions moved into test_standards_rule in the drift test; the ac4 script was dropped","checks/ac4-standards-rule.py"],
+    ["R1-F16","S2","evidence","major",100,"The ac5 script uses global markers with no section scoping and no line-budget assertion","fixed — ac5 asserts section-scoped ordering and obligations, all four command pointers, and the size budget","checks/ac5-memory-amendments.py"],
+    ["R1-F17","S2","evidence","major",96,"The drift test derives its expected set from the directory under test — a vacuous boundary","fixed — the expected set is re-derived from the AGENTS.md registration, the roster parsed from model-selection.md, non-empty required","tasks.md §6"],
+    ["R1-F18","S3","simplicity","major",99,"Personal-domain page and operation titles leak into the tracked shared index.md and log.md","fixed — personal keeps a local-only personal/index.md + personal/log.md; the shared index holds only a pointer","spec.md seed shapes vs the privacy decision"],
+    ["R1-F19","S3","simplicity","major",96,"The log vocabulary permits query|status entries while query is strictly read-only","fixed — the log vocabulary is restricted to ingest|lint; query and status never write","spec.md seed shapes vs tasks.md §4"],
+    ["R1-F20","S3","simplicity","major",97,"Status must report a backlog no state tracks — no source inventory, no processed-state mapping","fixed — triggers redefined over derivable state: sources.yaml vs page sources, plus lint-log flags","tasks.md §4"],
+    ["R1-F21","S3","simplicity","major",94,"Duplicate-ingest idempotency lacks a stable source identity (a title-only log key)","fixed — identity is the canonical source path in page sources: and log entries","spec.md Edge Cases"],
+    ["R1-F22","S3","simplicity","minor",90,"The empty-wiki pilot demands a wikilink its fixture cannot guarantee","advisory — resolved by R1-F6's two-fixture design","AC7"],
+    ["R1-F23","S3","simplicity","minor",99,"appearance.json is named in a task but has no content contract","advisory","tasks.md §1"],
+    ["R1-F24","S8","simplicity","major",97,"The same structural assertions are maintained in two permanent layers — the ac3/ac4 scripts and the drift test","fixed — a single durable home: the drift test owns structural assertions; ac3/ac4 removed; AC3/AC4 point at pytest nodes","checks vs tasks.md §6"],
+    ["R1-F25","S8","simplicity","minor",96,"Batch ingestion and checkpoint machinery exceed the v1 objective","advisory","tasks.md §3"],
+    ["R1-F26","S8","simplicity","minor",91,"The related frontmatter field duplicates the graph the body wikilinks already express","advisory","spec.md frontmatter contract"],
+    ["R1-F27","S8","simplicity","minor",96,"The new AGENTS.md section repeats what the rewritten KB bullets establish","advisory","spec.md AGENTS amendments"],
+    ["R1-F28","S8","simplicity","minor",96,"Dataview and Marp are made normative and test-required though no v1 behavior needs them","advisory","tasks.md §2, AC4"],
+    ["R1-F29","S8","simplicity","minor",93,"Fixed retrieval numbers (3–8 pages, 2 hops) add policy without improving the objective","advisory","tasks.md §4"],
+
+    ["R2-F1","S2","delta","major",99,"The ac2 Personal section allowed extra content beyond the pointer, and matched partial regexes","fixed (Codex-unverified, cycle cap) — the Personal body is asserted to be exactly one pointer line, with exact table header and separator rows and the complete writer-op set","checks/ac2-seed.py"],
+    ["R2-F2","S2","delta","major",99,"The drift test asserted roster membership, not each command's exact model and effort","fixed (Codex-unverified) — an operations table was added to the standards rule as the source of truth; the test compares command frontmatter to it exactly, plus legality vs model-selection.md","tasks.md §2, §6"],
+    ["R2-F3","S2","delta","major",99,"test_standards_rule omitted most AC4 obligations","fixed (Codex-unverified) — tasks.md §6 enumerates section-scoped assertions for every AC4 obligation","tasks.md §6"],
+    ["R2-F4","S2","delta","major",100,"The ac5 budget measured only the Wiki Layer section, not the ≤14-line total","fixed (Codex-unverified) — ac5 asserts the exact prescribed fragments (replacements net 0) and computes the full added-line budget","checks/ac5-memory-amendments.py"],
+    ["R2-F5","S3","delta","major",98,"Status consumed lint-log fields no contract defined","fixed (Codex-unverified) — the log contract defines the lint entry form and payload line; lint writes it, status reads it","spec.md seed shapes, tasks.md §3–4"],
+    ["R2-F6","S2","delta","critical",100,"A single pilot run claimed the eval tier; test-tiers requires a pass rate over repeated runs","fixed (Codex-unverified) — AC7 became three fresh-session runs at a 3/3 rubric pass rate with per-run evidence","tasks.md §7, AC7, pilot-rubric.md"],
+    ["R2-F7","S5","delta","minor",100,"spec.md's Objective still says “five plan-local checks” — three remain","advisory — absorbed at build start as a recorded staleness note","spec.md Objective"],
+    ["R2-F8","S5","delta","minor",100,"spec.md still calls sources.yaml untouched and routines a KB gap after the gap-fill","advisory — absorbed at build start as a recorded staleness note","spec.md Relevant Files, Notes"],
+
+    ["I1-F1","I6","fidelity","major",100,"The harness-build.md mirror-copy edit is a drive-by beyond the wiki-layer boundary","disputed → overridden — the edit is the memory step's routing per AGENTS.md ## Lessons and memory-series.md (a pipeline-process lesson goes to the file it corrects), documented in the notes; reverting would break the standing memory contract","notes memory-step entry; AGENTS.md ## Lessons"],
+    ["I1-F2","I5","fidelity","major",96,"Nested .claude/commands/wiki/ → /wiki:* resolution is not traced to a cited official doc","disputed → overridden — settled at spec gate R1-F10 and approved at the spec human gate: the skills mirror's namespaced-invocation table plus the repo's own working /harness-layer:* convention; no new evidence offered","decisions.md ## KB References cross-check"],
+    ["I1-F3","I5","fidelity","minor",98,"The opus/sonnet/haiku alias values are not enumerated by any cited KB doc — skills.md defers to /model","advisory","skills.md:269; KB References table"],
+    ["I1-F4","I1","fidelity+simplicity","major",99,"Ingest idempotency branches are incoherent: KEY is matched against INDEX which never stores source paths; “update in place + bump updated:” and “an identical run leaves the tree unchanged” are undistinguished; workflow step 6 appends the log entry unconditionally","fixed — KEY is matched only in page sources: and the LOG; three explicit branches (first / changed-source / identical no-op); workflow steps became branch-conditional","ingest.md:22-36,51-59 → 81059eb"],
+    ["I1-F5","I1","fidelity","major",100,"Lint contradiction handling has two outcomes: Checks says flag both sides disputed, Fix-or-report lists contradictions as report-only “without rewriting the pages”","fixed — disputed flags and the cross-link are mechanical fixes; only resolution stays judgment","lint.md:33-34,46-50 → 81059eb"],
+    ["I1-F6","I1","fidelity+simplicity","major",98,"A seed-only lint “reports clean and stops”, exiting before the mandatory log append","fixed — a seed-only run skips the checks but still appends the clean log entry and reports","lint.md:18-20 vs 52-60 → 81059eb"],
+    ["I1-F7","I1","fidelity","major",96,"The status seed-only branch reports “no triggers fired” though absorb must fire from tracked state (backlog >10, ~53 uncited manifest entries)","fixed — absorb is computed on every run from the manifest and page sources:; seed/no-history exceptions are scoped to breakdown and cleanup","status.md:26,31 → 81059eb"],
+    ["I1-F8","I1","fidelity","major",96,"Orphan is defined differently in lint (no index row AND no inbound wikilink) and status (related:-based, including outgoing)","fixed — one definition in both files: no inbound [[wikilink]]; a missing index row stays index-drift","lint.md:24 vs status.md:22 → 81059eb"],
+    ["I1-F9","I1","fidelity","minor",100,"Four empty seed domain tables carry a literal | --- | data row after the delimiter","advisory","ai-docs/wiki/index.md:16,22,28,34"],
+    ["I1-F10","I1","fidelity+evidence","major",100,"AC7 runs 2–3 were recorded without per-run query answers, citation targets, or lint output; run 2 says “page count 4 → 4” against a two-page pilot","fixed — an appended review-fix evidence entry names what was summary-only, clarifies 4→4 as tracked files (git ls-files), and corroborates the AC7 residue with literal commands and output; past entries left untouched","implementation-notes.md:117-177 → 81059eb"],
+    ["I1-F11","I2","evidence","major",99,"The AC7 validation command is a manual: narrative, not a runnable identifier","disputed → overridden — I2 explicitly provides for manual: checks whose output is recorded in implementation-notes.md; AC7 is eval-tier by locked spec design (R2-F6, approved at the spec human gate) and its output is recorded","impl-standards.md I2; test-tiers.md eval row"],
+    ["I1-F12","I2","evidence","major",98,"The drift test never asserts non-empty description/argument-hint, and the read-only check is an unanchored substring match","fixed — non-empty description and argument-hint asserted; the read-only check anchored to the declaration line","test_wiki_layer.py:140-186 → 81059eb"],
+    ["I1-F13","I2","evidence","major",95,"test_standards_rule asserts isolated keywords, omitting flat tone, quote discipline, and length bounds","disputed → overridden — the test implements exactly the section-scoped assertion set tasks.md §6 enumerates (locked at spec gate R2-F3) and covers every obligation AC4 states; the privacy claim is factually wrong — those assertions are section-scoped across four distinct obligations","tasks.md §6; acceptance-criteria.md AC4"],
+    ["I1-F14","I2","evidence","major",100,"The ac5 budget check measures its own hardcoded list (added = len(WIKI_SECTION_LINES)), never the real AGENTS.md diff","fixed — the budget is measured from the real ## Wiki Layer section in AGENTS.md, replaced bullets asserted single-line, negative cases demonstrated on temp copies (a 15-line section FAILs)","ac5-memory-amendments.py:96 → 81059eb"],
+    ["I1-F15","I3","evidence","major",100,"Hand-off entries abbreviate commands with ellipses (python -c “…split('---')[1]…”); validate-all records label-level results only","fixed — the same evidence entry re-runs every re-runnable command verbatim with literal output; unrecoverable transcripts are stated as not captured rather than reconstructed","implementation-notes.md:42-98,178-185 → 81059eb"],
+    ["I1-F16","I8","evidence","major",100,"The ac5 check derives its budget result from hard-coded expected data and cannot fail on a 15-line amendment","fixed — same change as I1-F14; the result now derives from the subject under test","ac5-memory-amendments.py:94-98 → 81059eb"],
+    ["I1-F17","I8","evidence","major",99,"The MD024 log fix landed with no committed regression assertion — verification was an uncommitted scratch-copy proof","fixed — ac2-seed.py asserts the seed log carries the MD024 file-local disable","commit 992587f; log.md → 81059eb"],
+    ["I1-F18","I4","simplicity","major",98,"Command bodies restate the schema, citation, status, privacy, and writing rules wiki-standards.md already owns (and that rule loads on any wiki read)","fixed — genuine restatement trimmed to STANDARDS pointers while every plan-prescribed behavior stays: check classes, URL refusal, index/log split, the crystallization gate, checkpoints, redact-then-report","ingest.md:29-43, lint.md:28-42, query.md:23, status.md:20,32 → 81059eb"],
+    ["I1-F19","I4","simplicity","minor",100,"lint.md's log prose requires a blank line the fenced example omits","advisory","lint.md:54-60"],
+    ["I1-F20","I4","simplicity","minor",97,"The commands repeat the same procedure across their Instructions and Workflow sections","advisory","query.md, status.md, ingest.md"],
+    ["I1-F21","I4","simplicity","minor",96,"Personal lint split-logging is expressed colloquially, and shared-scope handling is under-specified","advisory","lint.md:65-66"],
+    ["I1-F22","I4","simplicity","minor",94,"Rationale-heavy prose in changed harness text — motivations and history instead of instructions","advisory","wiki-standards.md, ingest.md, lint.md, harness-build.md"],
+    ["I1-F23","I4","simplicity","info",96,"Non-fluent shorthand (“pages no index row…”, “logs that half”)","advisory","lint.md:24,65"],
+    ["I1-F24","I9","sec","major",90,"Ingest has a write-capable agent read third-party source content (mirrors, clipped captures, local files) with no treat-as-data instruction and no write confinement — a poisoned source persistently poisons the wiki every session reads first","fixed — data-not-directives plus writes-confined-to-ai-docs/wiki/ in ingest.md, a matching obligation in wiki-standards.md Privacy, and a report-not-follow guard in lint. Exposed the missing standard I9, added the same run","ingest.md:51; CLAUDE-SECURITY-20260807-050658 F1, 3-verifier unanimous (impact MEDIUM → major: wiki-first reads propagate the poisoning) → 81059eb"],
+    ["I1-F25","I6","sec","minor",100,"ac2-seed.py carries a dead if … : pass branch — the writer-op contract is enforced by the surrounding checks","advisory","ac2-seed.py:84-85"],
+    ["I1-F26","I2","sec","minor",100,"ac1's four && fail probes on tracked paths are inert — git check-ignore exits 1 for tracked files regardless of patterns, so a removed negation cannot fire them (the untracked-path probes and the personal-domain direction still hold)","advisory — lead-verified by reproducing the check-ignore behavior in a scratch repo","ac1-privacy-gitignore.sh:34,38-41; lead scratch-repo repro"],
+
+    ["I2-F1","I1","delta","major",98,"A changed-source re-ingest keeps the single log entry, conflicting with the locked metric “100% of ingests update the index and the log”","fixed (Codex-unverified, cycle cap) — changed-source re-ingests append a dated log entry (the log is append-only history); identical repeats still write nothing; identity stays presence-of-path","ingest.md branch list vs wiki-standards.md ## Layer Requirements → 630bd22"],
+    ["I2-F2","I1","delta","major",100,"Reopens I1-F10: demands verbatim per-run AC7 transcripts (three fresh-session re-runs) or AC7 marked incomplete","disputed → overridden — per-run condition-level evidence was recorded at build time for all three runs, which is AC7's own bar; the review-fix entry re-ran everything re-runnable verbatim and corroborated the on-disk residue. Retroactive transcripts of past sessions are unsatisfiable, and the reopening cites the fix's own honesty statement rather than a defect in the evidence that exists","implementation-notes.md pilot-eval + review-fix entries; acceptance-criteria.md AC7"],
+    ["I2-F3","I8","delta","major",98,"ac2's MD024 regression check is a bare substring — it passes with the directive inside a fenced block where markdownlint ignores it","fixed (Codex-unverified, cycle cap) — a fence-aware line scan requires the directive on its own line outside fences and before the first entry heading; negative demos FAIL on fenced, deleted, and late placement while the old check PASSed","ac2-seed.py check_log() → 630bd22"],
+  ];
+
+  const ROUND_LABEL = {
+    "R1": "spec R1 · panel", "R2": "spec R2 · delta",
+    "I1": "impl I1 · panel", "I2": "impl I2 · delta"
+  };
+
+  const FINDINGS = RAW.map(r => {
+    const [id, std, lenses, sev, conf, claim, disposition, evidence] = r;
+    const round = id.split("-")[0];
+    let disp = "fixed";
+    if (/^advisory/.test(disposition)) disp = "advisory";
+    else if (/^disputed/.test(disposition)) disp = "disputed";
+    return { id, std, lenses: lenses.split("+"), sev, conf, claim, disposition, evidence, round, disp };
+  });
+
+  const IMPL_ADVISORIES = FINDINGS.filter(f => f.round.startsWith("I") && f.disp === "advisory").map(f => f.id);
+
+  const state = {
+    round: "all",
+    lens: "all",
+    disp: "all",
+    open: new Set(),
+    carried: new Set(IMPL_ADVISORIES),
+    routine: true,
+    personal: true,
+    migration: false,
+    context: true,
+  };
+
+  const GROUPS = {
+    round: [["all", "all rounds"], ["R1", "spec R1"], ["R2", "spec R2"], ["I1", "impl I1"], ["I2", "impl I2"]],
+    lens: [["all", "all lenses"], ["fidelity", "fidelity"], ["evidence", "evidence"], ["simplicity", "simplicity"], ["delta", "delta"], ["sec", "security"], ["lint", "lint"]],
+    disp: [["all", "all"], ["fixed", "fixed"], ["advisory", "advisory"], ["disputed", "disputed → overridden"], ["security", "security"]],
+  };
+
+  function matches(f, override) {
+    const s = Object.assign({}, state, override || {});
+    if (s.round !== "all" && f.round !== s.round) return false;
+    if (s.lens !== "all" && !f.lenses.includes(s.lens)) return false;
+    if (s.disp === "security") return f.lenses.includes("sec");
+    if (s.disp !== "all" && f.disp !== s.disp) return false;
+    return true;
+  }
+
+  function buildChips() {
+    for (const group of Object.keys(GROUPS)) {
+      const row = document.querySelector(`.frow[data-group="${group}"]`);
+      for (const [value, label] of GROUPS[group]) {
+        const b = document.createElement("button");
+        b.className = "chip";
+        b.type = "button";
+        b.dataset.group = group;
+        b.dataset.value = value;
+        b.innerHTML = `${label}<span class="n"></span>`;
+        b.addEventListener("click", () => { state[group] = value; render(); });
+        row.appendChild(b);
+      }
+    }
+  }
+
+  function renderChips() {
+    document.querySelectorAll("button.chip").forEach(b => {
+      const { group, value } = b.dataset;
+      b.setAttribute("aria-pressed", String(state[group] === value));
+      const n = FINDINGS.filter(f => matches(f, { [group]: value })).length;
+      b.querySelector(".n").textContent = n;
+    });
+  }
+
+  const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+  function card(f) {
+    const el = document.createElement("article");
+    el.className = `fcard sev-${f.sev}${state.open.has(f.id) ? " open" : ""}${state.carried.has(f.id) ? " carried" : ""}`;
+    el.tabIndex = 0;
+    const carry = f.disp === "advisory"
+      ? `<label class="carry"><input type="checkbox" data-carry="${f.id}" ${state.carried.has(f.id) ? "checked" : ""}> carry</label>`
+      : "";
+    el.innerHTML = `
+      <div class="fhead">
+        <span class="fid">${f.id}</span>
+        <span class="tag">${ROUND_LABEL[f.round]}</span>
+        <span class="tag">${f.std}</span>
+        <span class="tag${f.lenses.includes("sec") ? " sec" : ""}">${f.lenses.join(" + ")}</span>
+        <span class="tag sev-${f.sev}">${f.sev}</span>
+        <span class="tag disp-${f.disp}">${f.disp === "disputed" ? "disputed → overridden" : f.disp}</span>
+        ${carry}
+        <span class="conf">conf ${f.conf}</span>
+      </div>
+      <div class="fbody">
+        <p class="claim">${esc(f.claim)}</p>
+        <p class="disp">${esc(f.disposition)}</p>
+        <p class="ev">cited: ${esc(f.evidence)}</p>
+      </div>`;
+    const toggle = () => {
+      state.open.has(f.id) ? state.open.delete(f.id) : state.open.add(f.id);
+      el.classList.toggle("open");
+    };
+    el.addEventListener("click", e => { if (!e.target.closest(".carry")) toggle(); });
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+    const cb = el.querySelector("input[data-carry]");
+    if (cb) cb.addEventListener("change", () => {
+      cb.checked ? state.carried.add(f.id) : state.carried.delete(f.id);
+      el.classList.toggle("carried", cb.checked);
+      updatePrompt();
+    });
+    return el;
+  }
+
+  function render() {
+    renderChips();
+    const shown = FINDINGS.filter(f => matches(f));
+    const host = document.getElementById("cards");
+    host.innerHTML = "";
+    if (!shown.length) {
+      const msg = state.lens === "lint"
+        ? "No lint findings. The deterministic floor — scripts/impl_lint.py and scripts/spec_lint.py — ran before every lens and came back clean on both impl runs. The two pre-gate impl-lint FAILs (a 76-char commit subject, the unrecorded AC7 probe text) were fixed before round 1 opened."
+        : "No findings match this combination. Widen a filter.";
+      const div = document.createElement("div");
+      div.className = "empty";
+      div.textContent = msg;
+      host.appendChild(div);
+    } else {
+      shown.forEach(f => host.appendChild(card(f)));
+    }
+    const counts = { fixed: 0, advisory: 0, disputed: 0, sec: 0 };
+    shown.forEach(f => { counts[f.disp]++; if (f.lenses.includes("sec")) counts.sec++; });
+    document.getElementById("readout").innerHTML =
+      `Showing <b>${shown.length}</b> of ${FINDINGS.length} findings — ` +
+      `<b>${counts.fixed}</b> fixed · <b>${counts.advisory}</b> advisory · ` +
+      `<b>${counts.disputed}</b> disputed → overridden · <b>${counts.sec}</b> from the security pass`;
+    updatePrompt();
+  }
+
+  const TARGETS = {
+    "R1-F3": ".claude/commands/wiki/lint.md routine section",
+    "R1-F5": "tasks.md wording only — the shipped commands already say /harness-layer:kb",
+    "R1-F7": "ai-docs/.obsidian/app.json",
+    "R1-F22": "specs/wiki-layer/checks/fixtures/pilot-rubric.md",
+    "R1-F23": "ai-docs/.obsidian/appearance.json",
+    "R1-F25": ".claude/commands/wiki/ingest.md batch/checkpoint machinery",
+    "R1-F26": ".claude/rules/wiki-layer/wiki-standards.md frontmatter schema",
+    "R1-F27": "AGENTS.md ## Wiki Layer",
+    "R1-F28": ".claude/rules/wiki-layer/wiki-standards.md ## Obsidian",
+    "R1-F29": ".claude/commands/wiki/query.md retrieval numbers",
+    "R2-F7": "specs/wiki-layer/spec.md Objective",
+    "R2-F8": "specs/wiki-layer/spec.md Relevant Files + Notes",
+    "I1-F3": "specs/wiki-layer/decisions.md ## KB References — mirror the model-config page",
+    "I1-F9": "ai-docs/wiki/index.md lines 16, 22, 28, 34",
+    "I1-F19": ".claude/commands/wiki/lint.md fenced log example",
+    "I1-F20": ".claude/commands/wiki/{query,status,ingest}.md Instructions vs Workflow",
+    "I1-F21": ".claude/commands/wiki/lint.md personal split-logging",
+    "I1-F22": ".claude/rules/wiki-layer/wiki-standards.md, ingest.md, lint.md",
+    "I1-F23": ".claude/commands/wiki/lint.md lines 24, 65",
+    "I1-F25": "specs/wiki-layer/checks/ac2-seed.py dead branch",
+    "I1-F26": "specs/wiki-layer/checks/ac1-privacy-gitignore.sh tracked-path probes",
+  };
+
+  function updatePrompt() {
+    const picked = FINDINGS.filter(f => state.carried.has(f.id));
+    const spec = picked.filter(f => f.round.startsWith("R"));
+    const impl = picked.filter(f => f.round.startsWith("I"));
+    const lines = [];
+
+    if (state.context) {
+      lines.push(
+        "The wiki-layer plan (issue #88, PR #89) has shipped and cleared its human gate. It added a tracked synthesis wiki at ai-docs/wiki/ with a gitignored personal/ domain, four commands under .claude/commands/wiki/ (ingest, query, lint, status), the path-scoped standards rule .claude/rules/wiki-layer/wiki-standards.md, wiki-first routing in AGENTS.md, and the drift suite tests/harness-layer/test_wiki_layer.py. AC1-AC7 are all green and the three-run fixture eval passed 3/3.",
+        "",
+        "Both Codex gates closed at the two-cycle cap: the spec gate fixed 25 blocking findings and left 12 advisory; the impl gate fixed 15 blocking (13 delta-verified, 2 landed at the cycle cap with the deterministic lint floor green) and left 9 advisory. Five findings were disputed and all five were overridden at the human gate, so do not reopen them. A full security scan produced one surviving finding (I1-F24, prompt injection through ingested sources), which is fixed, and the new standard I9 in impl-standards.md.",
+        ""
+      );
+    }
+
+    lines.push("None of the work below is blocking. It is the deferred tail of that plan.");
+
+    if (impl.length) {
+      lines.push("", `Advisories from the implementation gate (${impl.length} of ${IMPL_ADVISORIES.length}):`);
+      impl.forEach(f => lines.push(`- ${f.id} (${f.std}, ${f.sev}) — ${f.claim}. Target: ${TARGETS[f.id] || "see the findings ledger"}.`));
+    }
+    if (spec.length) {
+      lines.push("", `Advisories from the spec gate (${spec.length}):`);
+      spec.forEach(f => lines.push(`- ${f.id} (${f.std}, ${f.sev}) — ${f.claim}. Target: ${TARGETS[f.id] || "see the findings ledger"}.`));
+    }
+    if (!picked.length) {
+      lines.push("", "No advisories carried — only the post-ship steps below.");
+    }
+
+    const steps = [];
+    if (state.routine) steps.push("Register the weekly wiki routine: run /schedule so /wiki:lint fires once a week, grounded in ai-docs/anthropic/routines.md. Routines are account-bound and cannot be committed, so this only exists once someone creates it.");
+    if (state.personal) steps.push("The first personal ingest creates ai-docs/wiki/personal/log.md lazily. Make it mirror the shared log's seed shape, including the file-local <!-- markdownlint-disable MD024 --> comment, or an append-only personal log will hit the same duplicate-sibling-heading rejection the shared log already fixed.");
+    if (state.migration) steps.push("Migrate the user's own fresh articles through /wiki:ingest — the post-ship follow-up recorded on issue #88, deliberately outside the plan's definition of done.");
+    if (steps.length) {
+      lines.push("", "Post-ship steps still open:");
+      steps.forEach(s => lines.push(`- ${s}`));
+    }
+
+    lines.push(
+      "",
+      "Please triage this list before touching anything: for each advisory decide fix now, fold into a later plan, or drop, and say why in one line. Read the target file before proposing an edit — several advisories are wording judgments where the current text may be the better reading. Anything you do fix ships through the direct lane if it stays inside the router's envelope (at most 2 files, roughly 80 lines, docs or chore, no executable surface); otherwise open a full-lane plan. Full detail lives in specs/wiki-layer/reviews/findings-ledger.md and specs/wiki-layer/implementation-notes.md."
+    );
+
+    document.getElementById("prompt").textContent = lines.join("\n");
+  }
+
+  document.getElementById("carryImpl").addEventListener("click", () => {
+    state.carried = new Set(IMPL_ADVISORIES);
+    render();
+  });
+  document.getElementById("carryNone").addEventListener("click", () => {
+    state.carried = new Set();
+    render();
+  });
+  [["tRoutine", "routine"], ["tPersonal", "personal"], ["tMigration", "migration"], ["tContext", "context"]]
+    .forEach(([elId, key]) => {
+      const el = document.getElementById(elId);
+      el.checked = state[key];
+      el.addEventListener("change", () => { state[key] = el.checked; updatePrompt(); });
+    });
+
+  document.getElementById("copyBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("copyBtn");
+    const text = document.getElementById("prompt").textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    const was = btn.textContent;
+    btn.textContent = "Copied";
+    setTimeout(() => { btn.textContent = was; }, 1400);
+  });
+
+  buildChips();
+  render();
+</script>
