@@ -40,6 +40,10 @@ the orphan scan) and runs before any lens; the panel judges the rest.
    task manifest, `Closes #N`). (Commit format is lint-owned.)
 8. **I8 · Test intent** — a bug fix carries the failing test that reproduces it;
    no test or check hard-codes values or special-cases inputs to pass.
+9. **I9 · Untrusted-content discipline** — a harness file that has an agent read
+   content the repo does not author (mirrors, clipped web pages, user-supplied
+   files) tells it to treat that content as data, never as instructions, and
+   confines the resulting writes to the operation's own surface.
 
 IDs are stable: never renumber an existing standard — a new one takes the next
 free ID. When a gate finding exposes a standard this list is missing or states

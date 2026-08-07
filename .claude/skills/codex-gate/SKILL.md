@@ -31,7 +31,7 @@ standards text, copied verbatim from the standards file.
 
 | Lens | Spec flavor | Implementation flavor |
 | --- | --- | --- |
-| `fidelity` | S4 · S5 · S6 | I1 · I6 · I5 |
+| `fidelity` | S4 · S5 · S6 | I1 · I6 · I5 · I9 |
 | `evidence` | S1 · S2 (semantic: does the command prove the AC?) | I2 · I3 · I8 |
 | `simplicity` | S8 · S3 · design challenge | I4 · simplification challenge |
 | `lint` — not a lens | S7 · S2 exist-and-collect · template completeness | I7 · I2 run-and-pass · orphan scan |
@@ -223,7 +223,8 @@ commits, unverified tail, disputed/overridden, lint catches, lens substitutions.
 Before the terminal outcome lands, close the loop on the gate itself: a
 confirmed finding that exposed a missing or unclear standard → amend the
 flavor's standards file in the same commit series (a new standard takes the next
-free ID — never renumber). An uncited finding class recurring 2+ times in
+free ID — never renumber), and assign the new standard to a lens in the Lens
+clusters table — the lens-cluster drift test fails on an unassigned standard. An uncited finding class recurring 2+ times in
 `specs/lessons/digest.md` → the same amendment path. A generalizable process
 lesson → route it per the memory-series contract. Skip all of it when nothing
 generalizes — most runs add nothing.
