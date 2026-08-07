@@ -72,6 +72,24 @@
     absorb/breakdown/cleanup from `sources.yaml` + the lint log payload fields,
     with insufficient-history/no-lint-yet cases and personal-domain
     counts-only handling. Deviations: none.
+- **2026-08-07 · hand-off `wiki-commands-ingest-lint`** — `.claude/commands/wiki/ingest.md`,
+  `.claude/commands/wiki/lint.md` (both new)
+  - `uv run --with pyyaml python -c "…split('---')[1]…"` → both parse; key sets
+    exactly `[argument-hint, description, effort, model]` (ingest) and
+    `[description, effort, model]` (lint), both opus/high per the Operations
+    table (re-run by build lead, exit 0)
+  - Build lead full-read: ingest carries the URL refusal → `/harness-layer:kb add`,
+    integrate-never-append, the canonical-source-path idempotency key matched
+    across pages/index/log, the shared-vs-personal index+log split, secret/PII
+    stripping, 5-source batch checkpoints, and the crystallization gate; lint
+    carries all check classes incl. missing-mirrors-as-"run /harness-layer:kb",
+    the fix-vs-report split, the exact two-line log payload, the /schedule
+    weekly-routine prompt grounded in ai-docs/anthropic/routines.md, and
+    clean-on-seed. Builder-run markdownlint: 0 errors.
+  - Deviation (minor, no locked decision touched): a secret/PII leak found by
+    lint is redacted in place (then reported) rather than left in a tracked
+    file as a report-only judgment finding — the task didn't assign leaks to
+    either side; redact-first is the safe reading of the privacy obligations.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
