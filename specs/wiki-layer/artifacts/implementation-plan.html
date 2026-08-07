@@ -1,0 +1,1231 @@
+<title>wiki-layer — implementation plan</title>
+
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+
+    --current: #4A7C59;
+    --disputed: #9A3B2F;
+    --ink-2: #55504A;
+
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+
+    --radius: 2px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- shell: a vault rail beside the reading column ---------- */
+
+  .shell {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .rail { display: none; }
+
+  @media (min-width: 1000px) {
+    .shell { grid-template-columns: 210px minmax(0, 1fr); gap: 3.5rem; }
+    .rail { display: block; }
+  }
+
+  .rail-inner {
+    position: sticky;
+    top: 2.5rem;
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    line-height: 1.9;
+  }
+
+  .rail-title {
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 0.64rem;
+    color: var(--muted);
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rail a {
+    display: block;
+    color: var(--ink-2);
+    text-decoration: none;
+    padding-left: 0.9rem;
+    border-left: 1px solid var(--border);
+    position: relative;
+  }
+
+  .rail a::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 0.55rem;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .rail a:hover { color: var(--accent); }
+  .rail a.on { color: var(--accent); border-left-color: var(--accent); }
+  .rail a.on::before { background: var(--accent); }
+
+  .col {
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+    min-width: 0;
+  }
+
+  /* ---------- type ---------- */
+
+  h1, h2, h3, h4 {
+    margin: 0;
+    font-family: var(--mono);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  h1 { font-size: clamp(1.85rem, 4.4vw, 2.55rem); line-height: 1.1; }
+  h2 { font-size: 1.28rem; line-height: 1.25; }
+  h3 { font-size: 0.98rem; letter-spacing: -0.015em; }
+  h4 { font-size: 0.8rem; letter-spacing: 0; }
+  p { margin: 0; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .prose { max-width: 66ch; color: var(--ink-2); }
+  .lede { max-width: 62ch; font-size: 1.1rem; color: var(--ink-2); }
+
+  code, .mono { font-family: var(--mono); font-size: 0.84em; }
+  code { color: var(--accent); }
+
+  a { color: var(--accent); }
+
+  .shead { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 1.5rem; }
+
+  /* ---------- masthead ---------- */
+
+  .masthead { display: flex; flex-direction: column; gap: 1rem; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.3rem; }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+    padding: 0.22rem 0.55rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink-2);
+  }
+
+  .chip b { font-weight: 600; color: var(--text); }
+
+  /* ---------- layer stack (hero thesis) ---------- */
+
+  .stack { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .layer {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 0.9rem 1.1rem;
+  }
+
+  .layer .lno {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-top: 0.25rem;
+  }
+
+  .layer h3 { margin-bottom: 0.15rem; }
+  .layer p { font-size: 0.94rem; color: var(--ink-2); }
+
+  .layer.new { background: #fff; border-color: var(--accent); border-left-width: 3px; }
+  .layer.new .lno { color: var(--accent); }
+
+  .rung {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding-left: 6.5rem;
+  }
+
+  /* ---------- counts ---------- */
+
+  .counts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .count {
+    padding: 0.9rem 1rem;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .count:last-child { border-right: none; }
+  .count .n { font-family: var(--mono); font-size: 1.5rem; font-weight: 600; letter-spacing: -0.03em; }
+  .count .lbl { font-size: 0.82rem; color: var(--muted); line-height: 1.35; }
+
+  /* ---------- decisions + live specimen ---------- */
+
+  .split { display: grid; grid-template-columns: 1fr; gap: 1.75rem; align-items: start; }
+
+  @media (min-width: 1160px) {
+    .split { grid-template-columns: minmax(0, 1fr) 350px; }
+    .specimen-wrap { position: sticky; top: 2.5rem; }
+  }
+
+  .decks { display: flex; flex-direction: column; gap: 1rem; }
+
+  .deck {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 1.1rem 1.2rem 1rem;
+  }
+
+  .deck-top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.7rem; }
+
+  .vol {
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .vol.hi { color: var(--accent); }
+
+  .path {
+    border-left: 2px solid var(--border);
+    padding: 0.15rem 0 0.15rem 0.85rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .path p { font-size: 0.94rem; }
+
+  .plabel {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .path.chosen { border-left-color: var(--accent); }
+  .path.chosen .plabel { color: var(--accent); }
+  .path.alt { opacity: 0.6; }
+
+  .why { font-size: 0.9rem; color: var(--muted); margin-bottom: 0.65rem !important; }
+
+  .deck.flipped .path.chosen { opacity: 0.45; border-left-color: var(--border); }
+  .deck.flipped .path.chosen .plabel { color: var(--muted); }
+  .deck.flipped .path.alt { opacity: 1; border-left-color: var(--accent); }
+  .deck.flipped .path.alt .plabel { color: var(--accent); }
+
+  .flip {
+    font-family: var(--mono);
+    font-size: 0.73rem;
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.35rem 0.7rem;
+    cursor: pointer;
+  }
+
+  .flip:hover { border-color: var(--accent); color: var(--accent); }
+  .deck.flipped .flip { border-color: var(--accent); color: var(--accent); background: #fff; }
+
+  /* ---------- the specimen ---------- */
+
+  .specimen {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #fff;
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    line-height: 1.75;
+    overflow: hidden;
+  }
+
+  .spec-hd {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    color: var(--ink-2);
+    word-break: break-all;
+  }
+
+  .spec-hd .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+
+  .fm { margin: 0; padding: 0.75rem 0.85rem; border-bottom: 1px dashed var(--border); }
+  .fm .l { display: block; white-space: pre-wrap; word-break: break-word; }
+  .fm .k { color: var(--muted); }
+  .fm .rule { color: var(--border); }
+
+  .l.gone { text-decoration: line-through; color: #C4BEB5; }
+  .l.gone .k { color: #C4BEB5; }
+
+  .spec-body { padding: 0.75rem 0.85rem; border-bottom: 1px dashed var(--border); }
+  .spec-body .bh { font-weight: 600; margin-bottom: 0.25rem; }
+  .spec-body .claim { color: var(--ink-2); }
+  .spec-body .cite { color: var(--accent); }
+
+  .flag {
+    margin-top: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-2);
+    font-size: 0.72rem;
+  }
+
+  .flag.bad { border-color: var(--disputed); color: var(--disputed); background: #fff; }
+
+  .spec-foot { padding: 0.65rem 0.85rem 0.8rem; display: flex; flex-direction: column; gap: 0.35rem; }
+
+  .frow { display: grid; grid-template-columns: 4.4rem minmax(0, 1fr); gap: 0.5rem; font-size: 0.72rem; }
+  .frow .fk { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.62rem; padding-top: 0.15rem; }
+  .frow .fv { color: var(--ink-2); word-break: break-word; }
+  .frow .fv.changed { color: var(--accent); }
+
+  .spec-note { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); margin-top: 0.6rem; line-height: 1.55; }
+
+  /* ---------- phases ---------- */
+
+  .phases { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .phase-hd { display: flex; align-items: baseline; gap: 0.7rem; margin-bottom: 0.3rem; }
+
+  .pn {
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .phase-note { font-size: 0.9rem; color: var(--muted); margin-bottom: 0.7rem !important; max-width: 66ch; }
+
+  .tasks { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.75rem; }
+
+  .task {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 0.8rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .tid { font-family: var(--mono); font-size: 0.78rem; font-weight: 600; }
+  .task p { font-size: 0.9rem; color: var(--ink-2); }
+
+  .stamp { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: auto; }
+
+  .stamp span {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+    padding: 0.12rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--muted);
+  }
+
+  .dep { font-family: var(--mono); font-size: 0.66rem; color: var(--muted); }
+
+  /* ---------- review journey ---------- */
+
+  .rounds { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.75rem; margin-bottom: 1.1rem; }
+
+  .round {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 0.85rem 1rem;
+  }
+
+  .round h4 { margin-bottom: 0.3rem; }
+  .round p { font-size: 0.9rem; color: var(--ink-2); }
+
+  .fixlist { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .fix {
+    display: grid;
+    grid-template-columns: 4.6rem minmax(0, 1fr);
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+    font-size: 0.92rem;
+  }
+
+  .fix:last-child { border-bottom: none; }
+  .fix .fid { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); padding-top: 0.2rem; }
+  .fix .fbody { color: var(--ink-2); }
+  .fix b { color: var(--text); font-weight: 600; }
+
+  /* ---------- collapsed mechanical ---------- */
+
+  details {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 0.85rem 1.1rem;
+  }
+
+  details + details { margin-top: 0.6rem; }
+
+  summary {
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  summary::marker { color: var(--accent); }
+  details[open] summary { margin-bottom: 0.8rem; }
+  details ul { margin: 0; padding-left: 1.1rem; }
+  details li { font-size: 0.92rem; color: var(--ink-2); margin-bottom: 0.35rem; }
+
+  .tbl-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 0.4rem 0.7rem 0.4rem 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  td.mono-cell { font-family: var(--mono); font-size: 0.78rem; }
+
+  /* ---------- concerns + prompt ---------- */
+
+  .concerns { display: flex; flex-direction: column; gap: 0.45rem; }
+
+  .concern {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    font-size: 0.93rem;
+    color: var(--ink-2);
+  }
+
+  .concern:hover { border-color: var(--accent); }
+  .concern.on { border-color: var(--accent); background: #fff; color: var(--text); }
+  .concern input { margin-top: 0.35rem; accent-color: var(--accent); flex: none; }
+
+  .promptbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+
+  .copy {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 0.45rem 0.95rem;
+    cursor: pointer;
+  }
+
+  .copy:hover { background: #A2521F; border-color: #A2521F; }
+  .copy.done { background: var(--current); border-color: var(--current); }
+
+  pre#prompt {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 1rem 1.1rem;
+    font-family: var(--mono);
+    font-size: 0.79rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 1.2rem;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="shell">
+
+  <nav class="rail" aria-label="Sections">
+    <div class="rail-inner">
+      <div class="rail-title">wiki-layer/</div>
+      <a href="#thesis">the three layers</a>
+      <a href="#volatile">volatile decisions</a>
+      <a href="#order">build order</a>
+      <a href="#gate">review journey</a>
+      <a href="#settled">settled detail</a>
+      <a href="#revise">revise the plan</a>
+    </div>
+  </nav>
+
+  <div class="col">
+
+    <header class="masthead">
+      <p class="eyebrow">Implementation plan · issue #88 · feat/88-wiki-layer</p>
+      <h1>A layer that remembers what every plan learned</h1>
+      <p class="lede">
+        The KB caches official docs faithfully and forgets everything we concluded about them.
+        This plan adds the missing layer: <code>ai-docs/wiki/</code>, an LLM-maintained synthesis
+        wiki over the immutable mirrors, with four operations, one schema rule, and a privacy
+        boundary made of git semantics rather than good intentions.
+      </p>
+      <div class="chips">
+        <span class="chip">complexity <b>complex</b></span>
+        <span class="chip">review profile <b>kb-grounded</b></span>
+        <span class="chip">Codex gate <b>2 rounds, settled</b></span>
+        <span class="chip">status <b>drafted for review</b></span>
+      </div>
+    </header>
+
+    <section id="thesis">
+      <div class="shead">
+        <p class="eyebrow">The pattern, as this repo will run it</p>
+        <h2>Three layers, one of them new</h2>
+        <p class="prose">
+          Mirrors already exist and never change. Answers already happen and never persist.
+          Everything this plan builds sits in the middle band.
+        </p>
+      </div>
+
+      <div class="stack">
+        <div class="layer">
+          <span class="lno">Layer 1</span>
+          <div>
+            <h3>Mirrors — immutable, device-local</h3>
+            <p>~50 cached official pages under <code>ai-docs/</code>, registered in
+            <code>sources.yaml</code>, fixed only by refetch. This plan reads them and touches
+            nothing.</p>
+          </div>
+        </div>
+        <p class="rung">↓ <span class="mono">/wiki:ingest</span> reads a mirror, never edits one</p>
+        <div class="layer new">
+          <span class="lno">Layer 2</span>
+          <div>
+            <h3>The wiki — compiled synthesis, tracked in git</h3>
+            <p>Domain folders over one shared schema at <code>ai-docs/wiki/</code>. Tracked through
+            gitignore negation because synthesis is compiled knowledge, not regenerable cache.
+            <code>personal/</code> is re-ignored and never leaves this machine.</p>
+          </div>
+        </div>
+        <p class="rung">↓ <span class="mono">/wiki:query</span> reads pages, writes nothing</p>
+        <div class="layer">
+          <span class="lno">Layer 3</span>
+          <div>
+            <h3>Answers — cited, status-flagged, disposable</h3>
+            <p>Every answer names its pages and carries their status inline. An answer worth keeping
+            gets crystallized back into layer 2 by running an ordinary ingest on it.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="counts">
+        <div class="count"><span class="n">10</span><span class="lbl">files created</span></div>
+        <div class="count"><span class="n">2</span><span class="lbl">files amended — <code>.gitignore</code>, <code>AGENTS.md</code></span></div>
+        <div class="count"><span class="n">8</span><span class="lbl">tasks across 4 phases</span></div>
+        <div class="count"><span class="n">7</span><span class="lbl">acceptance criteria</span></div>
+        <div class="count"><span class="n">14</span><span class="lbl">line ceiling on the AGENTS.md addition</span></div>
+        <div class="count"><span class="n">0</span><span class="lbl">harness-layer files touched</span></div>
+      </div>
+    </section>
+
+    <section id="volatile">
+      <div class="shead">
+        <p class="eyebrow">Most likely to change first</p>
+        <h2>Volatile decisions</h2>
+        <p class="prose">
+          Six calls that a reasonable reviewer could make differently. Flip any of them to see the
+          consequence in the specimen page, and to build the revision prompt at the bottom.
+        </p>
+      </div>
+
+      <div class="split">
+
+        <div class="decks" id="decks">
+
+          <article class="deck" data-key="schema">
+            <div class="deck-top">
+              <h3>Seven frontmatter fields, three status values</h3>
+              <span class="vol hi">Volatility: high</span>
+            </div>
+            <div class="path chosen">
+              <span class="plabel">Chosen</span>
+              <p><code>type</code>, <code>domain</code>, <code>status</code>, <code>created</code>,
+              <code>updated</code>, <code>sources</code>, <code>related</code> — with
+              <code>status: current | superseded | disputed</code> travelling into every answer.
+              A disputed claim is flagged where it is cited, never dropped.</p>
+            </div>
+            <p class="why">Lint and Dataview both need consistent fields, and status propagation is
+            the one convention the graphwiki source found actually prevents silent drift.</p>
+            <div class="path alt">
+              <span class="plabel">Alternative</span>
+              <p>A lean three-field schema — <code>type</code>, <code>domain</code>,
+              <code>sources</code> — dropping dates, status, and links until lint proves they are
+              read. Cheaper to write; answers lose the ability to flag contested claims.</p>
+            </div>
+            <button class="flip" type="button" aria-pressed="false">Use the alternative instead</button>
+          </article>
+
+          <article class="deck" data-key="privacy">
+            <div class="deck-top">
+              <h3>Privacy is a gitignore negation, not a second vault</h3>
+              <span class="vol hi">Volatility: high</span>
+            </div>
+            <div class="path chosen">
+              <span class="plabel">Chosen</span>
+              <p><code>!ai-docs/wiki/</code> tracks the wiki; <code>ai-docs/wiki/personal/</code>
+              re-ignores the private domain, which keeps its own local-only
+              <code>personal/index.md</code> and <code>personal/log.md</code>. The shared index and
+              log never name personal content.</p>
+            </div>
+            <p class="why">One vault root, one Obsidian config, one schema — and the cloud lint
+            routine works from a fresh clone that structurally cannot see <code>personal/</code>.</p>
+            <div class="path alt">
+              <span class="plabel">Alternative</span>
+              <p>A separate personal vault outside the repo. A harder boundary, at the cost of two
+              vaults to run, two configs to keep in sync, and no shared linking.</p>
+            </div>
+            <button class="flip" type="button" aria-pressed="false">Use the alternative instead</button>
+          </article>
+
+          <article class="deck" data-key="surface">
+            <div class="deck-top">
+              <h3>Slash commands plus a path-scoped rule</h3>
+              <span class="vol">Volatility: medium</span>
+            </div>
+            <div class="path chosen">
+              <span class="plabel">Chosen</span>
+              <p><code>.claude/commands/wiki/{ingest,query,lint,status}.md</code> and
+              <code>.claude/rules/wiki-layer/wiki-standards.md</code>, which loads whenever a session
+              touches <code>ai-docs/wiki/**</code>.</p>
+            </div>
+            <p class="why">These are deliberate user-triggered passes, like <code>/kb</code>. The
+            official docs steer new work toward <code>.claude/skills/</code>; repo convention wins
+            and the conflict is recorded rather than forked.</p>
+            <div class="path alt">
+              <span class="plabel">Alternative</span>
+              <p>Skill-first under <code>.claude/skills/</code>, following the docs. Model-invoked
+              rather than typed, which trades predictable invocation for automatic engagement.</p>
+            </div>
+            <button class="flip" type="button" aria-pressed="false">Use the alternative instead</button>
+          </article>
+
+          <article class="deck" data-key="eval">
+            <div class="deck-top">
+              <h3>AC7 gates on committed fixtures, run three times</h3>
+              <span class="vol hi">Volatility: high</span>
+            </div>
+            <div class="path chosen">
+              <span class="plabel">Chosen</span>
+              <p>Two related fixture articles and a rubric ship under
+              <code>checks/fixtures/</code>. The build lead runs ingest → ingest → query → lint in
+              three fresh sessions; run 1 starts from the seed, runs 2–3 re-run to exercise
+              idempotency. Pass rate 3/3, evidence per run in <code>implementation-notes.md</code>.</p>
+            </div>
+            <p class="why">Command bodies are prose — nothing structural proves they work. The eval
+            tier requires a pass rate, and a single green run proves nothing.</p>
+            <div class="path alt">
+              <span class="plabel">Alternative</span>
+              <p>Gate on the user's own fresh-article Web Clipper migration instead — the original
+              design. More realistic capture path, but it cannot run pre-ship, so "done" would
+              depend on work outside the build.</p>
+            </div>
+            <button class="flip" type="button" aria-pressed="false">Use the alternative instead</button>
+          </article>
+
+          <article class="deck" data-key="ops">
+            <div class="deck-top">
+              <h3>Four operations, expansion behind triggers</h3>
+              <span class="vol">Volatility: medium</span>
+            </div>
+            <div class="path chosen">
+              <span class="plabel">Chosen</span>
+              <p>ingest · query · lint · status. <code>absorb</code> arrives when the unprocessed
+              backlog passes ~10, <code>breakdown</code> when lint repeats the same missing page,
+              <code>cleanup</code> when its fix list needs its own pass — each via the direct lane.
+              Status derives all three triggers from tracked state.</p>
+            </div>
+            <p class="why">Smallest surface that still schedules lint; expansion follows demonstrated
+            need rather than anticipated need.</p>
+            <div class="path alt">
+              <span class="plabel">Alternative</span>
+              <p>Ship <code>absorb</code> and <code>breakdown</code> in v1 so the backlog and
+              page-splitting paths exist before they are needed.</p>
+            </div>
+            <button class="flip" type="button" aria-pressed="false">Use the alternative instead</button>
+          </article>
+
+          <article class="deck" data-key="entry">
+            <div class="deck-top">
+              <h3>Wiki-first lives in AGENTS.md, capped at 14 lines</h3>
+              <span class="vol">Volatility: low</span>
+            </div>
+            <div class="path chosen">
+              <span class="plabel">Chosen</span>
+              <p>The Knowledge Base bullets name the wiki index before the mirror index, the
+              durability rule routes gate-passing synthesis into <code>/wiki:ingest</code>, and a
+              Wiki Layer section registers the commands. Schema stays in the rule file.</p>
+            </div>
+            <p class="why">AGENTS.md loads every session, so every added line is paid for on every
+            task. A session-start hook is deferred behind the "sessions demonstrably skip the wiki"
+            trigger.</p>
+            <div class="path alt">
+              <span class="plabel">Alternative</span>
+              <p>A SessionStart hook that injects the wiki index into every session, making
+              wiki-first mechanical instead of instructional.</p>
+            </div>
+            <button class="flip" type="button" aria-pressed="false">Use the alternative instead</button>
+          </article>
+
+        </div>
+
+        <div class="specimen-wrap">
+          <div class="specimen" id="specimen">
+            <div class="spec-hd"><span class="dot"></span><span id="specpath">ai-docs/wiki/engineering/llm-wiki-pattern.md</span></div>
+            <pre class="fm"><span class="l rule">---</span><span class="l" data-f="type"><span class="k">type:</span> pattern</span><span class="l" data-f="domain"><span class="k">domain:</span> engineering</span><span class="l" data-f="status"><span class="k">status:</span> current</span><span class="l" data-f="created"><span class="k">created:</span> 2026-08-07</span><span class="l" data-f="updated"><span class="k">updated:</span> 2026-08-07</span><span class="l" data-f="sources"><span class="k">sources:</span> ["ai-docs/knowledge-base/karpathy-llm-wiki.md"]</span><span class="l" data-f="related"><span class="k">related:</span> ["[[Obsidian Vault Layout]]"]</span><span class="l rule">---</span></pre>
+            <div class="spec-body">
+              <p class="bh"># LLM Wiki Pattern</p>
+              <p class="claim">Raw sources stay immutable; the model owns the synthesis layer above
+              them. <span class="cite">[karpathy-llm-wiki]</span></p>
+              <div class="flag" id="specflag">
+                <span data-flag="full">A citation of a <b>disputed</b> page answers with the dispute attached.</span>
+                <span data-flag="lean" hidden>No status field — a <b>disputed</b> claim answers as settled fact.</span>
+              </div>
+            </div>
+            <div class="spec-foot">
+              <div class="frow"><span class="fk">written</span><span class="fv" id="fw">/wiki:ingest ai-docs/knowledge-base/karpathy-llm-wiki.md</span></div>
+              <div class="frow"><span class="fk">found</span><span class="fv" id="ff">AGENTS.md wiki-first bullet → ai-docs/wiki/index.md</span></div>
+              <div class="frow"><span class="fk">private</span><span class="fv" id="fp">ai-docs/wiki/personal/ — gitignored, own index + log</span></div>
+              <div class="frow"><span class="fk">ops</span><span class="fv" id="fo">ingest · query · lint · status</span></div>
+              <div class="frow"><span class="fk">proven</span><span class="fv" id="fe">3 fresh-session fixture runs, 3/3 rubric</span></div>
+            </div>
+          </div>
+          <p class="spec-note">A specimen page, as this plan would produce it. It updates as you flip
+          the decisions to the left.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="order">
+      <div class="shead">
+        <p class="eyebrow">Build order — the dependencies are real</p>
+        <h2>Eight tasks, four phases</h2>
+        <p class="prose">
+          The standards rule is the hard barrier: the four command bodies and the AGENTS.md
+          amendment are all written against it, and the drift test reads its operations table as the
+          source of truth for command frontmatter.
+        </p>
+      </div>
+
+      <div class="phases">
+
+        <div class="phase">
+          <div class="phase-hd"><span class="pn">Phase 1</span><h3>Foundation</h3></div>
+          <p class="phase-note">Storage semantics and the normative rule. Two tasks over disjoint
+          files, so they run in parallel.</p>
+          <div class="tasks">
+            <div class="task">
+              <span class="tid">wiki-foundation</span>
+              <p>The gitignore block, the two seed files, and the minimal Obsidian vault config.</p>
+              <span class="dep">depends on: nothing</span>
+              <span class="stamp"><span>sonnet</span><span>medium</span><span>AC1, AC2</span></span>
+            </div>
+            <div class="task">
+              <span class="tid">wiki-standards-rule</span>
+              <p>The layer's schema, writing standards, domain taxonomy, privacy obligations, and the
+              operations table the drift test trusts.</p>
+              <span class="dep">depends on: nothing</span>
+              <span class="stamp"><span>opus</span><span>high</span><span>AC4</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-hd"><span class="pn">Phase 2</span><h3>Command surface</h3></div>
+          <p class="phase-note">Four operations, written against the rule. Split by file so both
+          tasks run at once.</p>
+          <div class="tasks">
+            <div class="task">
+              <span class="tid">wiki-commands-ingest-lint</span>
+              <p>The two writers: ingest integrates across pages and logs the canonical source path;
+              lint checks nine classes, fixes the mechanical ones, and writes the payload line status
+              later reads.</p>
+              <span class="dep">depends on: wiki-standards-rule</span>
+              <span class="stamp"><span>opus</span><span>high</span><span>AC3, AC7</span></span>
+            </div>
+            <div class="task">
+              <span class="tid">wiki-commands-query-status</span>
+              <p>The two readers: query synthesizes with citations and status flags and never writes;
+              status derives all three expansion triggers from tracked state.</p>
+              <span class="dep">depends on: wiki-standards-rule</span>
+              <span class="stamp"><span>sonnet</span><span>high</span><span>AC3, AC7</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-hd"><span class="pn">Phase 3</span><h3>Memory &amp; drift guard</h3></div>
+          <p class="phase-note">The registration that makes the layer discoverable, then the test
+          that keeps registration and reality in sync.</p>
+          <div class="tasks">
+            <div class="task">
+              <span class="tid">agents-md-amendments</span>
+              <p>Two rewritten Knowledge Base bullets, the durability-rule clause, and the Wiki Layer
+              section — 14 lines total, no schema duplication.</p>
+              <span class="dep">depends on: wiki-standards-rule</span>
+              <span class="stamp"><span>opus</span><span>high</span><span>AC5</span></span>
+            </div>
+            <div class="task">
+              <span class="tid">wiki-drift-test</span>
+              <p>Registry, frontmatter, and standards-rule assertions — every expectation re-derived
+              from AGENTS.md, model-selection.md, and the rule itself, never from the directory under
+              test.</p>
+              <span class="dep">depends on: both command tasks, the rule, AGENTS.md</span>
+              <span class="stamp"><span>sonnet</span><span>high</span><span>AC3, AC4, AC6</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-hd"><span class="pn">Phase 4</span><h3>Pilot &amp; validation</h3></div>
+          <p class="phase-note">The only proof that the command bodies do anything, then the sweep.</p>
+          <div class="tasks">
+            <div class="task">
+              <span class="tid">pilot-eval</span>
+              <p>Run by the build lead in three fresh sessions against the committed fixtures. Every
+              run scored against the rubric; evidence recorded per run.</p>
+              <span class="dep">depends on: foundation, both command tasks, AGENTS.md</span>
+              <span class="stamp"><span>opus</span><span>high</span><span>manual</span><span>AC7</span></span>
+            </div>
+            <div class="task">
+              <span class="tid">validate-all</span>
+              <p>Every validation command from the repo root, plus a read of the recorded AC7
+              evidence against the rubric.</p>
+              <span class="dep">depends on: everything</span>
+              <span class="stamp"><span>sonnet</span><span>high</span><span>all ACs</span></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="gate">
+      <div class="shead">
+        <p class="eyebrow">How this plan got to its current shape</p>
+        <h2>The review journey</h2>
+        <p class="prose">
+          Two Codex gate rounds, 37 findings, 25 blocking fixes. Most of them landed on evidence:
+          the first draft's plan-local scripts asserted substrings where they claimed to assert
+          contracts.
+        </p>
+      </div>
+
+      <div class="rounds">
+        <div class="round">
+          <h4>Round 1 — spec panel</h4>
+          <p>29 findings, 19 blocking, all fixed in <code>b613a24</code>. Three lenses: fidelity,
+          evidence, simplicity.</p>
+        </div>
+        <div class="round">
+          <h4>Round 2 — delta</h4>
+          <p>8 findings inside the fix diff, 6 blocking, all fixed. The cycle cap was reached, so
+          those six are <b>Codex-unverified</b>; the deterministic spec lint re-ran green.</p>
+        </div>
+      </div>
+
+      <div class="fixlist">
+        <div class="fix"><span class="fid">R1-F6</span><span class="fbody"><b>AC7 counted post-ship work as done.</b> Restructured into the pre-ship fixture eval; the user's live migration became a follow-up on issue #88.</span></div>
+        <div class="fix"><span class="fid">R1-F18</span><span class="fbody"><b>Personal titles leaked into the tracked index and log.</b> The personal domain now keeps its own local-only index and log; the shared files hold a pointer and nothing else.</span></div>
+        <div class="fix"><span class="fid">R1-F21</span><span class="fbody"><b>Idempotency had no stable identity.</b> Identity is now the canonical source path, carried in both page <code>sources:</code> and the log entry.</span></div>
+        <div class="fix"><span class="fid">R1-F20</span><span class="fbody"><b>Status reported a backlog nothing tracked.</b> All three expansion triggers were redefined over derivable state — sources.yaml versus page citations, and the lint log's payload fields.</span></div>
+        <div class="fix"><span class="fid">R1-F24</span><span class="fbody"><b>Two permanent homes for the same assertions.</b> The drift test owns structural checks; the ac3 and ac4 scripts were dropped and their criteria now point at pytest node ids.</span></div>
+        <div class="fix"><span class="fid">R2-F6</span><span class="fbody"><b>One pilot run claimed the eval tier.</b> The tier requires a pass rate, so AC7 became three fresh-session runs at 3/3.</span></div>
+        <div class="fix"><span class="fid">R1-F8/F9</span><span class="fbody"><b>Grounding rested on an uncached and a stale mirror.</b> The routines page was mirrored and registered; the skills mirror was refreshed and its Grounds column corrected.</span></div>
+      </div>
+    </section>
+
+    <section id="settled">
+      <div class="shead">
+        <p class="eyebrow">Settled — listed so it isn't re-litigated</p>
+        <h2>Mechanical detail</h2>
+      </div>
+
+      <details>
+        <summary>Exact contracts — gitignore, log entries, command stamps</summary>
+        <div>
+          <ul>
+            <li>The gitignore block appends after the existing <code>ai-docs</code> rules:
+            <code>!ai-docs/wiki/</code>, then <code>ai-docs/wiki/personal/</code>, then
+            <code>!ai-docs/.obsidian/</code> with <code>ai-docs/.obsidian/workspace*</code> ignored.
+            Existing mirror rules are untouched.</li>
+            <li>Log entries are <code>## [YYYY-MM-DD] &lt;op&gt; | &lt;title&gt; | &lt;source-path&gt;</code>
+            with <code>&lt;op&gt;</code> ∈ <code>ingest|lint</code>. Lint adds the payload line
+            <code>missing-pages: … · mechanical-fixes: N</code> — the fields status derives its
+            breakdown and cleanup triggers from. Only ingest and lint write.</li>
+            <li>Command stamps come from the rule's operations table: ingest <code>opus/high</code>,
+            query <code>sonnet/high</code>, lint <code>opus/high</code>, status
+            <code>haiku/medium</code>. <code>argument-hint</code> appears on ingest and query only.</li>
+            <li><code>ai-docs/.obsidian/app.json</code> sets <code>attachmentFolderPath</code> to
+            <code>wiki/assets</code> and <code>alwaysUpdateLinks</code> to true; the vault root is
+            <code>ai-docs/</code>.</li>
+            <li>Linking is <code>[[wikilinks]]</code> between wiki pages and ordinary markdown links
+            to mirrors and repo files, so citations still render on GitHub.</li>
+            <li>The weekly lint routine is created once post-ship via <code>/schedule</code>: weekly
+            cron, fresh clone, lands fixes as a <code>claude/</code>-branch PR. Its exact prompt is
+            documented in <code>lint.md</code>.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Edge cases already answered</summary>
+        <div>
+          <ul>
+            <li><b>Missing mirror on a fresh clone</b> — lint reports "run
+            <code>/harness-layer:kb</code>", never a broken citation.</li>
+            <li><b>External URL passed to ingest</b> — refused, with a pointer to
+            <code>/harness-layer:kb add &lt;url&gt;</code>. Sources become mirrors first.</li>
+            <li><b>Duplicate ingest</b> — idempotent on the canonical source path; pages update in
+            place and a second identical run changes nothing.</li>
+            <li><b>Personal attachments</b> — moved under <code>wiki/personal/assets/</code>; local
+            lint flags any personal page referencing files outside <code>personal/</code>.</li>
+            <li><b>Contradiction during ingest</b> — both claims flagged <code>disputed</code> with
+            cross-references; resolution flips the loser to <code>superseded</code>. Nothing is
+            deleted.</li>
+            <li><b>Query outside coverage</b> — say the wiki doesn't cover it. Never guess, never
+            silently fall back to the mirrors.</li>
+            <li><b>Cloud lint versus the personal domain</b> — the fresh clone has no
+            <code>personal/</code>, so routine output must not claim to have linted it.</li>
+            <li><b>Empty wiki</b> — query and status degrade gracefully on the seed; lint reports
+            clean, not errors.</li>
+            <li><b>Concurrent edits</b> — re-read any page immediately before editing; single-writer
+            assumption is recorded.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Acceptance criteria and how each is proven</summary>
+        <div class="tbl-scroll">
+          <table>
+            <thead>
+              <tr><th>AC</th><th>Claim</th><th>Proof</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>AC1</td><td>Wiki tracked, personal domain local-only</td><td class="mono-cell">bash specs/wiki-layer/checks/ac1-privacy-gitignore.sh</td></tr>
+              <tr><td>AC2</td><td>Seed matches the contract shapes</td><td class="mono-cell">uv run specs/wiki-layer/checks/ac2-seed.py</td></tr>
+              <tr><td>AC3</td><td>Command family matches its registration</td><td class="mono-cell">pytest test_wiki_layer.py::test_command_registry ::test_command_frontmatter</td></tr>
+              <tr><td>AC4</td><td>Standards rule carries every obligation</td><td class="mono-cell">pytest test_wiki_layer.py::test_standards_rule</td></tr>
+              <tr><td>AC5</td><td>AGENTS.md amended within 14 lines</td><td class="mono-cell">uv run specs/wiki-layer/checks/ac5-memory-amendments.py</td></tr>
+              <tr><td>AC6</td><td>Full drift suite green</td><td class="mono-cell">uv run pytest tests/harness-layer/test_wiki_layer.py -q</td></tr>
+              <tr><td>AC7</td><td>Commands actually work</td><td class="mono-cell">manual: 3 fresh-session fixture runs, 3/3 against pilot-rubric.md</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Guardrails and non-goals</summary>
+        <div>
+          <ul>
+            <li>Additive only — no edits to mirrors, <code>ai-docs/index.md</code> generation,
+            <code>sources.yaml</code> semantics, or any harness-layer command file.</li>
+            <li>Commands stay under <code>.claude/commands/wiki/</code>. Do not move them to
+            <code>.claude/skills/</code> mid-build.</li>
+            <li>No pre-created domain folders and no placeholder pages beyond the two seed files —
+            folders appear on first ingest.</li>
+            <li>Out of scope: <code>absorb</code>/<code>breakdown</code>, hybrid-search CLI,
+            embeddings or vector store, session-start hook, team sharing, multi-agent wiki writes,
+            the enterprise RAG stack.</li>
+            <li>Command bodies are instructions, not rationale — no design history, no
+            cross-references the operation doesn't need to run.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Grounding — the nine KB docs this plan rests on</summary>
+        <div>
+          <ul>
+            <li><code>knowledge-base/karpathy-llm-wiki.md</code> — the three layers, the ingest/query/lint trio, index and log conventions.</li>
+            <li><code>knowledge-base/farzaa-wiki-gen-skill.md</code> — command shapes and writing standards, studied and adapted rather than ported.</li>
+            <li><code>knowledge-base/lucianfialho-graphwiki-pattern.md</code> — the status vocabulary and its propagation into answers.</li>
+            <li><code>knowledge-base/rohitg00-llm-wiki.md</code> — lifecycle and expansion triggers; session-start injection belongs to the automation stage.</li>
+            <li><code>cerebras/how-we-built-our-knowledge-base.md</code> — the deferred enterprise-RAG blueprint that grounds the non-goal.</li>
+            <li><code>anthropic/skills.md</code> — command frontmatter reference and namespaced invocation; refreshed during the gate.</li>
+            <li><code>anthropic/routines.md</code> — weekly cron on managed infrastructure against a fresh clone; mirrored during the gate.</li>
+            <li><code>anthropic/memory.md</code> — <code>paths:</code> frontmatter loads a rule on matching reads.</li>
+            <li><code>anthropic/scheduled-tasks.md</code> — <code>/loop</code> tasks are session-scoped with a 7-day expiry, which rules them out for weekly lint.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <section id="revise">
+      <div class="shead">
+        <p class="eyebrow">Anything else to change?</p>
+        <h2>Open concerns</h2>
+        <p class="prose">
+          Each of these is a live advisory from the gate or an unresolved question. Tick the ones
+          worth acting on — they join the revision prompt below.
+        </p>
+      </div>
+      <div class="concerns" id="concerns">
+        <label class="concern"><input type="checkbox" data-c="unverified"><span>Run a third Codex gate cycle — six round-2 fixes shipped unverified when the cycle cap hit</span></label>
+        <label class="concern"><input type="checkbox" data-c="stale"><span>Fix the two stale lines in spec.md the gate left advisory (R2-F7, R2-F8)</span></label>
+        <label class="concern"><input type="checkbox" data-c="related"><span>Drop the <code>related:</code> field — body wikilinks already express the graph (R1-F26)</span></label>
+        <label class="concern"><input type="checkbox" data-c="batch"><span>Cut ingest's batch input and 5-source checkpointing from v1 (R1-F25)</span></label>
+        <label class="concern"><input type="checkbox" data-c="plugins"><span>Stop making Dataview and Marp test-required — recommend them, don't assert them (R1-F28)</span></label>
+        <label class="concern"><input type="checkbox" data-c="retrieval"><span>Remove query's fixed retrieval numbers — page counts and hop limits are policy without payoff (R1-F29)</span></label>
+        <label class="concern"><input type="checkbox" data-c="split"><span>Split the plan — ship ingest and query first, lint and status as a follow-up</span></label>
+        <label class="concern"><input type="checkbox" data-c="backlinks"><span>Settle the open question now: whether a backlinks index file earns its place</span></label>
+      </div>
+    </section>
+
+    <section>
+      <div class="promptbar">
+        <div class="shead" style="margin-bottom:0">
+          <p class="eyebrow">Copy back to Claude to revise the plan</p>
+          <h2>Revision prompt</h2>
+        </div>
+        <button class="copy" id="copybtn" type="button">Copy prompt</button>
+      </div>
+      <pre id="prompt"></pre>
+    </section>
+
+    <footer>
+      Plan files: <code>specs/wiki-layer/</code> — spec.md, tasks.md, decisions.md,
+      acceptance-criteria.md, reviews/findings-ledger.md. Discovery under <code>discovery/</code>,
+      fixtures under <code>checks/fixtures/</code>.<br>
+      Build with <code>/harness-layer:harness-build wiki-layer</code>.
+    </footer>
+
+  </div>
+</div>
+
+<script>
+  const ALTS = {
+    schema: "Cut the page schema to three fields — type, domain, sources — and drop status, created, updated, and related until lint shows they are actually read. Accept that answers can no longer flag disputed or superseded claims, and update the query and lint behaviour accordingly.",
+    privacy: "Move the personal domain to a separate vault outside the repo instead of gitignoring ai-docs/wiki/personal/, and adjust the storage, Obsidian, and lint decisions for two vaults.",
+    surface: "Build the four operations as skills under .claude/skills/ rather than commands under .claude/commands/wiki/, following the official docs instead of the repo's command convention.",
+    eval: "Gate AC7 on the user's own fresh-article Web Clipper migration rather than the committed fixture eval, and rework the definition of done around a pilot that runs after ship.",
+    ops: "Ship absorb and breakdown in v1 alongside ingest, query, lint, and status, instead of holding them behind expansion triggers.",
+    entry: "Enforce wiki-first with a SessionStart hook that injects the wiki index, instead of relying on the AGENTS.md bullets and the 14-line memory budget."
+  };
+
+  const CONCERNS = {
+    unverified: "Run a third Codex gate cycle over the round-2 fix commit — six blocking fixes shipped Codex-unverified when the two-cycle cap was reached.",
+    stale: "Fix the two advisory staleness findings in spec.md: the Objective still says \"five plan-local checks\" when three remain (R2-F7), and Relevant Files plus Notes still describe sources.yaml as untouched and the routines page as a KB gap after it was mirrored (R2-F8).",
+    related: "Drop the related: frontmatter field — the body's [[wikilinks]] already express the graph — and update the schema, the standards rule contract, and the drift test's field assertions.",
+    batch: "Remove batch input and the every-5-sources checkpointing from /wiki:ingest; keep v1 to a single source per run.",
+    plugins: "Make Dataview and Marp recommended rather than normative, and stop asserting the plugin set in the drift test.",
+    retrieval: "Remove the fixed retrieval numbers from /wiki:query (the 3-8 page and 2-hop limits) and let relevance decide how far to follow links.",
+    split: "Split this plan: ship /wiki:ingest and /wiki:query first, and move /wiki:lint and /wiki:status — plus the weekly routine — into a follow-up plan.",
+    backlinks: "Resolve the open question in this plan rather than deferring it to the first lint cycles: decide whether a backlinks index file earns its place alongside related: and [[wikilinks]]."
+  };
+
+  const state = { flipped: new Set(), concerns: new Set() };
+
+  const el = (id) => document.getElementById(id);
+
+  document.querySelectorAll(".deck").forEach(function (deck) {
+    deck.querySelector(".flip").addEventListener("click", function () {
+      const key = deck.dataset.key;
+      const on = deck.classList.toggle("flipped");
+      this.textContent = on ? "Keep the chosen path" : "Use the alternative instead";
+      this.setAttribute("aria-pressed", String(on));
+      if (on) { state.flipped.add(key); } else { state.flipped.delete(key); }
+      render();
+    });
+  });
+
+  document.querySelectorAll("#concerns input").forEach(function (box) {
+    box.addEventListener("change", function () {
+      const key = this.dataset.c;
+      this.closest(".concern").classList.toggle("on", this.checked);
+      if (this.checked) { state.concerns.add(key); } else { state.concerns.delete(key); }
+      render();
+    });
+  });
+
+  function renderSpecimen() {
+    const lean = state.flipped.has("schema");
+    const dropped = ["status", "created", "updated", "related"];
+    document.querySelectorAll(".fm .l[data-f]").forEach(function (line) {
+      line.classList.toggle("gone", lean && dropped.indexOf(line.dataset.f) !== -1);
+    });
+
+    const flag = el("specflag");
+    flag.classList.toggle("bad", lean);
+    flag.querySelector('[data-flag="full"]').hidden = lean;
+    flag.querySelector('[data-flag="lean"]').hidden = !lean;
+
+    const skill = state.flipped.has("surface");
+    el("specpath").textContent = skill
+      ? "ai-docs/wiki/engineering/llm-wiki-pattern.md — written by the wiki-ingest skill"
+      : "ai-docs/wiki/engineering/llm-wiki-pattern.md";
+
+    set("fw", skill
+      ? "wiki-ingest skill — model-invoked, no typed command"
+      : "/wiki:ingest ai-docs/knowledge-base/karpathy-llm-wiki.md", skill);
+
+    const hook = state.flipped.has("entry");
+    set("ff", hook
+      ? "SessionStart hook injects ai-docs/wiki/index.md into every session"
+      : "AGENTS.md wiki-first bullet → ai-docs/wiki/index.md", hook);
+
+    const vault = state.flipped.has("privacy");
+    set("fp", vault
+      ? "a second vault outside the repo — separate config, no shared linking"
+      : "ai-docs/wiki/personal/ — gitignored, own index + log", vault);
+
+    const wide = state.flipped.has("ops");
+    set("fo", wide
+      ? "ingest · query · lint · status · absorb · breakdown"
+      : "ingest · query · lint · status", wide);
+
+    const live = state.flipped.has("eval");
+    set("fe", live
+      ? "the user's Web Clipper migration — post-ship, outside the build"
+      : "3 fresh-session fixture runs, 3/3 rubric", live);
+  }
+
+  function set(id, text, changed) {
+    const node = el(id);
+    node.textContent = text;
+    node.classList.toggle("changed", !!changed);
+  }
+
+  function renderPrompt() {
+    const changes = [];
+    Object.keys(ALTS).forEach(function (k) { if (state.flipped.has(k)) { changes.push(ALTS[k]); } });
+    Object.keys(CONCERNS).forEach(function (k) { if (state.concerns.has(k)) { changes.push(CONCERNS[k]); } });
+
+    const lines = [];
+    if (changes.length === 0) {
+      lines.push("The wiki-layer plan reads right as drafted — no revisions. Build it:");
+      lines.push("");
+      lines.push("/harness-layer:harness-build wiki-layer");
+    } else {
+      lines.push("/harness-layer:harness-plan wiki-layer");
+      lines.push("");
+      lines.push("Revise the wiki-layer plan (issue #88, worktree .claude/worktrees/wiki-layer).");
+      lines.push("Keep every other decision as drafted — these are the only changes:");
+      lines.push("");
+      changes.forEach(function (c, i) { lines.push((i + 1) + ". " + c); });
+      lines.push("");
+      lines.push("Update spec.md, tasks.md, decisions.md, and acceptance-criteria.md so they stay consistent with each other, record what changed and why in decisions.md, and republish this implementation-plan page.");
+    }
+    el("prompt").textContent = lines.join("\n");
+  }
+
+  function render() {
+    renderSpecimen();
+    renderPrompt();
+  }
+
+  el("copybtn").addEventListener("click", function () {
+    const btn = this;
+    navigator.clipboard.writeText(el("prompt").textContent).then(function () {
+      btn.textContent = "Copied";
+      btn.classList.add("done");
+      setTimeout(function () { btn.textContent = "Copy prompt"; btn.classList.remove("done"); }, 1600);
+    });
+  });
+
+  const sections = Array.prototype.slice.call(document.querySelectorAll("section[id]"));
+  const links = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+
+  if ("IntersectionObserver" in window) {
+    const obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) { return; }
+        links.forEach(function (a) {
+          a.classList.toggle("on", a.getAttribute("href") === "#" + entry.target.id);
+        });
+      });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+    sections.forEach(function (s) { obs.observe(s); });
+  }
+
+  render();
+</script>
