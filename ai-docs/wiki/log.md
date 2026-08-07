@@ -33,3 +33,7 @@ missing-pages: none · mechanical-fixes: 0
 ## [2026-08-07] lint | engineering | clean — 2 pages, index and log consistent
 
 missing-pages: none · mechanical-fixes: 0
+
+## [2026-08-08] lint | engineering | domain retired — the two pilot pages were built from dev fixtures, not real sources; pages, `schema.md`, and the index section removed, 0 pages remain
+
+missing-pages: none · mechanical-fixes: 0
