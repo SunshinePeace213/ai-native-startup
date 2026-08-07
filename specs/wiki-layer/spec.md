@@ -11,7 +11,8 @@
 - **Branch:** feat/88-wiki-layer
 - **Worktree:** /home/ringo/ai-native-startup/.claude/worktrees/wiki-layer
 - **Review profile:** kb-grounded
-- **PR:** pending — filled by /harness-layer:harness-build
+- **PR:** #89 (draft) — <https://github.com/SunshinePeace213/ai-native-startup/pull/89>
+- **Hand-off SHA:** 6f6539083da9ce281475029bb69db899244bf0c4 — the last implementation push (post-tidy, post-impl-lint, brief committed). Note for review: history from the wiki-foundation checkpoint onward was rewritten once mid-build (a commit-subject length fix via filter-branch); SHAs cited in early implementation-notes entries predate that rewrite.
 
 ## Task Description
 
