@@ -355,19 +355,13 @@ dist
 *-workspace/
 
 # =============================================================================
-# ai-docs/ knowledge base (managed by /kb) — the cached doc mirrors and the
-# generated index.md are regenerable from the manifest, so track only
-# sources.yaml (the source of truth) and let /kb rebuild the rest.
+# ai-docs/ — the raw-source layer and the wiki are both tracked (sources are
+# not regenerable; wiki pages are compiled knowledge). Only personal material
+# stays on this machine.
 # =============================================================================
-ai-docs/*
-!ai-docs/sources.yaml
-
-# ai-docs/wiki/ — the LLM-maintained synthesis layer IS tracked (compiled
-# knowledge, not regenerable cache); the personal domain never leaves this machine.
-!ai-docs/wiki/
 ai-docs/wiki/personal/
+ai-docs/personal/
 # Obsidian vault config: track the minimal shared config, ignore volatile state.
-!ai-docs/.obsidian/
 ai-docs/.obsidian/workspace*
 
 # =============================================================================

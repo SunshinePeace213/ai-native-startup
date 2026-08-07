@@ -2,7 +2,8 @@
 .env.local
 .env.sample
 
-# The KB mirrors and index are gitignored, so a worktree starts without them.
+# Most of ai-docs/ is tracked now; this copies the gitignored remainder (the
+# personal areas) so a worktree sees the full knowledge base.
 # Patterns are fnmatch, not gitignore syntax: `ai-docs/` matches nothing —
-# `*` is what crosses `/` and reaches the nested group folders.
+# `*` is what crosses `/` and reaches the nested folders.
 ai-docs/*
