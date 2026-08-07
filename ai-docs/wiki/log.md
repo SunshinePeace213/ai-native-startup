@@ -15,3 +15,11 @@ Lint entries, followed by the payload line:
 ## [YYYY-MM-DD] lint | <scope> | <summary>
 missing-pages: <comma-list or none> · mechanical-fixes: <N>
 ```
+
+## [2026-08-07] ingest | LLM Wiki Pattern | specs/wiki-layer/checks/fixtures/article-a-llm-wiki-pattern.md
+
+## [2026-08-07] ingest | Obsidian Vault | specs/wiki-layer/checks/fixtures/article-b-obsidian-vaults.md
+
+## [2026-08-07] lint | engineering | clean — 2 pages checked, no findings
+
+missing-pages: none · mechanical-fixes: 0

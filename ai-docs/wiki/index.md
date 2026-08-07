@@ -6,7 +6,8 @@ Catalog of the LLM-maintained synthesis layer over `ai-docs/`'s mirror cache.
 
 | Page | Type | Status | Updated |
 | --- | --- | --- | --- |
-| --- | --- | --- | --- |
+| [[llm-wiki-pattern]] | pattern | current | 2026-08-07 |
+| [[obsidian-vault]] | tool | current | 2026-08-07 |
 
 ## Business
 

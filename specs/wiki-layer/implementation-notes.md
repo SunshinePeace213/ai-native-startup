@@ -114,6 +114,29 @@
     AGENTS.md, wiki-standards.md's Operations table, and model-selection.md;
     the argument-hint key split is the one stated design fact, named with a
     comment.
+- **2026-08-07 · pilot-eval run 1/3 (AC7)** — fresh opus/high session executed
+  `/wiki:ingest` fixture A → `/wiki:ingest` fixture B → `/wiki:query "why does
+  the LLM wiki pattern pair well with Obsidian?"` → `/wiki:lint`, from the seed.
+  Rubric conditions (build-lead spot-checked on disk): pages ✓
+  (`ai-docs/wiki/engineering/llm-wiki-pattern.md` type `pattern`,
+  `obsidian-vault.md` type `tool`; all seven fields, `status: current`, fixture
+  paths in `sources:`); cross-link ✓ (`[[obsidian-vault]]` ↔
+  `[[llm-wiki-pattern]]`, `related:` in sync both directions); index ✓ (two
+  Engineering rows, Personal still pointer-only); log ✓ (one ingest entry per
+  fixture carrying its path); query ✓ (synthesis across both pages with inline
+  citations, nothing disputed, zero writes — verified via git status between
+  steps); lint ✓ (clean report, log entry
+  `## [2026-08-07] lint | engineering | clean — 2 pages checked, no findings` +
+  payload `missing-pages: none · mechanical-fixes: 0`); privacy ✓ (no
+  `ai-docs/wiki/personal/`, no personal content in shared index/log).
+  Idempotency (condition 5) is runs 2–3's job. Run 1: PASS on all applicable
+  conditions.
+- **2026-08-07 · lesson (memory-marked, pipeline-process)** — the markdown
+  auto-format hook inserts a blank line between a lint log heading and its
+  payload line, so the on-disk shape is heading / blank / payload. lint.md says
+  the payload directly follows the heading — the hook wins on every write.
+  Route at the memory step: relax lint.md's wording to "on the next non-blank
+  line" so command text matches reality; /wiki:status parsing is unaffected.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
