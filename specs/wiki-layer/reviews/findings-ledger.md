@@ -91,3 +91,16 @@ gate per the gate contract).
 | I1-F24 | I9 | sec | major | 90 | Ingest has a write-capable agent read third-party source content (mirrors, clipped captures, local files) with no treat-as-data instruction and no write confinement — a poisoned source persistently poisons the wiki every session reads first | fixed — data-not-directives + writes-confined-to-ai-docs/wiki/ in ingest.md; matching obligation in wiki-standards.md Privacy; lint gains the report-not-follow guard (81059eb) | ingest.md:51; CLAUDE-SECURITY-20260807-050658 F1, 3-verifier unanimous (impact MEDIUM → major: wiki-first reads propagate the poisoning) |
 | I1-F25 | I6 | sec | minor | 100 | ac2-seed.py carries a dead `if … : pass` branch (the writer-op contract is enforced by the surrounding checks) | advisory | ac2-seed.py:84-85 |
 | I1-F26 | I2 | sec | minor | 100 | ac1's four `&& fail` probes on tracked paths are inert — `git check-ignore` exits 1 for tracked files regardless of patterns, so a removed negation can't fire them (untracked-path probes and the personal-domain direction still hold) | advisory | ac1-privacy-gitignore.sh:34,38-41; lead scratch-repo repro |
+
+Impl round 2 (delta, gpt-5.6-sol/medium, range `2400a83..3cb71e4`): 12 of 13
+fixed dispositions verified, I1-F24's security disposition re-verified by the
+lead from the fix diff; 3 findings — 2 blocking (new, inside the fix diff),
+1 reopening of I1-F10 disputed by the lead. The 2 blocking fixed in the
+cycle-2 fix commit — **Codex-unverified** (cycle cap); the deterministic floor
+re-ran green. Terminal: the human gate (disputes + unverified tail).
+
+| ID | STD | Lens | Sev | Conf | Finding | Disposition | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| I2-F1 | I1 | delta | major | 98 | Changed-source re-ingest keeps the single log entry, conflicting with the locked metric "100% of ingests update the index and the log" | fixed (Codex-unverified, cycle cap) — changed-source re-ingests append a dated log entry (append-only history); identical repeats still write nothing; identity stays presence-of-path | ingest.md branch list vs wiki-standards.md ## Layer Requirements |
+| I2-F2 | I1 | delta | major | 100 | Reopens I1-F10: demands verbatim per-run AC7 transcripts (3 fresh-session re-runs) or AC7 marked incomplete | disputed — per-run condition-level evidence was recorded at build time for all 3 runs (AC7's own bar: "per-run commands, page paths, and outputs recorded"); the review-fix entry re-ran everything re-runnable verbatim and corroborated the on-disk residue; retroactive transcripts of past sessions are unsatisfiable, and the reopening cites the fix's own honesty statement, not a defect in the evidence that exists | implementation-notes.md pilot-eval entries + review-fix entry; acceptance-criteria.md AC7 |
+| I2-F3 | I8 | delta | major | 98 | ac2's MD024 regression check is a bare substring — passes with the directive inside a fenced block where markdownlint ignores it | fixed (Codex-unverified, cycle cap) — fence-aware line scan requires the directive on its own line outside fences and before the first entry heading; negative demos FAIL on fenced/deleted/late placement while the old check PASSed | ac2-seed.py check_log() |
