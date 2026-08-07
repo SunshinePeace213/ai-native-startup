@@ -29,13 +29,16 @@ checks, append the clean log entry, and report.
 - **Index ↔ page drift** — index rows with no page, pages with no row, and rows whose
   Type, Status, or Updated cell disagrees with the page's frontmatter.
 - **Schema violations** — a frontmatter field missing, malformed, or carrying an illegal
-  value, or `related:` out of sync with the page's own inline links.
+  value; a `type` or placement the domain's `schema.md` does not define; or `related:`
+  out of sync with the page's own inline links.
 - **Staleness** — a page whose cited source has changed since its `updated:` date, and a
   `disputed` page whose sources now settle the dispute.
 - **Contradictions** — claims across pages that cannot both hold.
 - **Secret or PII leakage** — a leaked secret or PII in page content, in every domain.
-- **Missing mirrors** — a cited `ai-docs/` mirror absent here. Mirrors are device-local:
-  report it as "run `/harness-layer:kb`", never as a broken citation.
+- **Broken source citations** — a cited `ai-docs/` archive absent from the repo. The
+  raw layer is tracked, so absence is a broken citation; report the page and the missing
+  path (personal citations resolve locally only — check them on this machine, never
+  against the remote).
 - **Personal boundary** — a personal page referencing any file outside `personal/`, or
   personal content named in the shared index or log.
 - **Cramming and thinning** — pages breaking the length bounds, or the anti-cramming and
@@ -47,8 +50,8 @@ Fix mechanical findings in place and count them: index rows, link targets, front
 format and field order, `related:` sync, and a contradiction's two `disputed` flags plus
 the cross-link between the pages. Redact a leaked secret or PII immediately and report
 the page. Report everything that needs judgment — which side of a contradiction wins,
-staleness that needs a re-read of the source, cramming and thinning, missing mirrors —
-without rewriting the pages yourself.
+staleness that needs a re-read of the source, cramming and thinning, broken source
+citations — without rewriting the pages yourself.
 
 ## Log the pass
 

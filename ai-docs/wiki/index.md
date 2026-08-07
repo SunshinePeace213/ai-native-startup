@@ -1,6 +1,8 @@
 # Wiki Index
 
-Catalog of the LLM-maintained synthesis layer over `ai-docs/`'s mirror cache.
+Catalog of the LLM-maintained synthesis layer over `ai-docs/`'s raw-source
+layer. Domains are open-ended — a section appears here when its first ingest
+creates the folder and its `schema.md`.
 
 ## Engineering
 
@@ -8,30 +10,6 @@ Catalog of the LLM-maintained synthesis layer over `ai-docs/`'s mirror cache.
 | --- | --- | --- | --- |
 | [[llm-wiki-pattern]] | pattern | current | 2026-08-07 |
 | [[obsidian-vault]] | tool | current | 2026-08-07 |
-
-## Business
-
-| Page | Type | Status | Updated |
-| --- | --- | --- | --- |
-| --- | --- | --- | --- |
-
-## Development
-
-| Page | Type | Status | Updated |
-| --- | --- | --- | --- |
-| --- | --- | --- | --- |
-
-## Books
-
-| Page | Type | Status | Updated |
-| --- | --- | --- | --- |
-| --- | --- | --- | --- |
-
-## Articles
-
-| Page | Type | Status | Updated |
-| --- | --- | --- | --- |
-| --- | --- | --- | --- |
 
 ## Personal
 
