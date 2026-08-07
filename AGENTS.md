@@ -6,11 +6,17 @@
 
 ## Knowledge Base
 
-- `ai-docs/` is the shared KB — cached official docs on any domain, plus project notes; catalog: `ai-docs/index.md`, manifest: `ai-docs/sources.yaml`.
-- Start every task by checking `ai-docs/index.md` for topics matching the work; skim a matching doc's `> **In here:**` line before committing to a full read. Nothing relevant → move on.
+- `ai-docs/` is the shared KB — the wiki (`ai-docs/wiki/`, compiled synthesis; catalog: `ai-docs/wiki/index.md`) over cached official docs (mirror catalog: `ai-docs/index.md`, manifest: `ai-docs/sources.yaml`).
+- Start every task wiki-first: check `ai-docs/wiki/index.md` for pages matching the work, then `ai-docs/index.md` for mirrors; skim a match's summary line before a full read. Nothing relevant → move on.
 - Consulted an official page the KB lacks → register and mirror it with `/harness-layer:kb add <url>`.
-- Durability rule: only pages a future, unrelated plan would cite belong in the KB — official pages get mirrored via `kb-fetcher` and registered in `sources.yaml`; plan-scoped synthesis stays in that plan's `discovery/research.md`; raw search results go nowhere.
+- Durability rule: official pages get mirrored via `kb-fetcher` and registered in `sources.yaml`; synthesis that passes the crystallization gate — cited, non-duplicative — files into the wiki via `/wiki:ingest`; synthesis that doesn't stays in that plan's `discovery/research.md`; raw search results go nowhere.
 - Mirrors are read-only: fix wrong or stale content by refetching through `kb-fetcher` (or `/harness-layer:kb`), never by hand-editing. If the official page itself is wrong, record a project note in `ai-docs/` instead.
+
+## Wiki Layer
+
+- `ai-docs/wiki/` — LLM-maintained synthesis over the mirrors; domain folders over one shared schema; `personal/` is gitignored and local-only.
+- Operations: `/wiki:ingest`, `/wiki:query`, `/wiki:lint` (weekly routine + on-demand), `/wiki:status`.
+- Standards, schema, lane fit, metrics, archetypes: [wiki-standards.md](.claude/rules/wiki-layer/wiki-standards.md). Mirrors stay immutable; ingest reads, never edits them.
 
 ## Harness Development
 

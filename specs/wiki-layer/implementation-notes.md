@@ -90,6 +90,12 @@
     lint is redacted in place (then reported) rather than left in a tracked
     file as a report-only judgment finding — the task didn't assign leaks to
     either side; redact-first is the safe reading of the privacy obligations.
+- **2026-08-07 · hand-off `agents-md-amendments`** — `AGENTS.md`
+  - `uv run specs/wiki-layer/checks/ac5-memory-amendments.py` → "PASS: AGENTS.md
+    amendments exact and within budget", exit 0 (re-run by build lead)
+  - `git diff --numstat AGENTS.md` → 9 added / 3 removed, net +6 lines — within
+    the ≤14 budget. All three spec amendment blocks applied verbatim; the
+    wiki-standards.md link target exists. Deviations: none.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
