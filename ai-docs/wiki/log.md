@@ -23,3 +23,7 @@ missing-pages: <comma-list or none> · mechanical-fixes: <N>
 ## [2026-08-07] lint | engineering | clean — 2 pages checked, no findings
 
 missing-pages: none · mechanical-fixes: 0
+
+## [2026-08-07] lint | engineering | clean — 2 pages, index and log consistent
+
+missing-pages: none · mechanical-fixes: 0

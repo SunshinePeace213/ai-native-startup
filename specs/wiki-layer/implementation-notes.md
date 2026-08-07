@@ -137,6 +137,24 @@
   the payload directly follows the heading — the hook wins on every write.
   Route at the memory step: relax lint.md's wording to "on the next non-blank
   line" so command text matches reality; /wiki:status parsing is unaffected.
+- **2026-08-07 · pilot-eval run 2/3 (AC7, idempotency)** — fresh opus/high
+  session re-ran the same four-command flow against run 1's pages. Both ingests
+  recognized their canonical source path in page `sources:`, index row, and log
+  entry, and wrote NOTHING: `git diff --stat ai-docs/wiki/` after both ingests
+  was empty, page count 4 → 4, no duplicate rows or entries (build lead
+  verified the final diff: only lint's own 4-line log append). Query synthesized
+  across both pages with citations, zero writes; lint clean; privacy boundary
+  intact. Run 2: PASS on all 8 conditions.
+- **2026-08-07 · defect found by run 2 (deviation, no locked decision)** —
+  `.markdownlint.jsonc` MD024 `siblings_only: true` blocks appending a lint log
+  heading identical to a prior pass (same date | scope | summary — the
+  deterministic case for a clean wiki linted twice in one day); the auto-format
+  hook rejects the write. Run 2 landed its entry with a truthful distinct
+  summary. Fix routed to a builder: file-local
+  `<!-- markdownlint-disable MD024 -->` in the seed `ai-docs/wiki/log.md`
+  (append-only logs legitimately repeat sibling headings), plus lint.md wording
+  relaxed to "payload on the next non-blank line" (absorbs the run-1 lesson —
+  the formatter separates heading and payload with a blank line).
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
