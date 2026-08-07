@@ -77,6 +77,10 @@ def check_log() -> None:
     payload = re.search(r"missing-pages:.*mechanical-fixes:", text)
     if not payload:
         fail("log.md does not document the lint payload line (missing-pages … mechanical-fixes)")
+    # Append-only logs legitimately repeat sibling headings, so the seed carries the
+    # file-local MD024 disable; without it a second identical lint pass can't append.
+    if "<!-- markdownlint-disable MD024 -->" not in text:
+        fail("log.md lacks the file-local '<!-- markdownlint-disable MD024 -->' comment")
     # The complete allowed writer set is exactly {ingest, lint}.
     op_forms = set(re.findall(r"##\s*\[YYYY-MM-DD\]\s*([a-z]+)\s*\|", text))
     if op_forms and op_forms != {"ingest", "lint"}:

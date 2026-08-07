@@ -20,7 +20,7 @@ STANDARDS: `.claude/rules/wiki-layer/wiki-standards.md` — schema and status vo
 - Read-only on the wiki, always. No `Write`/`Edit` call ever targets a file under `ai-docs/wiki/` — not a page, not the index, not the log, not even for a good answer.
 - Read INDEX first, then open only the pages whose title or type plausibly bears on QUESTION — the smallest relevant set, not every page in a domain.
 - Follow a page's `[[wikilinks]]` only when the linked page would materially change or extend the answer. Stop once new links stop adding evidence.
-- Every claim in the answer cites the page(s) it came from. A page whose `status` is `disputed` or `superseded` gets flagged inline at the point it's used — never presented as settled, never silently dropped.
+- Every claim in the answer cites the page(s) it came from, and any page whose `status` is not `current` is flagged inline where it is used, per STANDARDS.
 - If no page in INDEX bears on QUESTION, say plainly that the wiki doesn't cover it. Never guess, and never fall back to the raw `ai-docs/` mirrors to fill the gap.
 - On a seed-only wiki (every domain table empty), report that the wiki has no pages yet — not an error.
 

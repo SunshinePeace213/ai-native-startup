@@ -61,6 +61,8 @@ def main() -> int:
         return 1
     text = AGENTS.read_text(encoding="utf-8")
 
+    file_lines = text.splitlines()
+
     kb = section(text, "Knowledge Base")
     if kb is None:
         fail("no '## Knowledge Base' section")
@@ -72,6 +74,10 @@ def main() -> int:
         ):
             if fragment not in kb:
                 fail(f"Knowledge Base section lacks the exact prescribed {name}")
+            elif fragment not in file_lines:
+                # Each replaced bullet must occupy exactly one line for the net-0
+                # accounting below to hold; a wrapped or extended bullet adds lines.
+                fail(f"{name} is not exactly one line in AGENTS.md")
         if KB_BULLET_1 in kb:
             wiki_pos = kb.index("ai-docs/wiki/index.md")
             mirror_matches = [m.start() for m in re.finditer(r"ai-docs/index\.md", kb)]
@@ -91,11 +97,15 @@ def main() -> int:
         if extra:
             fail(f"Wiki Layer section carries {len(extra)} unprescribed non-empty line(s)")
 
-    # Budget: replaced bullets add 0 net lines; the added lines are exactly the
-    # Wiki Layer section's non-empty lines. Assert the whole amendment fits.
-    added = len(WIKI_SECTION_LINES)
-    if added > TOTAL_BUDGET:
-        fail(f"prescribed amendment is {added} added lines > budget {TOTAL_BUDGET}")
+        # Budget: the three replaced bullets add 0 net lines (asserted one-line
+        # above), so the whole amendment's footprint is the Wiki Layer section as
+        # it actually stands in AGENTS.md — its heading plus every line under it.
+        added = len(wiki.rstrip().splitlines())
+        if added > TOTAL_BUDGET:
+            fail(
+                f"the '## Wiki Layer' section spans {added} lines in AGENTS.md > "
+                f"budget {TOTAL_BUDGET}"
+            )
 
     if FAILURES:
         for message in FAILURES:

@@ -163,6 +163,12 @@ def test_command_frontmatter():
             f"expected {sorted(expected_keys)}"
         )
 
+        for key in ("description", *sorted(expected_keys & {"argument-hint"})):
+            value = fields[key]
+            assert isinstance(value, str) and value.strip(), (
+                f"{path.name} frontmatter `{key}` is empty — {key!r} = {value!r}"
+            )
+
         command_ref = f"/wiki:{name}"
         assert command_ref in ops, f"{command_ref} missing from the Operations table"
         expected_model, expected_effort = ops[command_ref]
@@ -180,9 +186,11 @@ def test_command_frontmatter():
             f"{sorted(legal_efforts)}"
         )
 
+    # A declaration, not a mention: an instruction line that opens by stating the
+    # command is read-only. A passing reference to the phrase elsewhere won't match.
     _, query_body = _split_frontmatter(COMMANDS_DIR / "query.md")
-    assert re.search(r"read-only", query_body, re.I), (
-        "query.md body does not declare itself read-only"
+    assert re.search(r"^\s*[-*]\s+Read-only\b[^\n]*\balways\b", query_body, re.M | re.I), (
+        "query.md body has no instruction line declaring the command read-only, always"
     )
 
 

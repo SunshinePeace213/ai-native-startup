@@ -248,3 +248,148 @@
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
+- **2026-08-07 · review fix: evidence restatement (impl gate I1-F10, I1-F15)** —
+  appended, never a rewrite: every entry above stands as its session wrote it.
+
+  What those entries actually are. The pilot-eval run 1–3 entries and the
+  `wiki-foundation` / `wiki-standards-rule` / `wiki-commands-*` / `wiki-drift-test` /
+  `agents-md-amendments` / `validate-all` hand-off entries record build-lead
+  *observations* — summaries of results and on-disk spot-checks — not captured
+  transcripts. Specifically not captured at the time, and therefore gone: the AC7
+  `/wiki:query` answers and the citation targets they named, the AC7 `/wiki:lint`
+  console output for each of the three runs, the full text of the frontmatter-parse
+  one-liners the hand-off entries abbreviate as `python -c "…split('---')[1]…"`, and
+  the per-assertion output behind `validate-all`'s label-level results. None of that
+  is reconstructed or backfilled here.
+
+  "page count 4 → 4" (run 2 entry) counted tracked files under `ai-docs/wiki/`, not
+  wiki pages — the two-page pilot plus the index and the log. Verifiable now:
+  `git ls-files ai-docs/wiki/` → `ai-docs/wiki/engineering/llm-wiki-pattern.md`,
+  `ai-docs/wiki/engineering/obsidian-vault.md`, `ai-docs/wiki/index.md`,
+  `ai-docs/wiki/log.md` (exit 0) — 4 tracked files = 2 pages + index + log. Run 3's
+  "page count 2 → 2" counted pages, which is why the two numbers differ.
+
+  Re-runnable commands, re-run verbatim this session from the repo root after the
+  I1-F* fixes, with their literal output:
+
+  - `bash specs/wiki-layer/checks/ac1-privacy-gitignore.sh` → `PASS: gitignore
+    semantics correct for wiki layer`; exit 0
+  - `uv run specs/wiki-layer/checks/ac2-seed.py` → `PASS: wiki seed structure
+    correct`; exit 0
+  - `uv run specs/wiki-layer/checks/ac5-memory-amendments.py` → `PASS: AGENTS.md
+    amendments exact and within budget`; exit 0
+  - `uv run pytest tests/harness-layer/test_wiki_layer.py::test_command_registry tests/harness-layer/test_wiki_layer.py::test_command_frontmatter -q`
+    → `2 passed in 1.06s`; exit 0
+  - `uv run pytest tests/harness-layer/test_wiki_layer.py::test_standards_rule -q` →
+    `1 passed in 1.04s`; exit 0
+  - `uv run pytest tests/harness-layer/test_wiki_layer.py -q` → `3 passed in 1.08s`;
+    exit 0
+  - `uv run pytest tests/harness-layer/ -q` → `1 failed, 935 passed, 2 skipped in
+    11.95s`; exit 1. The failure is
+    `tests/harness-layer/test_pipeline_formats.py::test_lens_clusters_cover_every_stamped_standard[I]`
+    — `AssertionError: unassigned standards: ['I9']; phantom cluster IDs: []`. It is
+    pre-existing and unrelated to this diff: the gate's own self-improve commit
+    `eaed8cd` added `I9` to `impl-standards.md` without adding it to the codex-gate
+    skill's Lens clusters table (`grep -n "I9" .claude/skills/codex-gate/SKILL.md` →
+    no output), and `git status --porcelain .claude/skills/codex-gate/SKILL.md
+    .claude/rules/harness-layer/impl-standards.md` → empty, so neither of the test's
+    two inputs is touched here. Flagged to the gate lead; it is not one of the 13
+    blocking findings.
+  - `uv run ruff check tests/harness-layer/test_wiki_layer.py specs/wiki-layer/checks/ac5-memory-amendments.py specs/wiki-layer/checks/ac2-seed.py`
+    → `All checks passed!`; exit 0
+  - `bunx markdownlint-cli2 ".claude/commands/wiki/*.md" ".claude/rules/wiki-layer/wiki-standards.md"`
+    → `Linting: 5 file(s)` / `Summary: 0 error(s)`; exit 0
+  - The frontmatter-parse one-liner the hand-off entries abbreviated, written out in
+    full and re-run:
+
+    ```bash
+    uv run --with pyyaml python -c "
+    import pathlib, yaml
+    for name in ('ingest','query','lint','status'):
+        p = pathlib.Path('.claude/commands/wiki')/(name+'.md')
+        fm = yaml.safe_load(p.read_text(encoding='utf-8').split('---')[1])
+        print(name, sorted(fm), fm['model'], fm['effort'])
+    "
+    ```
+
+    Output, exit 0:
+
+    ```text
+    ingest ['argument-hint', 'description', 'effort', 'model'] opus high
+    query ['argument-hint', 'description', 'effort', 'model'] sonnet high
+    lint ['description', 'effort', 'model'] opus high
+    status ['description', 'effort', 'model'] haiku medium
+    ```
+
+  AC7's on-disk residue, corroborated with literal commands and output (this is what
+  survives of the three pilot runs; it is not a re-run of the pilot):
+
+  - Page frontmatter —
+    `uv run python -c "import pathlib
+    for p in sorted(pathlib.Path('ai-docs/wiki/engineering').glob('*.md')): print('---', p); print(p.read_text(encoding='utf-8').split('---')[1].strip())"`:
+
+    ```text
+    --- ai-docs/wiki/engineering/llm-wiki-pattern.md
+    type: pattern
+    domain: engineering
+    status: current
+    created: 2026-08-07
+    updated: 2026-08-07
+    sources: ["specs/wiki-layer/checks/fixtures/article-a-llm-wiki-pattern.md", "specs/wiki-layer/checks/fixtures/article-b-obsidian-vaults.md", ".claude/rules/wiki-layer/wiki-standards.md"]
+    related: ["[[obsidian-vault]]"]
+    --- ai-docs/wiki/engineering/obsidian-vault.md
+    type: tool
+    domain: engineering
+    status: current
+    created: 2026-08-07
+    updated: 2026-08-07
+    sources: ["specs/wiki-layer/checks/fixtures/article-b-obsidian-vaults.md", ".claude/rules/wiki-layer/wiki-standards.md"]
+    related: ["[[llm-wiki-pattern]]"]
+    ```
+
+  - Cross-references — `grep -n "\[\[" ai-docs/wiki/engineering/llm-wiki-pattern.md ai-docs/wiki/engineering/obsidian-vault.md`:
+
+    ```text
+    ai-docs/wiki/engineering/llm-wiki-pattern.md:8:related: ["[[obsidian-vault]]"]
+    ai-docs/wiki/engineering/llm-wiki-pattern.md:79:The [[obsidian-vault]] is the reading surface this repository uses, and it fits the
+    ai-docs/wiki/engineering/obsidian-vault.md:8:related: ["[[llm-wiki-pattern]]"]
+    ai-docs/wiki/engineering/obsidian-vault.md:34:[[llm-wiki-pattern]] describes
+    ai-docs/wiki/engineering/obsidian-vault.md:49:which is the same drift that the [[llm-wiki-pattern]]'s lint operation sweeps for
+    ```
+
+  - Index rows — `grep -n "^| \[\[" ai-docs/wiki/index.md`:
+
+    ```text
+    9:| [[llm-wiki-pattern]] | pattern | current | 2026-08-07 |
+    10:| [[obsidian-vault]] | tool | current | 2026-08-07 |
+    ```
+
+  - Log entries — `grep -n "^## \[2026" ai-docs/wiki/log.md`:
+
+    ```text
+    21:## [2026-08-07] ingest | LLM Wiki Pattern | specs/wiki-layer/checks/fixtures/article-a-llm-wiki-pattern.md
+    23:## [2026-08-07] ingest | Obsidian Vault | specs/wiki-layer/checks/fixtures/article-b-obsidian-vaults.md
+    25:## [2026-08-07] lint | engineering | clean — 2 pages checked, no findings
+    29:## [2026-08-07] lint | engineering | clean — 2 pages, index and log consistent
+    33:## [2026-08-07] lint | engineering | clean — 2 pages, index and log consistent
+    ```
+
+    Two ingest entries carrying the fixture paths after three runs, against three
+    lint entries — the structural idempotency residue, consistent with the run 2–3
+    entries above.
+
+  ac5 negative demonstration (I1-F14 / I1-F16), on temp copies of `AGENTS.md` under
+  `/home/ringo/.claude/jobs/8440784b/tmp/`, never in the repo tree — each copy edited,
+  then `uv run <repo>/specs/wiki-layer/checks/ac5-memory-amendments.py` run with that
+  copy's directory as cwd:
+
+  - 10 blank lines inserted inside `## Wiki Layer` (section = 15 lines, no extra
+    non-empty line, so only the budget check can fire) → `FAIL: the '## Wiki Layer'
+    section spans 15 lines in AGENTS.md > budget 14`; exit 1
+  - 10 extra bullet lines inserted (section = 15 lines) → `FAIL: Wiki Layer section
+    carries 10 unprescribed non-empty line(s)` and `FAIL: the '## Wiki Layer' section
+    spans 15 lines in AGENTS.md > budget 14`; exit 1
+  - trailing sentence appended to the KB bullet 1 line → `FAIL: KB bullet 1
+    (wiki-over-mirrors) is not exactly one line in AGENTS.md`; exit 1
+  - KB bullet 1 wrapped across two lines → `FAIL: Knowledge Base section lacks the
+    exact prescribed KB bullet 1 (wiki-over-mirrors)`; exit 1
