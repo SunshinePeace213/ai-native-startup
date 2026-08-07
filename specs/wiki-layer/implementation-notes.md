@@ -218,12 +218,12 @@
   Reverse direction: all seven file-owning tasks show their diff;
   `validate-all` is read-only by design (Files: none). No unmapped files, no
   diff-less tasks — no deviation.
-- **2026-08-07 · AC7 manual validation command, executed** — the
-  acceptance-criteria.md AC7 command reads "manual: build lead runs the fixture
-  flow three times in fresh sessions" — done as recorded in the three
-  pilot-eval run entries above; observed outcome: 3/3 runs met every
-  pilot-rubric.md condition (pages, cross-link, index, log, idempotency, query,
-  lint, privacy).
+- **2026-08-07 · AC7 manual validation command, executed** — per the
+  acceptance-criteria.md AC7 command, the
+  build lead runs the fixture flow three times in fresh sessions — done, as
+  recorded in the three pilot-eval run entries above; observed outcome: 3/3
+  runs met every pilot-rubric.md condition (pages, cross-link, index, log,
+  idempotency, query, lint, privacy).
 - **2026-08-07 · impl lint** — first run: 2 FAILs. (1) the AC7 manual check's
   probe text was missing from the notes — recorded above (process gap, not a
   work gap: the runs themselves were already logged). (2) checkpoint commit
