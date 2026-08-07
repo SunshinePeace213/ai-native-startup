@@ -187,6 +187,37 @@
     plan-time artifact outside the build's tasks): ac5-memory-amendments.py
     computes its ≤14-line budget from a hardcoded list length rather than the
     real git diff; the real diff (+9/−3) satisfies the budget independently.
+- **2026-08-07 · tidy** — harness-simplifier: 7 behavior-preserving edits across
+  query.md / status.md / lint.md / wiki-standards.md (deduplicated read-only
+  guards into single strongest statements, cut one rationale clause from
+  lint.md's routine section, merged one restated rule in the standards file);
+  ingest.md clean. code-simplifier: 4 edits to test_wiki_layer.py (command set
+  derived once from `COMMAND_KEY_SETS`, one section-matching mechanism, merged
+  roster-column helpers, dropped an unused unpacking) with an old-vs-new
+  equivalence script over every heading keyword; 3 redundant-assertion removals
+  flagged but not applied (assertions are kept per the tidy constraint).
+  Build-lead re-verification after both: `uv run pytest tests/harness-layer/ -q`
+  → "936 passed, 2 skipped in 11.16s"; AC1 "PASS", AC2 "PASS", AC5 "PASS"
+  (exit 0).
+- **2026-08-07 · drift check** — `BASE=b62cf9a` (merge-base with origin/main);
+  every changed file outside `specs/wiki-layer/` maps to its owner, and every
+  task maps to a present diff:
+
+  | File | Owner |
+  | --- | --- |
+  | `.gitignore`, `ai-docs/.obsidian/app.json`, `ai-docs/.obsidian/appearance.json` | `wiki-foundation` |
+  | `ai-docs/wiki/index.md`, `ai-docs/wiki/log.md` | `wiki-foundation` (seed) + `pilot-eval` (entries) + MD024 fix (log) |
+  | `.claude/rules/wiki-layer/wiki-standards.md` | `wiki-standards-rule` (+ tidy) |
+  | `.claude/commands/wiki/ingest.md`, `.claude/commands/wiki/lint.md` | `wiki-commands-ingest-lint` (lint also MD024 fix + tidy) |
+  | `.claude/commands/wiki/query.md`, `.claude/commands/wiki/status.md` | `wiki-commands-query-status` (+ tidy) |
+  | `AGENTS.md` | `agents-md-amendments` |
+  | `tests/harness-layer/test_wiki_layer.py` | `wiki-drift-test` (+ tidy) |
+  | `ai-docs/wiki/engineering/llm-wiki-pattern.md`, `obsidian-vault.md` | `pilot-eval` |
+  | `ai-docs/sources.yaml` | plan stage — gate R1 KB gap-fill (routines.md registration), pre-build, approved at the human gate |
+
+  Reverse direction: all seven file-owning tasks show their diff;
+  `validate-all` is read-only by design (Files: none). No unmapped files, no
+  diff-less tasks — no deviation.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.

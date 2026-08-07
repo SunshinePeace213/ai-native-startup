@@ -86,7 +86,7 @@ that needs it — never pre-created, never seeded with placeholder pages.
 - Strip secrets and PII on every ingest in every domain — keys, tokens, credentials,
   addresses, phone numbers, account numbers, unpublished third-party names. Shared
   domains reach a public remote; assume every word does.
-- Re-read any page immediately before editing it. Never overwrite a file you have not
+- Re-read any page immediately before editing it — never overwrite a file you have not
   just read.
 
 ## Obsidian

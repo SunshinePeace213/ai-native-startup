@@ -77,9 +77,8 @@ the log payload line in the PR body. The personal domain is gitignored and absen
 this clone — do not lint or report on it.
 ```
 
-Configure it as a weekly schedule trigger on this repository. Each run clones the
-default branch fresh and pushes to a `claude/`-prefixed branch, which is why the fixes
-arrive as a PR and the personal domain is out of reach.
+Configure it as a weekly schedule trigger on this repository; each run clones the
+default branch fresh and pushes to a `claude/`-prefixed branch.
 
 ## Report
 

@@ -6,7 +6,7 @@ effort: medium
 
 # Purpose
 
-Report the wiki's current health as a read-only readout. This command writes nothing — no page, index, or log edit, ever.
+Report the wiki's current health as a read-only readout.
 
 ## Variables
 
@@ -17,7 +17,7 @@ PERSONAL: `ai-docs/wiki/personal/` — local-only domain, present only on this m
 
 ## Instructions
 
-- Read-only, always. No `Write`/`Edit` call targets any file.
+- Read-only, always. No `Write`/`Edit` call targets any file — no page, index, or log edit, ever.
 - Count pages by reading each domain's table in INDEX; a domain's type breakdown comes from that table's `Type` column, not a page's frontmatter re-read, unless a count needs disambiguating.
 - Orphan count: pages that appear in no other page's `related:` list and whose own `related:` list is empty.
 - Disputed count: pages whose INDEX `Status` column reads `disputed`.

@@ -30,7 +30,7 @@ COMMAND_KEY_SETS = {
     "status": {"description", "model", "effort"},
 }
 
-REQUIRED_OPERATIONS = {"/wiki:ingest", "/wiki:query", "/wiki:lint", "/wiki:status"}
+REQUIRED_OPERATIONS = {f"/wiki:{name}" for name in COMMAND_KEY_SETS}
 
 
 def _section(doc: str, heading: str) -> str:
@@ -40,26 +40,14 @@ def _section(doc: str, heading: str) -> str:
     return match.group(1)
 
 
-def _sections_by_heading(doc: str) -> list[tuple[str, str]]:
-    """Split doc into (heading, body) pairs at each top-level '## ' heading."""
-    matches = list(re.finditer(r"^## (.+)$", doc, re.M))
-    sections = []
-    for index, match in enumerate(matches):
-        start = match.end()
-        end = matches[index + 1].start() if index + 1 < len(matches) else len(doc)
-        sections.append((match.group(1).strip(), doc[start:end]))
-    return sections
-
-
 def _section_containing(doc: str, keyword: str) -> str:
     """Return the body of the one '## ...' section whose heading contains keyword.
 
     Matches by keyword rather than exact heading text so a cosmetic heading rename
     doesn't break the test — a genuinely missing section still fails loudly.
     """
-    matched = [
-        body for heading, body in _sections_by_heading(doc) if keyword.lower() in heading.lower()
-    ]
+    pattern = rf"^## [^\n]*{re.escape(keyword)}[^\n]*$(.*?)(?=^## |\Z)"
+    matched = re.findall(pattern, doc, re.M | re.S | re.I)
     assert matched, f"{STANDARDS_DOC.name} has no '## ' heading containing {keyword!r}"
     assert len(matched) == 1, f"{len(matched)} headings contain {keyword!r}; keyword is ambiguous"
     return matched[0]
@@ -131,13 +119,9 @@ def _operations_table() -> dict[str, tuple[str, str]]:
     return ops
 
 
-def _legal_models() -> set[str]:
-    section = _section(MODEL_SELECTION_DOC.read_text(encoding="utf-8"), "Roster")
-    return {t for cells in _table_rows(section) if (t := _first_code_token(cells[0]))}
-
-
-def _legal_efforts() -> set[str]:
-    section = _section(MODEL_SELECTION_DOC.read_text(encoding="utf-8"), "Effort")
+def _roster_column(heading: str) -> set[str]:
+    """Collect the first code token of every row in one model-selection.md table."""
+    section = _section(MODEL_SELECTION_DOC.read_text(encoding="utf-8"), heading)
     return {t for cells in _table_rows(section) if (t := _first_code_token(cells[0]))}
 
 
@@ -155,8 +139,8 @@ def test_command_registry():
 
 def test_command_frontmatter():
     """Each command's frontmatter keys, model, and effort match the declared sources."""
-    legal_models = _legal_models()
-    legal_efforts = _legal_efforts()
+    legal_models = _roster_column("Roster")
+    legal_efforts = _roster_column("Effort")
     ops = _operations_table()
     assert ops, "wiki-standards.md Operations table parsed no rows"
     assert ops.keys() >= REQUIRED_OPERATIONS, (
@@ -173,7 +157,7 @@ def test_command_frontmatter():
             f"{path.name} is not in COMMAND_KEY_SETS — add its expected frontmatter keys"
         )
 
-        fields, body = _split_frontmatter(path)
+        fields, _ = _split_frontmatter(path)
         assert set(fields.keys()) == expected_keys, (
             f"{path.name} frontmatter keys {sorted(fields.keys())} != "
             f"expected {sorted(expected_keys)}"
