@@ -1,7 +1,7 @@
 # Spec: Wiki Layer
 
 - **Owner:** @SunshinePeace213
-- **Status:** Drafted for Review
+- **Status:** Approved
 
 ## Tracking
 
@@ -297,5 +297,11 @@ those two files, never the shared index or log.
 
 ## Codex Verification
 
-- **Outcome:** pending — recorded after the Codex gate settles
-- **Rejected findings:** pending — recorded after the Codex gate settles
+- **Outcome:** approved at round 2 — user proceeded at the human gate. All 19
+  round-1 blockers fixed and delta-verified; 6 round-2 blockers fixed at the
+  cycle cap (Codex-unverified — the implementation gate re-checks them); spec
+  lint green throughout.
+- **Rejected findings:** none — every blocking finding was applied. 12 advisories
+  recorded in reviews/findings-ledger.md (per gate rules, advisories are never
+  fixed in-run); R2-F7/R2-F8 (stale wording: "five plan-local checks", routines
+  "KB gap" note) are flagged for the build to absorb.
