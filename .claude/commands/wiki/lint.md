@@ -51,7 +51,8 @@ rewriting the pages yourself.
 
 ## Log the pass
 
-Append to the shared log:
+Append to the shared log: the heading, then a blank line, then the payload line on the
+next non-blank line (the auto-formatter keeps a blank line between them).
 
 ```text
 ## [YYYY-MM-DD] lint | <scope> | <summary>

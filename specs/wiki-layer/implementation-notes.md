@@ -155,6 +155,14 @@
   (append-only logs legitimately repeat sibling headings), plus lint.md wording
   relaxed to "payload on the next non-blank line" (absorbs the run-1 lesson —
   the formatter separates heading and payload with a blank line).
+- **2026-08-07 · fix: MD024 log defect** — builder (sonnet/medium) added the
+  file-local `<!-- markdownlint-disable MD024 -->` to `ai-docs/wiki/log.md` and
+  the one-sentence payload-placement clarification to lint.md. Verified (all
+  re-reported from the builder's run, spot-confirmed by the commit diff): ac2
+  "PASS", ac1 "PASS", drift suite "3 passed", markdownlint 0 errors, and a
+  scratch-copy proof that a duplicated lint heading no longer fires MD024.
+  This absorbs both pilot lint-log lessons — nothing further routes at the
+  memory step for them.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.

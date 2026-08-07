@@ -1,5 +1,7 @@
 # Wiki Log
 
+<!-- markdownlint-disable MD024 -->
+
 Append-only history of writes to the shared wiki. Only `ingest` and `lint` write
 here — `query` and `status` are read-only and never add an entry.
 
