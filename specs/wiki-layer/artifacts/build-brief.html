@@ -1,0 +1,1215 @@
+<title>wiki-layer — build brief</title>
+
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F0EDE5;
+    --border: #D4CFC7;
+    --text: #2C2825;
+    --accent: #B8602A;
+    --muted: #8A837A;
+
+    --ok: #4A7C59;
+    --warn: #9A3B2F;
+    --ink-2: #55504A;
+
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+
+    --radius: 2px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- shell ---------- */
+
+  .shell {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .rail { display: none; }
+
+  @media (min-width: 1000px) {
+    .shell { grid-template-columns: 200px minmax(0, 1fr); gap: 3.5rem; }
+    .rail { display: block; }
+  }
+
+  .rail-inner {
+    position: sticky;
+    top: 2.5rem;
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    line-height: 1.9;
+  }
+
+  .rail-title {
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 0.64rem;
+    color: var(--muted);
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rail a {
+    display: block;
+    color: var(--ink-2);
+    text-decoration: none;
+    padding-left: 0.9rem;
+    border-left: 1px solid var(--border);
+    position: relative;
+  }
+
+  .rail a::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 50%;
+    width: 0.55rem; height: 1px;
+    background: var(--border);
+  }
+
+  .rail a:hover { color: var(--accent); }
+  .rail a.on { color: var(--accent); border-left-color: var(--accent); }
+  .rail a.on::before { background: var(--accent); }
+
+  .col { display: flex; flex-direction: column; gap: 3.25rem; min-width: 0; }
+
+  /* ---------- type ---------- */
+
+  h1, h2, h3, h4 {
+    margin: 0;
+    font-family: var(--mono);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  h1 { font-size: clamp(1.8rem, 4.2vw, 2.45rem); line-height: 1.12; }
+  h2 { font-size: 1.24rem; line-height: 1.25; }
+  h3 { font-size: 0.95rem; letter-spacing: -0.01em; }
+  h4 { font-size: 0.78rem; letter-spacing: 0; }
+  p { margin: 0; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+  }
+
+  .lede { font-size: 1.06rem; color: var(--ink-2); max-width: 62ch; }
+
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+
+  code {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.05em 0.34em;
+    white-space: nowrap;
+  }
+
+  a { color: var(--accent); }
+
+  /* ---------- header ---------- */
+
+  header { display: flex; flex-direction: column; gap: 1rem; }
+
+  /* receipt: the append-only log shape, borrowed as the outcome summary */
+
+  .receipt {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    border-top: 2px solid var(--text);
+    border-bottom: 1px solid var(--border);
+    padding: 0.9rem 0 0.95rem;
+    margin-top: 0.4rem;
+    max-width: 46rem;
+  }
+
+  .receipt-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    line-height: 2;
+  }
+
+  .receipt-row .k { color: var(--ink-2); white-space: nowrap; }
+  .receipt-row .dots {
+    flex: 1;
+    border-bottom: 1px dotted var(--border);
+    transform: translateY(-0.28em);
+    min-width: 1.5rem;
+  }
+  .receipt-row .v { color: var(--text); font-weight: 600; white-space: nowrap; }
+  .receipt-row .v.pass { color: var(--ok); }
+
+  /* ---------- shipped list ---------- */
+
+  .shipped { display: grid; gap: 0; border-top: 1px solid var(--border); }
+
+  .ship-item {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  @media (min-width: 720px) {
+    .ship-item { grid-template-columns: 15rem minmax(0, 1fr); gap: 1.5rem; align-items: baseline; }
+  }
+
+  .ship-item .what { font-family: var(--mono); font-size: 0.82rem; font-weight: 600; }
+  .ship-item .where { font-size: 0.94rem; color: var(--ink-2); }
+  .ship-item .where code { white-space: normal; }
+
+  /* ---------- try it ---------- */
+
+  .tryit {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .tryit-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .steps { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+
+  .step-btn, .toggle-btn, .chip, .preset-btn {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    padding: 0.32rem 0.62rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--ink-2);
+    cursor: pointer;
+    line-height: 1.4;
+  }
+
+  .step-btn:hover, .toggle-btn:hover, .chip:hover, .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .step-btn[aria-pressed="true"], .toggle-btn[aria-pressed="true"], .chip[aria-pressed="true"], .preset-btn[aria-pressed="true"] {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--bg);
+  }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .phase-toggle { display: flex; gap: 0.3rem; align-items: center; }
+  .phase-toggle .lbl { font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); margin-right: 0.2rem; }
+
+  .cmdline {
+    font-family: var(--mono);
+    font-size: 0.84rem;
+    padding: 0.85rem 0.9rem;
+    background: var(--text);
+    color: #F3EFE8;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .cmdline .prompt { color: #C99062; }
+
+  .tryit-body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  @media (min-width: 860px) {
+    .tryit-body { grid-template-columns: 19rem minmax(0, 1fr); }
+    .tryit-tree { border-right: 1px solid var(--border); border-bottom: 0 !important; }
+  }
+
+  .tryit-tree, .tryit-out { padding: 0.95rem 0.9rem 1.1rem; }
+  .tryit-tree { border-bottom: 1px solid var(--border); }
+
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    margin-bottom: 0.7rem;
+  }
+
+  .tree { font-family: var(--mono); font-size: 0.76rem; line-height: 1.95; }
+  .tree li { list-style: none; display: flex; gap: 0.5rem; align-items: baseline; }
+  .tree ul { margin: 0; padding: 0; }
+  .tree .mark { width: 1.15rem; flex: none; text-align: left; color: var(--muted); }
+  .tree .mark.new { color: var(--accent); font-weight: 700; }
+  .tree .mark.chg { color: var(--accent); }
+  .tree .path { color: var(--ink-2); min-width: 0; word-break: break-word; }
+  .tree .new + .path { color: var(--text); font-weight: 600; }
+  .tree .tag { color: var(--muted); font-size: 0.9em; }
+
+  .excerpt {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    line-height: 1.7;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.7rem 0.8rem;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 0 0 0.85rem;
+  }
+
+  .excerpt-label {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+  }
+
+  .observed {
+    font-size: 0.92rem;
+    color: var(--ink-2);
+    border-left: 2px solid var(--accent);
+    padding-left: 0.75rem;
+    max-width: 62ch;
+  }
+
+  .observed .src {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-top: 0.4rem;
+  }
+
+  .note-under {
+    font-size: 0.88rem;
+    color: var(--muted);
+    max-width: 66ch;
+  }
+
+  /* ---------- ledger ---------- */
+
+  .ledger { border-top: 1px solid var(--border); }
+
+  .ac {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  @media (min-width: 820px) {
+    .ac { grid-template-columns: 4.5rem minmax(0, 1fr) minmax(0, 1.05fr); gap: 1.4rem; align-items: start; }
+  }
+
+  .ac .id { font-family: var(--mono); font-size: 0.82rem; font-weight: 700; }
+  .ac .id .verdict { display: block; font-size: 0.66rem; font-weight: 600; letter-spacing: 0.1em; color: var(--ok); }
+  .ac .crit { font-size: 0.95rem; color: var(--ink-2); }
+  .ac .ev { font-family: var(--mono); font-size: 0.74rem; line-height: 1.75; color: var(--text); }
+  .ac .ev .cmd { display: block; color: var(--ink-2); word-break: break-all; }
+  .ac .ev .res { color: var(--ok); }
+  .ac[hidden] { display: none; }
+
+  /* ---------- resolutions ---------- */
+
+  .cards { display: grid; gap: 1rem; }
+  @media (min-width: 900px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .card {
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 1rem 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .card .kind {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+  }
+
+  .card p { font-size: 0.92rem; color: var(--ink-2); }
+  .card .res-line { font-size: 0.92rem; color: var(--text); }
+  .card .res-line b { font-family: var(--mono); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); display: block; font-weight: 600; }
+
+  /* ---------- prompt ---------- */
+
+  .promptbox {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .prompt-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem 1.4rem;
+    padding: 0.9rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .ctrl-group { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+  .ctrl-group .lbl { font-family: var(--mono); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); margin-right: 0.25rem; }
+
+  .prompt-out {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    line-height: 1.75;
+    padding: 1rem;
+    white-space: pre-wrap;
+    max-height: 30rem;
+    overflow-y: auto;
+    margin: 0;
+  }
+
+  .prompt-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    padding: 0.7rem 0.9rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .copy-btn {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    padding: 0.45rem 0.95rem;
+    border: 1px solid var(--text);
+    border-radius: var(--radius);
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+  }
+
+  .copy-btn:hover { background: var(--accent); border-color: var(--accent); }
+
+  .copy-status { font-family: var(--mono); font-size: 0.72rem; color: var(--ok); min-height: 1em; }
+
+  /* ---------- timeline ---------- */
+
+  details.timeline {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 0.2rem 0;
+  }
+
+  details.timeline > summary {
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    padding: 0.9rem 0;
+    list-style: none;
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+  }
+
+  details.timeline > summary::-webkit-details-marker { display: none; }
+  details.timeline > summary::before { content: "▸"; color: var(--accent); }
+  details.timeline[open] > summary::before { content: "▾"; }
+  details.timeline > summary .hint { color: var(--muted); font-size: 0.72rem; }
+
+  .tl { display: grid; gap: 0; padding: 0.2rem 0 1.2rem; }
+
+  .tl-entry {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+    padding: 0.7rem 0;
+    border-top: 1px dotted var(--border);
+  }
+
+  @media (min-width: 780px) {
+    .tl-entry { grid-template-columns: 14rem minmax(0, 1fr); gap: 1.4rem; align-items: baseline; }
+  }
+
+  .tl-entry .ev-name { font-family: var(--mono); font-size: 0.76rem; font-weight: 600; }
+  .tl-entry .ev-body { font-size: 0.92rem; color: var(--ink-2); }
+
+  footer {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    line-height: 1.9;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="shell">
+  <nav class="rail" aria-label="Sections">
+    <div class="rail-inner">
+      <div class="rail-title">Build brief</div>
+      <a href="#shipped">what shipped</a>
+      <a href="#tryit">try it</a>
+      <a href="#ledger">closure ledger</a>
+      <a href="#resolutions">resolutions</a>
+      <a href="#prompt">copy as prompt</a>
+      <a href="#timeline">notes timeline</a>
+    </div>
+  </nav>
+
+  <div class="col">
+    <header>
+      <div class="eyebrow">specs/wiki-layer · issue #88 · feat · complex</div>
+      <h1>The knowledge stopped evaporating.</h1>
+      <p class="lede">
+        Every plan used to re-read the same mirrors and rebuild the same understanding, then
+        throw it away at ship. <code>ai-docs/wiki/</code> is now a tracked synthesis layer above
+        those mirrors — schema-governed, cross-linked, and maintained by four
+        <code>/wiki:*</code> operations. The personal domain never leaves this machine, and
+        <code>AGENTS.md</code> now starts every task at the wiki index.
+      </p>
+
+      <div class="receipt" role="table" aria-label="Outcome summary">
+        <div class="receipt-row" role="row"><span class="k">acceptance criteria closed</span><span class="dots"></span><span class="v pass" role="cell">7 / 7</span></div>
+        <div class="receipt-row" role="row"><span class="k">pilot eval, fresh sessions</span><span class="dots"></span><span class="v pass" role="cell">3 / 3</span></div>
+        <div class="receipt-row" role="row"><span class="k">harness suite</span><span class="dots"></span><span class="v pass" role="cell">936 passed · 2 skipped</span></div>
+        <div class="receipt-row" role="row"><span class="k">AGENTS.md addition (budget ≤ 14)</span><span class="dots"></span><span class="v" role="cell">+9 / −3 · net +6</span></div>
+        <div class="receipt-row" role="row"><span class="k">tracked files under wiki/personal/</span><span class="dots"></span><span class="v pass" role="cell">0</span></div>
+      </div>
+    </header>
+
+    <section id="shipped">
+      <h2>What shipped</h2>
+      <p class="note-under" style="margin:0.5rem 0 1.1rem;">Seven surfaces, all additive — no mirror, no <code>sources.yaml</code> semantic, and no harness-layer command was touched.</p>
+      <div class="shipped">
+        <div class="ship-item">
+          <div class="what">Tracked storage</div>
+          <div class="where"><code>ai-docs/wiki/</code> reaches the remote through a <code>.gitignore</code> negation; <code>ai-docs/wiki/personal/</code> is re-ignored, so private pages structurally cannot be pushed.</div>
+        </div>
+        <div class="ship-item">
+          <div class="what">Four operations</div>
+          <div class="where"><code>.claude/commands/wiki/{ingest,query,lint,status}.md</code> — ingest <code>opus/high</code>, query <code>sonnet/high</code>, lint <code>opus/high</code>, status <code>haiku/medium</code>. Only ingest and lint write.</div>
+        </div>
+        <div class="ship-item">
+          <div class="what">The layer's schema</div>
+          <div class="where"><code>.claude/rules/wiki-layer/wiki-standards.md</code>, path-scoped to <code>ai-docs/wiki/**</code>: seven-field page schema with three status values, citation rules, writing standards, six domains, privacy, Obsidian, and the layer requirements.</div>
+        </div>
+        <div class="ship-item">
+          <div class="what">Wiki-first routing</div>
+          <div class="where"><code>AGENTS.md</code> now names the wiki index before the mirror index and routes gate-passing synthesis into the wiki via <code>/wiki:ingest</code> — inside a net +6 lines.</div>
+        </div>
+        <div class="ship-item">
+          <div class="what">The seed</div>
+          <div class="where"><code>ai-docs/wiki/index.md</code> (five shared domain tables plus a pointer-only Personal section) and <code>ai-docs/wiki/log.md</code> (the ingest and lint entry contracts).</div>
+        </div>
+        <div class="ship-item">
+          <div class="what">Vault config</div>
+          <div class="where"><code>ai-docs/.obsidian/app.json</code> and <code>appearance.json</code> — attachments at <code>wiki/assets</code>, links always updated; volatile <code>workspace*</code> state stays ignored.</div>
+        </div>
+        <div class="ship-item">
+          <div class="what">Drift guard</div>
+          <div class="where"><code>tests/harness-layer/test_wiki_layer.py</code> — three tests re-deriving the command set, frontmatter contracts, and rule structure from <code>AGENTS.md</code>, <code>model-selection.md</code>, and the rule itself, never from the directory under test.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tryit">
+      <h2>Try it</h2>
+      <p class="note-under" style="margin:0.5rem 0 1.1rem;">
+        The pilot flow, exactly as run three times in fresh sessions. Pick a step, then flip the
+        vault between its state before and after that command. Everything shown is on-disk state
+        or a recorded check result — nothing reconstructed.
+      </p>
+
+      <div class="tryit">
+        <div class="tryit-bar">
+          <div class="steps" id="steps" role="group" aria-label="Pilot flow steps"></div>
+          <div class="phase-toggle" role="group" aria-label="Vault state">
+            <span class="lbl">Vault</span>
+            <button class="toggle-btn" data-phase="before" type="button">before</button>
+            <button class="toggle-btn" data-phase="after" type="button">after</button>
+          </div>
+        </div>
+
+        <div class="cmdline" id="cmdline"></div>
+
+        <div class="tryit-body">
+          <div class="tryit-tree">
+            <div class="panel-title" id="tree-title">Vault state</div>
+            <ul class="tree" id="tree"></ul>
+          </div>
+          <div class="tryit-out">
+            <div class="panel-title">What landed</div>
+            <div id="excerpts"></div>
+            <div class="observed" id="observed"></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="note-under" style="margin-top:1rem;">
+        <code>/wiki:status</code> is the fifth operation and read-only — it reports counts by domain
+        and type, orphans, disputed pages, and the last lint, deriving its absorb, breakdown, and
+        cleanup readouts from <code>ai-docs/sources.yaml</code> and the lint log's payload fields.
+        It writes nothing, so it sits outside the pilot's four-command flow.
+      </p>
+    </section>
+
+    <section id="ledger">
+      <h2>Closure ledger</h2>
+      <p class="note-under" style="margin:0.5rem 0 1rem;">
+        Every criterion with the command that closed it and the result that command printed.
+        Re-verified end to end by a read-only validator at worktree HEAD <span class="mono">64b3d46</span>, then again after tidy.
+      </p>
+      <div class="ctrl-group" style="margin-bottom:0.4rem;">
+        <span class="lbl">Show</span>
+        <button class="chip" data-filter="all" type="button">all seven</button>
+        <button class="chip" data-filter="auto" type="button">automated</button>
+        <button class="chip" data-filter="manual" type="button">manual eval</button>
+      </div>
+      <div class="ledger" id="ledger"></div>
+    </section>
+
+    <section id="resolutions">
+      <h2>What we did not know at the start</h2>
+      <p class="note-under" style="margin:0.5rem 0 1.1rem;">Three calls the build had to make that the plan could not have made for it.</p>
+      <div class="cards">
+        <div class="card">
+          <div class="kind">defect · found by pilot run 2</div>
+          <h3>A clean wiki could not be linted twice</h3>
+          <p>
+            <code>.markdownlint.jsonc</code> sets MD024 <code>siblings_only: true</code>, so appending a
+            lint log heading identical to an earlier pass — the deterministic case for a clean wiki
+            linted twice in one day — made the auto-format hook reject the write. Run 2 had to land a
+            truthful but distinct summary to get past it.
+          </p>
+          <p class="res-line">
+            <b>Resolved</b>
+            A file-local <code>&lt;!-- markdownlint-disable MD024 --&gt;</code> in the seed
+            <code>ai-docs/wiki/log.md</code>, since append-only logs legitimately repeat sibling
+            headings, plus a wording fix in <code>lint.md</code> putting the payload "on the next
+            non-blank line" — which the formatter's blank line had already made true. Run 3 then
+            appended a heading byte-identical to run 2's with markdownlint at 0 errors.
+          </p>
+        </div>
+        <div class="card">
+          <div class="kind">deviation · seed shape</div>
+          <h3>The index footer needed its own heading</h3>
+          <p>
+            The spec put a bare footer line after <code>## Personal</code>. The AC2 parser scopes all
+            content following the last <code>##</code> heading to that section, so a bare footer would
+            have broken the "Personal holds only the pointer line" condition it was written to prove.
+          </p>
+          <p class="res-line">
+            <b>Resolved</b>
+            The footer lives under its own <code>## Notes</code> heading. The spec's footer requirement
+            is still met, no locked decision was touched, and AC2 passes on the real file rather than
+            on a relaxed check.
+          </p>
+        </div>
+        <div class="card">
+          <div class="kind">judgment · standards distillation</div>
+          <h3>One ported tone rule had to go</h3>
+          <p>
+            The source tone standard being distilled into <code>wiki-standards.md</code> banned em
+            dashes outright. This repo's own prose uses them throughout, so importing the ban would
+            have set the wiki against every other file a session reads.
+          </p>
+          <p class="res-line">
+            <b>Resolved</b>
+            The em-dash ban was dropped; every other tone constraint carried over — flat factual
+            voice, one claim per sentence, no peacock words, quote discipline.
+            <code>decisions.md</code> locks "customize, do not port", so the call sits inside the
+            plan's bounds.
+          </p>
+        </div>
+      </div>
+      <p class="note-under" style="margin-top:1.1rem;">
+        Also absorbed without a decision change: lint redacts a secret or PII leak in place before
+        reporting it, rather than leaving it in a tracked file; the drift test uses the repo's
+        house-style frontmatter parser after the spawn prompt wrongly claimed <code>pyyaml</code> was
+        available under <code>uv run pytest</code>; two stale spec sentences (R2-F7, R2-F8) were
+        recorded rather than acted on; and one checkpoint commit subject over 72 characters was
+        rewritten at impl lint. One advisory stays open for review —
+        <code>ac5-memory-amendments.py</code> computes its ≤14-line budget from a hardcoded list
+        length instead of the real diff, which independently satisfies it at +9/−3.
+      </p>
+    </section>
+
+    <section id="prompt">
+      <h2>Copy as prompt</h2>
+      <p class="note-under" style="margin:0.5rem 0 1.1rem;">
+        A paste-ready buy-in summary of this build. Pick an audience preset or toggle the blocks,
+        then copy.
+      </p>
+
+      <div class="promptbox">
+        <div class="prompt-controls">
+          <div class="ctrl-group">
+            <span class="lbl">Preset</span>
+            <button class="preset-btn" data-preset="review" type="button">reviewer handoff</button>
+            <button class="preset-btn" data-preset="pr" type="button">PR blurb</button>
+            <button class="preset-btn" data-preset="standup" type="button">standup note</button>
+          </div>
+          <div class="ctrl-group">
+            <span class="lbl">Include</span>
+            <button class="chip" data-opt="evidence" type="button">evidence</button>
+            <button class="chip" data-opt="pilot" type="button">pilot detail</button>
+            <button class="chip" data-opt="deviations" type="button">deviations</button>
+            <button class="chip" data-opt="followups" type="button">follow-ups</button>
+          </div>
+        </div>
+        <pre class="prompt-out" id="prompt-out"></pre>
+        <div class="prompt-foot">
+          <span class="copy-status" id="copy-status" role="status"></span>
+          <button class="copy-btn" id="copy-btn" type="button">Copy prompt</button>
+        </div>
+      </div>
+    </section>
+
+    <details class="timeline" id="timeline">
+      <summary>Notes timeline <span class="hint">— the chronological log this brief is derived from</span></summary>
+      <div class="tl" id="tl"></div>
+    </details>
+
+    <footer>
+      Derived from specs/wiki-layer/implementation-notes.md · acceptance-criteria.md · spec.md<br>
+      Build brief · /harness-layer:harness-build · 2026-08-07
+    </footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- try-it data (all values from implementation-notes.md / on-disk state) ---------------- */
+
+  var SEED = [
+    { m: "·", s: "", p: "ai-docs/wiki/index.md", t: "seed — 5 empty domain tables" },
+    { m: "·", s: "", p: "ai-docs/wiki/log.md", t: "seed — entry contracts only" },
+    { m: "·", s: "", p: "ai-docs/.obsidian/app.json", t: "" },
+    { m: "×", s: "", p: "ai-docs/wiki/personal/", t: "local-only, never tracked" }
+  ];
+
+  function tree(rows) { return rows; }
+
+  var AFTER_A = [
+    { m: "+", s: "new", p: "ai-docs/wiki/engineering/llm-wiki-pattern.md", t: "type: pattern" },
+    { m: "~", s: "chg", p: "ai-docs/wiki/index.md", t: "+1 Engineering row" },
+    { m: "~", s: "chg", p: "ai-docs/wiki/log.md", t: "+1 ingest entry" },
+    { m: "·", s: "", p: "ai-docs/.obsidian/app.json", t: "" },
+    { m: "×", s: "", p: "ai-docs/wiki/personal/", t: "local-only, never tracked" }
+  ];
+
+  var AFTER_B = [
+    { m: "+", s: "new", p: "ai-docs/wiki/engineering/obsidian-vault.md", t: "type: tool" },
+    { m: "~", s: "chg", p: "ai-docs/wiki/engineering/llm-wiki-pattern.md", t: "related: back-link" },
+    { m: "~", s: "chg", p: "ai-docs/wiki/index.md", t: "+1 Engineering row" },
+    { m: "~", s: "chg", p: "ai-docs/wiki/log.md", t: "+1 ingest entry" },
+    { m: "×", s: "", p: "ai-docs/wiki/personal/", t: "local-only, never tracked" }
+  ];
+
+  var BOTH_PAGES = [
+    { m: "·", s: "", p: "ai-docs/wiki/engineering/llm-wiki-pattern.md", t: "" },
+    { m: "·", s: "", p: "ai-docs/wiki/engineering/obsidian-vault.md", t: "" },
+    { m: "·", s: "", p: "ai-docs/wiki/index.md", t: "2 Engineering rows" },
+    { m: "·", s: "", p: "ai-docs/wiki/log.md", t: "2 ingest entries" },
+    { m: "×", s: "", p: "ai-docs/wiki/personal/", t: "local-only, never tracked" }
+  ];
+
+  var AFTER_LINT = [
+    { m: "·", s: "", p: "ai-docs/wiki/engineering/llm-wiki-pattern.md", t: "" },
+    { m: "·", s: "", p: "ai-docs/wiki/engineering/obsidian-vault.md", t: "" },
+    { m: "·", s: "", p: "ai-docs/wiki/index.md", t: "unchanged" },
+    { m: "~", s: "chg", p: "ai-docs/wiki/log.md", t: "+1 lint entry (4 lines)" },
+    { m: "×", s: "", p: "ai-docs/wiki/personal/", t: "local-only, never tracked" }
+  ];
+
+  var STEPS = [
+    {
+      key: "ingest-a",
+      label: "1 · ingest A",
+      cmd: "/wiki:ingest specs/wiki-layer/checks/fixtures/article-a-llm-wiki-pattern.md",
+      before: {
+        title: "Before — the seed",
+        tree: tree(SEED),
+        excerpts: [{
+          label: "ai-docs/wiki/index.md — Engineering",
+          text: "## Engineering\n\n| Page | Type | Status | Updated |\n| --- | --- | --- | --- |"
+        }]
+      },
+      after: {
+        title: "After — one page, one row, one entry",
+        tree: tree(AFTER_A),
+        excerpts: [
+          {
+            label: "ai-docs/wiki/engineering/llm-wiki-pattern.md",
+            text: "---\ntype: pattern\ndomain: engineering\nstatus: current\ncreated: 2026-08-07\nupdated: 2026-08-07\nsources: [\"specs/wiki-layer/checks/fixtures/article-a-llm-wiki-pattern.md\", …]\nrelated: []\n---\n\n# LLM Wiki Pattern"
+          },
+          {
+            label: "ai-docs/wiki/log.md",
+            text: "## [2026-08-07] ingest | LLM Wiki Pattern |\n   specs/wiki-layer/checks/fixtures/article-a-llm-wiki-pattern.md"
+          }
+        ]
+      },
+      observed: "All seven frontmatter fields present, <code>status: current</code>, and the fixture's canonical path in <code>sources:</code>. The Engineering table gains its row; Personal stays pointer-only.",
+      src: "pilot run 1 — rubric conditions 1, 3, 4 · build lead spot-checked on disk"
+    },
+    {
+      key: "ingest-b",
+      label: "2 · ingest B",
+      cmd: "/wiki:ingest specs/wiki-layer/checks/fixtures/article-b-obsidian-vaults.md",
+      before: {
+        title: "Before — one page in the vault",
+        tree: tree(AFTER_A),
+        excerpts: [{
+          label: "ai-docs/wiki/engineering/llm-wiki-pattern.md",
+          text: "related: []"
+        }]
+      },
+      after: {
+        title: "After — two pages, linked both ways",
+        tree: tree(AFTER_B),
+        excerpts: [
+          {
+            label: "ai-docs/wiki/engineering/obsidian-vault.md",
+            text: "---\ntype: tool\ndomain: engineering\nstatus: current\nsources: [\"specs/wiki-layer/checks/fixtures/article-b-obsidian-vaults.md\", …]\nrelated: [\"[[llm-wiki-pattern]]\"]\n---"
+          },
+          {
+            label: "ai-docs/wiki/engineering/llm-wiki-pattern.md — updated in place",
+            text: "related: [\"[[obsidian-vault]]\"]"
+          },
+          {
+            label: "ai-docs/wiki/index.md — Engineering",
+            text: "| [[llm-wiki-pattern]] | pattern | current | 2026-08-07 |\n| [[obsidian-vault]]   | tool    | current | 2026-08-07 |"
+          }
+        ]
+      },
+      observed: "Ingest B did not append to page A — it integrated, adding the cross-link in both directions with <code>related:</code> in sync. That is the layer's whole point: pages get richer, not longer.",
+      src: "pilot run 1 — rubric conditions 2, 3, 4"
+    },
+    {
+      key: "query",
+      label: "3 · query",
+      cmd: "/wiki:query \"why does the LLM wiki pattern pair well with Obsidian?\"",
+      before: {
+        title: "Before — two pages, clean tree",
+        tree: tree(BOTH_PAGES),
+        excerpts: [{
+          label: "git status ai-docs/wiki/",
+          text: "clean"
+        }]
+      },
+      after: {
+        title: "After — byte-for-byte identical",
+        tree: tree(BOTH_PAGES),
+        excerpts: [{
+          label: "git status ai-docs/wiki/ — checked between steps",
+          text: "clean — zero writes"
+        }]
+      },
+      observed: "The answer synthesized across both pages with inline citations and flagged nothing as disputed, because nothing was. Query declares itself read-only in its own body and the drift test holds it to that; the vault is unchanged before and after.",
+      src: "pilot runs 1–3 — rubric condition 6 · git status verified between steps"
+    },
+    {
+      key: "lint",
+      label: "4 · lint",
+      cmd: "/wiki:lint",
+      before: {
+        title: "Before — two pages, two ingest entries",
+        tree: tree(BOTH_PAGES),
+        excerpts: [{
+          label: "ai-docs/wiki/log.md — tail",
+          text: "## [2026-08-07] ingest | Obsidian Vault | …article-b-obsidian-vaults.md"
+        }]
+      },
+      after: {
+        title: "After — clean, and logged",
+        tree: tree(AFTER_LINT),
+        excerpts: [{
+          label: "ai-docs/wiki/log.md — appended",
+          text: "## [2026-08-07] lint | engineering | clean — 2 pages checked, no findings\n\nmissing-pages: none · mechanical-fixes: 0"
+        }]
+      },
+      observed: "Clean report, no mechanical fixes needed, one four-line log entry. In run 3 this heading was byte-identical to run 2's and markdownlint still reported 0 errors — the MD024 fix proven in the real flow rather than on a scratch copy.",
+      src: "pilot runs 1–3 — rubric condition 7 · markdownlint 0 errors"
+    }
+  ];
+
+  /* ---------------- acceptance criteria ---------------- */
+
+  var ACS = [
+    {
+      id: "AC1", kind: "auto",
+      crit: "Wiki pages are tracked while the personal domain stays local-only: shared namespaces and the Obsidian config are not ignored, <code>ai-docs/wiki/personal/**</code> is, and <code>git ls-files</code> shows zero tracked files under it.",
+      cmd: "bash specs/wiki-layer/checks/ac1-privacy-gitignore.sh",
+      res: "\"PASS: gitignore semantics correct for wiki layer\" · exit 0"
+    },
+    {
+      id: "AC2", kind: "auto",
+      crit: "The seed matches the spec's shapes — five shared-domain sections with <code>Page | Type | Status | Updated</code> tables, a pointer-only Personal section, the log's entry contract, and both <code>app.json</code> properties.",
+      cmd: "uv run specs/wiki-layer/checks/ac2-seed.py",
+      res: "\"PASS: wiki seed structure correct\" · exit 0"
+    },
+    {
+      id: "AC3", kind: "auto",
+      crit: "The command family matches its registration: the set derived from AGENTS.md equals the files under <code>.claude/commands/wiki/</code>, every frontmatter parses with roster-valid <code>model</code>/<code>effort</code>, and query's body declares itself read-only.",
+      cmd: "uv run pytest tests/harness-layer/test_wiki_layer.py::test_command_registry tests/harness-layer/test_wiki_layer.py::test_command_frontmatter -q",
+      res: "2 passed"
+    },
+    {
+      id: "AC4", kind: "auto",
+      crit: "The standards rule is path-scoped to <code>ai-docs/wiki/**</code> and structurally carries the schema, linking rules, writing standards, six domains, privacy, Obsidian, and the layer requirements.",
+      cmd: "uv run pytest tests/harness-layer/test_wiki_layer.py::test_standards_rule -q",
+      res: "1 passed"
+    },
+    {
+      id: "AC5", kind: "auto",
+      crit: "AGENTS.md names the wiki index before the mirror index, routes gate-passing synthesis via <code>/wiki:ingest</code>, and registers all four commands — in ≤ 14 added lines.",
+      cmd: "uv run specs/wiki-layer/checks/ac5-memory-amendments.py",
+      res: "\"PASS: AGENTS.md amendments exact and within budget\" · exit 0 · git diff --numstat: +9 / −3, net +6"
+    },
+    {
+      id: "AC6", kind: "auto",
+      crit: "The full drift suite passes with expectations re-derived from AGENTS.md, model-selection.md, and the rule file — never from the directory under test.",
+      cmd: "uv run pytest tests/harness-layer/test_wiki_layer.py -q",
+      res: "3 passed · full suite: 936 passed, 2 skipped in 11.16s"
+    },
+    {
+      id: "AC7", kind: "manual",
+      crit: "The fixture flow runs three times in fresh sessions — run 1 from the seed, runs 2–3 exercising idempotency — and every run meets every condition in <code>pilot-rubric.md</code>.",
+      cmd: "manual: /wiki:ingest A → /wiki:ingest B → /wiki:query spanning both → /wiki:lint, ×3 fresh sessions",
+      res: "3 / 3 · run 1 conditions 1–4 and 6–8; runs 2–3 all 8 including idempotency (git diff --stat empty after both ingests, page SHA-256 identical to baseline, 2 ingest log entries after 3 runs)"
+    }
+  ];
+
+  /* ---------------- timeline (chronological, from implementation-notes.md) ---------------- */
+
+  var TL = [
+    ["build start", "Plan resolved to specs/wiki-layer/ on its own worktree (issue #88, complex, kb-grounded). Device-local KB mirrors copied byte-identically into the worktree so builders could ground against all nine KB references."],
+    ["spec staleness absorbed", "R2-F7/R2-F8: the Objective's \"five plan-local checks\" (three ship; the drift test owns AC3/AC4/AC6) and the routines-mirror note (already mirrored at gate round 1). Neither affects the build; recorded, not acted on."],
+    ["phase 1", "wiki-foundation (sonnet/medium) and wiki-standards-rule (opus/high) launched concurrently on disjoint files."],
+    ["hand-off · wiki-foundation", ".gitignore, the wiki seed, and the Obsidian config. AC1 and AC2 both PASS at exit 0, re-run by the build lead. Deviation: the index footer moved under its own ## Notes heading so the AC2 section parser stays honest."],
+    ["hand-off · wiki-standards-rule", "wiki-standards.md verified by full read against the AC4 content contract — every required section present, markdownlint 0 errors. Deviation: the ported em-dash ban dropped as contrary to repo prose style."],
+    ["phase 2", "wiki-commands-ingest-lint (opus/high) and wiki-commands-query-status (sonnet/high) launched concurrently once the standards rule landed."],
+    ["hand-off · query + status", "Both frontmatters parse and byte-match the spec; models and efforts match the standards Operations table. Query declares itself read-only with graceful no-coverage and seed-only paths; status derives its readouts from sources.yaml plus the lint payload. No deviations."],
+    ["hand-off · ingest + lint", "Key sets exactly as specified, both opus/high. Ingest carries the URL refusal, integrate-never-append, the canonical-source-path idempotency key, the shared/personal split, PII stripping, batch checkpoints, and the crystallization gate; lint carries every check class, the fix-vs-report split, the log payload, and the weekly-routine prompt. Deviation: a secret or PII leak is redacted in place before reporting."],
+    ["hand-off · AGENTS.md", "AC5 PASS at exit 0; git diff --numstat shows +9/−3, net +6, inside the ≤14 budget. All three amendment blocks applied verbatim. No deviations."],
+    ["hand-off · drift test", "test_wiki_layer.py: 3 passed; full harness suite 936 passed, 2 skipped; ruff clean. Deviation: the spawn prompt wrongly promised pyyaml under uv run pytest, so the builder used the repo's house-style frontmatter parser instead of adding a dependency."],
+    ["pilot run 1 / 3", "Fresh opus/high session, seed → ingest A → ingest B → query → lint. Pages, cross-link, index, log, query, lint, and privacy all verified on disk. PASS on every applicable condition."],
+    ["lesson · log formatting", "The markdown auto-format hook inserts a blank line between a lint log heading and its payload; lint.md claimed the payload follows directly. The hook wins on every write — command text relaxed to match."],
+    ["pilot run 2 / 3", "Idempotency: both ingests recognized their canonical source path and wrote nothing — git diff --stat empty, no duplicate rows or entries. PASS on all 8 conditions."],
+    ["defect found by run 2", "MD024 siblings_only: true blocked appending a lint heading identical to a prior pass — the deterministic case for a clean wiki linted twice in one day. Routed to a builder."],
+    ["fix · MD024", "File-local markdownlint-disable in the seed log plus the payload-placement clarification in lint.md. AC1, AC2, the drift suite, and markdownlint all verified green, with a scratch-copy proof that a duplicated heading no longer fires."],
+    ["pilot run 3 / 3", "Post-fix: both ingests exact no-ops (page hashes byte-identical), query answered across both pages with zero writes, and lint appended a heading byte-identical to run 2's at 0 markdownlint errors. PASS on all 8."],
+    ["AC7 verdict", "Pass rate 3/3 on every applicable pilot-rubric condition. pilot-eval complete."],
+    ["hand-off · validate-all", "Read-only validator at worktree HEAD 64b3d46 re-ran every criterion: AC1–AC6 green, AC7 corroborated against on-disk state. Overall PASS, with one advisory on the AC5 script's hardcoded budget list."],
+    ["tidy", "harness-simplifier: 7 behavior-preserving edits across query, status, lint, and the standards rule; ingest clean. code-simplifier: 4 edits to the drift test with an old-vs-new equivalence script. Re-verified after both: 936 passed, 2 skipped; AC1, AC2, AC5 PASS."],
+    ["drift check", "Every changed file outside specs/wiki-layer/ maps to an owning task and every task maps to a present diff, in both directions. No unmapped files, no diff-less tasks."],
+    ["impl lint", "Two FAILs on the first run, both build-lead-owned: the AC7 manual check's probe text was missing from the notes (recorded), and one checkpoint commit subject ran to 76 characters (rewritten and force-pushed with lease)."],
+    ["plan-artifact catch-up", "The implementation-plan page, authored at plan stage but never committed, was found untracked and committed so the artifact inventory matches the rule."]
+  ];
+
+  /* ---------------- state ---------------- */
+
+  var state = {
+    step: 0,
+    phase: "after",
+    filter: "all",
+    opts: { evidence: true, pilot: true, deviations: true, followups: true }
+  };
+
+  var PRESETS = {
+    review: { evidence: true, pilot: true, deviations: true, followups: true },
+    pr: { evidence: true, pilot: false, deviations: false, followups: true },
+    standup: { evidence: false, pilot: false, deviations: false, followups: false }
+  };
+
+  var DEFAULTS = PRESETS.review;
+
+  function el(id) { return document.getElementById(id); }
+
+  /* ---------------- try-it rendering ---------------- */
+
+  var stepsHost = el("steps");
+  STEPS.forEach(function (s, i) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "step-btn";
+    b.textContent = s.label;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", function () { state.step = i; renderTry(); });
+    stepsHost.appendChild(b);
+  });
+
+  function renderTry() {
+    var s = STEPS[state.step];
+    var view = s[state.phase];
+
+    Array.prototype.forEach.call(stepsHost.children, function (b, i) {
+      b.setAttribute("aria-pressed", i === state.step ? "true" : "false");
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-phase]"), function (b) {
+      b.setAttribute("aria-pressed", b.dataset.phase === state.phase ? "true" : "false");
+    });
+
+    el("cmdline").innerHTML = '<span class="prompt">› </span>' + escapeHtml(s.cmd);
+    el("tree-title").textContent = view.title;
+
+    var t = el("tree");
+    t.innerHTML = "";
+    view.tree.forEach(function (row) {
+      var li = document.createElement("li");
+      li.innerHTML =
+        '<span class="mark ' + row.s + '">' + escapeHtml(row.m) + "</span>" +
+        '<span class="path">' + escapeHtml(row.p) +
+        (row.t ? ' <span class="tag">— ' + escapeHtml(row.t) + "</span>" : "") +
+        "</span>";
+      t.appendChild(li);
+    });
+
+    var ex = el("excerpts");
+    ex.innerHTML = "";
+    view.excerpts.forEach(function (e) {
+      var lab = document.createElement("div");
+      lab.className = "excerpt-label";
+      lab.textContent = e.label;
+      var pre = document.createElement("pre");
+      pre.className = "excerpt";
+      pre.textContent = e.text;
+      ex.appendChild(lab);
+      ex.appendChild(pre);
+    });
+
+    el("observed").innerHTML = s.observed + '<span class="src">' + escapeHtml(s.src) + "</span>";
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-phase]"), function (b) {
+    b.addEventListener("click", function () { state.phase = b.dataset.phase; renderTry(); });
+  });
+
+  /* ---------------- ledger rendering ---------------- */
+
+  var ledgerHost = el("ledger");
+  ACS.forEach(function (ac) {
+    var d = document.createElement("div");
+    d.className = "ac";
+    d.dataset.kind = ac.kind;
+    d.innerHTML =
+      '<div class="id">' + ac.id + '<span class="verdict">PASS</span></div>' +
+      '<div class="crit">' + ac.crit + "</div>" +
+      '<div class="ev"><span class="cmd">' + escapeHtml(ac.cmd) + "</span>" +
+      '<span class="res">→ ' + escapeHtml(ac.res) + "</span></div>";
+    ledgerHost.appendChild(d);
+  });
+
+  function renderLedger() {
+    Array.prototype.forEach.call(ledgerHost.children, function (row) {
+      row.hidden = !(state.filter === "all" || row.dataset.kind === state.filter);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-filter]"), function (b) {
+      b.setAttribute("aria-pressed", b.dataset.filter === state.filter ? "true" : "false");
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-filter]"), function (b) {
+    b.addEventListener("click", function () { state.filter = b.dataset.filter; renderLedger(); });
+  });
+
+  /* ---------------- timeline rendering ---------------- */
+
+  var tlHost = el("tl");
+  TL.forEach(function (row) {
+    var d = document.createElement("div");
+    d.className = "tl-entry";
+    d.innerHTML =
+      '<div class="ev-name">' + escapeHtml(row[0]) + "</div>" +
+      '<div class="ev-body">' + escapeHtml(row[1]) + "</div>";
+    tlHost.appendChild(d);
+  });
+
+  /* ---------------- prompt ---------------- */
+
+  function buildPrompt() {
+    var p = [];
+
+    p.push(
+      "The wiki layer (issue #88, specs/wiki-layer) is built and verified — here is the summary to buy into.\n\n" +
+      "What shipped: ai-docs/wiki/ is now a tracked synthesis layer over the immutable ai-docs/ mirrors, " +
+      "reaching the remote through a .gitignore negation with ai-docs/wiki/personal/ re-ignored so private pages " +
+      "structurally cannot be pushed. Four operations live at .claude/commands/wiki/ — ingest (opus/high), " +
+      "query (sonnet/high), lint (opus/high), status (haiku/medium); only ingest and lint write. The layer's schema " +
+      "is a path-scoped rule at .claude/rules/wiki-layer/wiki-standards.md covering the seven-field page schema " +
+      "with three status values, citation rules, writing standards, six domains, privacy, Obsidian, and the layer " +
+      "requirements. AGENTS.md now starts every task at the wiki index and routes gate-passing synthesis back into " +
+      "the wiki via /wiki:ingest, in a net +6 lines against a 14-line budget. A drift test at " +
+      "tests/harness-layer/test_wiki_layer.py guards the whole surface."
+    );
+
+    if (state.opts.evidence) {
+      p.push(
+        "Evidence: all seven acceptance criteria closed. AC1, AC2, and AC5 are plan-local checks at exit 0 " +
+        "(\"gitignore semantics correct\", \"wiki seed structure correct\", \"AGENTS.md amendments exact and within budget\"); " +
+        "AC3, AC4, and AC6 are green in the drift suite (3 passed), with the full harness suite at 936 passed and 2 skipped; " +
+        "AC7 is the pilot eval at 3/3. A read-only validator re-ran every criterion at worktree HEAD 64b3d46 and returned PASS."
+      );
+    }
+
+    if (state.opts.pilot) {
+      p.push(
+        "Pilot detail: the flow — /wiki:ingest on fixture A, /wiki:ingest on fixture B, /wiki:query spanning both, " +
+        "then /wiki:lint — ran three times in fresh sessions. Run 1 from the seed produced two cross-linked engineering " +
+        "pages with valid frontmatter, index rows, and log entries carrying the fixture paths. Runs 2 and 3 proved " +
+        "idempotency: both ingests recognized their canonical source path and wrote nothing (git diff --stat empty, " +
+        "page hashes byte-identical), query answered across both pages with citations and zero writes, and lint stayed clean. " +
+        "The personal domain never appeared in git status or in the shared index and log."
+      );
+    }
+
+    if (state.opts.deviations) {
+      p.push(
+        "Deviations worth knowing: (1) pilot run 2 exposed a real defect — markdownlint MD024 with siblings_only blocked " +
+        "appending a lint log heading identical to an earlier pass, the deterministic case for a clean wiki linted twice " +
+        "in one day; fixed with a file-local markdownlint-disable in the seed log plus a payload-placement clarification " +
+        "in lint.md, and run 3 proved it by appending a byte-identical heading at 0 errors. (2) The wiki index footer sits " +
+        "under its own ## Notes heading rather than trailing bare, because the AC2 parser scopes trailing content to the " +
+        "last heading and a bare footer would have broken the pointer-only Personal check. (3) The ported tone standard's " +
+        "em-dash ban was dropped as contrary to this repo's own prose; every other tone constraint carried over, and " +
+        "decisions.md locks \"customize, do not port\"."
+      );
+    }
+
+    if (state.opts.followups) {
+      p.push(
+        "Open after ship: create the weekly lint routine via /schedule (account-bound, prompt documented in lint.md); " +
+        "the user's fresh-article migration stays a follow-up on issue #88, outside this definition of done. One advisory " +
+        "for review — specs/wiki-layer/checks/ac5-memory-amendments.py computes its 14-line budget from a hardcoded list " +
+        "length rather than the real diff, which satisfies the budget independently at +9/−3."
+      );
+    }
+
+    p.push("Tell me if anything here needs a second look before this merges.");
+
+    return p.join("\n\n");
+  }
+
+  function renderPrompt() {
+    el("prompt-out").textContent = buildPrompt();
+    Array.prototype.forEach.call(document.querySelectorAll("[data-opt]"), function (b) {
+      b.setAttribute("aria-pressed", state.opts[b.dataset.opt] ? "true" : "false");
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (b) {
+      var pre = PRESETS[b.dataset.preset];
+      var match = Object.keys(pre).every(function (k) { return pre[k] === state.opts[k]; });
+      b.setAttribute("aria-pressed", match ? "true" : "false");
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-opt]"), function (b) {
+    b.addEventListener("click", function () {
+      state.opts[b.dataset.opt] = !state.opts[b.dataset.opt];
+      renderPrompt();
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (b) {
+    b.addEventListener("click", function () {
+      var pre = PRESETS[b.dataset.preset];
+      Object.keys(pre).forEach(function (k) { state.opts[k] = pre[k]; });
+      renderPrompt();
+    });
+  });
+
+  el("copy-btn").addEventListener("click", function () {
+    var text = buildPrompt();
+    var done = function () {
+      el("copy-status").textContent = "Copied — paste it wherever the buy-in happens.";
+      setTimeout(function () { el("copy-status").textContent = ""; }, 2600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else {
+      fallback();
+    }
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); done(); }
+      catch (e) { el("copy-status").textContent = "Copy failed — select the text above."; }
+      document.body.removeChild(ta);
+    }
+  });
+
+  /* ---------------- rail ---------------- */
+
+  var links = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var targets = links.map(function (a) { return document.querySelector(a.getAttribute("href")); });
+
+  function spy() {
+    var best = 0;
+    targets.forEach(function (t, i) {
+      if (t && t.getBoundingClientRect().top < window.innerHeight * 0.35) best = i;
+    });
+    links.forEach(function (a, i) { a.classList.toggle("on", i === best); });
+  }
+  window.addEventListener("scroll", spy, { passive: true });
+
+  /* ---------------- helpers + boot ---------------- */
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c];
+    });
+  }
+
+  renderTry();
+  renderLedger();
+  renderPrompt();
+  spy();
+})();
+</script>
