@@ -393,3 +393,54 @@
     (wiki-over-mirrors) is not exactly one line in AGENTS.md`; exit 1
   - KB bullet 1 wrapped across two lines → `FAIL: Knowledge Base section lacks the
     exact prescribed KB bullet 1 (wiki-over-mirrors)`; exit 1
+- **2026-08-07 · review fix: impl gate cycle 2 (I2-F1, I2-F3)** — two fixes, nothing
+  else touched.
+
+  I2-F1 (`.claude/commands/wiki/ingest.md`): the changed-source re-ingest branch said
+  "refresh the existing INDEX rows only; the LOG keeps its one entry", contradicting
+  wiki-standards.md's locked metric "100% of ingests update the index and the log".
+  Resolved in the command, not the metric: a changed-source re-ingest now appends its
+  own dated LOG entry (the log is append-only history; the file-local MD024 disable
+  already permits repeated sibling headings), while "never a second page and never a
+  second index row" stands. Instructions branch list, Workflow step 6, and the KEY
+  variable ("its LOG entries") updated together; the Report line already said "the
+  index rows and log entry written", so the behavior change makes it true as written.
+  The identical-repeat branch still writes nothing at all, log entry included, and
+  idempotency identity is unchanged — presence of the canonical path in page
+  `sources:`/the LOG, which a second entry for the same path does not affect.
+
+  I2-F3 (`specs/wiki-layer/checks/ac2-seed.py`): the MD024 regression check was a bare
+  substring test, so it passed on a directive that markdownlint ignores. It now scans
+  the log line by line with a ``` fence toggle and requires the comment on its own line
+  outside any fence and before the first `##` entry heading.
+
+  Verification, run from the repo root this session:
+
+  - `uv run specs/wiki-layer/checks/ac2-seed.py` → `PASS: wiki seed structure
+    correct`; exit 0
+  - `bunx markdownlint-cli2 ".claude/commands/wiki/ingest.md"` → `Linting: 1 file(s)` /
+    `Summary: 0 error(s)`; exit 0
+  - `uv run pytest tests/harness-layer/ -q` → `936 passed, 2 skipped in 13.01s`; exit 0
+    (the 2 skips are `test_model_drift.py:169`/`:179`, "got empty parameter set" —
+    pre-existing; the I9 lens-cluster failure recorded in the cycle-1 entry above no
+    longer fires)
+  - `uv run ruff check specs/wiki-layer/checks/ac2-seed.py` → `All checks passed!`;
+    exit 0
+
+  I2-F3 negative demonstrations, on temp copies of the seed under
+  `/home/ringo/.claude/jobs/8440784b/tmp/case-{a,b,c}/ai-docs/`, never in the repo tree
+  — each copy's `wiki/log.md` edited, then
+  `uv run --no-project <repo>/specs/wiki-layer/checks/ac2-seed.py` run with that copy's
+  directory as cwd:
+
+  - (a) directive moved inside the ```` ```text ```` fence → `FAIL: log.md lacks an
+    effective file-local '<!-- markdownlint-disable MD024 -->' comment on its own line
+    outside any code fence`; exit 1
+  - (b) directive deleted → same FAIL line; exit 1
+  - (c) directive placed after the first real entry heading → `FAIL: log.md's
+    '<!-- markdownlint-disable MD024 -->' comment follows the first '## ' entry
+    heading, so it does not cover the whole file`; exit 1
+
+  Regression confirmed against the pre-fix script (`git show
+  HEAD:specs/wiki-layer/checks/ac2-seed.py`, run on the same copies): cases (a) and (c)
+  both printed `PASS: wiki seed structure correct`, exit 0.

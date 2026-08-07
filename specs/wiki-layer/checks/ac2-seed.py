@@ -79,8 +79,32 @@ def check_log() -> None:
         fail("log.md does not document the lint payload line (missing-pages … mechanical-fixes)")
     # Append-only logs legitimately repeat sibling headings, so the seed carries the
     # file-local MD024 disable; without it a second identical lint pass can't append.
-    if "<!-- markdownlint-disable MD024 -->" not in text:
-        fail("log.md lacks the file-local '<!-- markdownlint-disable MD024 -->' comment")
+    # markdownlint only honours the directive on its own line outside a code fence, and
+    # only from that line onward — so it must precede the first entry heading.
+    directive_line: int | None = None
+    first_entry_line: int | None = None
+    in_fence = False
+    for number, line in enumerate(text.splitlines()):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if directive_line is None and stripped == "<!-- markdownlint-disable MD024 -->":
+            directive_line = number
+        if first_entry_line is None and stripped.startswith("## "):
+            first_entry_line = number
+    if directive_line is None:
+        fail(
+            "log.md lacks an effective file-local '<!-- markdownlint-disable MD024 -->' "
+            "comment on its own line outside any code fence"
+        )
+    elif first_entry_line is not None and directive_line > first_entry_line:
+        fail(
+            "log.md's '<!-- markdownlint-disable MD024 -->' comment follows the first "
+            "'## ' entry heading, so it does not cover the whole file"
+        )
     # The complete allowed writer set is exactly {ingest, lint}.
     op_forms = set(re.findall(r"##\s*\[YYYY-MM-DD\]\s*([a-z]+)\s*\|", text))
     if op_forms and op_forms != {"ingest", "lint"}:

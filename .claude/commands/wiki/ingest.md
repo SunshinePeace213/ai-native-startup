@@ -20,7 +20,7 @@ standards, and privacy rules this command writes against.
 INDEX + LOG: `ai-docs/wiki/index.md` and `ai-docs/wiki/log.md` for the shared domains;
 `ai-docs/wiki/personal/index.md` and `ai-docs/wiki/personal/log.md` for personal.
 KEY: the canonical source path. It lives in exactly two places — the `sources:`
-frontmatter of the pages built from it, and its LOG entry. INDEX rows carry no source
+frontmatter of the pages built from it, and its LOG entries. INDEX rows carry no source
 path, so KEY is never matched against them.
 
 ## Instructions
@@ -39,9 +39,9 @@ path, so KEY is never matched against them.
   - **First ingest** — KEY appears in no page's `sources:` and in no LOG entry. Write
     the pages, add their INDEX rows, append one LOG entry.
   - **Changed-source re-ingest** — KEY is present and the source now says something the
-    pages do not carry. Update those pages in place, bump their `updated:`, and refresh
-    their existing INDEX rows. Never a second page, a second index row, or a second log
-    entry.
+    pages do not carry. Update those pages in place, bump their `updated:`, refresh their
+    existing INDEX rows, and append a dated LOG entry — the log is append-only history.
+    Never a second page and never a second index row.
   - **Identical repeat** — KEY is present and the source adds nothing. Write nothing at
     all: no page, no index row, no log entry. Report it unchanged.
 - A personal ingest touches only the personal index and log. The shared pair never names
@@ -64,9 +64,9 @@ path, so KEY is never matched against them.
    enough material for a page of their own, which are only noted where they already
    appear.
 5. Write the pages, re-reading each immediately before the edit.
-6. First ingest → add the domain's INDEX rows and append its LOG entry:
-   `## [YYYY-MM-DD] ingest | <title> | <source-path>`. Changed-source re-ingest →
-   refresh the existing INDEX rows only; the LOG keeps its one entry for KEY.
+6. First ingest → add the domain's INDEX rows; changed-source re-ingest → refresh the
+   existing rows. Both then append the LOG entry:
+   `## [YYYY-MM-DD] ingest | <title> | <source-path>`.
 7. Batch input: checkpoint every 5 sources — update INDEX and LOG, then re-read the
    index and the pages you are about to touch before continuing.
 
