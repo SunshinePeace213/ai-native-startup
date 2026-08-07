@@ -235,6 +235,16 @@
   history), force-pushed with lease. Both fixes were build-lead-owned (notes
   file and git are the lead's surfaces — no builder owns them), so neither was
   routed to a builder.
+- **2026-08-07 · memory step** — one lesson routed beyond the plan
+  (pipeline-process → the command it corrects): harness-build.md's read-the-plan
+  step now says to copy referenced mirrors missing from the worktree's
+  device-local `ai-docs/` in from the main checkout before builders launch —
+  the gap this build hit at start. The lint-log lessons were already absorbed
+  by the MD024 fix; the pyyaml prompt error, the AC2 footer parsing note, and
+  the plan-session trailing commit stay plan-local here. Follow-up (not an
+  edit): `personal/log.md` is created lazily by a future personal ingest and
+  should mirror the shared log's seed shape including the MD024 disable —
+  carried to the PR's `## Follow-ups`.
 - **2026-08-07 · plan-artifact catch-up** — `specs/wiki-layer/artifacts/implementation-plan.html`
   found untracked in the worktree (authored at plan stage, never committed);
   committed now so the artifact inventory matches artifacts.md.
