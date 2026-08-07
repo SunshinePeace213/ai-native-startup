@@ -362,6 +362,14 @@ dist
 ai-docs/*
 !ai-docs/sources.yaml
 
+# ai-docs/wiki/ — the LLM-maintained synthesis layer IS tracked (compiled
+# knowledge, not regenerable cache); the personal domain never leaves this machine.
+!ai-docs/wiki/
+ai-docs/wiki/personal/
+# Obsidian vault config: track the minimal shared config, ignore volatile state.
+!ai-docs/.obsidian/
+ai-docs/.obsidian/workspace*
+
 # =============================================================================
 # Claude Code personal scratchpad — shared config lives in .claude/settings.json
 # =============================================================================
