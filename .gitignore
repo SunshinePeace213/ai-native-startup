@@ -365,6 +365,13 @@ ai-docs/personal/
 ai-docs/.obsidian/workspace*
 
 # =============================================================================
+# qmd search index — a derived cache rebuilt from ai-docs/ by
+# .claude/scripts/qmd-setup.sh. Machine-local and large (tens of MB); the
+# markdown in ai-docs/ is the source of truth.
+# =============================================================================
+.qmd/
+
+# =============================================================================
 # Claude Code personal scratchpad — shared config lives in .claude/settings.json
 # =============================================================================
 .claude/worktrees

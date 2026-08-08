@@ -21,11 +21,23 @@ exit {code}
 """
 
 
-def _write_stubs(stub_dir: Path, log: Path, code: int = 0) -> None:
+# qmd gets its own stub so the shared log keeps its "<tool> <args> <pwd>" shape
+# while the models the hook exports into qmd's environment stay observable.
+QMD_STUB_TEMPLATE = """#!/bin/sh
+printf '%s %s %s\\n' "qmd" "$*" "$PWD" >> "{log}"
+printf '%s\\n' "${{QMD_EMBED_MODEL:-unset}}" >> "{env_log}"
+exit {code}
+"""
+
+
+def _write_stubs(stub_dir: Path, log: Path, env_log: Path, code: int = 0) -> None:
     for tool in ("bun", "uv"):
         stub = stub_dir / tool
         stub.write_text(STUB_TEMPLATE.format(tool=tool, log=log, code=code))
         stub.chmod(0o755)
+    qmd = stub_dir / "qmd"
+    qmd.write_text(QMD_STUB_TEMPLATE.format(log=log, env_log=env_log, code=code))
+    qmd.chmod(0o755)
 
 
 def _git(env: dict, cwd: Path, check: bool, *args: str) -> subprocess.CompletedProcess:
@@ -46,13 +58,18 @@ def wt_repo(tmp_path):
     stub_dir = tmp_path / "stub-bin"
     stub_dir.mkdir()
     stub_log = tmp_path / "stub.log"
-    _write_stubs(stub_dir, stub_log)
+    qmd_env_log = tmp_path / "qmd-env.log"
+    _write_stubs(stub_dir, stub_log, qmd_env_log)
 
     root = tmp_path / "repo"
     root.mkdir()
+    qmd_config = tmp_path / "qmd-config"
+    qmd_config.mkdir()
     overrides = {
         "PATH": f"{stub_dir}{os.pathsep}{os.environ.get('PATH', '')}",
         "CLAUDE_PROJECT_DIR": str(root),
+        # Keeps the index bootstrap off the developer's real ~/.config/qmd.
+        "QMD_CONFIG_DIR": str(qmd_config),
         "GIT_AUTHOR_NAME": "Test",
         "GIT_AUTHOR_EMAIL": "test@example.com",
         "GIT_COMMITTER_NAME": "Test",
@@ -70,8 +87,10 @@ def wt_repo(tmp_path):
         env=env,
         tmp=tmp_path,
         stub_log=stub_log,
+        qmd_env_log=qmd_env_log,
+        qmd_config=qmd_config,
         git=lambda *args, cwd=root, check=True: _git(env, cwd, check, *args),
-        fail_installs=lambda: _write_stubs(stub_dir, stub_log, code=1),
+        fail_installs=lambda: _write_stubs(stub_dir, stub_log, qmd_env_log, code=1),
     )
     repo.git("init")
     (root / "README.md").write_text("seed\n")

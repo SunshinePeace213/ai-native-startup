@@ -182,10 +182,25 @@ Two disjoint collections cover the vault:
   under a second, so run them unconditionally instead of guessing what changed.
 - Embeddings are keyed by content hash, so they survive re-indexing and collection
   edits. Only new or changed text is ever re-embedded.
-- The index is machine-local and absent from a fresh clone. Build it on a new machine
-  with `bash .claude/scripts/qmd-setup.sh`, which creates both collections, attaches
-  their context descriptions, and indexes the vault. It is idempotent — re-run it
-  whenever the collections look wrong.
+- The index is project-local and machine-local: config and database live in `.qmd/` at
+  the repo root, gitignored and absent from a fresh clone. Build it with
+  `bash .claude/scripts/qmd-setup.sh`, which creates both collections, attaches their
+  context descriptions, and indexes the vault. It is idempotent — re-run it whenever the
+  collections look wrong.
+- qmd finds that index by walking up from the working directory, so it is scoped by
+  directory and not by git branch: checking out another branch in the same directory
+  keeps the same index.
+- A worktree gets its own `.qmd/`, seeded from the project's by the WorktreeCreate hook,
+  so branch work is searchable immediately and never writes its throwaway paths into the
+  main index. Vectors are content-hash keyed, so seeding re-embeds only what the branch
+  changed. The seed's models are inherited deliberately — a vector's dimension is fixed
+  by the model that produced it, and a mismatch degrades search with no error.
+- Models are chosen once, in `.env` (see `env.sample`), and are read only when the setup
+  script creates the index; qmd records them in `.qmd/index.yml` and reads them from
+  there afterwards, because its config takes precedence over the environment. Changing
+  the embedding model means a full `qmd embed -f`.
+- After a branch merges, re-run `qmd update && qmd embed` in the main checkout — a merge
+  updates the markdown, never the index.
 - The index covers `personal/` once it exists. It is never a route around the privacy
   rules — a shared answer cites no personal hit.
 

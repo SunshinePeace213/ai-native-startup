@@ -232,3 +232,75 @@ def test_absent_worktreeinclude_is_a_noop(wt_repo, run_hook):
     assert proc.returncode == 0
     assert proc.stdout == f"{worktree}\n"
     assert worktree.is_dir()
+
+
+def make_vault(wt_repo):
+    (wt_repo.root / "ai-docs").mkdir()
+    (wt_repo.root / "ai-docs" / "seed.md").write_text("# seed\n")
+    wt_repo.git("add", ".")
+    wt_repo.git("commit", "-m", "vault")
+
+
+def test_qmd_bootstrap_runs_inside_the_worktree(wt_repo, run_hook):
+    """Every indexing call must run with $PWD set to the worktree. qmd resolves
+    its target directory from $PWD before the real cwd, and a subprocess `cwd=`
+    does not update $PWD -- get this wrong and the hook silently initialises
+    the parent's index instead of the worktree's."""
+    make_vault(wt_repo)
+    proc = run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": "indexed"}),
+        env_overrides=wt_repo.overrides,
+    )
+    worktree = wt_path(wt_repo.root, "indexed")
+    assert proc.returncode == 0
+    assert proc.stdout == f"{worktree}\n"  # the bootstrap must not pollute stdout
+    assert (worktree / ".qmd").is_dir()
+
+    calls = [ln for ln in wt_repo.stub_log.read_text().splitlines() if ln.startswith("qmd ")]
+    # `qmd status` probes the source index and legitimately runs elsewhere;
+    # everything that writes the worktree's index must land in the worktree.
+    writes = [ln for ln in calls if not ln.startswith("qmd status")]
+    assert writes, "the bootstrap never initialised an index"
+    assert all(ln.endswith(str(worktree)) for ln in writes), writes
+
+
+def test_qmd_models_are_inherited_from_the_seed_index(wt_repo, run_hook):
+    """The worktree must build with the models that produced the index it is
+    seeded from. A vector's dimension is fixed by its embedding model, so a
+    worktree left to resolve qmd's own defaults would reject every seeded
+    vector and silently return degraded search results."""
+    make_vault(wt_repo)
+    (wt_repo.qmd_config / "index.yml").write_text(
+        "collections:\n"
+        "  wiki:\n"
+        "    path: /somewhere/ai-docs/wiki\n"
+        "    pattern: '**/*.md'\n"
+        "models:\n"
+        "  embed: hf:vendor/Embed-8B/embed.gguf\n"
+        "  generate: hf:vendor/Gen-1.7B/gen.gguf\n"
+        "  rerank: hf:vendor/Rerank-4B/rerank.gguf\n"
+    )
+    run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": "models"}),
+        env_overrides=wt_repo.overrides,
+    )
+    seen = wt_repo.qmd_env_log.read_text().splitlines()
+    assert "hf:vendor/Embed-8B/embed.gguf" in seen
+    assert "unset" not in seen[1:], seen  # only the pre-seed `qmd status` may lack it
+
+
+def test_qmd_bootstrap_is_skipped_without_a_vault(wt_repo, run_hook):
+    """A repo with no ai-docs/ has nothing to index, so the hook must not leave
+    a stray .qmd behind or spend time calling qmd at all."""
+    proc = run_hook(
+        "worktree/worktree_create.py",
+        json.dumps({"worktreeName": "bare"}),
+        env_overrides=wt_repo.overrides,
+    )
+    worktree = wt_path(wt_repo.root, "bare")
+    assert proc.returncode == 0
+    assert not (worktree / ".qmd").exists()
+    log = wt_repo.stub_log.read_text() if wt_repo.stub_log.exists() else ""
+    assert not [ln for ln in log.splitlines() if ln.startswith("qmd ")]
