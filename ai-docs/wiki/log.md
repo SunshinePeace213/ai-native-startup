@@ -33,3 +33,11 @@ missing-pages: none · mechanical-fixes: 0
 ## [2026-08-07] lint | engineering | clean — 2 pages, index and log consistent
 
 missing-pages: none · mechanical-fixes: 0
+
+## [2026-08-08] ingest | LLM Wiki (Karpathy) | ai-docs/llm-wiki/karpathy/llm-wiki.md
+
+## [2026-08-08] ingest | Personal Knowledge Wiki skill (farzaa) | ai-docs/llm-wiki/farzaa/wiki-gen-skill.md
+
+## [2026-08-08] ingest | graphwiki: an LLM Wiki pattern for graph databases (lucianfialho) | ai-docs/llm-wiki/lucianfialho/graphwiki-pattern.md
+
+## [2026-08-08] ingest | LLM Wiki v2 (rohitg00) | ai-docs/llm-wiki/rohitg00/llm-wiki.md
