@@ -11,6 +11,7 @@ under test — so a drift between them fails the build instead of surviving unno
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -19,6 +20,8 @@ AGENTS_DOC = REPO_ROOT / "AGENTS.md"
 COMMANDS_DIR = REPO_ROOT / ".claude" / "commands" / "wiki"
 STANDARDS_DOC = REPO_ROOT / ".claude" / "rules" / "wiki-layer" / "wiki-standards.md"
 MODEL_SELECTION_DOC = REPO_ROOT / ".claude" / "rules" / "model-selection.md"
+OBSIDIAN_APP_CONFIG = REPO_ROOT / "ai-docs" / ".obsidian" / "app.json"
+OBSIDIAN_HOTKEYS = REPO_ROOT / "ai-docs" / ".obsidian" / "hotkeys.json"
 
 # Which commands carry `argument-hint` is a design decision spec.md states directly
 # (ingest and query take user-supplied arguments; lint and status don't) — not something
@@ -247,16 +250,52 @@ def test_standards_rule():
     privacy_lower = privacy.lower()
     assert "personal/index.md" in privacy_lower, "privacy section missing personal/index.md"
     assert "personal/log.md" in privacy_lower, "privacy section missing personal/log.md"
-    assert "wiki/personal/assets/" in privacy_lower, (
+    assert "personal/**/assets/" in privacy_lower, (
         "privacy section missing personal assets folder obligation"
     )
     assert "secret" in privacy_lower and "pii" in privacy_lower, (
         "privacy section missing secret/PII stripping obligation"
     )
 
+    images = _section_containing(doc, "Images")
+    images_lower = images.lower()
+    assert "assets/" in images_lower, "images section missing the local assets/ contract"
+    assert "remote" in images_lower, "images section does not rule out embedding remote image URLs"
+    assert "text first" in images_lower, (
+        "images section missing the read-text-then-view-images workflow"
+    )
+
     obsidian = _section_containing(doc, "Obsidian")
+    attachment_path = json.loads(OBSIDIAN_APP_CONFIG.read_text())["attachmentFolderPath"]
+    assert f'"{attachment_path}"' in obsidian, (
+        f"Obsidian section does not name the vault's attachment folder {attachment_path!r}"
+    )
     for plugin in ("Web Clipper", "Dataview", "Marp"):
         assert plugin in obsidian, f"Obsidian section missing plugin '{plugin}'"
+
+
+def test_obsidian_image_workflow_is_wired() -> None:
+    """The vault config must actually provide the image workflow the rule promises."""
+    attachment_path = json.loads(OBSIDIAN_APP_CONFIG.read_text())["attachmentFolderPath"]
+    assert attachment_path.startswith("./"), (
+        "attachmentFolderPath must be relative to the note's folder so a source's images "
+        f"colocate with the source and personal images stay in personal/; got {attachment_path!r}"
+    )
+
+    hotkeys = json.loads(OBSIDIAN_HOTKEYS.read_text())
+    bindings = hotkeys.get("editor:download-attachments")
+    assert bindings, (
+        "hotkeys.json does not bind 'editor:download-attachments', so clipped pages have "
+        "no one-keystroke path to pull their images onto disk"
+    )
+
+    doc = STANDARDS_DOC.read_text()
+    obsidian = _section_containing(doc, "Obsidian")
+    for binding in bindings:
+        chord = "+".join([*binding["modifiers"], binding["key"]])
+        assert chord in obsidian, (
+            f"Obsidian section does not name the bound download-attachments chord {chord!r}"
+        )
 
     operations = _section_containing(doc, "Operations")
     ops = _operations_table()

@@ -35,6 +35,8 @@ checks, append the clean log entry, and report.
   `disputed` page whose sources now settle the dispute.
 - **Contradictions** — claims across pages that cannot both hold.
 - **Secret or PII leakage** — a leaked secret or PII in page content, in every domain.
+- **Broken image references** — an embedded image path resolving to no file, or a
+  reference still pointing at a remote URL instead of a local `assets/` copy.
 - **Broken source citations** — a cited `ai-docs/` archive absent from the repo. The
   raw layer is tracked, so absence is a broken citation; report the page and the missing
   path (personal citations resolve locally only — check them on this machine, never

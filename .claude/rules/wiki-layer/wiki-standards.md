@@ -57,6 +57,23 @@ another page, a lint report — flag it inline at the point of use (`… *[dispu
   listed in frontmatter does not cover a page whose paragraphs cite nothing.
 - Keep `related:` and the page's inline `[[wikilinks]]` consistent with each other.
 
+## Images
+
+A source's diagrams, charts, and screenshots are content. They are archived like text
+and read like text.
+
+- Images live on local disk, in an `assets/` folder beside the file that references them
+  — `source-archiver` downloads a page's images there and rewrites the references to
+  relative paths. No archive or page embeds a remote image URL; those rot.
+- A wiki page embeds an image by its relative path into the archive's `assets/`
+  (`![alt](../../<group>/assets/<file>)`), and cites the archive as the source. Alt text
+  and captions carry meaning — keep them.
+- Markdown and its inline images do not arrive in one read. Read the text first, then
+  `Read` the specific images a claim depends on — a diagram, a chart, a screenshot of
+  output. Skip logos, avatars, and decoration.
+- An image you have not opened cannot back a claim. Describe what an image shows only
+  after reading it.
+
 ## Writing Standards
 
 You are compiling understanding, not filing facts.
@@ -116,8 +133,9 @@ Drafting hints for a new domain's `schema.md`, never mandates:
   gitignored the same way.
 - The shared `wiki/index.md` and `wiki/log.md` never name personal pages, sources, or
   topics — not even as a placeholder.
-- Personal attachments live under `wiki/personal/assets/`. Move any that land in the
-  shared `wiki/assets/`; a personal page references no file outside `personal/`.
+- Personal attachments land in a `personal/**/assets/` folder by the colocation rule
+  above, so they never reach a shared folder; a personal page references no file outside
+  `personal/`.
 - Strip secrets and PII on every ingest in every domain — keys, tokens, credentials,
   addresses, phone numbers, account numbers, unpublished third-party names. Shared
   domains reach a public remote; assume every word does.
@@ -131,7 +149,10 @@ Drafting hints for a new domain's `schema.md`, never mandates:
 
 - The vault root is `ai-docs/`, so raw sources and wiki open as one vault; the committed
   config lives in `ai-docs/.obsidian/`.
-- The attachment folder is `wiki/assets` (personal pages excepted, above).
+- Attachments land in an `assets/` folder beside the note that references them
+  (`attachmentFolderPath: "./assets"`), matching the colocation rule above.
+- `Mod+Shift+D` is bound to "Download attachments for current file". After clipping a
+  page, press it to pull that page's remote images onto local disk.
 - Supported plugins: Web Clipper for capturing web sources, Dataview for frontmatter
   queries, Marp for slides from pages. Recommended, never required — no page, command,
   or lint check may depend on a plugin being installed.

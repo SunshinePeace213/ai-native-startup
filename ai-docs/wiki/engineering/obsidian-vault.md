@@ -70,7 +70,11 @@ That is the arrangement this repository uses: the vault root is `ai-docs/`, so t
 raw sources and the wiki open as one vault, and the committed config lives in
 `ai-docs/.obsidian/`
 ([wiki-standards.md](../../../.claude/rules/wiki-layer/wiki-standards.md)). The
-attachment folder is set to `wiki/assets`, with personal pages excepted
+attachment folder is `./assets`, which resolves to an `assets/` folder beside whichever
+note references the file rather than one shared directory, so a source's images stay with
+the source and personal images never leave `personal/`
+([wiki-standards.md](../../../.claude/rules/wiki-layer/wiki-standards.md)). `Mod+Shift+D`
+is the bound keystroke for "Download attachments for current file"
 ([wiki-standards.md](../../../.claude/rules/wiki-layer/wiki-standards.md)).
 
 Two plugins turn pages into other formats without changing what is on disk. Marp is a

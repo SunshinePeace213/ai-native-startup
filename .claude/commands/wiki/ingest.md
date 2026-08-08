@@ -65,7 +65,8 @@ path, so KEY is never matched against them.
    file outside `ai-docs/` → copy it into the raw layer. A folder expands to its file
    list, processed in order.
 2. Read STANDARDS, then the target domain's INDEX and `schema.md` (draft it first for a
-   new domain), then the source itself.
+   new domain), then the source itself — its text first, then `Read` the images it
+   carries that bear on the synthesis, per STANDARDS' image rules.
 3. Match KEY against every page's `sources:` frontmatter and the LOG entries — no match
    is a first ingest; a match sends you to the changed-source or identical-repeat
    branch, and an identical repeat stops here with nothing written.
