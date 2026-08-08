@@ -1,6 +1,10 @@
+# direnv's .envrc must travel with .env, or the worktree loads neither and
+# every QMD_* / project variable is silently missing. direnv authorises per
+# directory, so a fresh worktree still needs one `direnv allow` inside it.
 .env
 .env.local
 .env.sample
+.envrc
 
 # Most of ai-docs/ is tracked now; this copies the gitignored remainder (the
 # personal areas) so a worktree sees the full knowledge base.
