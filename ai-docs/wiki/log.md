@@ -45,3 +45,7 @@ missing-pages: none · mechanical-fixes: 0
 ## [2026-08-08] lint | engineering | 13 pages — no orphans or broken links; 2 fixes, 3 findings for review
 
 missing-pages: none · mechanical-fixes: 2
+
+## [2026-08-09] ingest | Graph Engineering for Multi-Agentic Systems: The Andrew Ng Playbook | ai-docs/graph-engineering/index.md
+
+new-domain: agentic-systems (11 pages) · enriched: engineering/graph-wiki-variant

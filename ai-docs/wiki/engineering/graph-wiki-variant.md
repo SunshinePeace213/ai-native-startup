@@ -3,9 +3,9 @@ type: architecture
 domain: engineering
 status: current
 created: 2026-08-08
-updated: 2026-08-08
-sources: ["ai-docs/llm-wiki/lucianfialho/graphwiki-pattern.md", "ai-docs/llm-wiki/rohitg00/llm-wiki.md", "ai-docs/llm-wiki/karpathy/llm-wiki.md"]
-related: ["[[llm-wiki-pattern]]", "[[entity-resolution]]", "[[rag-vs-compiled-knowledge]]", "[[knowledge-lifecycle]]", "[[wiki-schema-layer]]"]
+updated: 2026-08-09
+sources: ["ai-docs/llm-wiki/lucianfialho/graphwiki-pattern.md", "ai-docs/llm-wiki/rohitg00/llm-wiki.md", "ai-docs/llm-wiki/karpathy/llm-wiki.md", "ai-docs/graph-engineering/04-from-loops-to-graphs.md", "ai-docs/graph-engineering/07-decision-framework.md", "ai-docs/graph-engineering/10-limitations-adoption-conclusion.md"]
+related: ["[[llm-wiki-pattern]]", "[[entity-resolution]]", "[[rag-vs-compiled-knowledge]]", "[[knowledge-lifecycle]]", "[[wiki-schema-layer]]", "[[agentic-graph-schema]]", "[[loops-to-graphs]]"]
 ---
 
 # Graph Wiki Variant
@@ -89,6 +89,45 @@ summary inside the `:Concept` node and keeps no markdown page at all
 pages and builds the graph beside them
 ([LLM Wiki v2](../../llm-wiki/rohitg00/llm-wiki.md)). Both retain the three-layer split they
 inherit ([Karpathy](../../llm-wiki/karpathy/llm-wiki.md)).
+
+## A third schema, arrived at from agent coordination
+
+Both schemas above are designed to hold compiled knowledge for reading. A third proposal
+reaches a near-identical vocabulary from the opposite direction — the state that multiple
+LLM agents must share once an orchestrator's context window stops holding it
+([playbook §IV.D](../../graph-engineering/04-from-loops-to-graphs.md)). Its
+minimal schema is five node types — Entity, Claim, Source, Artifact, Run — with the edges
+`mentions`, `supports`, `contradicts`, `derived_from`, and `supersedes`
+([playbook §IV.E](../../graph-engineering/04-from-loops-to-graphs.md)).
+
+The convergence is on the two rules this vault already runs on. Every claim retains
+provenance, matching `DERIVED_FROM` being the citation itself rather than a pointer to one
+([graphwiki](../../llm-wiki/lucianfialho/graphwiki-pattern.md)). And the minimal write is
+additive: rather than overwriting a claim silently, the system creates a new version and
+links it with `supersedes`
+([playbook §IV.E](../../graph-engineering/04-from-loops-to-graphs.md)) — the
+same rule that flips a resolved loser to `superseded` instead of deleting it
+([graphwiki](../../llm-wiki/lucianfialho/graphwiki-pattern.md)), treated in
+[[knowledge-lifecycle]].
+
+Where it diverges is `Artifact` and `Run`. Neither wiki-side schema records how an output
+was produced, because neither is holding the execution of a process; adding a plan-or-draft
+node and an execution-record node is what lets the agent-side schema satisfy its own
+traceability test, that every important output trace to a task, a plan, an artifact, a
+source, an evaluator decision, and a bounded execution record
+([playbook §XI](../../graph-engineering/10-limitations-adoption-conclusion.md)).
+The full treatment is [[agentic-graph-schema]], and the progression that motivates the store
+is [[loops-to-graphs]].
+
+The same source supplies a justification test this page's variants do not state: a graph
+earns itself only when the same entity or relationship is queried by more than one agent or
+across more than one session, and a graph written once and never queried is called a
+database table with extra overhead
+([playbook §VII.A](../../graph-engineering/07-decision-framework.md)). It also
+names the standing hazard directly — a graph preserves errors as efficiently as facts, with
+entity resolution merging distinct organizations given as the first example
+([playbook §IV.F](../../graph-engineering/04-from-loops-to-graphs.md)), which
+is the risk [[entity-resolution]] measures.
 
 ## What the validation covers and what it does not
 
