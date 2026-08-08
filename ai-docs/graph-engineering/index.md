@@ -1,5 +1,5 @@
 ---
-source: Graph-Engineering-Andrew-Ng-Playbook.pdf
+source: raw/Graph-Engineering-Andrew-Ng-Playbook.pdf
 fetched: 2026-08-05
 ---
 > **In here:** Section catalog for the Graph Engineering playbook · Which section answers which question · Where the source PDF lives
@@ -7,10 +7,14 @@ fetched: 2026-08-05
 # Graph Engineering for Multi-Agentic Systems: The Andrew Ng Playbook
 
 A 2026 working note on agentic AI practice, mirrored from a locally supplied
-PDF (`Graph-Engineering-Andrew-Ng-Playbook.pdf`, 12 pages) kept alongside this
-index. Independently compiled — not affiliated with or endorsed by Andrew Ng,
+12-page PDF held at
+[`raw/Graph-Engineering-Andrew-Ng-Playbook.pdf`](./raw/Graph-Engineering-Andrew-Ng-Playbook.pdf).
+Independently compiled — not affiliated with or endorsed by Andrew Ng,
 DeepLearning.AI, Anthropic, Neo4j, or Google. Split by section so a session
 loads only the part it needs.
+
+Layout: original files in `raw/`, extracted figures in `assets/`, and the text
+layer split across the numbered section files below.
 
 | Section | Pages | In here |
 | --- | --- | --- |
@@ -37,7 +41,17 @@ anti-patterns). Read VII before adding any pattern to a live system.
 The text layer is extracted verbatim from the supplied PDF, a two-column
 letter-portrait layout (WeasyPrint) whose columns split at the x=306 gutter.
 The PDF carries no hyperlink annotations, so no source links exist to preserve.
-Fig. 1 is a vector diagram in the original; it is reconstructed here as a
-mermaid graph from the figure's own labels, with the caption quoted verbatim.
+
+Fig. 1 is the document's only diagram, and it is a vector drawing rather than an
+embedded raster — the PDF contains no embedded images on any page. It is
+rasterised from page 1 at 300 dpi into
+[`assets/`](./assets/fig-01-graph-grounded-multi-agent-architecture.png), with
+the caption quoted verbatim and the figure's own labels carried in the alt text.
+The shaded blocks on pages 2–7 are code-listing backgrounds, not figures. An
+earlier revision of this archive reconstructed Fig. 1 as a mermaid graph instead;
+that reconstruction mislabelled the diagram — it folded node subtitles such as
+"planning + reflection" into edge labels and attached the "shares data" edge to
+the wrong pair of nodes — and it has been replaced by the extracted image.
+
 The document's own appendix lettering skips "Appendix A" — it runs B, C, then
 an unlettered "Appendix: Glossary"; that numbering is mirrored as published.

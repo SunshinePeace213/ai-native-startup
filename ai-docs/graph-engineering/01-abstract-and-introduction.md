@@ -1,5 +1,5 @@
 ---
-source: Graph-Engineering-Andrew-Ng-Playbook.pdf
+source: raw/Graph-Engineering-Andrew-Ng-Playbook.pdf
 fetched: 2026-08-05
 pages: 1-2
 ---
@@ -16,17 +16,7 @@ Independently compiled, July 2026 — not affiliated with or endorsed by Andrew 
 
 ## Fig. 1 — Graph-grounded multi-agent architecture
 
-```mermaid
-graph LR
-    User["**User**"] -->|"Handoff · planning + reflection"| Architect["**Architect Agent**"]
-    Architect -->|"Handoff · review + routing"| TechLead["**Tech Lead Agent**"]
-    TechLead -->|"tool use + code"| Developer["**Developer Agent**"]
-    Architect -.->|feedback| User
-    Architect -->|reads| KG
-    TechLead -->|reads| KG
-    Developer -->|"reads/writes"| KG
-    KG["**Knowledge Graph**<br/>shared state · provenance · persistence"] -.->|"shares data"| Architect
-```
+![Graph-grounded multi-agent architecture. A circular User node on the left connects by a solid arrow to a rounded Architect Agent box subtitled "planning + reflection", with a dashed arrow labelled "feedback" returning to the User. A solid arrow labelled "Handoff" runs from Architect Agent to Tech Lead Agent, subtitled "review + routing"; a second solid arrow labelled "Handoff" runs from Tech Lead Agent to Developer Agent, subtitled "tool use + code". A curved solid arrow labelled "shares data" arcs over the top from the Tech Lead side down into Developer Agent. Below the three agents sits a solid black Knowledge Graph box subtitled "shared state · provenance · persistence"; dashed lines connect it to Architect Agent (labelled "reads"), straight up to Tech Lead Agent, and to Developer Agent (labelled "reads/writes").](assets/fig-01-graph-grounded-multi-agent-architecture.png)
 
 Fig. 1. Graph-grounded multi-agent architecture. The User delegates to an Architect Agent, which hands off to a Tech Lead and Developer Agent through typed handoffs. All agents read from and write to a shared Knowledge Graph. In-loop feedback flows back to the User at each stage.
 
