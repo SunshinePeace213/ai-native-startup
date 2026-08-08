@@ -15,10 +15,12 @@ LOG: `ai-docs/wiki/log.md` — append-only ingest/lint history
 RAW: everything under `ai-docs/` outside `wiki/` — the raw-source layer; one archive
 per `.md` file, a PDF-conversion folder counting once via its `index.md`
 PERSONAL: `ai-docs/wiki/personal/` — local-only domain, present only on this machine when it exists
+SEARCH: the `qmd` index over the vault — the `wiki` and `sources` collections defined in `.claude/rules/wiki-layer/wiki-standards.md`
 
 ## Instructions
 
-- Read-only, always. No `Write`/`Edit` call targets any file.
+- Read-only, always. No `Write`/`Edit` call targets any file. `qmd status` is read-only and allowed; `qmd update`, `qmd embed`, and `qmd collection` are writes — never run them here, just report the staleness.
+- SEARCH health comes from `qmd status`: files indexed, vectors embedded, and how long ago each collection was updated. Report a missing `wiki` or `sources` collection as "not indexed" and point at the rebuild commands in that rule; report an index older than the newest LOG entry as stale.
 - Count pages by reading each domain's table in INDEX; a domain's type breakdown comes from that table's `Type` column, not a page's frontmatter re-read, unless a count needs disambiguating.
 - Orphan count: pages that no `[[wikilink]]` from any other page reaches. A page's own outgoing links do not count, and a missing index row is lint's drift check, not an orphan.
 - Disputed count: pages whose INDEX `Status` column reads `disputed`.
@@ -41,7 +43,8 @@ PERSONAL: `ai-docs/wiki/personal/` — local-only domain, present only on this m
 4. Walk RAW; count archives whose path is absent from every page's `sources:` list.
 5. Evaluate the three triggers per Instructions, respecting the insufficient-history and no-lint-yet cases.
 6. Check PERSONAL's local existence; include or omit its line accordingly.
-7. Report.
+7. Run `qmd status` for SEARCH health.
+8. Report.
 
 ## Report
 
@@ -54,6 +57,7 @@ Personal: <count by type — only if ai-docs/wiki/personal/ exists locally>
 Orphans: <N>
 Disputed: <N>
 Last lint: <date, or "no lint yet">
+Search index: <wiki N files · sources N files · N vectors · updated <when>> | not indexed | stale
 
 Expansion triggers:
 - absorb: <fired (backlog N>10) | not fired (backlog N) — N archives uncited by any wiki page>

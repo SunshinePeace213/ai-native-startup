@@ -16,7 +16,7 @@ SOURCE: `$ARGUMENTS` — a URL, an archive path under `ai-docs/`, a local file o
 or a plan artifact under `specs/`. `--domain <name>` pins the domain; otherwise infer it
 from the content.
 STANDARDS: `.claude/rules/wiki-layer/wiki-standards.md` — the page schema, writing
-standards, and privacy rules this command writes against.
+standards, privacy rules, and `qmd` search contract this command writes against.
 INDEX + LOG: `ai-docs/wiki/index.md` and `ai-docs/wiki/log.md` for the shared domains;
 `ai-docs/wiki/personal/index.md` and `ai-docs/wiki/personal/log.md` for personal.
 KEY: the canonical source path. It lives in exactly two places — the `sources:`
@@ -42,6 +42,13 @@ path, so KEY is never matched against them.
   tracked domain folder, or `personal/` for a personal ingest. Nothing else.
 - Integrate, never append. One source may touch several pages: create the pages it
   earns, enrich the pages it deepens, and leave each reading as a coherent whole.
+- Find the pages a source touches with `qmd query -c wiki`, one search per theme the
+  source carries, authoring `intent:`/`lex:`/`vec:` yourself. Reading INDEX alone finds
+  only the pages whose titles happen to match, which is how a source gets crammed into
+  one page instead of integrated across the several it belongs on. Search ranks
+  candidates; `Read` each before deciding it gains a dimension.
+- KEY matching stays exact — `Grep` the literal path across page `sources:` and the LOG.
+  Never settle idempotency with a ranked search: one missed hit writes a duplicate page.
 - Idempotent on KEY, in three branches:
   - **First ingest** — KEY appears in no page's `sources:` and in no LOG entry. Write
     the pages, add their INDEX rows, append one LOG entry.
@@ -67,18 +74,21 @@ path, so KEY is never matched against them.
 2. Read STANDARDS, then the target domain's INDEX and `schema.md` (draft it first for a
    new domain), then the source itself — its text first, then `Read` the images it
    carries that bear on the synthesis, per STANDARDS' image rules.
-3. Match KEY against every page's `sources:` frontmatter and the LOG entries — no match
+3. `Grep` KEY against every page's `sources:` frontmatter and the LOG entries — no match
    is a first ingest; a match sends you to the changed-source or identical-repeat
    branch, and an identical repeat stops here with nothing written.
-4. Decide the page set: which existing pages gain a real dimension, which topics carry
-   enough material for a page of their own, which are only noted where they already
-   appear.
+4. Search `-c wiki` per theme to decide the page set: which existing pages gain a real
+   dimension, which topics carry enough material for a page of their own, which are only
+   noted where they already appear.
 5. Write the pages, re-reading each immediately before the edit.
 6. First ingest → add the domain's INDEX rows; changed-source re-ingest → refresh the
    existing rows. Both then append the LOG entry:
    `## [YYYY-MM-DD] ingest | <title> | <source-path>`.
-7. Batch input: checkpoint every 5 sources — update INDEX and LOG, then re-read the
-   index and the pages you are about to touch before continuing.
+7. Run `qmd update && qmd embed` so the archive and the pages just written are
+   searchable. An ingest that writes and does not re-index leaves the wiki unsearchable
+   at exactly its newest edge.
+8. Batch input: checkpoint every 5 sources — update INDEX and LOG, re-index per step 7,
+   then re-read the index and the pages you are about to touch before continuing.
 
 ## Report
 
@@ -87,4 +97,5 @@ path, so KEY is never matched against them.
 - Pages created and pages updated, with paths.
 - Which branch ran, and the index rows and log entry written — "unchanged" for an
   identical repeat.
+- The `qmd update && qmd embed` result: files added or updated, and vectors embedded.
 - Anything flagged `disputed`, declined at the gate, or stripped as secret/PII.

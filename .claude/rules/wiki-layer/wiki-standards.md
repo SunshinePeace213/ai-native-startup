@@ -157,6 +157,38 @@ Drafting hints for a new domain's `schema.md`, never mandates:
   queries, Marp for slides from pages. Recommended, never required — no page, command,
   or lint check may depend on a plugin being installed.
 
+## Search
+
+`qmd` is the wiki's retrieval mechanism — a local BM25 + vector index over the vault,
+on-device. Commands shell out to the `qmd` CLI, never the MCP server, so no command
+depends on a plugin being enabled.
+
+Two disjoint collections cover the vault:
+
+| Collection | Covers | Mask |
+| --- | --- | --- |
+| `wiki` | `ai-docs/wiki/` — the synthesis layer | `**/*.md` |
+| `sources` | the rest of `ai-docs/` — the raw layer | `!(wiki)/**/*.md` |
+
+- Scope every search with `-c`. Answering from the wiki is `-c wiki`; tracing evidence
+  is `-c sources`. An unscoped search crosses the layers.
+- Search returns leads, not answers. Rank with `qmd search` (exact terms, page titles,
+  citation paths) or `qmd query` (concepts), then `Read` the pages the claims rest on —
+  a snippet never backs a claim.
+- Results print `qmd://<collection>/<path>`; add `--full-path` when a hit feeds `Read`
+  or `Edit`.
+- Freshness belongs to the writer: a command that writes under `ai-docs/` ends with
+  `qmd update && qmd embed`. Both are content-hash incremental and a no-op pass costs
+  under a second, so run them unconditionally instead of guessing what changed.
+- Embeddings are keyed by content hash, so they survive re-indexing and collection
+  edits. Only new or changed text is ever re-embedded.
+- The index is machine-local and absent from a fresh clone. Build it on a new machine
+  with `bash .claude/scripts/qmd-setup.sh`, which creates both collections, attaches
+  their context descriptions, and indexes the vault. It is idempotent — re-run it
+  whenever the collections look wrong.
+- The index covers `personal/` once it exists. It is never a route around the privacy
+  rules — a shared answer cites no personal hit.
+
 ## Operations
 
 Model and effort per command; this table is the source of truth for each command's

@@ -131,11 +131,24 @@
       }
     ]
   },
+  "permissions": {
+    "allow": [
+      "Bash(qmd search:*)",
+      "Bash(qmd query:*)",
+      "Bash(qmd vsearch:*)",
+      "Bash(qmd get:*)",
+      "Bash(qmd multi-get:*)",
+      "Bash(qmd ls:*)",
+      "Bash(qmd status)",
+      "Bash(qmd update)",
+      "Bash(qmd embed)"
+    ]
+  },
   "enabledPlugins": {
     "codex@openai-codex": true,
     "playground@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
-    "claude-security@claude-plugins-official": true,
-    "document-skills@anthropic-agent-skills": true
+    "document-skills@anthropic-agent-skills": true,
+    "qmd@qmd": true
   }
 }
