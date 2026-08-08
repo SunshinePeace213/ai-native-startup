@@ -5,7 +5,7 @@ status: current
 created: 2026-08-08
 updated: 2026-08-08
 sources: ["ai-docs/llm-wiki/farzaa/wiki-gen-skill.md", "ai-docs/llm-wiki/rohitg00/llm-wiki.md", "ai-docs/llm-wiki/karpathy/llm-wiki.md", ".claude/commands/wiki/ingest.md"]
-related: ["[[llm-wiki-pattern]]", "[[page-writing-standards]]", "[[entity-resolution]]", "[[wiki-drift]]"]
+related: ["[[llm-wiki-pattern]]", "[[page-writing-standards]]", "[[entity-resolution]]", "[[wiki-drift]]", "[[wiki-index-and-log]]"]
 ---
 
 # Ingest Pipeline

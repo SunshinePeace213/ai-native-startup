@@ -50,7 +50,7 @@ same split: the raw-source layer under `ai-docs/` stays immutable and ingest rea
 without editing, while `ai-docs/wiki/` holds everything the LLM writes
 ([wiki-standards.md](../../../.claude/rules/wiki-layer/wiki-standards.md)). Its schema
 layer is a rule file rather than prose in a prompt — seven required frontmatter fields,
-six domains over one shared schema, and writing standards the pages are held to
+open-ended domains each owning a `schema.md` over one shared spine, and writing standards
 ([wiki-standards.md](../../../.claude/rules/wiki-layer/wiki-standards.md)).
 
 ## The operation loop
